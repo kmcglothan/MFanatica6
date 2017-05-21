@@ -1,0 +1,75 @@
+/* @title Header */
+/* @help This is the main header section for the site */
+#header {
+    max-width:1140px;
+    max-height:118px;
+    background: #0076A4; /* @ignore */
+    background: -moz-linear-gradient(#108EB2, #0076A4); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#108EB2), to(#0076A4)); /* @ignore */
+    background: -webkit-linear-gradient(#108EB2, #0076A4); /* @ignore */
+    background: -o-linear-gradient(#108EB2, #0076A4); /* @ignore */
+    background: -ms-linear-gradient(#108EB2, #0076A4); /* @ignore */
+    background: linear-gradient(#108EB2, #0076A4); /* @ignore */
+    padding:10px;
+    margin:0 auto;
+    box-shadow: 0 0 4px #000 inset;
+}
+/* @title Header Links */
+/* @help Header text URL */
+#header a {
+    text-transform:capitalize;
+    text-decoration:none;
+    color:#fff;
+}
+
+/* @title Header Link Hover */
+/* @help Header text URL hover */
+#header a:hover {
+    text-decoration:underline;
+    color:#fff;
+}
+
+#header_content {
+    height:100%;
+    max-width:1140px;
+    margin-left:auto;
+    margin-right:auto;
+    text-shadow:2px 2px 4px #000;
+}
+
+#main_logo {
+    vertical-align:middle;
+    padding:2px;
+    cursor:pointer;
+}
+
+/* @title Main Menu */
+/* @help Main Menu */
+#main_menu {
+    height:100%;
+    display:table-cell;
+    vertical-align:middle;
+    text-align:right;
+    font-size:16px;
+    padding-right:12px;
+}
+
+.logo-ads {
+    float:right;
+    padding-top:10px;
+    padding-right:8px;
+}
+
+.mobile-ads {
+    display:none;
+}
+
+#add_to_cart_success {
+    float:left;
+    position:absolute;
+    margin:0 auto;
+    background-color:#000;
+    border:1px solid #ddd;
+    padding:4px;
+    font-size:12px;
+}

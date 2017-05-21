@@ -1,0 +1,235 @@
+SoloArtist Skin Changelog
+
+Version 1.3.7:
+ - Change: Added check for tablet so mobile menu shows. Modified templates: header.tpl, header_menu_mobile.tpl and footer.tpl
+
+Version 1.3.6:
+- Change: Fixed padding for chat by line that overlapped the chat text.
+
+Version 1.3.5:
+ - New: Added chat CSS file for the new chat module.
+ - Change: profile_menu.tpl adjusted to match module version to allow for System Tips to work
+ - Change: Removed unused CSS classes.
+ - Change: Changed scroll up to use an icon instead of an image. Templates modified: footer.css, footer.tpl
+ - Change: Added timeline CSS for share modal window. Modified action.css file.
+ - Bug Fix: Buttons on posts could dissappear when you go to click on rare occasions.
+
+Version 1.3.4:
+ - New: Added YouTube and Pinterest social links and images to the footer template.
+ - Change: Updated templates to use core CSS blocks
+ - Change: Updated all instances of window.location to jrCore_window_location functions.
+
+Version 1.3.3:
+ - Change: Updated CSS files so they can be modified in the skins style tab.
+
+Version 1.3.2:
+ - Change: Added a check to only show the modify icon to the master admin on the blog list page.
+ - Change: Updated CSS files to fix attach file button.
+ - Change: Updated CSS file so the index player background shows in the skin Style tab.
+ - Change: Removed bottom positioning for share this checkbox on timeline form.
+ - Change: Expanded CSS properties to make them available in the STYLE tab
+ - Bug Fix hard coded "audio" URL in index_player.tpl prevented it for working with Combined Audio module
+
+Version 1.3.1:
+ - Bug Fix: Fixed URL for Google link in the footer.tpl
+
+Version 1.3.0:
+ - New: Added social icons to the footer
+ - New: Added comments to profile index, controlled by skin settings.
+ - Change: Changed footer contact link to a mailto link if the custom from module is not active.
+
+Version 1.2.11:
+ - Change: Moved javascript into their respective templates.
+
+Version 1.2.10:
+ - Bug Fix: Fixed the menu button to be on the same line as the logo image and still work on mobile devices.
+
+Version 1.2.9:
+ - Bug Fix: Added a check for the private notes module around the contact us link.
+ - Template Files:
+   ------------------------------------------------------
+    Modified: footer.tpl
+   ------------------------------------------------------
+
+Version 1.2.8:
+ - Change: Updated slide menu to new version
+ - Bug Fix: Fixed editor full screen view from hiding behind the site header.
+ - CSS File Modified:
+   ------------------------------------------------------
+    core_header.css
+   ------------------------------------------------------
+ - Template Files Modified:
+   ------------------------------------------------------
+    footer.tpl
+   ------------------------------------------------------
+ - New Version of Javascript file:
+   ------------------------------------------------------
+    contrib/slidebars/slidebars.min.js
+   ------------------------------------------------------
+
+Version 1.2.7:
+ - New: Profile custom logo support
+ - Template Files Modified:
+   ------------------------------------------------------
+    profile_header.tpl
+   ------------------------------------------------------
+
+Version 1.2.6:
+ - Bug Fix: Fixed recently rated box on the profile page
+
+Version 1.2.5:
+ - Bug Fix: Changed padding to margin on header padding issue.
+ - Bug Fix: Blog page not showing categories.
+ - CSS Files Modified/Added:
+   ------------------------------------------------------
+    core_admin_menu.css         mobile_core.css
+    core_site.css
+   ------------------------------------------------------
+ - Template Files Modified/Added:
+   ------------------------------------------------------
+    header.tpl                  music.tpl
+    profile_header.tpl          blogs.tpl
+    fans.tpl
+   ------------------------------------------------------
+
+Version 1.2.4:
+ - Bug Fix: Fixed header padding issue on home, music and fan pages.
+ - Bug Fix: Fixed music page to use PayPal button if being used instead of FoxyCart.
+ - Template Files Modified/Added:
+   ------------------------------------------------------
+    header.tpl                  music.tpl
+    music_row.tpl               album_row.tpl
+    albums_slider.tpl           singles_slider.tpl
+    fans.tpl
+   ------------------------------------------------------
+
+Version 1.2.3:
+ - Bug Fix: Fixed padding issue in ACP.
+ - CSS Files Modified/Added:
+   ------------------------------------------------------
+    core_admin_menu.css             mobile_core.css
+   ------------------------------------------------------
+ - Template Files Modified/Added:
+   ------------------------------------------------------
+    header.tpl
+   ------------------------------------------------------
+
+Version 1.2.2:
+ - Change: Changed main menu for better mobile use.
+ - Change: Changed profile menu for better mobile use.
+ - Change: Moved profile side to the right side instead of the left for mobile purposes.
+ - New: Added poll.css.
+ - New: Added scroll to top jQuery function.
+ - New: Added Debug and PHP error log links to ACP > System Tools drop down menu.
+ - New: Added Skin Style, Images, Languages and Templates to ACP > Skin Settings drop down menu.
+ - Bug Fix: Fixed index actions list layout issue.
+ - Bug Fix: Fixed index blogs list layout issue.
+ - Bug Fix: Fixed index comments list layout issue.
+ - PHP Files Modified/Added:
+   ------------------------------------------------------
+    include.php                     en-US.php
+   ------------------------------------------------------
+ - JS Files Modified/Added:
+   ------------------------------------------------------
+    jrSoloArtist.js                 contrib/slidebars/slidebars.js
+   ------------------------------------------------------
+ - CSS Files Modified/Added:
+   ------------------------------------------------------
+    core_action.css                 core_header.css
+    core_site.css                   mobile_core.css
+    poll.css                        core_footer.css
+    core_playlist.css               slidebar.css
+   ------------------------------------------------------
+ - Image Files Modified/Added:
+   ------------------------------------------------------
+    icon_top.png                    menu.png
+   ------------------------------------------------------
+ - Template Files Modified/Added:
+   ------------------------------------------------------
+    header.tpl                      index_actions.tpl
+    meta.tpl                        music.tpl
+    profile_header.tpl              footer.tpl
+    index_player.tpl                index.tpl
+    header_menu_desktop.tpl         header_menu_mobile.tpl
+    comments.tpl                    blogs_row.tpl
+    profile_index.tpl               profile_footer.tpl
+   ------------------------------------------------------
+
+Version 1.2.1:
+ - Change: Centered profile image on the profile page for mobile devices when logged out.
+ - File Modified:
+   ------------------------------------------------------
+    profile_header.tpl
+   ------------------------------------------------------
+
+Version 1.2.0:
+ - Change: Centered profile image on the profile page for mobile devices.
+ - New: Added System Updates link to the ACP drop down menu.
+ - File Modified:
+   ------------------------------------------------------
+    mobile_core.css             en-US.php
+    header.tpl
+   ------------------------------------------------------
+
+Version 1.1.14:
+ - New: Added more editable sections skins CSS admin panel area.
+
+Version 1.1.13:
+ - Update to use smarty3 syntax for javascript wrappers
+
+Version 1.1.12:
+ - Change: Updated page-table-jumper style.
+ - File Modified:
+   ------------------------------------------------------
+    core_table.css
+   ------------------------------------------------------
+
+Version 1.0.11:
+ - Change: Updated all skin images to use jrCore_image function instead of img tags.
+ - Change: Added a check on the profile page to see if the jrFollower module is active.
+ - Templates Modified:
+   ------------------------------------------------------
+    album_row.tpl           blogs.tpl
+    bogs_row.tpl            header.tpl
+    index_player.tpl        music.tpl
+    music_row.tpl
+   ------------------------------------------------------
+
+Version 1.0.10:
+ - Change: updated CSS for new actions styles.
+    ------------------------------------------------------
+    CSS File Modified: core_action.css
+    ------------------------------------------------------
+
+Version 1.0.9:
+ - Change: update to use new Title Support in ACP
+
+Version 1.0.8:
+ - Updated CSS files to fix action text colors.
+    ------------------------------------------------------
+    CSS Files Modified: core_profile.css    core_action.css
+    ------------------------------------------------------
+
+Version 1.0.7:
+ - Updated CSS urls to allow for override by image upload override in the ACP
+
+Version 1.0.6:
+ - Updated mobile CSS styles.
+   ------------------------------------------------------
+   CSS Files Modified: mobile_core.css
+   ------------------------------------------------------
+
+Version 1.0.5:
+ - Fixed contact us links and profile menu.
+
+Version 1.0.4:
+ - Fixed Skin Settings link in the header.tpl file to use the active skin variable.
+
+Version 1.0.3:
+ - New: Added download button if price isn't set and download block is turned off.
+
+Version 1.0.2:
+ - New: Added User Online Status to profile page
+
+Version 1.0.1:
+ - Adding new Changelog

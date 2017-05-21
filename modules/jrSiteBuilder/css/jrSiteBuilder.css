@@ -1,0 +1,483 @@
+.sb-button {
+    width: 120px;
+    text-align: center;
+    display: block;
+    padding: 6px 12px;
+    position: fixed;
+    border: 1px solid #000000;
+    border-radius: 3px;
+    background-color: #FFCC00;
+    color: #000000;
+    font-size: 15px;
+    cursor: pointer;
+    z-index: 600;
+}
+
+.sb-button:hover {
+    background: #EEEEEE;
+    color: #000000;
+}
+
+#sb-edit-button {
+    bottom: 36px;
+    left: 36px;
+}
+
+#sb-close-button {
+    bottom: 36px;
+    left: 36px;
+}
+
+#sb-edit-layout {
+    bottom: 76px;
+    left: 36px;
+}
+
+#sb-page-delete {
+    bottom: 116px;
+    left: 36px;
+}
+
+#sb-edit-menu {
+    bottom: 156px;
+    left: 36px;
+}
+
+#sb-doc-menu {
+    bottom: 196px;
+    left: 36px;
+}
+
+#sb-edit-cp {
+    background: #FFFFFF;
+    margin: 0 auto;
+    display: none;
+    padding: 12px;
+    width: 1140px;
+    height: 600px;
+    border-radius: 3px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+#sb-widget-work {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+#sb-widget-work .form_template {
+    max-width: 839px;
+}
+
+#sb-widget-settings {
+    display: none;
+}
+
+#sb-layout-section {
+    display: none;
+    margin-bottom: 12px;
+}
+
+.sb-accordion {
+    margin: 0 12px 0 0;
+}
+
+.sb-accordion a {
+    color: #000000;
+    text-decoration: none;
+}
+
+.sb-accordion a:hover {
+    color: #000000;
+    text-decoration: none;
+}
+
+/* @title Widget Container */
+/* @help Controls the padding and margin for the Widget Containers */
+.sb-widget-col {
+    position: relative; /* @ignore */
+    padding: 6px;
+    margin: 0;
+}
+
+.sb-container-controls {
+    position: absolute;
+    top: 12px;
+    right: 18px;
+}
+
+.sb-widget-new {
+    display: none;
+}
+
+.sb-widget-block {
+    min-height: 50px;
+    position: relative;
+}
+
+.sb-widget-block-edit {
+    padding: 6px !important;
+}
+
+/* @title Widget Item */
+/* @help This class is applied to the holder for each widget in a container */
+.sb-widget-content {
+    padding: 0;
+    margin: 0;
+}
+
+.sb-widget-controls {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    text-align: right;
+    z-index: 1000;
+}
+
+.sb-widget-controls small {
+    display: inline-block;
+    margin-top: 2px;
+    font-size: 11px;
+    color: #333333;
+}
+
+.sb-widget-hilight {
+    border: 1px dashed #CCCCCC;
+    border-radius: 2px;
+    margin: 5px !important;
+    padding: 6px 6px 44px 6px;
+}
+
+.sb-item-row {
+    width: 100%;
+    display: table-row;
+    cursor: pointer;
+    height: 34px;
+    background: #EEEEEE;
+}
+
+.sb-item-row-active.sb-item-row-default,
+.sb-item-row-active {
+    background: #FFCC00;
+}
+
+.sb-item-row-default {
+    background: #CCCCCC;
+}
+
+.sb-item-row:hover {
+    background: #FFCC00;
+}
+
+.sb-item-icon {
+    display: table-cell;
+    padding: 5px;
+}
+
+.sb-item-entry {
+    width: 100%;
+    display: table-cell;
+    padding: 3px;
+    font-size: 14px;
+    color: #000000;
+    vertical-align: middle;
+}
+
+.first-col, .second-col, .third-col {
+    position: relative;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.sb-cell-widget {
+    float: left;
+    position: absolute;
+    top: 6px;
+    left: 9px;
+    font-size: 8px;
+    font-weight: normal;
+    text-transform: uppercase;
+    color: #999999;
+}
+
+.new-cell {
+    background: #D5EFFF;
+    margin: 3px;
+    padding: 6px;
+    border: 1px solid #DDDDDD;
+    border-radius: 3px;
+}
+
+#eventslider {
+    margin: 25px 30px 6px 30px;
+}
+
+#layout-row {
+    margin: 6px 30px 25px 30px;
+}
+
+.saved-row {
+    margin: 3px 30px 3px 30px;
+}
+
+#saved-rows {
+    margin-top: 16px;
+}
+
+.sb-row-button {
+    margin: 0 auto;
+    padding: 6px 3px;
+    background: #EEEEEE;
+    border: 1px solid #DDDDDD;
+    border-radius: 3px;
+    font-size: 16px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.sb-row-button:hover {
+    background: #FFCC00;
+}
+
+.col0 {
+    display: none;
+}
+
+.sb-menu-entry {
+    padding: 0 6px;
+}
+
+.sb-menu-text a {
+    text-decoration: none;
+}
+
+.sb-menu-text-new {
+    margin: 0;
+    color: #666666;
+    font-size: 13px;
+    border: 0;
+    cursor: pointer;
+}
+
+.sb-new-click {
+    padding: 0;
+    margin: 0;
+    text-decoration: none;
+}
+
+.sb-menu-delete {
+    position: absolute;
+    top: 0;
+    right: 3px;
+    display: inline-block;
+}
+
+.sb-menu-indent-0 {
+    box-sizing: border-box;
+    padding: 6px;
+    font-size: 15px;
+    width: 100%;
+    margin-left: 0;
+}
+
+.sb-menu-indent-1 {
+    box-sizing: border-box;
+    padding: 4px;
+    font-size: 14px;
+    width: 90%;
+    margin: 3px 0 3px 9px;
+}
+
+.sb-menu-indent-2 {
+    box-sizing: border-box;
+    padding: 2px;
+    font-size: 13px;
+    width: 80%;
+    margin: 3px 0 3px 18px;
+}
+
+.sb-menu-new-indent-0 {
+    margin: 0 0 3px 9px;
+}
+
+.sb-menu-new-indent-1 {
+    margin: 0 0 3px 18px;
+}
+
+.sb-menu-new-indent-2 {
+    margin: 0 0 3px 27px;
+}
+
+.menu-col1 {
+    background: #EEEEEE;
+    border: 1px solid #EEEEEE;
+}
+
+.menu-col2 {
+    background: #F9F9F9;
+    border: 1px solid #EEEEEE;
+}
+
+.sb-top-menu-entry {
+}
+
+.sb-menu-entry {
+    background: #EEEEEE;
+    padding: 6px 9px;
+    font-size: 15px;
+    color: #000000;
+    vertical-align: middle;
+    margin-top: 3px;
+    border-radius: 2px;
+    text-transform: capitalize;
+    cursor: move;
+}
+
+.sb-menu-entry a {
+    cursor: pointer;
+}
+
+#sb-new-entry {
+    width: 85%;
+}
+
+.sb-menu-entry button {
+    float: right;
+    height: 23px;
+    margin: 0;
+}
+
+.sb-menu-entry-active {
+    background: #FFCC00;
+}
+
+.sb-menu-expand-icon {
+    display: inline;
+    margin-right: 4px;
+}
+
+.sb-menu-noexpand {
+    display: inline;
+    width: 20px;
+}
+
+.sb-menu-delete-icon {
+    position: absolute;
+    right: 6px;
+    top: 6px;
+}
+
+.sb-menu-add-button {
+    position: absolute;
+    right: 6px;
+    top: 6px;
+}
+
+.sb-menu-text {
+    width: 100%;
+    box-sizing: border-box;
+    border: 0;
+    border-radius: 2px;
+    background-color: #FFFFFF;
+    padding: 3px 6px;
+    color: #000000;
+    font-size: 15px;
+}
+
+#menu-entry-holder {
+    overflow: auto;
+}
+
+.connectedSortable {
+    list-style: outside none none;
+    min-height: 20px;
+    padding: 0;
+    overflow: auto;
+}
+
+.sb-add-widget-btn {
+    font-size: 11px;
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+}
+
+.sb-mod-container-btn {
+    font-size: 11px;
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+}
+
+.sb-container-tabs {
+    padding: 32px 12px 0 12px;
+    margin-bottom: -12px
+}
+
+.sb-widget-type-info {
+    opacity: 0.2;
+}
+
+/* browser page icon */
+.sb_page_icon {
+    width: 150px;
+    padding: 0 0 2px 0;
+    margin: 0;
+    background-color: #E6E6E6;
+}
+
+.sb_page_icon-row {
+    margin: 2px;
+}
+
+.sb_page_icon-cell {
+    font-size: 10px;
+    border: 1px solid #AAAAAA;
+    padding: 2px 0;
+    margin: 1px;
+}
+
+#sb-json-message {
+    margin: 0 4px;
+}
+
+/* notifications from web sockets */
+.menu_0_link .notifications {
+    background: #f8f494 none repeat scroll 0 0;
+    border: 1px solid #000000;
+    border-radius: 5px;
+    color: #000000;
+    opacity: 1;
+    padding: 0 5px;
+    position: absolute;
+    right: 0;
+    text-shadow: none;
+    top: 0;
+    transition: opacity 0.3s linear 0s;
+}
+
+.menu_0_link .notifications.none {
+    opacity: 0;
+}
+
+/* button audio players in a widget item list =  no disc */
+ul.sb-widget-sortable .widget-item .sc_button_player li,
+ul.sb-widget-sortable .widget-item .button_player li
+{
+    list-style: none;
+}
+/* html content in a widget with a list, show disk */
+ul.sb-widget-sortable .widget-item li {
+    list-style: disc;
+}
+
+ul.sb-widget-sortable .qq-upload-list li {
+    list-style: none;
+}
+
+#menu_editor li {
+    list-style: none;
+}
+#sb-menu-options-form .hljs {
+    max-width: none;
+}

@@ -1,0 +1,18 @@
+/* @title Timeline Networks Box */
+/* @help Box that holds the Share with Networks entries in Timeline form */
+#oneall_timeline_networks {
+    display: inline-block;
+    width: 100%;
+    text-align: right;
+    padding: 0 12px 12px 0;
+    font-size: 13px;
+    box-sizing: border-box;
+    text-transform: capitalize;
+}
+
+/* @title Timeline Networks Images */
+/* @help Images in Share with Networks box */
+#oneall_timeline_networks img {
+    vertical-align: middle;
+    margin: 0 3px;
+}

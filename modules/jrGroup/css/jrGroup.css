@@ -1,0 +1,46 @@
+#group_button {
+    font-size: 15px;
+    cursor: pointer;
+    height: 32px;
+    padding: 0 12px;
+    margin: 0 2px;
+    vertical-align: middle;
+}
+
+.group_join {
+    background: #FFDD00;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ddffaa', endColorstr='#bbee88'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#DDFFAA), to(#BBEE88)); /* for webkit browsers */
+    background: -moz-linear-gradient(top, #DDFFAA, #BBEE88); /* for firefox 3.6+ */
+}
+
+.group_cancel {
+    background: #CCFF99;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ddffaa', endColorstr='#bbee88'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#DDFFAA), to(#BBEE88)); /* for webkit browsers */
+    background: -moz-linear-gradient(top, #DDFFAA, #BBEE88); /* for firefox 3.6+ */
+}
+
+.group_pending {
+    background: #AADDFF;
+    color: #000000;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#bbeeff', endColorstr='#99ccee'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#BBEEFF), to(#99CCEE)); /* for webkit browsers */
+    background: -moz-linear-gradient(top, #BBEEFF, #99CCEE); /* for firefox 3.6+ */
+}
+
+.img-0 {
+    float: left;
+    border: 3px solid #FFCC00;
+    margin: 2px 1px;
+}
+
+.img-1 {
+    float: left;
+    border: 3px solid transparent;
+    margin: 2px 1px;
+}
+
+.img-member-list {
+    margin: 12px 32px 3px 32px;
+}

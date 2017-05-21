@@ -1,0 +1,61 @@
+#footer {
+    background-color:#222;
+/*    background-image:url("{$jrSoloArtist_img_url}/bckgrd.png"); */
+    margin-top:12px;
+    border-top:4px solid #111;
+/*    box-shadow: 0 -2px 3px rgba(0, 0, 0, .5); */
+}
+
+/* @title Footer Links */
+/* @help Footer text URL */
+#footer a {
+    text-transform:capitalize;
+    text-decoration:none;
+    color:#606060;
+}
+/* @title Footer Link Hover */
+/* @help Footer text URL hover */
+#footer a:hover {
+    color:#FFF;
+    text-decoration:none;
+}
+
+#footer_content {
+    max-width:1140px;
+    margin-left:auto;
+    margin-right:auto;
+}
+
+#footer_logo {
+    padding:12px;
+    vertical-align:middle;
+}
+
+/* @title Footer Text */
+/* @help Footer text */
+#footer_text {
+    text-align:right;
+    color:#606060;
+    font-size:14px;
+    padding:12px;
+}
+/* @title Footer Social Networks */
+/* @help the social network icons located in the footer */
+#footer_sn {
+    padding: 12px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.scrollup{
+    width:40px;
+    height:40px;
+    opacity:0.5;
+    position:fixed;
+    bottom:10px;
+    right:65px;
+    display:none;
+}
+.scrollup:hover{
+    opacity:1;
+}

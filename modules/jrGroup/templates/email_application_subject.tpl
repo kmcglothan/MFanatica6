@@ -1,0 +1,1 @@
+New Member Application to the "{$_group.group_title}" Group

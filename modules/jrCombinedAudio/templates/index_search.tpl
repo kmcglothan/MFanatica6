@@ -1,0 +1,5 @@
+<div class="block_search">
+    {jrCore_module_url module="jrImage" assign="url"}
+    {jrCore_lang module="jrSearch" id=7 default="search" assign="sv"}
+    <img id="form_submit_indicator" src="{$jamroom_url}/{$url}/img/skin/{$_conf.jrCore_active_skin}/form_spinner.gif" width="24" height="24" alt="{jrCore_lang module="jrCore" id="73" default="working..."}">&nbsp;<input id="search_string" type="text" name="ss" class="form_text form_text_search" value="{$sv|jrCore_entity_string}" onfocus="if(this.value=='{$sv|jrCore_entity_string}'){ this.value=''; }" onblur="if(this.value==''){ this.value='{$sv|jrCore_entity_string}'; }" onkeypress="if (event && event.keyCode == 13) { var ss=$('#search_string').val(); if (ss.length > 0) { jrCore_window_location('{$jamroom_url}/search/results/{$modules}/{$page}/{$pagebreak}/search_string=' + jrE(ss)); } }">
+</div>

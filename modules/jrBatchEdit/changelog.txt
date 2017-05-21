@@ -1,0 +1,34 @@
+Batch Item Editor module changelog
+
+Version 1.0.10:
+ - Bug Fix: some fields with "_url" in them were not being shown as changeable in the editor
+
+Version 1.0.9:
+ - Change: Updated to use core provided DataStore functions when generating list
+
+Version 1.0.8:
+ - Change: Batch Item Editor no longer shows in Core Tools
+
+Version 1.0.7:
+ - Bug Fix: Profile and User datastore items were not editing correctly.
+
+Version 1.0.6:
+ - When editing several Data Store fields at once, the editor table is now scrollable
+
+Version 1.0.5:
+ - Bug Fix: Unable to delete item if field is not editable.
+
+Version 1.0.4:
+ - New: Select all added to Delete to allow all checkbox to be checked at once.
+
+Version 1.0.3:
+ - New: Image size can be selected along with fields to update
+
+Version 1.0.2:
+ - Bug Fix: Datastore fields containing HTML could cause problems
+
+Version 1.0.1:
+ - Bug Fix: Datastore fields may not be editable if Module URL has been changed
+
+Version 1.0.0:
+ - Initial Release

@@ -1,0 +1,11 @@
+/* make sure the anchors take into account a fixed header */
+a.anchor {
+    display: block;
+    position: relative;
+    top: -100px;
+    visibility: hidden;
+}
+
+.float-right {
+    float: right;
+}

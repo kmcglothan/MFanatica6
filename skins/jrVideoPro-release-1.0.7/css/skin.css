@@ -1,0 +1,522 @@
+.slides img {
+    width: 100%;
+}
+
+.index {
+    background: #f4f4f4 none repeat scroll 0 0;
+    box-shadow: 0 0 10px #888;
+    margin: 0 auto 1px;
+    max-width: 1440px;
+    min-height: 1200px;
+    padding: 0 0 1em;
+}
+
+.slides {
+    position: relative;
+    display: none;
+}
+
+.slidesjs-pagination-item a {
+    background: rgba(255, 255, 255, 0.5) none repeat scroll 0 0;
+    border-radius: 50%;
+    color: rgba(0, 0, 0, 0);
+    display: block;
+    height: 15px;
+    width: 15px;
+}
+
+.slidesjs-pagination-item {
+    display: inline-block;
+    height: 20px;
+    margin: 0;
+    width: 20px;
+}
+
+.slidesjs-navigation {
+    background: white none repeat scroll 0 0;
+    height: 40px;
+    position: absolute;
+    text-indent: -99999px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    z-index: 100;
+}
+
+.slidesjs-next {
+    background: rgba(0, 0, 0, 0) url("{$jrVideoPro_img_url}/next.png") repeat scroll 0 0 / contain;
+    right: 10px;
+}
+
+.slidesjs-previous {
+    background: rgba(0, 0, 0, 0) url("{$jrVideoPro_img_url}/previous.png") repeat scroll 0 0 / contain;
+    left: 10px;
+}
+
+.slidesjs-pagination {
+    bottom: 15px;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    text-align: center;
+    width: 100%;
+    z-index: 100;
+}
+
+.slidesjs-pagination-item a.active {
+    background: rgba(255, 255, 255, 0.8) none repeat scroll 0 0;
+}
+
+div#footer {
+    background: #333333 none repeat scroll 0 0;
+    border-top: 1px solid #444;
+    bottom: 0;
+    color: #5588cc;
+    height: 180px;
+    margin: auto;
+    position: relative;
+    text-align: center;
+    width: 100%;
+}
+
+.scrollup {
+    width: 40px;
+    height: 40px;
+    opacity: 0;
+    position: fixed;
+    bottom: -32px;
+    right: 65px;
+    display: block;
+    text-indent: -9999px;
+    background: url('{$jrVideoPro_img_url}/icon_top.png') no-repeat;
+    transition: all 0.5s ease 0s;
+    z-index: 200;
+}
+
+.scrollup.show {
+    opacity: 0.5;
+    bottom: 10px;
+}
+
+.scrollup:hover {
+    opacity: 1;
+}
+
+.index .head {
+    color: #aaa;
+    font-size: 20px;
+    font-weight: 600;
+    margin: 1em 0 0;
+}
+
+.index_item > .wrap {
+    padding: 5px;
+}
+
+.index_item > .wrap > .wrap {
+    background: white none repeat scroll 0 0;
+    min-height: 70px;
+}
+
+.index_item h4 {
+    color: #555555;
+    font-size: 14px;
+    margin: 3px 0;
+}
+
+.index_item span {
+    color: #aaaaaa;
+    font-size: 13px;
+    font-style: italic;
+}
+
+.pane {
+    float: left;
+    width: 33.33%;
+}
+
+.index_list.clearfix > div {
+    left: 0;
+    position: relative;
+    transition: left 1s ease 0s;
+    width: 300%;
+}
+
+.index_item {
+    float: left;
+    width: 16.66%;
+}
+
+.index_list {
+    position: relative;
+}
+
+.list_nav {
+    background: black none repeat scroll 0 0;
+    top: 50%;
+    display: block;
+    height: 40px;
+    position: absolute;
+    transform: translateY(-50%);
+    width: 40px;
+}
+
+section {
+    margin: 0 0 3em;
+    position: relative;
+}
+
+.list_nav.previous {
+    background: rgba(0, 0, 0, 0) url("{$jrVideoPro_img_url}/list_previous.png") no-repeat scroll 0 0 / contain;
+    left: 24px;
+}
+
+.list_nav.next {
+    background: rgba(0, 0, 0, 0) url("{$jrVideoPro_img_url}/list_next.png") no-repeat scroll 0 0 / contain;
+    right: 24px;
+}
+
+.index_list.clearfix.page_1 > div {
+    left: 0;
+}
+
+.index_list.clearfix.page_2 > div {
+    left: -100%;
+}
+
+.index_list.clearfix.page_3 > div {
+    left: -200%;
+}
+
+.index_list.clearfix.page_4 > div {
+    left: -300%;
+}
+
+.index_list.clearfix.page_5 > div {
+    left: -400%;
+}
+
+.index_list.clearfix.page_6 > div {
+    left: -500%;
+}
+
+.index_list.clearfix.page_7 > div {
+    left: -600%;
+}
+
+.index_list.clearfix.page_8 > div {
+    left: -700%;
+}
+
+.index_list.clearfix.page_9 > div {
+    left: -800%;
+}
+
+.index_list.clearfix.page_10 > div {
+    left: -900%;
+}
+
+.index_list.clearfix.page_11 > div {
+    left: -1000%;
+}
+
+.index_list.clearfix.page_12 > div {
+    left: -1100%;
+}
+
+.index_list.clearfix.page_13 > div {
+    left: -1200%;
+}
+
+.index_list.clearfix.page_14 > div {
+    left: -1300%;
+}
+
+.index_list.clearfix.page_15 > div {
+    left: -1400%;
+}
+
+.index_list.clearfix.page_16 > div {
+    left: -1500%;
+}
+
+.index_list.clearfix.page_17 > div {
+    left: -1600%;
+}
+
+.index_list.clearfix.page_18 > div {
+    left: -1700%;
+}
+
+.index_list.clearfix.page_19 > div {
+    left: -1800%;
+}
+
+.index_list.clearfix.page_20 > div {
+    left: -1900%;
+}
+
+.index_list.clearfix.page_21 > div {
+    left: -2000%;
+}
+
+.index_list.clearfix.page_22 > div {
+    left: -2100%;
+}
+
+.index_list.clearfix.page_23 > div {
+    left: -2200%;
+}
+
+.index_list.clearfix.page_24 > div {
+    left: -2300%;
+}
+
+.index_list.clearfix.page_25 > div {
+    left: -2400%;
+}
+
+.index_list.clearfix.page_26 > div {
+    left: -2500%;
+}
+
+.index_list.clearfix.page_27 > div {
+    left: -2600%;
+}
+
+.index_list .col2 > .image, .index_list .col6 .col4 > .image {
+    margin-bottom: 11px;
+    margin-left: 10px;
+    position: relative;
+}
+
+.white {
+    background: white;
+}
+
+.index_list .col3 > .image.bottom_row, .index_list .col6 .col4 > .image.bottom_row {
+    margin-bottom: 0;
+}
+
+.image {
+    position: relative;
+}
+
+.hover {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    text-align: center;
+    transition: opacity 1s ease 0s;
+    opacity: 0;
+}
+
+.hover:hover {
+    opacity: 1;
+}
+
+.hover .table {
+    width: 100%;
+    height: 100%;
+}
+
+.hover h4 {
+    color: white;
+    font-size: 16px;
+    margin: 3px 0;
+}
+
+.hover span.video_title {
+    color: #ffffa4;
+    font-weight: bold;
+}
+
+.white.clearfix h4 {
+    margin: 0 0 3px;
+}
+
+.white > a {
+    color: #269;
+}
+
+.white.clearfix span {
+    display: block;
+}
+
+.white span {
+    color: #aaa;
+    display: block;
+}
+
+.image p {
+    font-size: 12px;
+}
+
+.image span {
+    display: block;
+}
+
+.social h2 {
+    color: white;
+    font-size: 14px;
+    letter-spacing: 8px;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.social > li {
+    display: inline-block;
+    list-style: outside none none;
+    padding: 0 10px;
+}
+
+.social li a {
+    background: #666 none repeat scroll 0 0;
+    display: block;
+    height: 50px;
+    margin: auto;
+    width: 50px;
+}
+
+ul.social {
+    display: block;
+    margin: 2em auto;
+    padding: 0;
+}
+
+.social li a.social-facebook {
+    background: rgba(0, 0, 0, 0) url("{$jrVideoPro_img_url}/social-facebook.png") no-repeat scroll 0 0;
+}
+
+.social li a.social-twitter {
+    background: rgba(0, 0, 0, 0) url("{$jrVideoPro_img_url}/social-twitter.png") no-repeat scroll 0 0;
+}
+
+.social li a.social-google {
+    background: rgba(0, 0, 0, 0) url("{$jrVideoPro_img_url}/social-google.png") no-repeat scroll 0 0;
+}
+
+.social li a.social-linkedin {
+    background: rgba(0, 0, 0, 0) url("{$jrVideoPro_img_url}/social-linkedin.png") no-repeat scroll 0 0;
+}
+
+.social li a.social-youtube {
+    background: rgba(0, 0, 0, 0) url("{$jrVideoPro_img_url}/social-youtube.png") no-repeat scroll 0 0;
+}
+
+.social li a.social-facebook:hover,
+.social li a.social-twitter:hover,
+.social li a.social-linkedin:hover,
+.social li a.social-youtube:hover,
+.social li a.social-google:hover {
+    background-position: 0 -50px;
+}
+
+.social > div {
+    clear: both;
+    color: white;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.image span {
+    font-style: italic;
+}
+
+.index_item .wrap a {
+    color: #269;
+}
+
+.list_info {
+    float: left;
+    width: 33.33%;
+    text-align: center
+}
+
+.list_info span {
+    font-weight: bold;
+}
+
+.list_info span.italic {
+    font-size: 12px;
+    font-weight: normal;
+    margin: 5px 0 0;
+}
+
+.index_item .wrap span a {
+    color: #666;
+    font-weight: bold;
+}
+
+.simplemodal-data h3 a {
+    color: #333;
+}
+
+.table-cell.mobile > ul {
+    padding: 0;
+}
+
+.table-cell.logo {
+    width: 8%;
+}
+
+.mobile {
+    display: none;
+}
+
+#header .form_button {
+    padding: 5px;
+}
+
+.index_item.full {
+    width: auto;
+}
+
+#content .col6 > h1 {
+    color: white;
+    font-weight: 600;
+    margin: 0 0 10px;
+    text-transform: uppercase;
+}
+
+.form_select.cats {
+    float: right;
+    position: relative;
+    top: -2px;
+    width: auto;
+}
+
+.col6 .block_search {
+    width: auto;
+}
+
+.col6 .block_search .form_text.form_text_search {
+    width: 99%;
+}
+
+.white .video_title {
+    color: #333;
+}
+
+.white > a p {
+    color: #444;
+}
+
+.index .head a {
+    color: #888888;
+}
+
+.no-items {
+    text-align: center;
+    width: 33.33%;
+}
+
+.no-items h1 {
+    margin: 5em 0;
+}

@@ -1,0 +1,41 @@
+/* @title Text Input */
+/* @help Format for Text Input form elements */
+.form_text {
+    color:#000;
+    font-size:14px;
+    width:75%;
+    padding:5px; /* @ignore */
+    margin:0 2px; /* @ignore */
+    background: #ffffff;
+    border:1px solid #575655;
+    border-radius:4px;
+}
+/* @title Date Input */
+/* @help Format for Date Input form elements */
+.form_date {
+    color:#000;
+    font-size:14px;
+    width:240px;
+    padding:4px; /* @ignore */
+    margin:0 2px; /* @ignore */
+    background: #ffffff;
+    border:1px solid #575655;
+    border-radius:4px;
+    vertical-align: middle;
+}
+/* @title Input Focus */
+/* @help Class applied to a text input field when the field is selected for input. */
+input[type=text]:focus {
+    border:1px solid #575655;
+    background: #FFF;
+    color:#000;
+    box-shadow:0 0 1px 1px #99A185 inset;
+}
+.form_text[disabled="disabled"], .form_text[readonly="readonly"] {
+    background:#333;
+    color:#FFF;
+    border:solid 1px #CCC;
+}
+.form_text_search {
+    width:45%;
+}

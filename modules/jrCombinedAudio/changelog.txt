@@ -1,0 +1,44 @@
+Combined Audio changelog
+
+Version 1.0.13:
+ - Bug Fix: Create Audio modal may not show properly on some skins with custom button layouts
+
+Version 1.0.12:
+ - Bug Fix: item_rss.tpl updated to better support entries with HTML entities
+
+Version 1.0.11:
+ - New: item_rss.tpl added to allow the Feed module to create combined audio feeds
+ - Bug Fix: Language strings not showing for title if there is only one active audio module
+
+Version 1.0.10:
+ - Bug Fix: module url for audio could fail to change to 'uploaded_audio'
+
+Version 1.0.9:
+ - Bug Fix: If Audio Module is installed after Combined Audio module, the module URL may not work correctly
+
+Version 1.0.8:
+ - Bug Fix: "Audio" profile menu option not showing to non-logged in users even if audio items were present
+
+Version 1.0.7:
+ - Bug Fix: "Audio" profile menu option showing to non-profile owners even if no audio items are available
+
+Version 1.0.6:
+ - Bug Fix: audio index search was resulting in a Page Not Found
+
+Version 1.0.5:
+ - Bug Fix: Audio files shared to Facebook with ShareThis may not stream correctly
+
+Version 1.0.4:
+ - Bug Fix: "old" URLs to audio images resulting in CRI debug log query error
+
+Version 1.0.3:
+ - Bug Fix: Create new Audio overlay is transparent on some skins
+
+Version 1.0.2:
+ - New: Update to tell Admin Users if no active audio modules are found
+
+Version 1.0.1:
+ - Bug Fix: Profile menu entry not showing for users other than the profile owner
+
+Version 1.0.0:
+ - Initial Release

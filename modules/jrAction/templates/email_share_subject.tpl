@@ -1,0 +1,1 @@
+{$action_user.user_name} (@{$action_user.profile_url}) shared an item of yours

@@ -1,0 +1,94 @@
+/* Jamroom 5 FoxyCart Bundle module CSS */
+.bundle_box {
+    position:inherit;
+    width:400px;
+    text-align:left;
+    background-color:#EEEEEE;
+    border:1px solid #999999;
+    border-radius:5px;
+    padding:12px;
+    z-index:100;
+    overflow:visible;
+    box-shadow:3px 3px 3px 3px #ccc;
+}
+
+.bundle_item_section {
+    border-radius:5px;
+    padding:9px;
+    background:#DDDDDD;
+}
+
+.bundle_item_table {
+}
+
+.bundle_section {
+    margin-top:12px;
+    padding:4px 0;
+    background-color:#EEEEEE;
+    border-radius:5px;
+}
+
+.bundle_drop_section {
+    padding:9px;
+    background-color:#FFCC00;
+    border-radius:5px;
+}
+.bundle_drop_top {
+    margin-top:12px;
+}
+
+.bundle_name {
+    padding-left:3px;
+}
+
+.bundle_table {
+    margin-top: 6px;
+}
+.bundle_table th {
+    color:#000;
+    font-weight:bold;
+}
+
+.bundle_count {
+    width:10%;
+    white-space:nowrap;
+    font-size:10px;
+    padding:0 12px;
+}
+
+#bundle_close,
+#bundle_prev,
+#bundle_next,
+.bundle_cart_image {
+    cursor:pointer;
+}
+
+.bundle_button {
+    width:76px;
+}
+
+#bundle_message {
+    width:80%;
+    padding:6px;
+    border-radius:5px;
+    margin-bottom:6px;
+}
+
+.bundle_only {
+    display:inline-block;
+    background-color:#ccff99 !important;
+    padding:6px 18px;
+    border-radius: 3px 3px 0 0;
+    color:#000;
+    font-size:13px;
+    font-style:italic;
+    margin-top: 12px;
+}
+
+@media handheld, only screen and (max-width: 767px) {
+    .bundle_box {
+        position:absolute;
+        width:80%;
+        right:0;
+    }
+}

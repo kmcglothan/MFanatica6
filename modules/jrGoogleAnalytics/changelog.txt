@@ -1,0 +1,38 @@
+Google Analytics module changelog
+
+Version 1.2.2:
+ - Bug Fix: A/B experiment code may not be inserted into site index in some instances
+
+Version 1.2.1:
+ - Bug Fix: Tracking code is not being inserted on some Site Builder pages
+
+Version 1.2.0:
+ - New: A/B Testing support for Google Analytic Experiments added
+
+Version 1.1.3:
+ - Bug Fix: Fix for "Undefined index: option" notice when running in Developer Mode
+
+Version 1.1.2:
+ - New: "Exclude Admins" global config setting to keep tracking code from showing to admins
+
+Version 1.1.1:
+ - Bug Fix: Custom Event tracking was not working correctly with Universal Analytics
+ - "record_hit" event listener updated to use stored ClientID from user account info
+
+Version 1.1.0:
+ - New: Support for new Universal Analytics
+ - New: Tracking code moved to customizable templates
+ - New: "record_hit" event listener for 3rd party module integration to custom events
+ - New: add support for mp4, m4v and ogg file extensions to download event tracking
+
+Version 1.0.3:
+ - New "Domain" global config for specifying the domain to report as in Google Analytics
+
+Version 1.0.2:
+ - New "Enable Remarketing" global config for enabling Remarketing and Display Advertising support
+
+Version 1.0.1:
+ - New download and URL tracking
+
+Version 1.0.0:
+ - Initial Release

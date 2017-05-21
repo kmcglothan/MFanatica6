@@ -1,0 +1,115 @@
+OneAll Social module change log
+
+Version 1.5.0:
+ - New: "Social Options Only" Global Config setting to force users to login/signup with only Social options
+ - New: "Social Options Message" Global Config setting to set a custom message on login/signup forms
+ - New: Up to 100 existing social connections are verified per hour during hourly maintenance check
+ - New: Connection error text now visible from Connection Browser -> Modify for existing connection
+
+Version 1.4.5:
+ - Change: Share option only shows to admins when creating/updating an item on a linked profile
+
+Version 1.4.4:
+ - Bug Fix: OneAll showing on User signup form even if signups are disabled in the User module
+
+Version 1.4.3:
+ - Change: Share to configured networks checkbox no longer appears on "search and import" module forms
+
+Version 1.4.2:
+ - Bug Fix: OneAll provider box could still show on login and signup screen even if no providers were enabled
+
+Version 1.4.1:
+ - Bug Fix: Facebook and Twitter set as default providers to prevent jrcore_register_error in Activity Log
+
+Version 1.4.0:
+ - New: "Sharing Networks" Global Config section for enabling/disabling specific networks for sharing
+ - New: Available provider list updated automatically during daily maintenance
+ - Change: "Network Config" Global Config tab changed to "Login and Signup Networks"
+ - Bug Fix: Deleting a User connection could still show the connection
+
+Version 1.3.10:
+ - Change: "Networks" tab will no longer show in user account settings section if OneAll not configured
+
+Version 1.3.9:
+ - Bug Fix: Possible "Data Too Long" SQL error for users that have linked with a lot of networks
+
+Version 1.3.8:
+ - Bug Fix: "user_validate" key not being set correctly on new accounts created via a OneAll signup
+
+Version 1.3.7:
+ - Change: Updated so multiple OneAll boxes can be on the same page
+ - Change: User name notice no longer shows for Admin users if they are viewing their own OwnAll connections
+
+Version 1.3.6:
+ - New: Banned Check for linked email and user name - if matched, user requires admin validation
+
+Version 1.3.5:
+ - Bug Fix: Updated to allow signups if User Accounts module is in Private mode but signups allowed
+
+Version 1.3.4:
+ - Bug Fix: API Request Domain was refusing to allow valid domain in Global Config.
+
+Version 1.3.3:
+ - Change: Updated to work properly with User Accounts "Re Authenticate" Global Config setting
+
+Version 1.3.2:
+ - New: All shared posts from OneAll now include a "link" component
+ - Bug Fix: HTML is now stripped from shared text when using the WYSIWYG editor
+
+Version 1.3.1:
+ - Bug Fix: Errors returned when publishing to a user's networks not being handled correctly
+
+Version 1.3.0:
+ - New: Updated to support new OneAll "simple" and "advanced" sharing options (free / paid)
+ - New: "Advanced Sharing API" Global Config to enable the "advanced" sharing option
+
+Version 1.2.3:
+ - Bug Fix: "Networks" tab and "Share" checkbox would still show even if disabled for a Quota
+
+Version 1.2.2:
+ - Change: Small change to "Share to Networks" checkbox to ensure correct ordering in a form designer form
+
+Version 1.2.1:
+ - New: ability to have the site linked to accounts so all user action on the site can be shared to a common account
+
+Version 1.2.0:
+ - New: new "delete" button in social connection browser tool to delete all social connections for a user
+ - Bug Fix: Admin Validation for new signups was logging the user in even though their account was pending
+
+Version 1.1.9:
+ - New: Update to support "Admin Validation" for quota signup method for User Account module
+
+Version 1.1.8:
+ - Bug Fix: Invalid error string for user account already exiting in system based on provided network email address
+
+Version 1.1.7:
+ - New: back to profile button in "shared networks" header section
+
+Version 1.1.6:
+ - New: {jrOneAll_embed_code} template function for placing the OneAll signup/login section in a template
+
+Version 1.1.5:
+ - Bug Fix: Selected providers on the Networks tab were active but not showing checked
+ - Bug Fix: Shared actions from Timeline were not being posted to the shared networks
+
+Version 1.1.4:
+ - Bug Fix: When User Accounts are deleted, their Link info is properly removed so they can relink in the future.
+
+Version 1.1.3:
+ - Bug Fix: Providers that do not pass an email address back to Jamroom will now work correctly and ask the user for an email address
+
+Version 1.1.2:
+ - Connection Browser now shows last Network user connected from
+ - Bug Fix: quota_id was not being grabbed properly from Quota ID selector in some cases
+
+Version 1.1.1
+ - Bug Fix: Connections from Google+ were not getting user name
+ - Bug Fix: Linking a user account that was previously deleted now works properly
+
+Version 1.1.0
+ - Signup using OneAll now grabs the correct Quota ID the user has selected on the Signup page.
+ - Signup using an existing User Name now prompts to update User Name in user account.
+
+Version 1.0.0:
+
+ - Initial Release

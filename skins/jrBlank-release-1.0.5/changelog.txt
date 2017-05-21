@@ -1,0 +1,19 @@
+Blank Skin changelog
+
+Version 1.0.5:
+ - Change: profile_menu.tpl adjusted to match module version to allow for System Tips to work
+
+Version 1.0.4:
+ - Bug Fix: Fixed language file that was missing a closing comment.
+
+Version 1.0.3:
+ - Update to use smarty3 syntax for javascript wrappers
+
+ Version 1.0.2:
+ - Update to use new Title Support in ACP
+
+Version 1.0.1:
+ - Fixing up some CSS
+
+Version 1.0.0:
+ - Initial Release

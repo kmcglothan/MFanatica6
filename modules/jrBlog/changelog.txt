@@ -1,0 +1,107 @@
+Profile Blog module changelog
+
+Version 1.1.15:
+ - New: Updated to work with new version of RSS Feed reader module
+
+Version 1.1.14:
+ - New: Added item_detail_meta.tpl for the Meta Tag Manager module to support custom meta tags
+
+Version 1.1.13:
+ - Change: On create and update, if blog publish date is more than one hour ahead, activities will not be added to timeline
+
+Version 1.1.12:
+ - New: Added "Pagination" Global Config setting to disable pagination on profile pages
+ - New: Anchor tags added to page breaks when pagination is disabled - i.e. #page1 #page2 etc.
+ - Change: Category lists could be out of order when publish date differs from created date
+ - Change: Facebook share structure now shows an icon if the blog does not have a blog image
+ - Bug Fix: Category search not working for non-english characters
+ - Bug Fix: Removed 'blog_publish_date' searches from templates as that is now being handled by listeners
+
+Version 1.1.11:
+ - Change: Blog RSS Feeds now use Feed reader module for generating RSS feeds
+ - Change: rss_feed.tpl removed - no longer used
+ - Bug Fix: Unpublished blog entry could be viewed if loaded at detail URL
+
+Version 1.1.10:
+ - Bug Fix: Editor form fields were not being tested for banned words
+
+Version 1.1.9:
+ - Bug Fix: Modifying an existing blog entry with page breaks may show "jrBlog_pager" tags
+ - Bug Fix: Blog read more pagination not working if Blog Module URL changed in Info tab
+
+Version 1.1.8:
+ - Change: Removing profile name from facebook metatags in shared title
+ - Bug Fix: "Pagebreak" pager not showing when viewing detail page of a Blog with page breaks
+
+Version 1.1.7:
+ - Change: DataStore search item event listeners running on some views where they were not needed
+ - Bug Fix: CSS for players could be excluded if the player is beyond the "Read More" in lists
+
+Version 1.1.6:
+ - Change: added item_grid.tpl template to be used with jrCore_list calls
+
+Version 1.1.5:
+ - Change: added image:width and image:height OG tags to custom ShareThis template
+
+Version 1.1.4:
+ - Change: Updated item_list.tpl to show blog image if one is uploaded.
+ - Change: Updated item_list.tpl to use grid layout instead of a table.
+ - Fix: Added float clear so the image doesn't overlap.
+
+Version 1.1.3:
+ - Change: ShareThis template updated to use new Short URL option if ShareThis is configured for it
+
+Version 1.1.2:
+ - New: Nicer RSS Feed URL for profiles (uses profile_url instead of profile_id)
+ - Bug Fix: a Page Break as the last line of a blog entry results in %%jrBlog_pager%% output
+
+Version 1.1.1:
+ - New: jrShareThis_facebook_open_graph.tpl file included to customize ShareThis OG metadata
+ - Change: nl2br removed from jrCore_format_string blacklist - now handled by System Core
+
+Version 1.1.0:
+ - New: Inserted Page Breaks in Blog text now results in pagination on detail page
+
+Version 1.0.13:
+ - Change: Output spacing changes removed (functionality is now in the Jamroom Core)
+
+Version 1.0.12:
+ - New: Search box on Blog index page to search only blog items
+ - Change: Spacing between paragraphs in blog made less to look better
+
+Version 1.0.11:
+ - Bug Fix: Page Title not being set correctly on blog index (/blog)
+
+Version 1.0.10:
+ - Change: timeline template now uses jrCore_strip_html instead of strip_tags
+
+Version 1.0.9:
+ - Fix: removed the extra closing link tag in the item_index.tpl
+
+Version 1.0.8:
+ - Change: removing the extra link in to the profile from the text generated for twitter
+
+Version 1.0.7:
+ - New: The Blog List Image can now be deleted from the Update Blog screen on mouse over the image
+
+Version 1.0.6:
+ - Bug Fix: error messages may not show properly on Blog Update if an error is encountered
+
+Version 1.0.5:
+ - New: Welcome to Jamroom blog created on new install
+
+Version 1.0.4:
+ - Change: Template updates for new timeline updates
+
+Version 1.0.3:
+ - Bug Fix: HTML in blog entry could break search results
+
+Version 1.0.2:
+ - Template updates to support new Item Action Buttons
+
+Version 1.0.1:
+ - Template updates to support new Item Detail features
+ - Adding new Changelog
+
+Version 1.0.0:
+ - Initial Release

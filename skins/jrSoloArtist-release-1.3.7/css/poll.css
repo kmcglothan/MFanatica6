@@ -1,0 +1,94 @@
+.countdown-holding span {
+    color: #606060;
+}
+
+#poll_error {
+    display:none;
+    background-color:#000 !important;
+    padding:3px 6px;
+    margin-top:6px;
+    border-radius:5px;
+    border:1px solid #D61D1E;
+    font-size:12px;
+    color: #D61D1E;
+}
+
+.poll_option_update {
+    display:inline-block;
+    width:99%;
+    text-align:center;
+    font-weight:bold;
+}
+
+.poll_status {
+    float:right;
+    position:relative;
+    top:6px;
+    right:12px;
+    margin-left:20px;
+    cursor:pointer;
+}
+
+.poll_open {
+    display:inline-block;
+    text-align:center;
+    background-color:#000 !important;
+    padding:3px 6px;
+    margin:0;
+    border-radius:5px;
+    border:1px solid #606060;
+    font-size:12px;
+    font-weight:bold;
+    width:125px;
+    color: #FFF;
+}
+
+.poll_pending {
+    display:inline-block;
+    text-align:center;
+    background-color:#000 !important;
+    padding:3px 6px;
+    margin:0;
+    border-radius:5px;
+    border:1px solid #606060;
+    font-size:12px;
+    font-weight:bold;
+    width:125px;
+    color: #606060;
+}
+
+.poll_closed {
+    display:inline-block;
+    text-align:center;
+    background-color:#000 !important;
+    padding:3px 6px;
+    margin:0;
+    border-radius:5px;
+    border: 1px solid #920B0C;
+    font-size:12px;
+    font-weight:bold;
+    width:125px;
+    color: #920B0C;
+}
+
+.poll_voted {
+    display:inline-block;
+    background-color:#000 !important;
+    padding:3px 6px;
+    margin:0;
+    border-radius:5px;
+    border: 1px solid #006633;
+    font-size:12px;
+    color:#006633;
+}
+
+.poll_winner {
+    background-color:#000 !important;
+    font-weight: bold;
+    color:#006633;
+}
+
+.poll_vote_count {
+    font-weight:bold;
+    font-size:14px;
+}

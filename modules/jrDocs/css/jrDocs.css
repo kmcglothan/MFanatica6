@@ -1,0 +1,345 @@
+.doc_indent_1 {
+    display: inline-block;
+    margin: 3px 0 3px 0;
+}
+
+.doc_indent_2 {
+    display: inline-block;
+    margin: 2px 0 1px 25px;
+}
+
+.doc_indent_3 {
+    display: inline-block;
+    margin: 1px 0 0 50px;
+}
+
+.doc_content {
+    background-color: #FFFFFF;
+}
+
+.new_section_box {
+    position: inherit;
+    width: 400px;
+    text-align: left;
+    background-color: #EEEEEE;
+    border: 1px solid #DDDDDD;
+    border-radius: 3px;
+    padding: 12px;
+    display: none;
+    z-index: 10000;
+    overflow: visible;
+}
+
+.new_section_button {
+    float: right;
+    padding: 3px 6px;
+    text-align: center;
+    width: 110px;
+    font-size: 12px;
+    opacity: 0.2;
+    text-transform: capitalize;
+    margin-right: 12px !important;
+}
+
+.new_section_button:hover {
+    opacity: 1;
+}
+
+.new_section_button a {
+    text-decoration: none;
+}
+
+.new_section_button a:hover {
+    text-decoration: none;
+}
+
+.section_type {
+    display: inline-block;
+    padding: 1px;
+}
+
+.doc_toc {
+    background: #FFFFFF;
+    margin: 12px;
+    padding: 12px;
+    border: 1px solid #DDDDDD;
+    border-radius: 3px;
+    color: #000000;
+}
+
+.doc_toc span {
+    display: inline-block;
+    margin-left: 12px;
+    margin-top: 5px;
+    font-size: 14px;
+    text-transform: capitalize;
+}
+
+.doc_toc a {
+    cursor: pointer;
+    color: #000000;
+}
+
+.doc_toc a:hover {
+    text-decoration: underline;
+}
+
+.doc_toc_list {
+    list-style: none outside none;
+    margin: 0;
+    padding: 0 10px;
+}
+
+.doc_chapter_list {
+    font-size: 18px;
+}
+
+.doc_pager_box {
+    margin: 0 12px;
+}
+
+.doc_pager {
+    display: table;
+    width: 100%;
+    background: #FFFFFF;
+    font-size: 14px;
+}
+
+.doc_pager a {
+    color: #000000;
+}
+
+.doc_pager_cell {
+    display: table-cell;
+    padding: 18px 6px;
+}
+
+.section_actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: none;
+}
+
+.section_title {
+    display: block;
+    margin-bottom: 12px;
+}
+
+.section_title h2 {
+    text-transform: capitalize;
+}
+
+.section_text {
+    position: relative;
+    clear: both;
+    overflow: visible;
+    font-size: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+    color: #000000;
+}
+
+.section_text a {
+    text-decoration: underline;
+}
+
+.section_warning {
+    background: #FFE680;
+    color: #000000;
+    border-radius: 3px;
+    font-size: 14px;
+    margin: 12px;
+    padding: 24px;
+}
+
+.section_warning a {
+    text-decoration: underline;
+}
+
+.section_warning div {
+    vertical-align: middle;
+}
+
+.section_hint {
+    background: #EAF6FF;
+    border-radius: 3px;
+    color: #000000;
+    font-size: 14px;
+    margin: 12px;
+    padding: 24px;
+}
+
+.section_hint a {
+    text-decoration: underline;
+}
+
+.section_code {
+    background: #FFFFFF;
+    color: #000000;
+    padding: 0;
+    margin: 12px 12px 32px 12px;
+}
+
+.section_code pre {
+    max-width: 100%;
+    margin: 2px;
+    padding: 2px;
+}
+
+.section_caption {
+    margin-top: 6px;
+    display: block;
+    font-style: italic;
+    font-size: 14px;
+}
+
+.section_caption a {
+    text-decoration: underline;
+}
+
+.section_file {
+    background-color: #FFFFFF;
+    border-radius: 3px;
+    margin-bottom: 12px;
+}
+
+.section_function {
+    border: 2px solid #EEEEEE;
+    margin-bottom: 0;
+    display: table;
+    font-size: 14px;
+    border-radius: 3px;
+}
+
+.section_header_cell {
+    background: #EEEEEE;
+    display: table-cell;
+    padding: 6px 12px;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.section_function_cell {
+    background: #FFFFFF;
+    display: table-cell;
+    padding: 9px 12px;
+    border-bottom: 1px solid #EEEEEE;
+}
+
+.doc_param_table .form_text {
+    width: 90%;
+}
+
+.section_function_title {
+    background: #EAF6FF;
+    padding: 12px;
+    font-size: 16px;
+    font-family: monospace;
+    margin-bottom: 0;
+    border: 2px solid #EEEEEE;
+}
+
+.section_function_name {
+    background: #EEEEEE;
+    padding: 12px;
+    margin-bottom: 0;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+}
+
+.section_function_name h2 {
+    text-transform: none;
+}
+
+.section_function_desc {
+    font-size: 14px;
+    background: #EEEEEE;
+    padding: 18px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+.doc_function_name {
+    display: inline-block;
+}
+
+.doc_param_required,
+.doc_param {
+    display: inline-block;
+    margin: 3px 0 3px 32px;
+}
+
+.section_text pre {
+    max-width: 100%;
+    margin: 2px;
+    padding: 2px;
+    background-color: #FFFFFF;
+}
+
+.toc_chapter {
+    display: inline-block;
+    margin: 12px 0 0 0;
+}
+
+.toc_indent_1 {
+    display: inline-block;
+    margin: 0 0 0 26px;
+    font-size: 1.2em;
+}
+
+.toc_indent_2 {
+    display: inline-block;
+    margin: 0 0 0 52px;
+}
+
+.toc_indent_3 {
+    display: inline-block;
+    margin: 2px 0 2px 72px;
+    font-weight: normal;
+}
+
+ul.ui-sortable .section_text li {
+    list-style: disc;
+}
+
+.docs_related {
+    background-color: #F3F3F3;
+    padding: 0 2px;
+    margin: 0 -2px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.section_warning .docs_related {
+    background-color: #FFE674 !important;
+}
+
+.docs_related:hover {
+    background: #FFD87C;
+}
+
+.doc_tag_options {
+    position: absolute;
+    top: -5px;
+    left: 100%;
+    min-width: 300px;
+    padding: 10px;
+    z-index: 150000;
+}
+
+.doc_tag_link {
+    padding-right: 50px;
+    white-space: nowrap;
+}
+
+.doc_tag_inner {
+    background-color: #F3F3F3;
+    border-radius: 5px;
+    border: 2px solid #4F6390;
+    padding: 10px;
+}
+
+.doc_pdf {
+    float: right;
+}

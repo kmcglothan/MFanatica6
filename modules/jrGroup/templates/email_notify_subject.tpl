@@ -1,0 +1,1 @@
+New comment on {$_conf.jrCore_system_name} group "{$_group.group_title}"

@@ -1,0 +1,17 @@
+.image_delete {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    padding: 3px;
+    display: none;
+}
+
+.image_delete a {
+    text-decoration: none;
+}
+
+.image_update_display {
+    display: inline-block;
+    position: relative;
+    margin: 3px 0;
+}

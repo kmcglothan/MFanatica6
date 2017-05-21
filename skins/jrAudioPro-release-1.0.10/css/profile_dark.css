@@ -1,0 +1,133 @@
+html {
+    background-color: #222222;
+}
+
+a {
+    color: #FFFFFF;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+section {
+    color: #AAAAAA;
+}
+
+section#profile {
+    background: #111111 none repeat scroll 0 0;
+    box-shadow: 0 0 2px #000000;
+}
+
+#profile_menu {
+    background: #111111 none repeat scroll 0 0;
+}
+
+#horizontal a {
+    color: #EEEEEE;
+}
+
+.menu_banner ul ul {
+    background: #222222 none repeat scroll 0 0;
+    box-shadow: 2px 2px 8px #000000;;
+}
+
+.menu_banner ul#submenu > li {
+    border-bottom: 1px solid #000;
+    border-top: 1px solid #222;
+}
+
+#submenu > li:hover a {
+    color: #FF5500;
+}
+
+.title {
+    color: #FFFFFF;
+    background-color: #111111;
+    border-bottom: 1px solid #000000;
+}
+
+.title h1 {
+    color: #FF5500;
+}
+
+.breadcrumbs > a {
+    color: #CCCCCC;
+}
+
+.profile_data span {
+    color: #BBBBBB;
+}
+
+.profile_data {
+    color: #FF5500;
+}
+
+.profile_information, .bio, .followers {
+    border-top: 1px solid #222222;
+}
+
+.border_left {
+    border-left: 1px solid #222222;
+}
+
+.sprite_icon {
+    background-image: linear-gradient(#444444, #222222);
+    border: medium none;
+    box-shadow: 0 0 2px #000000;
+    vertical-align:top;
+}
+
+.menu_banner.clearfix {
+    border-bottom: 1px solid #333333;
+}
+
+.stat_entry_box {
+    background-image: linear-gradient(#444444, #222222);
+    border: 1px solid #000000;
+    color: #FFFFFF;
+}
+
+.profile_hoverimage .sprite_icon {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+}
+
+.item {
+    border-bottom: 1px solid #000000;
+    border-top: 1px solid #222222;
+    margin: auto;
+}
+
+.tag_name_box {
+    background-color: #222222;
+    border-color: #333333;
+}
+
+.add_to_cart_section {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    border-radius: 3px;
+    box-shadow: inset 0 0 1px #666666;
+    display: inline-block;
+}
+
+.add_to_cart_price {
+    top:8px;
+    color: #FFFFFF;
+}
+
+#profile .head, .menu_banner.clearfix {
+    border-bottom: 1px solid #000000;
+}
+
+.profile_body .block > .block_content > .block {
+    border-top: 1px solid #222222;
+}
+
+.profile_body {
+    border-top: 1px solid #222222;
+}
+
+select#profile_select_menu {
+     background: #080808 none repeat scroll 0 0;
+     border: 1px solid #333333;
+     color: white;
+ }
+

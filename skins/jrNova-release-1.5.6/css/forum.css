@@ -1,0 +1,246 @@
+#forum_success {
+    background-color: #CCFF99;
+    color: #000000;
+    padding: 6px;
+    padding-left: 12px;
+    border-radius: 5px;
+    border: 1px solid #CCCCCC;
+    margin: 12px;
+}
+
+#forum_notice {
+    background-color: #FFCC00;
+    color: #000000;
+    padding: 6px;
+    padding-left: 12px;
+    border-radius: 5px;
+    border: 1px solid #CCCCCC;
+    margin-bottom: 6px;
+}
+
+.forum_post_image {
+    display: table-cell;
+    width: 10%;
+    padding: 6px;
+    vertical-align: top;
+    text-align: center;
+}
+
+.forum_post_text {
+    display: table-cell;
+    width: 90%;
+    padding: 6px 12px;
+    vertical-align: top;
+    overflow: auto;
+}
+
+.forum_post_count {
+    background-color:#949799;
+    float:right;
+    font-size:14px;
+    border:1px solid #D4D7D9;
+    border-radius:4px;
+    padding:6px 12px;
+    margin-right:6px;
+}
+
+.forum_post_count_new {
+    background-color:#D4D7D9;
+    border-color:#FFCC00;
+}
+
+.forum_post_count img {
+}
+
+.forum_post_pinned {
+    border-style: dotted;
+    border-width: 2px;
+}
+
+.forum_new_post_form {
+    font-size: 16px;
+}
+
+.forum_actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: none;
+}
+
+.forum_locked {
+    margin: 12px 0;
+    background-color: #FFCC00;
+    border: 1px solid #CCCCCC;
+    border-radius: 4px;
+    padding: 12px
+}
+
+.forum_post_attachment {
+    margin: 20px 0;
+    background-color: #009900;
+    border: 1px solid #CCCCCC;
+    border-radius: 4px;
+    padding: 6px
+}
+
+.forum_follow_box {
+    position: inherit;
+    width: 300px;
+    text-align: center;
+    font-size:12px;
+    background-color: #EEEEEE;
+    border: 1px solid #999999;
+    border-radius: 5px;
+    padding: 12px;
+    z-index: 100;
+    overflow: visible;
+    box-shadow: 0 0 3px #000;
+}
+
+.forum_signature {
+    display: inline-block;
+    color: #999999;
+    margin-bottom: 6px;
+}
+
+.forum_signature a {
+    color: #999999;
+}
+
+.forum_signature .bbcode_url {
+    color: #999999 !important;
+}
+
+#forum_solution_box {
+    position: inherit;
+    width: 340px;
+    text-align: left;
+    background-color: #EEEEEE;
+    border: 1px solid #999999;
+    border-radius: 5px;
+    padding: 12px;
+    display: none;
+    z-index: 100;
+    overflow: visible;
+    box-shadow: 3px 3px 3px 3px #CCCCCC;
+}
+
+.section_solution {
+    background-color: #FFFFFF;
+    width: 300px;
+    border-radius: 5px;
+    display: inline-block;
+    padding: 2px 6px;
+    margin: 2px 0;
+    font-size: 18px;
+    line-height: 18px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.section_solution_detail {
+    border-radius: 5px;
+    padding: 0 6px;
+    margin-bottom: 6px;
+}
+
+.section_solution_list {
+    border-radius: 3px;
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 12px;
+    line-height: 12px;
+}
+
+/* BBCode */
+.bbcode_url {
+}
+
+.bbcode_list {
+}
+
+.bbcode_code {
+    padding: 12px;
+    background-color: #FFFFFF;
+    font-family: monospace;
+    font-size: 12px;
+    clear: both;
+    border: 1px solid #CCCCCC;
+    text-transform: none;
+}
+
+.bbcode_quote {
+    width: 88%;
+    margin-top: 6px;
+    padding: 12px;
+    background-color: #EEEEEE;
+    font-size: 14px;
+    font-style: italic;
+    border: 1px solid #CCCCCC;
+}
+
+.bbcode_quote_user {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#bbcode_help_button {
+    text-align: center;
+    margin-top:-30px;
+}
+
+#bbcode_help_button input{
+    float:right;
+    position: relative;
+    padding-bottom: 7px;
+    margin-top: 0;
+}
+
+#bbcode_help {
+    width: 800px;
+    height: 600px;
+}
+
+.bbcode_help_section {
+    width: 75%;
+    background: #FFFFFF;
+    border-radius: 3px;
+    margin-top: 12px;
+}
+
+.bbcode_left {
+    background: #F6F6F6;
+    width: 50%;
+    text-align: right;
+    padding: 6px;
+}
+
+.bbcode_right {
+    width: 50%;
+    padding: 6px;
+}
+
+.forum_upload_button {
+    position: absolute;
+    right: 100px;
+    top: 0;
+    padding: 6px 0 0 0;
+    line-height: 27px;
+}
+
+.forum_upload_button input {
+    font-size: 16px !important;
+}
+
+.jrforum_upload_attachment{
+    margin-top: -32px;
+    text-align: right;
+    width: 94%;
+}
+.jrforum_upload_attachment li.qq-upload-success{
+    text-align: left;
+}
+.jrforum_upload_attachment .qq-uploader{
+    float: right;
+}

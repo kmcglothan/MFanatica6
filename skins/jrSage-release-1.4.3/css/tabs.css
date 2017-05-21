@@ -1,0 +1,99 @@
+/* Tab Bar */
+/* @title Tab Bar Holder */
+/* @help This is the holder for the tab bar */
+.page_tab_bar_holder {
+    width:100%;
+    background-color:transparent;
+    border-bottom-width:0;
+    border-bottom-style:solid;
+    border-bottom-color:#069;
+}
+
+.page_tab_bar_spacer {
+    height:10px;
+    background-color:transparent;
+}
+.page_tab_bar {
+    padding-left:16px;
+}
+/* @title Page Tab */
+/* @help This is the tab for the tab bar */
+.page_tab {
+    float:left;
+    list-style:none;
+    margin-left:9px; /* @ignore */
+    color:#575655;
+    text-decoration:none;
+    text-transform:capitalize;
+    font:12px inherit;
+    text-align:center;
+    cursor:pointer;
+    border:1px solid #575655;
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#E2E9D6', endColorstr='#C2CFA7'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#E2E9D6), to(#C2CFA7)); /* for webkit browsers */
+    background: -moz-linear-gradient(top,  #E2E9D6,  #C2CFA7); /* for firefox 3.6+ */
+    box-shadow:inset 0 0 1px 1px #99A185;
+    border-radius:4px;
+}
+/* @title Page Tab Hover */
+/* @help This is the tab hover for the tab bar */
+.page_tab:hover {
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#E2E9D6', endColorstr='#C2CFA7'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#E2E9D6), to(#C2CFA7)); /* for webkit browsers */
+    background: -moz-linear-gradient(top,  #E2E9D6,  #C2CFA7); /* for firefox 3.6+ */
+    border:1px solid #575655;
+    text-decoration:none;
+}
+/* @title Page Tab Hover Link */
+/* @help This is the tab link hover for the tab bar */
+.page_tab:hover a {
+    color:#000;
+    text-decoration:none;
+}
+/* @title Page Tab Link */
+/* @help This is the tab URL link for the tab bar */
+.page_tab a {
+    padding:4px 8px; /* @ignore */
+    display:block;
+    color:#575655;
+    font-weight: bold;
+    text-decoration:none;
+}
+.page_tab_first {
+    margin-left:0;
+}
+.page_tab_last {
+}
+/* @title Page Tab Active */
+/* @help This is the active tab */
+.page_tab_active {
+    color:#000;
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#E2E9D6', endColorstr='#C2CFA7'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#E2E9D6), to(#C2CFA7)); /* for webkit browsers */
+    background: -moz-linear-gradient(top,  #E2E9D6,  #C2CFA7); /* for firefox 3.6+ */
+    border:1px solid #575655;
+    margin-bottom:-2px;
+}
+/* @title Tab Active Hover */
+/* @help This is the active tab hover effect */
+.page_tab_active:hover {
+    color:#575655;
+    text-decoration:none;
+    box-shadow:inset 0 0 1px 1px #99A185;
+}
+.page_tab_active:hover a {
+    color:#575655;
+    text-decoration:none;
+    box-shadow:inset 0 0 1px 1px #99A185;
+}
+/* @title Tab Active Link */
+/* @help This is the active tab URL link */
+.page_tab_active a {
+    color:#000;
+}
+
+/* @title Tab Active Hover Link */
+/* @help This is the active tab URL link hover effect */
+.page_tab_active a:hover {
+    color:#575655;
+}

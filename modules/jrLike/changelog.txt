@@ -1,0 +1,125 @@
+Like It module Change Log:
+
+Version 1.4.13:
+ - Bug Fix: Quota settings may not be applied to admin users when viewing items on other profiles
+
+Version 1.4.12:
+ - New: If a link leads to a Like Item Detail page, it is redirected to the item the Like was for
+
+Version 1.4.11:
+ - Bug Fix "disliked" image could stay highlighted when user re-clicks dislike to remove previous dislike
+
+Version 1.4.10:
+ - Change: jrLike_liked template function updated to be faster on sites with a large number of likes
+ - Bug Fix: item_action.tpl updated to properly display profiles names that are raw URL encoded
+
+Version 1.4.9:
+ - Bug Fix: Likes or Dislikes on a profile could show NO_LANG_FOR_ID in timeline entry
+
+Version 1.4.8:
+ - Bug Fix: Admin users unable to Like items not on their home profile if "Self Likings" is off
+
+Version 1.4.7:
+ - New: "module" parameter support added to {jrLike_liked} template function
+
+Version 1.4.6:
+ - Bug Fix: If admins had their quota set to 'no self likings' they couldn't like any other item
+
+Version 1.4.5:
+ - Bug Fix: Fix for possible incorrect button behavior and display introduced in version 1.4.4
+
+Version 1.4.4:
+ - Bug Fix: Multiple instances of like button on same item on the same page may not work correctly
+
+Version 1.4.3:
+ - Bug Fix: Error message saying unable to like if likes were not allowed but self likes were
+ - Bug Fix: Link to "likers" modal showing even with 0 like or dislikes for an item
+
+Version 1.4.2:
+ - Bug Fix: Possible Activity Log SQL errors during an upgrade to version 1.4.0+
+
+Version 1.4.1:
+ - Bug Fix: Possible "Invalid module URL" error from liked Timeline entries
+
+Version 1.4.0:
+ - New: Smarty function 'jrLike_liked' added to list all items a user has liked
+ - New: "item_action_data" event trigger to get item Title and URL for liked item
+
+Version 1.3.4:
+ - New: "item_id" parameter for {jrLike_button} can be used instead of the "item" array parameter
+ - New: Template directory can now be passed into the Like Button smarty call
+
+Version 1.3.3:
+ - Bug Fix: Unable to like an item until page refresh if communication with server is interrupted
+
+Version 1.3.2:
+ - Bug Fix: Group owners could not like group discussions or pages posted on their own groups
+
+Version 1.3.1:
+ - Bug Fix: Liked forum items were not showing for all users
+
+Version 1.3.0:
+ - New: Support added for Guestbook module
+ - New: System Reset listener to truncate the likes table
+ - Change: added action timeline support for liking items that do not have a title
+ - Change: Updated to work properly with new Recycle Bin in Jamroom Core 5.3.0
+ - Bug Fix: "Neutral" liked items showing up in "Liked Items" area for users
+ - Bug Fix: Changing like or dislike to neutral requiring 2 clicks before changing
+ - Bug Fix: Liked forum url in email could show incorrect location
+ - Bug Fix: Incorrect forum url used in item_action.tpl
+
+Version 1.2.0:
+ - New: Module database has been redesigned to prevent duplicate likes and notifications
+
+Version 1.1.5:
+ - New: Likers template now shows user image and is more responsive.
+
+Version 1.1.4:
+ - New: Likers template now shows the IP address if item was liked by a non logged in visitor
+ - Bug Fix: 'action_disliked_by' field in liked item datastore now storing IDs correctly
+
+Version 1.1.3:
+ - Bug Fix: Titles of liked action items now showing correctly in notifications
+ - Bug Fix: 'action_disliked_by' field in liked item datastore now storing IDs correctly
+
+Version 1.1.2:
+ - Bug Fix: Item URL in notification email not being created for 'liked' items
+ - New: Modal popup of 'likers' on the count number
+
+Version 1.1.1:
+ - Bug Fix: Invalid "default" error when enabling module on a brand new install
+
+Version 1.1.0:
+ - New: "Items You Like" section found in User Name drop down menu to show liked items
+ - New: Added db_delete_item listener to clean up datastore if an item is deleted
+ - Change: Email notification of new "like" only sent out if user is logged in
+ - Change: Removed hard coded "like_url" DataStore key - not being used
+ - Change: jrCore_list for jrLike module will only return likes on items for active modules
+
+Version 1.0.7:
+ - Bug Fix: logged out can not unlike.
+
+Version 1.0.6:
+ - Change: Added the ability to like profiles.
+
+Version 1.0.5:
+ - Change: Added the ability to unlike items.
+
+Version 1.0.4:
+ - Change: Added an event 'item_liked' for other modules to use to when an item is liked.
+
+Version 1.0.3:
+ - Bug Fix: Liking an item causing it to be pending if pending for updates is enabled for the Quota
+
+Version 1.0.2:
+ - New: Added option to allow users to like/dislike their own items by quota.
+ - New: Like, dislike or both options added to the module config.
+ - New: Like/dislike notification emails added.
+ - Change: Small template and language update.
+
+Version 1.0.1:
+ - Bug Fix: Config option to allow likes from users that are not logged in was not working
+ - Added option to allow likes to be actioned.
+
+Version 1.0.0:
+ - Initial Release

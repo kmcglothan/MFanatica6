@@ -1,0 +1,22 @@
+User Invite module changelog
+
+Version 1.0.2:
+ - Bug Fix: Invite actions were not clearing the profile cache
+
+Version 1.0.1:
+ - Bug Fix: Invitations now cannot be updated if already sent to users
+ - Bug Fix: No longer possible to clear module option in invitation updates
+
+Version 1.0.0:
+ - Change: Design updates to Invitation Browser
+ - Change: Creating and Updating invitations no longer adds a Timeline entry
+ - Change: When an invitation is viewed, the user is redirected to the item detail page
+ - Bug Fix: If a profile had no followers they could still "invite users"
+ - Bug Fix: Invite Text field changed to a textarea since HTML is not allowed in Invite email
+ - Bug Fix: Non-admin users would get an "Invalid users submitted" error when inviting followers
+
+Version 1.0.0b2:
+ - Change: Invitee table added
+
+ Version 1.0.0b1:
+ - Initial Beta Release

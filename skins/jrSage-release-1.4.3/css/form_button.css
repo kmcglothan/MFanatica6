@@ -1,0 +1,139 @@
+.form_button {
+    color:#000;
+    text-decoration:none;
+    text-transform:capitalize;
+    font:bold 11px Verdana,sans-serif;
+    padding:5px !important;
+    margin: 1px 5px 3px 5px; /* @ignore */
+    border:1px solid #575655;
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#E2E9D6', endColorstr='#C2CFA7'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#E2E9D6), to(#C2CFA7)); /* for webkit browsers */
+    background: -moz-linear-gradient(top,  #E2E9D6,  #C2CFA7); /* for firefox 3.6+ */
+    border-radius:4px;
+    cursor:pointer;
+}
+.form_button:hover {
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#E2E9D6', endColorstr='#C2CFA7'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#E2E9D6), to(#C2CFA7)); /* for webkit browsers */
+    background: -moz-linear-gradient(top,  #E2E9D6,  #C2CFA7); /* for firefox 3.6+ */
+    border:1px solid #575655;
+    box-shadow:inset 0 0 1px 1px #99A185;
+}
+.form_button_disabled {
+    color:#575655;
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#E2E9D6', endColorstr='#C2CFA7'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#E2E9D6), to(#C2CFA7)); /* for webkit browsers */
+    background: -moz-linear-gradient(top,  #E2E9D6,  #C2CFA7); /* for firefox 3.6+ */
+    border:1px solid #575655;
+}
+.form_button_disabled:hover {
+    color: #333;
+}
+.form_button a, .form_button_anchor a, .form_button_anchor:hover a {
+    text-decoration:none;
+}
+input[type=button]:focus {
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#E2E9D6', endColorstr='#C2CFA7'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#E2E9D6), to(#C2CFA7)); /* for webkit browsers */
+    background: -moz-linear-gradient(top,  #E2E9D6,  #C2CFA7); /* for firefox 3.6+ */
+    border:1px solid #575655;
+    color:#575655;
+    box-shadow:inset 0 0 1px 1px #99A185;
+}
+input[type=button]:active {
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#E2E9D6', endColorstr='#C2CFA7'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#E2E9D6), to(#C2CFA7)); /* for webkit browsers */
+    background: -moz-linear-gradient(top,  #E2E9D6,  #C2CFA7); /* for firefox 3.6+ */
+    border:1px solid #575655;
+    color:#575655;
+    box-shadow:inset 0 0 1px 1px #99A185;
+}
+
+.upload_button {
+    margin:2px 0 0 0 !important;
+    min-height: initial;
+}
+
+.follow_button {
+    color:#000;
+    text-decoration:none;
+    text-transform:capitalize;
+    font-weight:bold;
+    font-size:12px;
+    height:24px;
+    line-height:24px;
+    padding:0 6px;
+    margin:0 2px;
+    vertical-align:middle;
+    border:1px solid #575655;
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#E2E9D6', endColorstr='#C2CFA7'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#E2E9D6), to(#C2CFA7)); /* for webkit browsers */
+    background: -moz-linear-gradient(top,  #E2E9D6,  #C2CFA7); /* for firefox 3.6+ */
+    border-radius:4px;
+}
+.follow {
+    cursor:pointer;
+    border:1px solid #575655;
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#E2E9D6', endColorstr='#C2CFA7'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#E2E9D6), to(#C2CFA7)); /* for webkit browsers */
+    background: -moz-linear-gradient(top,  #E2E9D6,  #C2CFA7); /* for firefox 3.6+ */
+    border-radius:4px;
+}
+.follow:hover {
+    cursor:pointer;
+    color:#000;
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#E2E9D6', endColorstr='#C2CFA7'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#E2E9D6), to(#C2CFA7)); /* for webkit browsers */
+    background: -moz-linear-gradient(top,  #E2E9D6,  #C2CFA7); /* for firefox 3.6+ */
+    border:1px solid #575655;
+    box-shadow:inset 0 0 1px 1px #99A185;
+}
+.following {
+    cursor:pointer;
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#E2E9D6', endColorstr='#C2CFA7'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#E2E9D6), to(#C2CFA7)); /* for webkit browsers */
+    background: -moz-linear-gradient(top,  #E2E9D6,  #C2CFA7); /* for firefox 3.6+ */
+    border:1px solid #575655;
+    color:#575655;
+    box-shadow:inset 0 0 1px 1px #99A185;
+}
+.following:hover {
+    cursor:pointer;
+    border:1px solid #575655;
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#E2E9D6', endColorstr='#C2CFA7'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#E2E9D6), to(#C2CFA7)); /* for webkit browsers */
+    background: -moz-linear-gradient(top,  #E2E9D6,  #C2CFA7); /* for firefox 3.6+ */
+    border-radius:4px;
+    box-shadow:0 0 0 0;
+    color:#000;
+}
+.follow_pending {
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#E2E9D6', endColorstr='#C2CFA7'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#E2E9D6), to(#C2CFA7)); /* for webkit browsers */
+    background: -moz-linear-gradient(top,  #E2E9D6,  #C2CFA7); /* for firefox 3.6+ */
+    border:1px solid #575655;
+    color:#575655;
+    box-shadow:inset 0 0 1px 1px #99A185;
+}
+#follow_indicator {
+    display:none;
+}
+
+.sprite_icon {
+    display:inline-block;
+    border:1px solid #575655;
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#E2E9D6', endColorstr='#C2CFA7'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#E2E9D6), to(#C2CFA7)); /* for webkit browsers */
+    background: -moz-linear-gradient(top,  #E2E9D6,  #C2CFA7); /* for firefox 3.6+ */
+    border-radius:4px;
+    cursor:pointer;
+    margin:0;
+    vertical-align:middle;
+}
+.sprite_icon:hover {
+    border:1px solid #575655;
+    box-shadow:inset 0 0 1px 1px #99A185;
+}
+.sprite_icon_hilighted {
+    background: #408140;
+}

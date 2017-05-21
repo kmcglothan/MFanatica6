@@ -1,0 +1,13 @@
+User Birthday module changelog
+
+Version 1.0.0b4:
+ - New: "Add To Timeline" Global Config option to enable/disable birthday messages in Timelines
+
+Version 1.0.0b3:
+ - Bug Fix: Some existing user_birthdate fields were not being found by the module
+
+Version 1.0.0b2:
+ - Bug Fix: If user_birthdate field had a year defined, the birthday would not show
+
+Version 1.0.0b1:
+ - Initial Beta Release

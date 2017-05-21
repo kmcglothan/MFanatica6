@@ -1,0 +1,62 @@
+DB and System Backup module
+
+Version 1.4.6:
+ - New: Added a default character set to fix chinese characters not restoring from backup
+
+Version 1.4.5:
+ - New: Global Config update check to ensure bucket name is valid
+
+Version 1.4.4:
+ - Bug Fix: Snapshot files older than "Hours to Keep" setting may not be deleted
+
+Version 1.4.3:
+ - Change: Hourly backups now skip logs, log_debug and play key tables
+
+Version 1.4.2:
+ - Bug Fix: Some backup SQL files may not be removed that are older than configured
+
+Version 1.4.1:
+ - Change: Local SQL backup files are now compressed using gzip
+
+Version 1.4.0:
+ - New: Hourly Backup and Restore tools for taking hourly snapshots of all database tables
+ - Change: Offsite S3 backup option tabs will not show unless S3 is properly configured
+
+Version 1.3.2:
+ - Bug Fix: Possible error when checking the Daily Backups checkbox and saving
+
+Version 1.3.1:
+ - Change: Improved activity modal messages in Restoral tool
+ - Bug Fix: Restoral of modules/skins could fail due to directory not being properly emptied
+
+Version 1.3.0:
+ - New: new backup queue worker to prevent long backups from delaying daily maintenance
+
+Version 1.2.1:
+ - Bug Fix: "Restore Entire Database" option may not restore all database tables
+ - Bug Fix: outdated backup files on S3 may not have been fully pruned
+
+Version 1.2.0:
+ - New: Restore Modules and Restore Skins option added to System Restore Tool
+
+Version 1.1.1:
+ - Bug Fix: Temp directory may not get cleaned up properly after backup
+
+Version 1.1.0:
+ - New: Ability to restore multiple profile_id's by separating id's with commas
+ - New: Backup and Restore tabs for quicker access to module tools
+ - Bug Fix: mysqldump not working correctly with some MySQL usernames and passwords
+ - Change: The length if time a backup is allowed to run has been extended to 23 hours
+
+Version 1.0.3:
+ - Bug Fix: Updating S3 credentials in Global Config might not save new values
+
+Version 1.0.2:
+ - removed mime_content_type function call from S3 backup script
+
+Version 1.0.1:
+ - Added new Module and Skin backup options
+ - Table, Module and Skin backups now are on a weekly rotation
+
+Version 1.0.0:
+ - Initial closed beta release

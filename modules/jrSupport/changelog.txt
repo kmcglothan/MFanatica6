@@ -1,0 +1,26 @@
+Support Center module
+
+Version 1.1.2:
+ - Change: support.tpl updated to use same padding and layout as the module or skin info tab
+ - Bug Fix: Skin support index may show default skin icon instead of actual skin icon
+
+Version 1.1.1:
+ - Bug Fix: "Product Detail" button linking to Support Tickets instead of Marketplace detail page
+
+Version 1.1.0:
+ - Change: Help page design update to make it easier to find help options
+
+Version 1.0.3:
+ - Change: Page Title changed to be the same style as other ACP tab page titles
+ - Bug Fix: On first page load in skins section of ACP Help tab did not show
+
+Version 1.0.2:
+ - New: "Help" tab has been added to each module's set of tabs to make it easy to get module specific help
+ - Change: If an error is encountered communicating with Jamroom.net, it is displayed
+
+Version 1.0.1:
+ - Change: Skin dropdown selection will now show Skin Title instead of skin directory (if set by skin)
+ - Change: cosmetic fix to show profile name properly on support options page
+
+Version 1.0.0:
+ - Initial Release

@@ -1,0 +1,16 @@
+Disqus module changelog
+
+Version 1.0.5:
+ - Change: Previously {jrDisqus_comments} would not display unless on a profile template. Can now be used with Site Builder
+
+Version 1.0.4:
+ - New: "Show on Detail Pages" quota config option for enabling/disabling comments showing per quota
+
+Version 1.0.3:
+ - Bug Fix: Disqus Javascript will now load over HTTPS if site is running over HTTPS
+
+Version 1.0.2:
+ - Adding new Changelog
+
+Version 1.0.0:
+ - Initial Release

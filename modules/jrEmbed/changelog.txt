@@ -1,0 +1,85 @@
+Editor Embedded Media module changelog
+
+Version 1.3.10:
+ - Bug Fix: Embedded media Window could be behind chat window on smaller screens
+
+Version 1.3.9:
+ - Change: Quota Config text updated to better reflect what the settings actually change
+
+Version 1.3.8:
+ - New: ctrl+e shortcut opens the editor popup
+ - New: ctrl+shift+e shortcut opens the editor popup (ctrl+e doesn't work with edge browser)
+ - Bug Fix: Parameters with spaces in the value not working correctly
+
+Version 1.3.7:
+ - Change: editor popup now uses skin style sheets for the popup
+ - Change: function internals for jrEmbed_replace_tag to use simpler code
+
+Version 1.3.6:
+ - Bug Fix: "invalid module" error may show on new install if no additional modules configured
+
+Version 1.3.5:
+ - Bug Fix: Default Module tab global config setting may not work properly
+ - Bug Fix: Possible "invalid module" error when clicking on "Upload an Image" tab
+
+Version 1.3.4:
+ - Bug Fix: Default tab might not be active for normal user
+
+Version 1.3.3:
+ - Bug Fix: some tabs may not show with "Profile Only" global config option unchecked
+
+Version 1.3.2:
+ - Bug Fix: Some tabs may not show even when configured to allow access in Quota
+
+Version 1.3.1:
+ - Bug Fix: Changing tabs to module without a DataStore causing a CRI datastore error
+
+Version 1.3.0:
+ - New: "Default Module" Global Config setting to select default tab on Embedded Media open
+ - New: media for all profiles a user has access to now shows (instead of just home profile)
+ - Change: Tabs with no media no longer show for users with only a single profile
+ - Change: Internal optimization to be faster by only loading a tab when the tab is selected
+ - Change: Admin users see all media system wide by default
+
+Version 1.2.1:
+ - Change: Embedded Editor window now has a max width of 1140px
+ - Change: Embedded item tabs now follow tab style of skin
+ - Change: Tabs available to non admin users will use quota settings from Home Profile
+
+Version 1.2.0:
+ - New: Making it possible for developers to pass in a default tab to start from
+ - New: Added a command so editor embed button can be clicked programatically
+ - Change: Default Quota Allowed setting is now "on"
+
+Version 1.1.5:
+ - Bug Fix: Fix default language and language file strings are different
+
+Version 1.1.4:
+ - Change: Changing the url of the embed module could cause issues
+ - Change: Small alteration to make the new "Content Kit" module possible
+
+Version 1.1.3:
+ - Bug Fix: De-activated modules could still show as being available to be embedded
+ - Bug Fix: when iFrame module is active youtube can fail to load
+
+Version 1.1.2:
+ - Change: small update to improve targeting of the active tab on the local media popup
+
+Version 1.1.1:
+ - Change: parameters used in the embeding tag are now available in item_embed.tpl template
+
+Version 1.1.0:
+ - New: Default embed functionality for DS modules with new item_embed.tpl file
+ - Change: jrEmbed TinyMCE plugin files moved to jrEmbed module (from jrCore)
+
+Version 1.0.3:
+ - Change: Updated to work with Tiny MCE 4
+
+Version 1.0.2:
+ - Bug Fix: Some tabs not properly being checked for Quota access
+
+version 1.0.1:
+ - Added new Changelog
+
+Version 1.0.0:
+ - Initial Release

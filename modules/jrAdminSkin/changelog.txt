@@ -1,0 +1,55 @@
+Alternate Admin Skin module changelog
+
+Version 1.2.14:
+ - Bug Fix: Skin Config not being loaded on specific profile and admin skin pages
+
+Version 1.2.13:
+ - Bug Fix: Skin Config not loaded in Admin or Profile Skin if different than site skin
+
+Version 1.2.12:
+ - Bug Fix: wrong skin showing for other identified URL's
+
+Version 1.2.11:
+ - Bug Fix: wrong skin showing on the profile/quota_transfer tool
+
+Version 1.2.10:
+ - Bug Fix: unable to set admin skin on new installs
+
+Version 1.2.9:
+ - Bug Fix: "profile" skin may not show correctly on new install
+
+Version 1.2.8:
+ - Bug Fix: "profile" skin showing in places where the "site" skin should be showing
+
+Version 1.2.7:
+ - Bug Fix: The skin option checkboxes sometimes would not show on the Skin Info form
+
+Version 1.2.6:
+ - Bug Fix: Admin skin was not working on all ACP tools and views
+
+Version 1.2.5:
+ - Bug Fix: Page create screen shows the admin skin for all users.
+
+Version 1.2.4:
+ - Bug: Wrong skin showing on default index pages for modules.
+
+Version 1.2.3:
+ - Change: added an additional check to make sure the set skin exists.
+
+Version 1.2.2:
+ - Change: Different way of identifying which sections are admin sections.
+
+Version 1.2.1:
+ - BUG: Skin selection checkboxes appearing on the tabs other than INFO.
+
+Version 1.2.0:
+ - Adding the option to set an alternative skin for the profiles section too.
+
+Version 1.1.0:
+ - removing the Global Config area and instead putting a checkbox on each skin to set it to the admin skin.
+
+Version 1.0.1:
+ - Adding new Changelog
+
+Version 1.0.0:
+ - Initial Release

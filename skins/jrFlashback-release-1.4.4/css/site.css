@@ -1,0 +1,101 @@
+#wrapper {
+    max-width:1140px;
+    background-color:#0D4C72;
+    border-width:5px;
+    border-style:solid;
+    border-color:#069;
+    margin:10px auto;
+    box-shadow: 0 2px 4px #000;
+}
+
+/* @title Site Content */
+/* @help This is the main Site Content holder */
+#content {
+    background-color:#0D4C72;
+    max-width:1140px;
+    height:100%; /* @ignore */
+    margin:0 auto;  /* @ignore */
+    padding:0;
+    box-shadow: 0 0 4px #000 inset;
+}
+
+.body_1{
+    background-color:transparent;
+    padding:5px;
+    margin:5px;
+}
+
+.body_2{
+    background-color:#000408;
+    font-size:11px;
+    padding:10px 5px 10px 5px;
+    margin:0;
+}
+
+.body_3{
+    text-align:left;
+    background-color: #000408;
+    font-size:11px;
+    padding:10px;
+    margin:0 0 5px 0;
+    color:#CCC;
+}
+
+.body_4 {
+    margin:0;
+    font-size:10px;
+    color:#FFF;
+}
+
+.side_comments {
+    height:350px;
+    overflow-x:hidden;
+    overflow-y:auto;
+}
+
+.search_box {
+    background-color:#000408;
+    padding:50px;
+    margin:12px;
+    border-style:solid;
+    border-color:#000;
+    border-width:2px;
+    font-size:16px;
+    color:#000000;
+}
+
+.search_box a {
+    color:#C60;
+}
+.signup_box {
+    background-color:#000408;
+    padding:25px;
+    margin:12px;
+    border-style:solid;
+    border-color:#DDDDDD;
+    border-width:1px;
+    font-size:16px;
+    color:#000000;
+    border-radius:5px;
+    width:400px;
+}
+
+.signup_box a {
+    color:#000000;
+}
+.login_box {
+    background-color:#000408;
+    padding:25px;
+    margin:12px;
+    border-style:solid;
+    border-color:#DDDDDD;
+    border-width:1px;
+    font-size:16px;
+    color:#000000;
+    border-radius:5px;
+    width:400px;
+}
+
+.login_box a {
+    color:#000000;
+}

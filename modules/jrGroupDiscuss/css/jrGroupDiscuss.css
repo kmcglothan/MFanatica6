@@ -1,0 +1,14 @@
+/* @title Follow Discussion box */
+/* @help Controls the drop down box when "Follow Discussion is clicked */
+.discussion_follow_box {
+    position: inherit;
+    width: 340px;
+    text-align: left;
+    background-color: #EEEEEE;
+    border: 1px solid #999999;
+    border-radius: 3px;
+    padding: 12px;
+    z-index: 100000;
+    overflow: visible;
+    box-shadow: 3px 3px 3px 3px #CCCCCC;
+}

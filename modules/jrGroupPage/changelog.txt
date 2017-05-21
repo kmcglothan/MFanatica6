@@ -1,0 +1,53 @@
+Profile Groups Page module changelog
+
+Version 1.2.2:
+ - Change: Group Config tool updated
+
+Version 1.2.1:
+ - Change: Updated to work with new private_item_ids listener provided by User Comments module
+ - Change: Page creators can now modify pages they created
+ - Bug Fix: Listeners added to increment/decrement parent group counters on page create/delete
+
+Version 1.2.0:
+  - Change: Updated to work with new Activity Timeline 2.0.0 changes
+
+Version 1.1.2:
+ - New: Change owner listener added so as to add new owner to group membership if need be
+ - Bug Fix: Template changes so that links work correctly
+
+Version 1.1.1:
+ - Bug Fix: profile id of admins now stored correctly when creating a group page
+
+Version 1.1.0:
+ - New: Module update to work with Group module 1.5.0
+
+Version 1.0.9:
+ - New: Listener added so that pages are updated when their parent owner is changed
+
+Version 1.0.8:
+ - Change: Updated to support new NingJa skin "Show Profile Header" global setting
+ - Change: Templates modified: item_detail.tpl, item_index.tpl
+
+Version 1.0.7:
+ - Bug Fix: Clicking on "+" to create page could result in "Invalid group_id" error message (changed: item_index.tpl)
+
+Version 1.0.6:
+ - Change: Truncate group page title in config tool select form so that associated groups can be seen within the field
+
+Version 1.0.5:
+ - Change: Group page config tool now supports multiple selects
+
+Version 1.0.4:
+ - Change: Group page config tool made easier to use
+
+Version 1.0.3:
+ - Bug Fix: Moving Page to the Page Creator was not copying any attached comments over
+
+Version 1.0.2:
+ - New: Page Group Config tool updated to allow pages to be moved to Page Creator module
+
+Version 1.0.1:
+ - Bug Fix: 'Page Group Config' not working properly
+
+Version 1.0.0:
+ - Initial release

@@ -1,0 +1,102 @@
+/* @title block */
+/* @help This is the main style for the individual blocks of the page */
+.block {
+    background-color:transparent;
+    padding:5px;
+    margin:5px;
+}
+
+/* @title block urls */
+/* @help What color should URLs be within a block? */
+.block a {
+    color:#C60;
+}
+
+/* @title Config Block */
+/* @help The set of buttons that float to the right, ie. create, delete and modify. */
+.block_config {
+    float:right;
+    margin-top:5px;
+}
+
+/* @title Image Block */
+/* @help The DIV that holds a list image. */
+.block_image {
+    padding:5px;
+    margin:0;
+}
+
+/* @title Content Block */
+/* @help The DIV that holds a lists content. */
+.block_content {
+    background-color:#000408;
+    padding:5px;
+    font-size:10px;
+}
+
+/* @title Title */
+/* @help This is the Title Div */
+.title {
+    background: #001926;  /* @ignore */
+    background: -moz-linear-gradient(#00273B, #001926);  /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#00273B), to(#001926));  /* @ignore */
+    background: -webkit-linear-gradient(#00273B, #001926);  /* @ignore */
+    background: -o-linear-gradient(#00273B, #001926);  /* @ignore */
+    background: -ms-linear-gradient(#00273B, #001926);  /* @ignore */
+    background: linear-gradient(#00273B, #001926);  /* @ignore */
+    vertical-align:middle;
+    padding:10px;
+    color:#9C0;
+    font-weight:bold;
+    text-transform:uppercase;
+    border-bottom:1px solid #00273B;
+}
+
+.title h2 {
+    color:#9C0;
+}
+
+/* @title Info Text */
+/* @help Styling for info labels. ie. Albums, Genre, Plays etc. */
+.info {
+    font-size:12px;
+    text-transform:capitalize;
+    display:inline;
+    padding:0;
+    margin:0;
+    color:#FFFFFF;
+    font-weight:bold;
+}
+/* @title Info Text Link */
+/* @help This is the Info link text */
+.info a {
+    text-decoration:none;
+    color:#FFFFFF;
+}
+/* @title Info Link Hover */
+/* @help This is the Info link hover text */
+.info a:hover {
+    text-decoration:underline;
+}
+
+/* @title Date Text */
+/* @help Any date text in your lists. ie. blogs, events etc. */
+.info_c {
+    font-size:10px;
+    font-weight:bold;
+    color:#9C0;
+}
+
+/* @title Date Link Text */
+/* @help Any date text in your lists. ie. blogs, events etc. */
+.info_c a {
+    color:#9C0;
+    text-decoration:none;
+}
+
+/* @title Date Text */
+/* @help Any date text in your lists. ie. blogs, events etc. */
+.info_c a:hover {
+    color:#CCC;
+    text-decoration:underline;
+}

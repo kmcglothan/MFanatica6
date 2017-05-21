@@ -1,0 +1,53 @@
+/* @title Image Tag */
+/* @help This is the class for the img tag in your HTML */
+img {
+    border:0;
+    vertical-align:middle;
+    margin:0;
+    height:auto;
+}
+
+/* images (not icons) */
+.img_scale {
+  width:100%;
+}
+
+.img_shadow {
+    box-shadow: 2px 3px 4px 2px rgba(0, 0, 0, .7);
+}
+
+/* @title Image Outline */
+/* @help This is the small outline around small images */
+.ioutline {
+  border:1px solid #252525;
+  vertical-align:middle;
+  margin:1px;
+  padding:1px;
+}
+
+/* @title Image Outline Link */
+/* @help This is the small outline around small images that are linked */
+.iloutline {
+  border:1px solid #252525;
+  vertical-align:middle;
+  margin:1px;
+  padding:1px;
+}
+
+/* @title Image Outline Hover */
+/* @help This is the hover color for the small outline around small images that are linked */
+.iloutline:hover {
+  border:1px solid #606060;
+}
+
+.create_img {
+    cursor:pointer;
+}
+
+.update_img {
+    cursor:pointer;
+}
+
+.delete_img {
+    cursor:pointer;
+}

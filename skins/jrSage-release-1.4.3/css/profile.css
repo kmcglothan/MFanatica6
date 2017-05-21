@@ -1,0 +1,172 @@
+/* jrSage Profile Page CSS */
+
+/* @title Profile Menu */
+/* @help This is the Profile menu */
+.profile_menu {
+    margin:0;
+    background-color:transparent;
+    padding:0 12px 12px 12px;
+}
+
+/* @title Profile Menu Entry */
+/* @help This is the Profile menu entries */
+.profile_menu_entry {
+    display:inline-block;
+    border:1px solid #575655;
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#E2E9D6', endColorstr='#C2CFA7'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#E2E9D6), to(#C2CFA7)); /* for webkit browsers */
+    background: -moz-linear-gradient(top,  #E2E9D6,  #C2CFA7); /* for firefox 3.6+ */
+    border-radius:4px;
+    text-transform:uppercase;
+    margin-top:3px;
+    margin-right:1px;
+    padding:6px 4px 6px 4px;
+    color:#000;
+    font-size:10px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+/* @title Menu Entry Link */
+/* @help This is the menu entry URL link */
+.profile_menu_entry a {
+    color:#000;
+}
+
+/* @title Menu Link Hover */
+/* @help This is the menu entry URL link hover effect */
+.profile_menu_entry:hover {
+    color:#575655;
+    box-shadow:inset 0 0 1px 1px #99A185;
+}
+
+/* @title Menu Entry Active */
+/* @help This is the menu entry active state */
+.profile_menu_entry_active {
+    /* background-color:#EEEEEE; */
+    color:#575655;
+    box-shadow:inset 0 0 1px 1px #99A185;
+}
+.profile_menu_entry_active:hover {
+    color:#000;
+}
+
+/* @title Profile Name Box */
+/* @help This is the box that the Profile Name text is in */
+.profile_name_box {
+    background: #bfd5bf;
+    box-shadow: 0 0 4px rgba(64, 129, 64, 0.33);
+    border:1px solid #575655;
+    text-transform:capitalize;
+    padding:12px;
+    margin:12px;
+    border-radius: 4px;
+}
+/* @title Profile Name */
+/* @help This is the Profile Name text */
+.profile_name {
+	text-transform:capitalize;
+	font-size:28px;
+	font-weight:bold;
+    color: #575655;
+}
+/* @title Profile Link */
+/* @help This is the Profile Name URL link */
+.profile_name a {
+    text-decoration:none;
+}
+/* @title Profile Link Hover */
+/* @help This is the Profile Name link hover effect */
+.profile_name a:hover {
+    text-decoration:none;
+}
+
+/* @title Title */
+/* @help This is the Titles on the left side of the profile page */
+.head_2{
+    background-color:#BFD5BF;
+    border-bottom:1px #408140 solid;
+    font-size:11px;
+    height:25px;
+    font-weight:bold;
+    color:#000;
+    line-height:24px;
+    text-transform:uppercase;
+    padding:5px;
+    margin:5px 5px -5px 5px;
+}
+
+
+
+.profile_actions {
+    float:right;
+    vertical-align:middle;
+    text-align:right;
+}
+
+.profile_image {
+    position: relative;
+}
+.profile_hoverimage {
+    background-color:#333333;
+    position:absolute;
+    top:15px;
+    left:15px;
+    padding:3px;
+    border:1px solid #ddd;
+    display: none;
+    opacity: 0.8;
+}
+.profile_hoverimage a {
+    text-decoration:none;
+}
+.profile_hoverimage a:hover {
+    text-decoration:none;
+}
+.profile_image:hover .profile_hoverimage {
+    display:block;
+    cursor:pointer;
+}
+.stat_entry_box {
+    float:left;
+    background-color:#DDD;
+    border-width:1px;
+    padding:3px 9px;
+    margin:6px 6px 0 0;
+    font-size:12px;
+    text-transform:uppercase;
+}
+.stat_entry_box a {
+    color:#000;
+    text-decoration:none;
+}
+.stat_entry_box a:hover {
+    color:#FFF;
+    text-decoration:none;
+}
+.stat_entry_box:hover {
+    background-color:#408140;
+    color:#FFF;
+}
+.stat_entry_count {
+    font-weight:bold;
+}
+/* @title User is Online */
+/* @help Class for small ONLINE box that shows when the user is actually online */
+.online_status_online {
+    background-color:transparent;
+    text-transform: capitalize;
+    color:#408140;
+    padding:4px;
+    display:inline-block;
+    width:100%;
+}
+
+/* @title User is Offline */
+/* @help Class for small OFFLINE box that shows when the user is not online */
+.online_status_offline {
+    color:#000000;
+    padding:4px;
+    display:inline-block;
+    width:100%;
+}

@@ -1,0 +1,10 @@
+User Playlist Ads module changelog
+
+Version 1.0.2:
+ - Change: Updated module icon
+
+Version 1.0.1:
+ - Update to remove old unused Global Config settings
+
+Version 1.0.0:
+ - Adding new Changelog

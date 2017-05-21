@@ -1,0 +1,23 @@
+Aparna module changelog
+
+version 1.1.0:
+ - New: "Module Description" and "Module Icon" options when creating a new module
+ - Change: Cloning a module no longer requires an Integrity Check
+ - Change: Cloned modules now appear in the "Cloned" ACP category
+
+Version 1.0.4:
+ - Bug Fix: some function names were not being updated with the new module name
+
+Version 1.0.3:
+ - Bug Fix: Module names must now be at least three characters long.
+ - Bug Fix: hitting enter caused the form to submit in the clone tool.
+ - New : Added an index.tpl file to the cloned modules templates.
+
+Version 1.0.2:
+ - Adding to description text to help new users understand the flow.
+
+Version 1.0.1:
+ - Adding new Changelog
+
+Version 1.0.0:
+ - Initial Release

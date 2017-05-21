@@ -1,0 +1,16 @@
+Quota Terms of Service changelog
+
+Version 1.0.4:
+ - New: adding an event that fires when the Terms of Serivce have been agreed to
+
+Version 1.0.3:
+ - Bug Fix: Including quotation marks in modified language strings could break the javascript
+
+Version 1.0.2:
+ - Change: Master Admin accounts are no longer redirected to accept changed Terms of Service
+
+Version 1.0.1:
+ - Update to prevent user from clicking out of the Terms of Service acceptance page
+
+Version 1.0.0:
+ - Initial Release

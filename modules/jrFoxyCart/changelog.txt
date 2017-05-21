@@ -1,0 +1,126 @@
+FoxyCart eCommerce module changelog
+
+Version 1.5.3:
+ - New: Additional options added to "Payment Clears" Global Config option
+
+Version 1.5.2:
+ - Change: HTML is now allowed in the "Subscription Info" Quota Config field
+
+Version 1.5.1:
+ - Bug Fix: Modify profile settings may not show previously entered "Quota Scheduled Change Date"
+
+Version 1.5.0:
+ - New: "Show Subscription Browser" Quota Config to allow disabling of Subscriptions tab in Account Settings
+ - Change: Profile payments section lists updated so column widths better align with contents
+ - Bug Fix: A transaction in progress is not logged if User Accounts site privacy is set to Private
+ - Bug Fix: Profile earnings list was showing user name as profile name and was not working on multi user profiles
+
+Version 1.4.9
+ - Bug Fix: Multiple subscriptions could be entered into the cart
+
+Version 1.4.8
+ - Bug Fix: New subscription profiles could be marked as not-active if purchased by a logged out user
+ - Bug Fix: Purchases of subscriptions could fail because shipping was not set
+
+Version 1.4.7
+ - Change: Shipping set to zero unless otherwise specified.
+ - Change: User name notice no longer shows if admin user is viewing their own purchases
+
+Version 1.4.6
+ - Bug Fix: Shipping not being added to merchandise calculations on Foxycart version 2.0
+
+Version 1.4.5
+ - Bug Fix: "Add To Cart" URLs contain invalid characters resulting in failed HTML validation
+ - Bug Fix: "onclick" parameter in Add To Cart URL could be incorrect
+
+Version 1.4.4:
+ - Bug Fix: Switching between free quotas in Subscription Browser could cause an error
+
+Version 1.4.3:
+ - Change: Purchased item image in "Cart Purchases" screen may not use correct img src URL
+ - Change: Updated subscription webhook logging to better track subscription actions
+ - Change: "first_failed_transaction_date" used if "end_date" in subscription feed is not present
+
+Version 1.4.2:
+ - New: "Expiration Quota" Quota setting for quota to move expired subscriber to
+ - Bug Fix: End of subscription notification may not fire correctly in some instances
+ - Bug Fix: Users with multiple FoxyCart customer IDs now handled properly based on email address
+ - Bug Fix: Dashboard Sale Count Graph could be off by the server timezone offset value
+
+Version 1.4.1:
+ - Bug Fix: Entries may not be deleted correctly from the subscription expires table
+ - Bug Fix: System Check causing jrCore_load_url error in Activity Log if FoxyCart is not configured
+ - Bug Fix: "Quota Change To" profile settings field could use incorrect quota_id
+
+Version 1.4.0:
+ - New: Support for FoxyCart 2.0 API added - see https://wiki.foxycart.com/v/2.0/upgrading
+
+Version 1.3.1:
+ - New: Added support to Global Config for additional currencies supported by FoxyCart
+
+Version 1.3.0:
+ - New: Transaction Browser now searches all transaction details
+ - New: Transaction Browser - hover mouse over transaction ID to see transaction details
+ - Bug Fix: New user may not be logged in correctly for purchase made while logged out
+ - Bug Fix: Subscription Browser may not show all available free quotas
+
+Version 1.2.3:
+ - Bug Fix: Subscriptions Tab showing in Account Settings even if no subscriptions are available
+ - Change: Quotas that allow signup but have subscription disabled no longer show in Subscription Browser
+
+Version 1.2.2:
+ - Bug Fix: Sales Tracker transaction details button linking to page not found
+ - Bug Fix: "adding_items_to_purchase_history" event may not trigger for all modules
+
+Version 1.2.1:
+ - New: Search box added to Sales Tracker view to search for transaction ID or purchasing user name
+ - New: Export Sales to CSV file from earnings tab in profile
+ - Change: unused templates and code removed from module
+ - Bug Fix: A new user account could be created with an email address already being used by another account
+
+Verison 1.2.0:
+ - New: Ability to set Free Trial period for subscriptions
+ - Bug Fix: Unsubscribed users may show as subscribed to a subscription in the Subscription Browser
+ - Change: Unused "subscriptions" view removed
+ - Change: Transaction Browser now shows small user image for purchasing user
+
+Version 1.1.9:
+ - New: Search Transaction Register by email and transaction ID
+
+Version 1.1.8:
+ - Change: user notice showing modifying user name always shows for admin users
+
+Version 1.1.7:
+ - New: back to profile button in the subscription browser header
+ - New: txn_received event fired when a new transaction is received in the webhook
+ - Bug Fix: when modifying a user as admin, the subscription browser now shows the user's subscription
+ - Bug Fix: when viewing the subscription browser the user_id/profile_id was not being passed in the tabs
+
+Version 1.1.6:
+ - Bug Fix: Profile payout amount could be incorrect for values over 1000.
+
+Version 1.1.5:
+ - New "receipt" button in Sales Tracker to send receipt to different email address
+ - Change: images in My Items are now cropped to be square
+
+Version 1.1.4:
+ - Updates to support new Item Action Buttons
+
+Version 1.1.3:
+ - New "Customers" and "Products" tabs in profile payments section
+ - Bug Fix: Switch from one paid subscription to another in the Subscription Browser had a javascript error
+
+Version 1.1.2:
+ - Bug Fix: quota_id for profile selling an item could be retrieved incorrectly in Foxycart callback webhook
+
+Version 1.1.1:
+ - New ability to manually set an end date and new Quota for profiles (allowing manual subscriptions) in the Profile Settings section for admin users.
+
+Version 1.1.0:
+ - "My Files" access can be enabled/disabled on a per quota basis, and can be enabled on Quotas that do not have access to the FoxyCart module for their profiles.
+ - my_items_row is now optional for modules, as long as module uses a DataStore and an item title.
+ - Update to subscription browser so it shows to all quotas if quotas are enabled for subscriptions.
+ - Adding new Changelog
+
+Version 1.0.0:
+ - Initial Release

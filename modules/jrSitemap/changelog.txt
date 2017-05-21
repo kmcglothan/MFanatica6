@@ -1,0 +1,21 @@
+Sitemap Generator module changelog
+
+Version 1.1.3:
+ - Bug Fix: Default Profile Privacy setting not being used if Show Privacy Options is off
+
+Version 1.1.2:
+ - New: Added "Create XML Sitemap - Completed" log message on Site Map completion
+
+Version 1.1.1:
+ - Change: internal function updates to integrate properly with core media functions
+
+Version 1.1.0:
+ - New: "Site Page Frequency" and "Profile Page Frequency" Global Config settings
+ - New: Module indexes (i.e. /profile) now included in Sitemap
+ - New: Sitemap event trigger to allow module listeners to add pages to sitemap
+
+Version 1.0.1:
+ - Change: Removed skip_triggers profile search options so modules can respond to db_search_items event
+
+Version 1.0.0:
+ - Initial Release

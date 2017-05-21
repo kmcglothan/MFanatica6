@@ -1,0 +1,10 @@
+ImagePicker module changelog
+
+Version 1.0.3:
+ - Change: Updated example placekitten urls
+ - Change: Updated jQuery plugin to version 0.2.4
+ - Change: Module category changed to "forms"
+ - Change: Css change added -user-select: none;
+ - Change: Added module license field
+ - Change: A slightly nicer icon
+ - Change: Added changelog.txt

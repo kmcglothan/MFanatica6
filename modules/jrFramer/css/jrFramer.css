@@ -1,0 +1,10 @@
+/* @title iFrame Error */
+/* @help An error is displayed when an iframe is not allowed - this controls the style of the error */
+.iframe_error {
+    display:inline-block;
+    padding:9px;
+    background-color:#FC0;
+    border-width:1px;
+    border-style:solid;
+    border-color:#EEEEEE;
+}

@@ -1,0 +1,54 @@
+Simple Custom Forms module changelog
+
+Version 1.2.4:
+ - Bug Fix: Custom Form fields could be created that were reserved for internal use
+ - Bug Fix: Default "content" field could not be deleted
+ - Bug Fix: "Form Message" was not being displayed in Widget version of custom form
+ - Bug Fix: Inactive fields could still show in Widget version of custom form
+
+Version 1.2.3:
+ - Bug Fix: Forms with no content could be submitted and saved if javascript not active
+
+Version 1.2.2:
+ - Change: Updated module icon
+
+Version 1.2.1:
+ - Change: Submitted forms in widgets now clear after submission
+
+Version 1.2.0:
+ - New: Response Browser has been updated to make it nicer to browse through form responses
+ - New: Support for "file" form type in Site Builder embedded forms
+ - New: "fields" button in Form Browser links directly to Form Designer for the custom form
+ - Change: Cleanup of some datastore keys that were no longer being used
+ - Change: form_name can not be changed in Modify Form if form responses have been received
+
+Version 1.1.4:
+ - Change: "file" form type is now supported for embedded forms added via Site Builder
+
+Version 1.1.3:
+ - Change: Deleting a form response now decrements the Form Responses value in the Form Browser
+
+Version 1.1.2:
+ - Change: Updated to support User Notifications for form response notification emails to admins
+
+Version 1.1.1:
+ - New: Added support for "radio" and "optionlist" form fields to form embed template
+
+Version 1.1.0:
+ - New: {jrCustomForm_embed_form} template function for embedding Custom Forms
+
+Version 1.0.4:
+ - Change: Small change to "Human" checkbox to ensure it orders correctly in a form designer form
+
+Version 1.0.3:
+ - Bug Fix: "Spam Checkbox" not working for non-logged in users on a custom form that has a manually created spam checkbox
+
+Version 1.0.2:
+ - Change: Contact_Us forum updated to include form_email field for users who are not logged in
+
+Version 1.0.1:
+ - Change: Updated email templates to include all data posted to forms
+ - Added new Changelog
+
+Version 1.0.0:
+ - Initial Release

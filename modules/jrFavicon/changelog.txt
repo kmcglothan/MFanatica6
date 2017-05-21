@@ -1,0 +1,16 @@
+Favicon Creator module changelog
+
+Version 1.0.3:
+ - Bug Fix: Meta tags could be added to some non-HTML output (such as RSS feeds, etc.)
+
+Version 1.0.2:
+ - New: If web root directory is writable, favicon.ico will be created in web root directory
+ - Change: Icon size in Favicon browser increased from 16x16 to 32x32
+
+Version 1.0.1:
+ - Change: internal function updates to integrate properly with core media functions
+ - Change: favicon.tpl updated to use new $media_url template variable
+ - Bug Fix: favicon.tpl updated with proper iOS icon size of 72x72
+
+Version 1.0.0:
+ - Initial Release

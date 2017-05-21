@@ -1,0 +1,374 @@
+/* Tab Bar */
+/* @title Tab Bar Holder */
+/* @help This is the holder for the tab bar */
+.page_tab_bar_holder {
+    width:100%;
+    background-color:transparent;
+    border-bottom-width:0;
+    border-bottom-style:solid;
+    border-bottom-color:#222;
+}
+
+.page_tab_bar_spacer {
+    height:10px;
+    background-color:transparent;
+}
+.page_tab_bar {
+    padding-left:16px;
+}
+/* @title Page Tab */
+/* @help This is the tab for the tab bar */
+.page_tab {
+    background-color:#333;
+    float:left;
+    list-style:none;
+    margin-left:2px; /* @ignore */
+    color:#CCC;
+    text-decoration:none;
+    text-transform:capitalize;
+    font:14px Verdana,sans-serif;
+    text-align:center;
+    cursor:pointer;
+    border:0;
+}
+/* @title Page Tab Hover */
+/* @help This is the tab hover for the tab bar */
+.page_tab:hover {
+    background-color:#D9D8D7;
+    color:#333;
+    text-decoration:none;
+}
+/* @title Page Tab Hover Link */
+/* @help This is the tab link hover for the tab bar */
+.page_tab:hover a {
+    color:#333;
+    text-decoration:none;
+}
+/* @title Page Tab Link */
+/* @help This is the tab URL link for the tab bar */
+.page_tab a {
+    padding:5px 10px; /* @ignore */
+    display:block;
+    color:#CCC;
+    text-decoration:none;
+}
+.page_tab_first {
+    margin-left:0;
+}
+.page_tab_last {
+}
+/* @title Page Tab Active */
+/* @help This is the active tab */
+.page_tab_active {
+    background:#D9D8D7;
+    color:#333;
+    border:0;
+    margin-bottom:-2px;
+}
+/* @title Tab Active Hover */
+/* @help This is the active tab hover effect */
+.page_tab_active:hover {
+    background:#D9D8D7;
+    color:#222;
+    text-decoration:none;
+}
+.page_tab_active:hover a {
+    color:#BA4B0D;
+    text-decoration:none;
+}
+/* @title Tab Active Link */
+/* @help This is the active tab URL link */
+.page_tab_active a {
+    color:#333;
+}
+
+/* @title Tab Active Hover Link */
+/* @help This is the active tab URL link hover effect */
+.page_tab_active a:hover {
+    color:#222;
+}
+/* Tabs */
+.menu_tab{
+    width:0;
+    white-space:nowrap;
+    margin:0 6px 0 6px;
+}
+/* @title Side Tabs */
+/* @help This is the tabs for the side section on the home page. */
+.p_choice {
+    float:left;
+    display:inline-block;
+    background-color:#333;
+    font-size:12px;
+    color:#DDD;
+    text-transform:capitalize;
+    padding:4px 10px 4px 10px;
+    vertical-align:middle;
+}
+/* @title Side Active Tab */
+/* @help This is the active tabs for the side section on the home page. */
+.p_choice_active {
+    float:left;
+    display:inline-block;
+    background-color:#D9D8D7;
+    font-size:12px;
+    color:#333;
+    text-transform:capitalize;
+    padding:4px 10px 4px 10px;
+    vertical-align:middle;
+    cursor:pointer;
+}
+/* @title Side Tab Link */
+/* @help This is the link for the tabs on the side section of the home page. */
+.p_choice a {
+    text-decoration:none;
+    color:#666;
+}
+/* @title Side Tab Hover */
+/* @help This is the hover effect for the tabs on the side section of the home page.*/
+.p_choice:hover {
+    background-color:#D9D8D7;
+    color:#333;
+    cursor:pointer;
+}
+/* @title Side Active Hover */
+/* @help This is the active tab hover effect on the side section of the home page.*/
+.p_choice_active:hover {
+    background-color:#D9D8D7;
+    color:#333;
+    text-decoration:none;
+    cursor:pointer;
+}
+
+/* @title Blog Tabs */
+/* @help This is the tabs for the blogs section on the home page. */
+.p_choice_blogs {
+    float:left;
+    display:inline-block;
+    background-color:#333;
+    font-size:12px;
+    color:#DDD;
+    text-transform:capitalize;
+    padding:4px 10px 4px 10px;
+    vertical-align:middle;
+}
+/* @title Blog Active Tab */
+/* @help This is the active tabs for the blog section on the home page. */
+.p_choice_active_blogs {
+    float:left;
+    display:inline-block;
+    background-color:#D9D8D7;
+    font-size:12px;
+    color:#333;
+    text-transform:capitalize;
+    padding:4px 10px 4px 10px;
+    vertical-align:middle;
+    cursor:pointer;
+}
+/* @title Blog Tab Link */
+/* @help This is the link for the tabs on the blog section of the home page. */
+.p_choice_blogs a {
+    text-decoration:none;
+    color:#666;
+}
+/* @title Blog Tab Hover */
+/* @help This is the hover effect for the tabs on the blog section of the home page.*/
+.p_choice_blogs:hover {
+    background-color:#D9D8D7;
+    color:#333;
+    cursor:pointer;
+}
+/* @title Blog Active Hover */
+/* @help This is the active tab hover effect on the blog section of the home page.*/
+.p_choice_active_blogs:hover {
+    background-color:#D9D8D7;
+    color:#333;
+    text-decoration:none;
+    cursor:pointer;
+}
+
+/* @title Reviews Tabs */
+/* @help This is the tabs for the reviews section on the home page. */
+.p_choice_reviews {
+    float:left;
+    display:inline-block;
+    background-color:#333;
+    font-size:12px;
+    color:#DDD;
+    text-transform:capitalize;
+    padding:4px 10px 4px 10px;
+    vertical-align:middle;
+}
+/* @title Reviews Active Tab */
+/* @help This is the active tabs for the reviews section on the home page. */
+.p_choice_active_reviews {
+    float:left;
+    display:inline-block;
+    background-color:#D9D8D7;
+    font-size:12px;
+    color:#333;
+    text-transform:capitalize;
+    padding:4px 10px 4px 10px;
+    vertical-align:middle;
+    cursor:pointer;
+}
+/* @title Reviews Tab Link */
+/* @help This is the link for the tabs on the reviews section of the home page. */
+.p_choice_reviews a {
+    text-decoration:none;
+    color:#666;
+}
+/* @title Reviews Tab Hover */
+/* @help This is the hover effect for the tabs on the reviews section of the home page.*/
+.p_choice_reviews:hover {
+    background-color:#D9D8D7;
+    color:#333;
+    cursor:pointer;
+}
+/* @title Reviews Active Hover */
+/* @help This is the active tab hover effect on the reviews section of the home page.*/
+.p_choice_active_reviews:hover {
+    background-color:#D9D8D7;
+    color:#333;
+    text-decoration:none;
+    cursor:pointer;
+}
+
+/* @title Events Tabs */
+/* @help This is the tabs for the events section on the home page. */
+.p_choice_events {
+    float:left;
+    display:inline-block;
+    background-color:#333;
+    font-size:12px;
+    color:#DDD;
+    text-transform:capitalize;
+    padding:4px 10px 4px 10px;
+    vertical-align:middle;
+}
+/* @title Events Active Tab */
+/* @help This is the active tabs for the events section on the home page. */
+.p_choice_active_events {
+    float:left;
+    display:inline-block;
+    background-color:#D9D8D7;
+    font-size:12px;
+    color:#333;
+    text-transform:capitalize;
+    padding:4px 10px 4px 10px;
+    vertical-align:middle;
+    cursor:pointer;
+}
+/* @title Events Tab Link */
+/* @help This is the link for the tabs on the events section of the home page. */
+.p_choice_events a {
+    text-decoration:none;
+    color:#666;
+}
+/* @title Events Tab Hover */
+/* @help This is the hover effect for the tabs on the events section of the home page.*/
+.p_choice_events:hover {
+    background-color:#D9D8D7;
+    color:#333;
+    cursor:pointer;
+}
+/* @title Events Active Hover */
+/* @help This is the active tab hover effect on the events section of the home page.*/
+.p_choice_active_events:hover {
+    background-color:#D9D8D7;
+    color:#333;
+    text-decoration:none;
+    cursor:pointer;
+}
+
+/* @title Site Blog Tabs */
+/* @help This is the tabs for the site blog section on the home page. */
+.p_choice_site_blogs {
+    float:left;
+    display:inline-block;
+    background-color:#333;
+    font-size:12px;
+    color:#DDD;
+    text-transform:capitalize;
+    padding:4px 10px 4px 10px;
+    vertical-align:middle;
+}
+/* @title Site Blog Active Tab */
+/* @help This is the active tabs for the site blog section on the home page. */
+.p_choice_active_site_blogs {
+    float:left;
+    display:inline-block;
+    background-color:#D9D8D7;
+    font-size:12px;
+    color:#333;
+    text-transform:capitalize;
+    padding:4px 10px 4px 10px;
+    vertical-align:middle;
+    cursor:pointer;
+}
+/* @title Site Blog Tab Link */
+/* @help This is the link for the tabs on the site blog section of the home page. */
+.p_choice_site_blogs a {
+    text-decoration:none;
+    color:#666;
+}
+/* @title Site Blog Tab Hover */
+/* @help This is the hover effect for the tabs on the site blog section of the home page.*/
+.p_choice_site_blogs:hover {
+    background-color:#D9D8D7;
+    color:#333;
+    cursor:pointer;
+}
+/* @title Site Blog Active Hover */
+/* @help This is the active tab hover effect on the site blog section of the home page.*/
+.p_choice_active_site_blogs:hover {
+    background-color:#D9D8D7;
+    color:#333;
+    text-decoration:none;
+    cursor:pointer;
+}
+
+.spacer {width:6px;font-size:8px;}
+.divider {height:1px;}
+.spacer2 {height: 2px;}
+.spacer10 {height: 10px;}
+.spacer20 {height: 20px;}
+
+/* --- HEAD - 180 MENU --------- */
+
+#nav-180 {margin:0; padding:0;}
+#nav-180 ul {margin:0;padding:0; list-style-type: none;}
+#nav-180 ul li {float:left;}
+
+#nav-180 ul li a {
+    text-decoration: none;
+    background-color:#CCC;
+    color: #999;
+    font-size: 15px;
+    line-height: 26px;
+    float: left;
+    margin: 0 10px 0 0;
+    text-transform:capitalize;
+    padding: 1px 20px 0 20px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+#nav-180 li a:hover {
+    background-color:#333;
+    color: #BA4B0D;
+}
+
+#nav-180-current {
+    text-decoration: none;
+    background-color:#333;
+    color: #DDD;
+    font-size: 15px;
+    text-transform:capitalize;
+    line-height: 26px;
+    float: left;
+    margin: 0 10px 0 0;
+    padding: 1px 20px 0 20px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}

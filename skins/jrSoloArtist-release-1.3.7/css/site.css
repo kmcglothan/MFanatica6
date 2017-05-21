@@ -1,0 +1,63 @@
+#wrapper {
+    margin:0 auto;
+}
+
+/* @title Site Content */
+/* @help This is the main Site Content holder */
+#content {
+    max-width:1140px;
+    margin:65px auto 0 auto;
+    background-color:#000;
+    height:100%; /* @ignore */
+    font-size:16px;
+/*    box-shadow:2px 2px 4px rgba(0, 0, 0, .3); */
+    border-width:0;
+    border-style:solid;
+    border-color:#999999;
+    padding:6px;
+}
+
+/* @title Player Background */
+/* @help This is a section that holds the audio player */
+.player_bckgrd {
+    background-color:  #660a0b ;
+    background-image:url('{$jrSoloArtist_img_url}/player_bckgrd.png'); /* @ignore */
+    text-align:center;
+    padding:5px;
+    margin-bottom:20px;
+    border-top-width: 4px;
+    border-top-style: solid;
+    border-top-color: #920B0C;
+    border-bottom-width: 4px;
+    border-bottom-style: solid;
+    border-bottom-color: #252525;
+    color:#FFF;
+}
+
+/* @title Player Background Link*/
+/* @help This is links in the player background section */
+.player_bckgrd a {
+    color:#FFF;
+    text-decoration:none;
+}
+
+/* @title Player Background Link Hover */
+/* @help This is the link hover color for the index player section */
+.player_bckgrd a:hover {
+    color:#D61D1E;
+    text-decoration:none;
+}
+
+/* @title Search Box */
+/* @help The search box */
+.search_box {
+    background-color:#000;
+    padding:25px;
+    margin:12px;
+    border-style:solid;
+    border-color:#690809;
+    border-width:4px;
+    font-size:16px;
+    color:#606060;
+    border-radius:5px;
+}

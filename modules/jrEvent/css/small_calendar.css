@@ -1,0 +1,101 @@
+#jrEvent_small_calendar .php-calendar a:hover {
+    opacity: .7;
+    filter: Alpha(Opacity=70);
+}
+
+#jrEvent_small_calendar .ecal-container {
+    min-width: 50%;
+}
+
+#jrEvent_small_calendar table.ecal-main {
+    width: 100%;
+    background-color: #FFFFFF;
+}
+
+#jrEvent_small_calendar div.ecal-main {
+    padding: 0;
+}
+
+#jrEvent_small_calendar .ecal-main div {
+    padding-left: .5em;
+    padding-right: .5em;
+}
+
+#jrEvent_small_calendar .ecal-event-header {
+    padding: .5em;
+}
+
+#jrEvent_small_calendar col.ecal-week {
+    width: 3%;
+}
+
+#jrEvent_small_calendar col.ecal-day {
+    width: 14%;
+}
+
+#jrEvent_small_calendar .ecal-calendar td,
+#jrEvent_small_calendar .ecal-calendar th {
+    text-align: center;
+    border-collapse: collapse;
+    vertical-align: text-top;
+}
+
+#jrEvent_small_calendar .ecal-calendar th {
+    background: url("{$jrEvent_img_url}/bg_date.png") repeat-x scroll 50% 50% #CCCCCC;
+    border: 1px solid #AAAAAA;
+    color: #222222;
+    font-weight: bold;
+}
+
+#jrEvent_small_calendar .ecal-calendar td {
+    padding: 0;
+    text-align: center;
+}
+
+#jrEvent_small_calendar .ecal-calendar li {
+    margin: 4px;
+}
+
+#jrEvent_small_calendar .ecal-main ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+#jrEvent_small_calendar .ecal-calendar li a {
+    font-weight: normal !important;
+    display: block;
+    padding: 2px;
+    text-decoration: none;
+}
+
+#jrEvent_small_calendar .ecal-date {
+    padding: 5px 3px;
+    background: url("{$jrEvent_img_url}/bg_day.png") repeat-x scroll 50% 50% #E6E6E6;
+    border: 1px solid #D3D3D3;
+    color: #555555;
+    font-weight: normal;
+}
+
+#jrEvent_small_calendar .has_events {
+    background-image: none;
+    background-color: #CEFCB1;
+    border: 1px solid #B1FC9F;
+    color: #363636;
+}
+
+#jrEvent_small_calendar .ecal-today {
+    background: url("{$jrEvent_img_url}/bg_today.png") repeat-x scroll 50% 50% #FBF9EE;
+    border: 1px solid #FCEFA1;
+    color: #363636;
+}
+
+#jrEvent_small_calendar .ecal-shadow {
+    opacity: .5;
+    filter: Alpha(Opacity=5);
+}
+
+#jrEvent_small_calendar .has_events a {
+    display: block;
+    font-weight: bold;
+}
+

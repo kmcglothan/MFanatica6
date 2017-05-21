@@ -1,0 +1,107 @@
+Video Module Changelog
+
+Version 1.5.2:
+  - New: stand alone embed player added for use in twitter card feature provided by Meta Tag Manager
+
+Version 1.5.1:
+ - Bug Fix: "Create Album" button showing "Video" as hover text instead of "Create Album"
+
+Version 1.5.0:
+ - New: Redesigned and updated light and dark Video Player skins that should go well with any site
+ - New: Site Builder widget grid templates added
+ - Change: javascript for embedding an item in editor changed to target the editor where the button was clicked
+ - Change: Removing profile name from Facebook metatags in shared title
+ - Change: m4v conversions for mobile have increased bitrate to look better on newer devices
+ - Change: item_detail.tpl updated to only show "Album" if an album is entered
+ - Change: added support for immediate embed feature of Media URL Scanner
+ - Bug Fix: Uploaded FLV files may not convert correctly
+ - Bug Fix: Removed height on video_container CSS
+
+Version 1.4.5:
+ - Change: Video image now cropped to better fit the video window and prevent stretching
+ - Bug Fix: Desktop browser could play mobile version of video instead of desktop version
+
+Version 1.4.4:
+ - Change: Updated to work properly with new Editor Embedded Media module
+ - Bug Fix: Album drag and drop re-order of video items not working
+
+Version 1.4.3:
+ - New: Added support for new Combined Video module
+
+Version 1.4.2:
+ - Bug Fix: M4V file "size" key not being set correctly so videos not playing on mobile devices
+
+Version 1.4.1:
+ - Change: Removed formatting listener for FoxyCart purchased items - was not needed
+ - Bug Fix: Sample Length not being added correctly for Queue entry on Conversion Server
+
+Version 1.4.0:
+ - Change: Conversions refactored to be faster and work with Active Media System setting
+ - Change: Video might not play on Chrome and Safari, so using Flash option instead of HTML5
+ - Bug Fix: Video Download button could still show even if Block Downloads is on in Global Config
+ - Bug Fix: disabling sample creation could affect audio sample stream length
+
+Version 1.3.0:
+ - New: "Video Sample Length" Global Config setting for setting or disabling the Video Sample Length
+
+Version 1.2.3:
+ - Change: Default video_convert worker timeout changed from 3600 to 14400 seconds
+
+Version 1.2.2:
+ - Change: Immproved video window resizing to look better across devices
+
+Version 1.2.1:
+ - New: Search and browsing added to the Editor Embedded Media tab
+ - New: Search box on Video index page to search only video items
+
+Version 1.2.0:
+ - Change: "Original" Video file is now saved as a symlink if original is an FLV to save space
+ - Bug Fix: Video Download button not always showing in the right situation
+ - Bug Fix: Video file extension and name may not show on Detail page for unconverted video file
+
+Version 1.1.0:
+ - New: Video player size now is a bit larger so video poster looks better
+ - New: video_file_resolution_width and video_file_resolution_height available in templates
+
+Version 1.0.13:
+ - Bug Fix: Video albums with non latin characters not showing
+
+Version 1.0.12:
+ - Change: Video Items that are pending due to conversion now only show to admins and profile owner
+
+Version 1.0.11:
+ - Change: Embed template has been renamed to "item_embed.tpl"
+
+Version 1.0.10:
+ - Change: Updated to work with Editor Embedded Media module
+
+Version 1.0.9:
+ - Change: item_bundle.tpl template updated to work properly with latest FoxyCart Bundle module
+ - Bug Fix: Fix for incorrect error result function used on a couple views
+
+Version 1.0.8:
+ - Bug Fix: Create Album button could show to users who were not profile owners
+
+Version 1.0.7
+ - Change: Update to support new Form Designer plugin format for "video" field
+
+Version 1.0.6
+ - New: jrPoll and jrUrlScan listeners added/modified
+
+Version 1.0.5:
+ - New: CSS Updates to support ability to override CSS images from module images tab
+
+Version 1.0.4:
+ - Template updates to support new Item Action Buttons
+
+Version 1.0.3:
+ - Download button now shows if Block Downloads is unchecked and video file is not for sale
+
+Version 1.0.2:
+ - Added action support for album creation
+
+version 1.0.1:
+ - Adding new Changelog
+
+Version 1.0.0:
+ - Initial Release

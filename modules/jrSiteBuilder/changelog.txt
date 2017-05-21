@@ -1,0 +1,113 @@
+Site Builder Core module changelog
+
+Version 2.0.2:
+ - Bug Fix: Possible SQL Error when running an Integrity Check
+
+Version 2.0.1:
+ - Bug Fix: Extra Container Id field showing in container settings, removed
+
+Version 2.0.0:
+ - New: Skins can define default Site Builder pages and menus
+ - New: Reset to default button added to menu editor
+ - New: Smarty code allowed in TITLE of widgets to allow functions to run to retreive module urls
+ - Change: .block class removed from widget containers.  Designers, use .sb-widget-block instead
+ - Bug Fix: Display Groups for page not being respected under some circumstances
+ - Bug Fix: Site Builder 404 template listener was running on Profile pages
+
+Version 1.1.6:
+ - Change: HTML allowed in widget titles so additional links can be added.
+
+Version 1.1.5:
+ - New: Anchor button added in the HTML Editor
+
+Version 1.1.4:
+ - New: Image editing controls have been added for images in the HTML Editor
+ - Change: remove formatting button that had been added to the editor
+ - Bug Fix: Possible SQL error when running daily backup of Site Builder menu items
+ - Bug Fix: Possible white screen when cutting and pasting embedded Javascript in HTML editor
+
+Version 1.1.3:
+ - Change: Browser spellchecker activated by default in editor
+ - Change: added editor button to make the editor the same in sitebuilder as it is in other locations
+
+Version 1.1.2:
+ - New: Added an active CSS class to the menu to allow for active menu styling
+ - New: Added tabindex plugin to TinyMCE so pressing tab will now activate the editor
+ - Bug Fix: onclick menu field was not being rendered to the templates
+
+Version 1.1.1:
+ - Change: removed menu formatting for future feature that was causing problems on the menu in some skins
+
+Version 1.1.0:
+ - New: {jrSiteBuilder_mobile_menu} template function used to generate custom menu on mobile devices
+ - New: menu_mobile.tpl file added as default template for menu entries on mobile devices
+ - Change: css class .item removed from widget holder by default
+ - Change: css class .item added to HTML Editor widget holder
+ - Change: Menu URLs are no longer lower-cased and are saved as entered
+ - Change: to the way tinymce is initiated to allow for mulitiple instances
+ - Bug Fix: Link to HELP button resulting in 404 not found on jamroom.net
+ - Bug Fix: Tinymce strips out script tags even if jamroom allows them
+ - Bug Fix: Unable to create new pages if SQL Strict Mode is enabled in MySQL DB server
+ - Bug Fix: "Template Code" widget would allow invalid Smarty Syntax to be saved
+ - Bug Fix: HTML Editor items not being run through the active text formatters
+
+Version 1.0.13:
+ - Bug Fix: Inactive modules shown as options in selection lists
+ - Bug Fix: Title of widget could be incorrect if the module requires another module to function.
+ - Bug Fix: &nbsp; and other htmlentities were not visible in the template editor in update view
+
+Version 1.0.12:
+ - New: Pages, Menus, Widgets export and import system added to TOOLS tab.
+ - New: Automatic daily backup of site builder page state.
+ - New: Can now change the page url in the page settings dialog to move the page to a different url.
+
+Version 1.0.11:
+ - Bug Fix: Menu items set to not show to the admin user group become un-editable in the Menu Editor.
+
+Version 1.0.10:
+ - New: Page Settings area now has a text box to input extra html code into the HEAD section of the page.
+
+Version 1.0.9:
+ - New: Import path to import jrConstructionKit rotators.
+ - New: Page browser tool to identify locations of pages created with Site Builder
+ - Change: Added a 404 for widgets that include a template that doesn't exist
+
+Version 1.0.8:
+ - Bug Fix: When importing from old Site Builder system menu items could be missing if menu items had been added and deleted.
+
+Version 1.0.7:
+ - Change: Extra checks for when the old Site Builder module data is imported to the new Site Builder system
+
+Version 1.0.6:
+ - Change: Empty widgets now don't show a title.
+ - Bug Fix: Pages with apostrophes in titles not importing right from old Site Builder
+
+Version 1.0.5:
+ - Change: skin templates skip parsing if they are going to be overridden by a Site Builder page
+ - Bug Fix: setting Maintenance Mode in core not working if running a Site Builder index
+ - Bug Fix: Active Favicon from Favicon module not showing on Site Builder index
+ - Bug Fix: Menu Group setting may not work for logged out users
+
+Version 1.0.4:
+ - Bug Fix: Second level of menus not showing
+
+Version 1.0.3:
+ - Change: Default menu order changed to left-to-right to match english as the default language
+ - Bug Fix: URLs that start with a / and contained multiple slashes were getting stripped down to a single string
+ - Bug Fix: Pagination not working when cache is active.
+ - Bug Fix: It was possible to have both a / and a /index location. /index now redirects to /.
+
+Version 1.0.2:
+ - New: "Clone Widget" button in header to clone the widget settings to a new widget
+ - Change: Widgets without titles now show their page position for help with ordering
+
+Version 1.0.1:
+ - Change: Widgets without a title now show the Widget Type during editing
+ - New: Copy a widget button
+ - Bug Fix: Import of previous Site Builder pages was missing the site index
+ - Bug Fix: It was not possible to add the home page (/) as a menu URL location
+ - Bug Fix: Smarty code was not working properly in HTML Editor
+ - Bug Fix: Caching was not working properly on Site Builder pages
+
+Version 1.0.0:
+ - Initial Release

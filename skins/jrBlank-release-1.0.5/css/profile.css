@@ -1,0 +1,201 @@
+
+.breadcrumbs {
+    font-weight: normal;
+    font-size: 0.75em;
+}
+
+.breadcrumbs a {
+    color: #336699;
+    text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+    color: #333;
+    text-decoration: underline;
+}
+
+.profile_menu {
+    margin: 0;
+    background-color: #FFFFFF;
+    padding: 0 12px 6px 12px;
+}
+
+.profile_menu_entry {
+    display: inline-block;
+    text-transform: capitalize;
+    margin-top: 6px;
+    margin-right: 6px;
+    padding: 9px;
+    color: #000000;
+    font-size: 14px;
+    font-weight: bold;
+    border: 1px solid #EEEEEE;
+    cursor: pointer;
+}
+
+.profile_menu_entry a {
+    color: #000000;
+}
+
+.profile_menu_entry:hover {
+    background-color: #EEEEEE;
+}
+
+.profile_menu_entry_active {
+    background-color: #333333;
+    color: #FFFFFF;
+}
+
+.profile_menu_entry_active:hover {
+    color: #000000;
+}
+
+.profile_name_box {
+    background-color: #333;
+    vertical-align: middle;
+    text-transform: capitalize;
+    padding: 12px;
+    margin: 12px;
+    border: 1px solid #ddd;
+}
+
+.profile_name {
+    text-transform: capitalize;
+    font-size: 28px;
+    font-weight: bold;
+    color: #FFFFFF;
+}
+
+.profile_name a {
+    text-decoration: none;
+}
+
+.profile_name a:hover {
+    text-decoration: none;
+}
+
+.profile_actions {
+    float: right;
+    vertical-align: middle;
+    text-align: right;
+}
+
+.profile_image {
+    position: relative;
+}
+
+.profile_hoverimage {
+    background-color: #333333;
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    padding: 3px;
+    border: 1px solid #ddd;
+    display: none;
+    opacity: 0.8;
+}
+
+.profile_hoverimage a {
+    text-decoration: none;
+}
+
+.profile_hoverimage a:hover {
+    text-decoration: none;
+}
+
+.profile_image:hover .profile_hoverimage {
+    display: block;
+    cursor: pointer;
+}
+
+.stat_entry_box {
+    float: left;
+    background-color: #FFFFFF;
+    border-width: 1px;
+    border-color: #999999;
+    border-style: solid;
+    border-radius: 4px;
+    padding: 3px 9px;
+    margin: 6px 6px 0 0;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.stat_entry_box a {
+    text-decoration: none;
+}
+
+.stat_entry_box:hover {
+    background-color: #EEEEEE;
+}
+
+.stat_entry_count {
+    font-weight: bold;
+}
+
+.block_config {
+    float: right;
+    margin-top: 6px;
+    white-space: nowrap;
+}
+
+.block_image {
+    margin: 0 auto;
+    padding-right: 6px;
+}
+
+.block_content {
+    padding: 0;
+    margin: 0 auto;
+}
+
+.title {
+    background-color: #F9F9F9;
+    border-style: solid;
+    border-color: #EEEEEE;
+    border-width: 1px;
+    vertical-align: middle;
+    text-transform: capitalize;
+    color: #333;
+    padding: 12px;
+}
+
+.title h1 {
+    font-weight: bold;
+}
+
+.info {
+    font-size: 12px;
+    text-transform: capitalize;
+    display: inline;
+    padding: 0;
+    margin: 0;
+    color: #000000;
+    font-weight: bold;
+}
+
+.info a {
+    text-decoration: none;
+    color: #336699;
+}
+
+.info a:hover {
+    color: #333;
+    text-decoration: underline;
+}
+
+.info_c {
+    font-size: 12px;
+    color: #000000;
+}
+
+.info_c a {
+    color: #336699;
+    text-decoration: none;
+}
+
+.info_c a:hover {
+    color: #333;
+    text-decoration: underline;
+}
+

@@ -1,0 +1,4 @@
+Custom List Parameters module changelog
+
+version 1.0.0:
+ - Initial Release

@@ -1,0 +1,203 @@
+/* Tabs */
+.menu_tab{
+    width:100%;
+    white-space:nowrap;
+    padding: 0;
+    margin:0 12px 0 12px;
+}
+/* @title Featured Tab */
+/* @help This is the tab for the Featured section */
+.p_choice {
+    float:left;
+    display:inline-block;
+    background:#C5C9CC; /* @ignore */
+    background: -moz-linear-gradient(#949799, #C5C9CC); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#949799), to(#C5C9CC)); /* @ignore */
+    background: -webkit-linear-gradient(#949799, #C5C9CC); /* @ignore */
+    background: -o-linear-gradient(#949799, #C5C9CC); /* @ignore */
+    background: -ms-linear-gradient(#949799, #C5C9CC); /* @ignore */
+    background: linear-gradient(#949799, #C5C9CC); /* @ignore */
+    font-size:14px;
+    color:#000;
+    text-transform:capitalize;
+    padding:4px 10px 4px 10px;
+    vertical-align:middle;
+    border-top-left-radius:4px;
+    border-top-right-radius:4px;
+    margin: 0 6px 0 0;
+}
+/* @title Featured Active Tab */
+/* @help This is the active tab for the Featured section */
+.p_choice_active {
+    float:left;
+    display:inline-block;
+    background:#F7DD4F; /* @ignore */
+    background: -moz-linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#FFF9B4), to(#F7DD4F)); /* @ignore */
+    background: -webkit-linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    background: -o-linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    background: -ms-linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    background: linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    font-size:14px;
+    color:#000;
+    text-transform:capitalize;
+    padding:4px 10px 4px 10px;
+    vertical-align:middle;
+    border-top-left-radius:4px;
+    border-top-right-radius:4px;
+    cursor:pointer;
+    margin: 0 6px 0 0;
+}
+/* @title Featured Tab Link */
+/* @help This is the link for the tabs for the Featured section. */
+.p_choice a {
+    text-decoration:none;
+    color:#000;
+}
+/* @title Featured Hover */
+/* @help This is the hover effect for the tabs for the Featured section */
+.p_choice:hover {
+    background:#F7DD4F; /* @ignore */
+    background: -moz-linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#FFF9B4), to(#F7DD4F)); /* @ignore */
+    background: -webkit-linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    background: -o-linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    background: -ms-linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    background: linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    color:#000;
+    cursor:pointer;
+}
+/* @title Featured Active Hover */
+/* @help This is the active tab hover effect for the Featured section */
+.p_choice_active:hover {
+    background:#FFF9B4; /* @ignore */
+    background: -moz-linear-gradient(#F7DD4F, #FFF9B4); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#F7DD4F), to(#FFF9B4)); /* @ignore */
+    background: -webkit-linear-gradient(#F7DD4F, #FFF9B4); /* @ignore */
+    background: -o-linear-gradient(#F7DD4F, #FFF9B4); /* @ignore */
+    background: -ms-linear-gradient(#F7DD4F, #FFF9B4); /* @ignore */
+    background: linear-gradient(#F7DD4F, #FFF9B4); /* @ignore */
+    text-decoration:underline;
+    cursor:pointer;
+}
+.spacer {
+    width:12px;
+    font-size:8px;
+}
+
+.divider {
+    height:1px;
+}
+
+/* Tab Bar */
+/* @title Tab Bar Holder */
+/* @help This is the holder for the tab bar */
+.page_tab_bar_holder {
+    width:100%;
+    background-color:#949799;
+}
+
+.page_tab_bar_spacer {
+    height:10px;
+    background-color:#949799;
+}
+.page_tab_bar {
+    padding-left:16px;
+}
+/* @title Page Tab */
+/* @help This is the tab for the tab bar */
+.page_tab {
+    background:#C5C9CC; /* @ignore */
+    background: -moz-linear-gradient(#949799, #C5C9CC); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#949799), to(#C5C9CC)); /* @ignore */
+    background: -webkit-linear-gradient(#949799, #C5C9CC); /* @ignore */
+    background: -o-linear-gradient(#949799, #C5C9CC); /* @ignore */
+    background: -ms-linear-gradient(#949799, #C5C9CC); /* @ignore */
+    background: linear-gradient(#949799, #C5C9CC); /* @ignore */
+    float:left;
+    list-style:none;
+    margin-left:9px; /* @ignore */
+    color:#000;
+    text-decoration:none;
+    text-transform:capitalize;
+    font:14px Verdana,sans-serif;
+    text-align:center;
+    cursor:pointer;
+    border:1px solid #656565;
+    border-radius:4px; /* @ignore */
+}
+/* @title Page Tab Hover */
+/* @help This is the tab hover for the tab bar */
+.page_tab:hover {
+    background:#F7DD4F; /* @ignore */
+    background: -moz-linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#FFF9B4), to(#F7DD4F)); /* @ignore */
+    background: -webkit-linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    background: -o-linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    background: -ms-linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    background: linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    color:#000;
+    text-decoration:none;
+}
+/* @title Page Tab Hover Link */
+/* @help This is the tab link hover for the tab bar */
+.page_tab:hover a {
+    color:#000;
+    text-decoration:none;
+}
+/* @title Page Tab Link */
+/* @help This is the tab URL link for the tab bar */
+.page_tab a {
+    padding:6px 10px; /* @ignore */
+    display:block;
+    color:#000;
+    text-decoration:none;
+}
+.page_tab_first {
+    margin-left:0;
+}
+.page_tab_last {
+}
+/* @title Page Tab Active */
+/* @help This is the active tab */
+.page_tab_active {
+    background:#F7DD4F; /* @ignore */
+    background: -moz-linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#FFF9B4), to(#F7DD4F)); /* @ignore */
+    background: -webkit-linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    background: -o-linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    background: -ms-linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    background: linear-gradient(#FFF9B4, #F7DD4F); /* @ignore */
+    color:#000;
+    border:1px solid #656565;
+    margin-bottom:-2px;
+}
+/* @title Tab Active Hover */
+/* @help This is the active tab hover effect */
+.page_tab_active:hover {
+    background:#FFF9B4; /* @ignore */
+    background: -moz-linear-gradient(#F7DD4F, #FFF9B4); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#F7DD4F), to(#FFF9B4)); /* @ignore */
+    background: -webkit-linear-gradient(#F7DD4F, #FFF9B4); /* @ignore */
+    background: -o-linear-gradient(#F7DD4F, #FFF9B4); /* @ignore */
+    background: -ms-linear-gradient(#F7DD4F, #FFF9B4); /* @ignore */
+    background: linear-gradient(#F7DD4F, #FFF9B4); /* @ignore */
+    color:#000;
+    border-bottom:1px solid #656565;
+    text-decoration:none;
+}
+.page_tab_active:hover a {
+    color:#000;
+    text-decoration:none;
+}
+/* @title Tab Active Link */
+/* @help This is the active tab URL link */
+.page_tab_active a {
+    color:#000;
+}
+
+/* @title Tab Active Hover Link */
+/* @help This is the active tab URL link hover effect */
+.page_tab_active a:hover {
+    color:#333;
+}

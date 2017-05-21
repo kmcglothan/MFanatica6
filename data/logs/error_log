@@ -1,0 +1,30 @@
+[20-May-2017 05:24:05 Europe/Dublin] PHP Warning:  mysqli_query(): MySQL server has gone away in /webserver/mf6/modules/jrCore/lib/mysql.php on line 312
+[20-May-2017 05:24:05 Europe/Dublin] PHP Stack trace:
+[20-May-2017 05:24:05 Europe/Dublin] PHP   1. _jrUser_mysql_session_write() /webserver/mf6/modules/jrUser/include.php:0
+[20-May-2017 05:24:05 Europe/Dublin] PHP   2. jrCore_db_query() /webserver/mf6/modules/jrUser/include.php:3768
+[20-May-2017 05:24:05 Europe/Dublin] PHP   3. mysqli_query() /webserver/mf6/modules/jrCore/lib/mysql.php:312
+[20-May-2017 05:24:05 Europe/Dublin] PHP Warning:  mysqli_query(): Error reading result set's header in /webserver/mf6/modules/jrCore/lib/mysql.php on line 312
+[20-May-2017 05:24:05 Europe/Dublin] PHP Stack trace:
+[20-May-2017 05:24:05 Europe/Dublin] PHP   1. _jrUser_mysql_session_write() /webserver/mf6/modules/jrUser/include.php:0
+[20-May-2017 05:24:05 Europe/Dublin] PHP   2. jrCore_db_query() /webserver/mf6/modules/jrUser/include.php:3768
+[20-May-2017 05:24:05 Europe/Dublin] PHP   3. mysqli_query() /webserver/mf6/modules/jrCore/lib/mysql.php:312
+[21-May-2017 08:12:29 Europe/Dublin] PHP Warning:  mysqli_query(): MySQL server has gone away in /webserver/mf6/modules/jrCore/lib/mysql.php on line 312
+[21-May-2017 08:12:29 Europe/Dublin] PHP Stack trace:
+[21-May-2017 08:12:29 Europe/Dublin] PHP   1. _jrUser_mysql_session_write() /webserver/mf6/modules/jrUser/include.php:0
+[21-May-2017 08:12:29 Europe/Dublin] PHP   2. jrCore_db_query() /webserver/mf6/modules/jrUser/include.php:3768
+[21-May-2017 08:12:29 Europe/Dublin] PHP   3. mysqli_query() /webserver/mf6/modules/jrCore/lib/mysql.php:312
+[21-May-2017 08:12:29 Europe/Dublin] PHP Warning:  mysqli_query(): Error reading result set's header in /webserver/mf6/modules/jrCore/lib/mysql.php on line 312
+[21-May-2017 08:12:29 Europe/Dublin] PHP Stack trace:
+[21-May-2017 08:12:29 Europe/Dublin] PHP   1. _jrUser_mysql_session_write() /webserver/mf6/modules/jrUser/include.php:0
+[21-May-2017 08:12:29 Europe/Dublin] PHP   2. jrCore_db_query() /webserver/mf6/modules/jrUser/include.php:3768
+[21-May-2017 08:12:29 Europe/Dublin] PHP   3. mysqli_query() /webserver/mf6/modules/jrCore/lib/mysql.php:312
+[21-May-2017 08:13:15 Europe/Dublin] PHP Warning:  mysqli_query(): MySQL server has gone away in /webserver/mf6/modules/jrCore/lib/mysql.php on line 312
+[21-May-2017 08:13:15 Europe/Dublin] PHP Stack trace:
+[21-May-2017 08:13:15 Europe/Dublin] PHP   1. _jrUser_mysql_session_write() /webserver/mf6/modules/jrUser/include.php:0
+[21-May-2017 08:13:15 Europe/Dublin] PHP   2. jrCore_db_query() /webserver/mf6/modules/jrUser/include.php:3768
+[21-May-2017 08:13:15 Europe/Dublin] PHP   3. mysqli_query() /webserver/mf6/modules/jrCore/lib/mysql.php:312
+[21-May-2017 08:13:15 Europe/Dublin] PHP Warning:  mysqli_query(): Error reading result set's header in /webserver/mf6/modules/jrCore/lib/mysql.php on line 312
+[21-May-2017 08:13:15 Europe/Dublin] PHP Stack trace:
+[21-May-2017 08:13:15 Europe/Dublin] PHP   1. _jrUser_mysql_session_write() /webserver/mf6/modules/jrUser/include.php:0
+[21-May-2017 08:13:15 Europe/Dublin] PHP   2. jrCore_db_query() /webserver/mf6/modules/jrUser/include.php:3768
+[21-May-2017 08:13:15 Europe/Dublin] PHP   3. mysqli_query() /webserver/mf6/modules/jrCore/lib/mysql.php:312

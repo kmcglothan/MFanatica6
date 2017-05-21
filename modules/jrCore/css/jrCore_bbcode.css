@@ -1,0 +1,213 @@
+#bbcode_help_button {
+    text-align: center;
+    margin-top: -33px;
+}
+
+#bbcode_help_button input {
+    float: right;
+    position: relative;
+    margin: 0 6px 0 3px;
+}
+
+#bbcode_help {
+    width: 800px;
+    height: 600px;
+}
+
+.bbcode_help_section {
+    width: 75%;
+    background: #FFFFFF;
+    border-radius: 3px;
+    margin-top: 12px;
+}
+
+.bbcode_left {
+    background: #F6F6F6;
+    width: 50%;
+    text-align: right;
+    padding: 6px;
+}
+
+.bbcode_right {
+    width: 50%;
+    padding: 6px;
+}
+
+.bbcode_quote {
+    width: 100%;
+    padding: 12px;
+    background-color: #EEEEEE;
+    font-size: 14px;
+    font-style: italic;
+    box-sizing: border-box;
+}
+
+.bbcode_quote_user {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.bbcode_code {
+    background-color: #EEEEEE;
+    width: 100%;
+}
+
+/* BBCode code syntax Highlighting */
+
+.hljs {
+    max-height: 400px;
+    font-family: Monaco, "Courier New", Courier, monospace;
+    display: block;
+    overflow: auto;
+    padding: 10px;
+    color: black;
+    -webkit-text-size-adjust: none;
+    font-size: 11px;
+    margin: 6px 0;
+    border-radius: 3px;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.hljs-comment {
+    color: #006A00;
+}
+
+.hljs-keyword,
+.hljs-literal,
+.nginx .hljs-title {
+    color: #AA0D91;
+}
+
+.method,
+.hljs-list .hljs-title,
+.hljs-tag .hljs-title,
+.setting .hljs-value,
+.hljs-winutils,
+.tex .hljs-command,
+.http .hljs-title,
+.hljs-request,
+.hljs-status,
+.hljs-name {
+    color: #000088;
+}
+
+.hljs-envvar,
+.tex .hljs-special {
+    color: #666600;
+}
+
+.hljs-string {
+    color: #C41A16;
+}
+
+.hljs-tag .hljs-value,
+.hljs-cdata,
+.hljs-filter .hljs-argument,
+.hljs-attr_selector,
+.apache .hljs-cbracket,
+.hljs-date,
+.hljs-regexp {
+    color: #008800;
+}
+
+.hljs-sub .hljs-identifier,
+.hljs-pi,
+.hljs-tag,
+.hljs-tag .hljs-keyword,
+.hljs-decorator,
+.ini .hljs-title,
+.hljs-shebang,
+.hljs-prompt,
+.hljs-hexcolor,
+.hljs-rule .hljs-value,
+.hljs-symbol,
+.hljs-symbol .hljs-string,
+.hljs-number,
+.css .hljs-function,
+.hljs-function .hljs-title,
+.coffeescript .hljs-attribute {
+    color: #1C00CF;
+}
+
+.hljs-class .hljs-title,
+.smalltalk .hljs-class,
+.hljs-type,
+.hljs-typename,
+.hljs-tag .hljs-attribute,
+.hljs-doctype,
+.hljs-class .hljs-id,
+.hljs-built_in,
+.setting,
+.hljs-params,
+.clojure .hljs-attribute {
+    color: #5C2699;
+}
+
+.hljs-variable {
+    color: #3F6E74;
+}
+
+.css .hljs-tag,
+.hljs-rule .hljs-property,
+.hljs-pseudo,
+.hljs-subst {
+    color: #000000;
+}
+
+.css .hljs-class,
+.css .hljs-id {
+    color: #9B703F;
+}
+
+.hljs-value .hljs-important {
+    color: #FF7700;
+    font-weight: bold;
+}
+
+.hljs-rule .hljs-keyword {
+    color: #C5AF75;
+}
+
+.hljs-annotation,
+.apache .hljs-sqbracket,
+.nginx .hljs-built_in {
+    color: #9B859D;
+}
+
+.hljs-preprocessor,
+.hljs-preprocessor *,
+.hljs-pragma {
+    color: #643820;
+}
+
+.tex .hljs-formula {
+    background-color: #EEEEEE;
+    font-style: italic;
+}
+
+.diff .hljs-header,
+.hljs-chunk {
+    color: #808080;
+    font-weight: bold;
+}
+
+.diff .hljs-change {
+    background-color: #BCCFF9;
+}
+
+.hljs-addition {
+    background-color: #BAEEBA;
+}
+
+.hljs-deletion {
+    background-color: #FFC8BD;
+}
+
+.hljs-comment .hljs-doctag {
+    font-weight: bold;
+}
+
+.method .hljs-id {
+    color: #000000;
+}

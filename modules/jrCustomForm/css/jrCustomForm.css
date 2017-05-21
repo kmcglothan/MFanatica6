@@ -1,0 +1,56 @@
+/* @title Embedded Form Label */
+/* @help Text used for the form field label on an embedded form */
+.form_embed_label {
+    display: inline-block;
+    margin: 6px 0 0 3px;
+    text-transform: capitalize;
+}
+
+/* @title Embedded Form Notice */
+/* @help Style for Notices section of an embedded form */
+.form_embed_notice {
+    font-size: 12px !important;
+}
+
+/* @title Embedded Text Field */
+.form_embed_text {
+    box-sizing: border-box;
+    width: 100% !important;
+    margin: 0 !important;
+}
+
+/* @title Embedded Text Area */
+.form_embed_textarea {
+    box-sizing: border-box;
+    width: 100% !important;
+    margin: 0 !important;
+}
+
+/* @title Embedded Select */
+.form_embed_select {
+    box-sizing: border-box;
+    width: 100% !important;
+    margin: 0 !important;
+}
+
+/* @title Embedded Submit Section */
+/* @help Style for Submit section on an embedded form */
+.form_embed_submit_section {
+    margin-top: 12px;
+    text-align: center;
+}
+
+/* @title Embedded Submit Button */
+/* @help Style for Submit button on an embedded form */
+.form_embed_button {
+    font-size: 12px;
+}
+
+.form_browser_key {
+    width: 130px;
+    font-weight: bold;
+}
+
+.form_name_button input {
+    text-transform: none !important;
+}

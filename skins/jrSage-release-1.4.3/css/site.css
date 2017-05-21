@@ -1,0 +1,109 @@
+#wrapper {
+    max-width:1140px;
+    background-color:#BFD5BF;
+    border-width:5px;
+    border-style:solid;
+    border-color:#CFDFCF;
+    margin:10px auto;
+    box-shadow: 0 2px 4px #000;
+}
+
+/* @title Site Content */
+/* @help This is the main Site Content holder */
+#content {
+    background-color:#AEBEAE;
+    max-width:1140px;
+    height:100%; /* @ignore */
+    margin:0 auto;  /* @ignore */
+    padding:0;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.33) inset;
+}
+
+/* @title block urls */
+/* @help What color should URLs be within a block? */
+.block a {
+    color:#408140;
+}
+/* @title Body 1 */
+/* @help Body 1 Sections */
+.body_1{
+    background-color:transparent;
+    padding:5px;
+}
+
+/* @title Body 2 */
+/* @help Body 2 Sections */
+.body_2{
+    background-color:#FFF;
+    font-size:12px;
+    padding:10px 5px 10px 5px;
+    margin:0 auto 10px;
+    box-shadow: 1px 2px 4px rgba(64,129,64,0.33);
+}
+
+/* @title Body 3 */
+/* @help Body 3 Sections */
+.body_3{
+    text-align:left;
+    background:#FFF;
+    font-size:12px;
+    padding:10px;
+    margin:0 0 5px 0;
+    box-shadow: 1px 2px 4px rgba(64,129,64,0.33);
+}
+
+/* @title Body 4 */
+/* @help Body 4 Sections */
+.body_4 {
+    margin:0;
+    font-size:12px;
+    color:#000;
+}
+.side_comments {
+    height:350px;
+    overflow-x:hidden;
+    overflow-y:auto;
+}
+.search_box {
+    padding:50px;
+    margin:12px;
+    background: #bfd5bf;
+    border: 2px solid #575655;
+    font-size:16px;
+    color:#000000;
+    border-radius: 8px;
+}
+
+.search_box a {
+    color:#408140;
+}
+.signup_box {
+    background: #bfd5bf;
+    border: 2px solid #575655;
+    padding:25px;
+    margin:12px;
+    font-size:16px;
+    color:#000000;
+    border-radius:5px;
+    width:400px;
+    border-radius: 8px;
+}
+
+.signup_box a {
+    color:#000000;
+}
+.login_box {
+    background: #bfd5bf;
+    border: 2px solid #575655;
+    padding:25px;
+    margin:12px;
+    font-size:16px;
+    color:#000000;
+    border-radius:5px;
+    width:400px;
+    border-radius: 8px;
+}
+
+.login_box a {
+    color:#000000;
+}

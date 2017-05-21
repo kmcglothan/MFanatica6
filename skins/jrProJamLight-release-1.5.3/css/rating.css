@@ -1,0 +1,61 @@
+/* Large Rating */
+.star-rating,
+.star-rating a:hover,
+.star-rating a:active,
+.star-rating a:focus,
+.star-rating .current-rating {
+    background: url('{$jrProJamLight_img_url}/rating_back.png') left 0 repeat-x;
+}
+.star-rating {
+    position:relative;
+    width:70px;
+    height:14px;
+    overflow:hidden;
+    list-style:none;
+    margin:0;
+    padding:0;
+    background-position: left top;
+}
+.star-rating li {
+    display: inline;
+}
+.star-rating a,
+.star-rating .current-rating{
+    position:absolute;
+    top:0;
+    left:0;
+    height:14px;
+    line-height:14px;
+    outline:none;
+    overflow:hidden;
+    border:none;
+}
+.star-rating a:hover,
+.star-rating a:active,
+.star-rating a:focus {
+    background-position: left bottom;
+}
+.star-rating a.star1-rating {
+    width:20%;
+    z-index:6;
+}
+.star-rating a.star2-rating {
+    width:40%;
+    z-index:5;
+}
+.star-rating a.star3-rating {
+    width:60%;
+    z-index:4;
+}
+.star-rating a.star4-rating {
+    width:80%;
+    z-index:3;
+}
+.star-rating a.star5-rating {
+    width:100%;
+    z-index:2;
+}
+.star-rating .current-rating {
+    z-index:1;
+    background-position:left center;
+}

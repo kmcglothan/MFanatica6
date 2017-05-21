@@ -1,0 +1,56 @@
+.add_to_cart_section {
+    display: inline-block;
+    background: #EEEEEE;
+    border-radius: 6px;
+    box-shadow: inset 1px 1px 2px rgba(0, 0, 0, .5);
+}
+
+.add_to_cart_price {
+    position: relative;
+    top: 2px;
+    left: 2px;
+    padding: 0 10px;
+    padding-top: 4px;
+    color: #000000;
+    font-size: 16px;
+    line-height: 16px;
+}
+
+.add_to_cart_icon {
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+}
+
+.strikethrough {
+    color: #CCCCCC;
+    text-decoration: line-through;
+}
+
+.border-1 {
+    border: 1px solid black;
+}
+
+.p5 {
+    padding: 5px;
+}
+
+.body-1 {
+    background-color: #FFFFEB;
+}
+
+.graph_holder table {
+    width: auto;
+}
+
+.graph_holder {
+    background-color: #FFFFFF;
+}
+
+#my_insights {
+    font-size: 12px;
+}
+
+.page_table_row_alt.highlight {
+    background-color: #FFDD00;
+}

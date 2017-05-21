@@ -1,0 +1,75 @@
+#error_log {
+    font-family: Monaco, "Courier New", Courier, monospace;
+    width: 98%;
+    padding: 6px;
+    margin: 10px auto;
+    font-size: 10px;
+    white-space: pre-wrap;
+}
+
+#debug_log {
+    font-family: Monaco, "Courier New", Courier, monospace;
+    width: 98%;
+    padding: 6px;
+    margin: 10px auto;
+    font-size: 10px;
+    white-space: pre-wrap;
+}
+
+#diff_result {
+    font-family: Monaco, "Courier New", Courier, monospace;
+}
+
+/* @title Info Log */
+/* @help Background color for Informational (INF) Log entries */
+.log-inf {
+    background-color: transparent;
+    text-align: left;
+}
+
+/* @title Minor Log */
+/* @help Background color for Minor (MIN) Log entries */
+.log-min {
+    background-color: #FFCC00;
+    text-align: left;
+}
+
+/* @title Major Log */
+/* @help Background color for Major (MAJ) Log entries */
+.log-maj {
+    background-color: #FF9900;
+    text-align: left;
+}
+
+/* @title Critical Log */
+/* @help Background color for Critical (CRI) Log entries */
+.log-cri {
+    background-color: #FF6600;
+    text-align: left;
+}
+
+.fixed-width {
+    font-family: Monaco, "Courier New", Courier, monospace;
+}
+
+.php_Notice {
+    color: #000000;
+}
+
+.php_Warning {
+    color: #FF9900;
+}
+
+.php_Fatal, .php_Parse {
+    color: #FF0000;
+}
+
+.CodeMirror {
+    font-family: Monaco, "Courier New", Courier, monospace !important;
+    background: #FFFFFF;
+    padding: 6px;
+    font-size: 11px;
+    border: solid 1px #CCCCCC;
+    overflow: auto;
+}
+

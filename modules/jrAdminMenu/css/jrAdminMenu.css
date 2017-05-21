@@ -1,0 +1,76 @@
+#adminMenu {
+    position: fixed;
+    top: 0;
+    height: 24px;
+}
+
+#adminMenu a.arrow {
+    background: url("{$jrAdminMenu_img_url}/arrow.png") center right no-repeat;
+}
+
+#adminMenu, #adminMenu ul {
+    float: left;
+    width: 100%;
+    background: #F5F4F2;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0 0;
+    border: 0;
+    z-index: 99999;
+    font-size: 13px;
+    text-transform: capitalize;
+    font-weight: normal;
+}
+
+#adminMenu a {
+    display: block;
+    color: #000000;
+    text-decoration: none;
+    padding: 0.25em 0.5em;
+}
+
+#adminMenu a:hover {
+    background-color: #FAD68A;
+}
+
+#adminMenu li {
+    float: left;
+    padding: 0;
+}
+
+#adminMenu li ul {
+    position: absolute;
+    left: -999em;
+    height: auto;
+    width: 20em;
+    font-weight: normal;
+    border-left: 1px solid transparent;
+    margin: 0;
+    box-shadow: 0 0 3px #CCCCCC;
+}
+
+#adminMenu li li {
+    padding-right: 1em;
+    width: 19em;
+}
+
+#adminMenu li ul a {
+    width: 18em;
+}
+
+#adminMenu li ul ul {
+    margin: -1.85em 0 0 20em;
+    box-shadow: 0 0 3px #CCCCCC;
+}
+
+#adminMenu li:hover ul ul, #adminMenu li:hover ul ul ul, #adminMenu li.sfhover ul ul, #adminMenu li.sfhover ul ul ul {
+    left: -999em;
+}
+
+#adminMenu li:hover ul, #adminMenu li li:hover ul, #adminMenu li li li:hover ul, #adminMenu li.sfhover ul, #adminMenu li li.sfhover ul, #adminMenu li li li.sfhover ul {
+    left: auto;
+}
+
+#adminMenu li:hover, #adminMenu li.sfhover {
+    background: #FAD68A;
+}

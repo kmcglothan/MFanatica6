@@ -1,0 +1,1 @@
+<input type="button" id="group_button" class="form_button {$class}" name="group_button" value="{$value|jrCore_entity_string}" title="{$value|jrCore_entity_string}" onclick="if(confirm('{$prompt}')) { jrGroupButton('{$action}', '{$_item_id}', '{$class}'); }">

@@ -1,0 +1,16 @@
+Gravatar User Image changelog
+
+Version 1.1.1:
+ - Bug Fix: Invalid image being cached when Gravatar service is not responding or down
+
+Version 1.1.0:
+ - New: "Use Local Cache" Global Config setting to cache Gravatar images for users and profiles
+
+version 1.0.2:
+ - Bug Fix: "Enable Gravatar Images" Global Config option not being checked properly in listener
+
+Version 1.0.1:
+ - Bug Fix: title parameter was not being set properly in Gravatar image if provided
+
+Version 1.0.0:
+ - Initial Release

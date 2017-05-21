@@ -1,0 +1,32 @@
+Merchandise Store module Changelog
+
+Version 1.0.10:
+ - Bug Fix: Editor form fields were not being tested for banned words
+
+Version 1.0.9:
+ - Bug Fix: List image not displaying if first image had been deleted
+
+Version 1.0.8:
+ - New: Added Facebook meta tags used by the Share This module to tell Facebook the details of store items
+
+Version 1.0.7:
+ - Bug Fix: removed the download button from users cart as there is nothing to download with merchandise
+
+Version 1.0.6:
+ - Bug Fix: product fields were not registered properly with Search module
+
+Version 1.0.5:
+ - Fix: Added pager=true to the jrStore index templates
+
+Version 1.0.4:
+ - Change: Updated templates to use item_index / item_list button functions
+ - Change: Screenshots in item detail lightbbox have been enlarged
+
+Version 1.0.3:
+ - Bug Fix: Including missing Javascript and CSS components
+
+Version 1.0.2:
+ - Change: Updated templates to use lightbox2 instead of lightbox
+
+Version 1.0.0:
+ - Initial Release

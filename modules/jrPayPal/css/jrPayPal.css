@@ -1,0 +1,23 @@
+/* @title Buy Now Box */
+/* @help The price and buy now icon box */
+.paypal_buy_now_section {
+    display: inline-block;
+    background-color: #EEEEEE;
+    padding: 1px;
+}
+
+.paypal_buy_now_section a:hover {
+    text-decoration: none !important;
+}
+
+/* @title Buy Now Price */
+/* @help The price section in the Buy Now Box */
+.paypal_buy_now_price {
+    position: relative;
+    top: 2px;
+    left: 2px;
+    padding: 0 2px 0 10px;
+    padding-top: 4px;
+    color: #000000;
+    font-size: 1.2em;
+}

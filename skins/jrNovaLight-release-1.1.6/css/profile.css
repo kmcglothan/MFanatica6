@@ -1,0 +1,232 @@
+/* jrNovaLight Profile Page CSS */
+
+/* @title Profile Menu */
+/* @help This is the Profile menu */
+.profile_menu {
+    margin:0;
+    background-color:transparent;
+    padding:0 6px 6px 6px;
+}
+
+/* @title Profile Menu Entry */
+/* @help This is the Profile menu entries */
+.profile_menu_entry {
+    background:#F6F6F6;
+    display:inline-block;
+    text-transform:capitalize;
+    margin-top:6px;
+    margin-right:6px;
+    padding:6px;
+    color:#111111;
+    font-size:14px;
+    font-weight:bold;
+    -webkit-border-radius:4px;
+    -moz-border-radius:4px;
+    border:1px solid #999999;
+    border-radius:4px;
+    cursor:pointer;
+}
+
+/* @title Menu Entry Link */
+/* @help This is the menu entry URL link */
+.profile_menu_entry a {
+    color:#033652;
+}
+
+/* @title Menu Link Hover */
+/* @help This is the menu entry URL link hover effect */
+.profile_menu_entry:hover {
+    background:#FFF9B4;
+}
+
+/* @title Menu Entry Active */
+/* @help This is the menu entry active state */
+.profile_menu_entry_active {
+    /* background-color:#EEEEEE; */
+    background:#FFF9B4;
+    color:#111111;
+}
+.profile_menu_entry_active:hover {
+    background:#F6F6F6;
+    text-decoration:none;
+}
+
+/* @title Profile Name Box */
+/* @help This is the box that the Profile Name text is in */
+.profile_name_box {
+    background:#BBBBBB;
+    text-transform:capitalize;
+    padding:12px;
+    margin:6px;
+    -webkit-border-radius:4px;
+    -moz-border-radius:4px;
+    border-radius:4px;
+    border:1px solid #999999;
+}
+/* @title Profile Name */
+/* @help This is the Profile Name text */
+.profile_name {
+	text-transform:capitalize;
+	font-size:28px;
+	font-weight:bold;
+    color:#000000;
+}
+/* @title Profile Link */
+/* @help This is the Profile Name URL link */
+.profile_name a {
+    color: #033652;
+    text-decoration:none;
+}
+/* @title Profile Link Hover */
+/* @help This is the Profile Name link hover effect */
+.profile_name a:hover {
+    color: #000;
+    text-decoration:underline;
+}
+
+.profile_actions {
+    float:right;
+    vertical-align:middle;
+    text-align:right;
+}
+
+.profile_image {
+    position: relative;
+}
+/* @title Profile Hover Image */
+/* @help This is the Profile Image hover effect */
+.profile_hoverimage {
+    background-color:#333333;
+    position:absolute;
+    top:15px;
+    left:15px;
+    padding:3px;
+    border:1px solid #ddd;
+    display: none;
+    opacity: 0.8;
+}
+.profile_hoverimage a {
+    text-decoration:none;
+}
+.profile_hoverimage a:hover {
+    text-decoration:none;
+}
+.profile_image:hover .profile_hoverimage {
+    display:block;
+    cursor:pointer;
+}
+/* @title Stats Entry Box */
+/* @help This is the Profile Stats Entry Box */
+.stat_entry_box {
+    float:left;
+    background-color:#BBBBBB;
+    border-width:1px;
+    border-color:#999999;
+    border-style:solid;
+    border-radius:4px;
+    padding:3px 9px;
+    margin:6px 6px 0 0;
+    font-size:12px;
+    text-transform:uppercase;
+}
+.stat_entry_box a {
+    text-decoration:none;
+}
+/* @title Stats Entry Box Hover */
+/* @help This is the Profile Stats Entry Box Hover Effect*/
+.stat_entry_box:hover {
+    background-color:#FFCC00;
+}
+.stat_entry_count {
+    font-weight:bold;
+}
+/* @title User is Online */
+/* @help Class for small ONLINE box that shows when the user is actually online */
+.online_status_online {
+    background-color:transparent;
+    text-transform: capitalize;
+    color:#009900;
+    padding:4px;
+    display:inline-block;
+    width:100%;
+}
+
+/* @title User is Offline */
+/* @help Class for small OFFLINE box that shows when the user is not online */
+.online_status_offline {
+    color:#000000;
+    padding:4px;
+    display:inline-block;
+    width:100%;
+}
+
+/* @title Tag Name Box */
+/* @help This is the Profile Tag Name Box */
+.tag_name_box {
+    float: left;
+    background-color: #BBBBBB;
+    border-width: 1px;
+    border-color: #999999;
+    border-style: solid;
+    border-radius: 4px;
+    padding: 3px 6px 6px 6px;
+    margin: 6px 6px 0 0;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.tag_name_box a {
+    text-decoration: none;
+}
+
+/* @title Tag Box Hover */
+/* @help This is the Profile Tag Box Hove Effect */
+.tag_name_box:hover {
+    background-color: #FFCC00;
+}
+
+#tag_holder {
+    position:relative;
+    margin:0 auto;
+    text-align:center;
+}
+
+/* @title Tag Cloud */
+/* @help This is the Profile Tag Cloud */
+#tag_cloud {
+    background-color: #BBBBBB;
+    color:#111111;
+    border-radius:5px 5px 0 0; /* @ignore */
+}
+/* @title Tag Cloud Hover */
+/* @help This is the Profile Tag Cloud Hover Effect */
+#tag_cloud:hover {
+    background-color: #BBBBBB;
+    color:#FFF;
+}
+
+#profile_tag_cloud {
+    display:inline-block;
+}
+
+/* @title Small Tag Name Box */
+/* @help This is the small Tag Name Box */
+.tag_name_box_small {
+    float: left;
+    background-color: #FFFFFF;
+    border-width: 1px;
+    border-color: #999999;
+    border-style: solid;
+    border-radius: 4px;
+    padding: 2px 5px 2px 5px;
+    margin: 4px 4px 0 0;
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: monospace;
+}
+
+/* tags hidden by default */
+.row_tag_list{
+    display: none;
+}

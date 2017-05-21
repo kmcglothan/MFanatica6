@@ -1,0 +1,120 @@
+/* Tab Bar */
+/* @title Tab Bar Holder */
+/* @help This is the holder for the tab bar */
+.page_tab_bar_holder {
+    width: 100%;
+    background-color: transparent;
+    border-bottom-width: 0;
+    border-bottom-style: solid;
+    border-bottom-color: #006699;
+}
+
+.page_tab_bar_spacer {
+    height: 8px;
+    background-color: transparent;
+}
+
+.page_tab_bar {
+    padding-left: 10px;
+}
+
+/* @title Page Tab */
+/* @help This is the tab for the tab bar */
+.page_tab {
+    background: #001926; /* @ignore */
+    background: -moz-linear-gradient(#001F2F, #001926); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#001F2F), to(#001926)); /* @ignore */
+    background: -webkit-linear-gradient(#001F2F, #001926); /* @ignore */
+    background: -o-linear-gradient(#001F2F, #001926); /* @ignore */
+    background: -ms-linear-gradient(#001F2F, #001926); /* @ignore */
+    background: linear-gradient(#001F2F, #001926); /* @ignore */
+    float: left;
+    list-style: none;
+    margin-left: 6px; /* @ignore */
+    color: #FFFFFF;
+    text-decoration: none;
+    text-transform: capitalize;
+    font-size: 13px;
+    text-align: center;
+    cursor: pointer;
+    border: 1px solid #000000;
+}
+
+/* @title Page Tab Hover */
+/* @help This is the tab hover for the tab bar */
+.page_tab:hover {
+    background: #006699; /* @ignore */
+    background: -moz-linear-gradient(#108EB2, #006699); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#108EB2), to(#006699)); /* @ignore */
+    background: -webkit-linear-gradient(#108EB2, #006699);
+    background: -o-linear-gradient(#108EB2, #006699); /* @ignore */
+    background: -ms-linear-gradient(#108EB2, #006699); /* @ignore */
+    background: linear-gradient(#108EB2, #006699); /* @ignore */
+    box-shadow: 0 0 3px #004B74 inset;
+    border: 1px solid #000408;
+    color: #FFFFFF;
+    text-decoration: none;
+}
+
+/* @title Page Tab Hover Link */
+/* @help This is the tab link hover for the tab bar */
+.page_tab:hover a {
+    color: #FFFFFF;
+    text-decoration: none;
+}
+
+/* @title Page Tab Link */
+/* @help This is the tab URL link for the tab bar */
+.page_tab a {
+    padding: 5px 8px; /* @ignore */
+    display: block;
+    color: #FFFFFF;
+    text-decoration: none;
+}
+
+.page_tab_first {
+    margin-left: 0;
+}
+
+.page_tab_last {
+}
+
+/* @title Page Tab Active */
+/* @help This is the active tab */
+.page_tab_active {
+    background: #006699; /* @ignore */
+    background: -moz-linear-gradient(#108EB2, #006699); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#108EB2), to(#006699)); /* @ignore */
+    background: -webkit-linear-gradient(#108EB2, #006699);
+    background: -o-linear-gradient(#108EB2, #006699); /* @ignore */
+    background: -ms-linear-gradient(#108EB2, #006699); /* @ignore */
+    background: linear-gradient(#108EB2, #006699); /* @ignore */
+    box-shadow: 0 0 3px #004B74 inset;
+    border: 1px solid #000408;
+    color: #FFFFFF;
+}
+
+/* @title Tab Active Hover */
+/* @help This is the active tab hover effect */
+.page_tab_active:hover {
+    background-color: #001926;
+    color: #FFFFFF;
+    text-decoration: none;
+}
+
+.page_tab_active:hover a {
+    color: #FFFFFF;
+    text-decoration: none;
+}
+
+/* @title Tab Active Link */
+/* @help This is the active tab URL link */
+.page_tab_active a {
+    color: #FFFFFF;
+}
+
+/* @title Tab Active Hover Link */
+/* @help This is the active tab URL link hover effect */
+.page_tab_active a:hover {
+    color: #FFFFFF;
+}

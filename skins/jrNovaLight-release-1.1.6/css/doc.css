@@ -1,0 +1,121 @@
+/*
+ * Jamroom 5 Nova CSS
+ * Copyright 2003-2011 by Talldude Networks, LLC.
+ * @author Brian Johnson - brian@talldude.net
+ */
+
+/* @title Item Box */
+/* @help This is the item container */
+.doc_item {
+    background-color:#949799;
+    padding:12px;
+    margin:12px auto;
+    border-radius:4px;
+    border:0;
+    color:#000;
+}
+/* @title New Section */
+/* @help This is the popup for a new section */
+.new_section_box {
+    position:inherit;
+    width:400px;
+    text-align:left;
+    background-color:#D4D7D9;
+    color:#000;
+    border:0;
+    border-radius:5px;
+    padding:12px;
+    display:none;
+    z-index:10000;
+    overflow:visible;
+}
+/* @title Table Of Content */
+/* @help This is the table of content section */
+.doc_toc {
+    background-color:#D4D7D9;
+    margin:12px;
+    padding:12px;
+    border:0;
+    border-radius:4px;
+    color:#000;
+}
+/* @title Table Of Content Link */
+/* @help This is the table of content link text */
+.doc_toc a {
+    cursor:pointer;
+    color:#033652;
+    text-decoration:none;
+}
+.doc_toc a:hover {
+    color:#000;
+    text-decoration:underline;
+}
+/* @title Section Text */
+/* @help This is the main text */
+.section_text {
+    position:relative;
+    clear:both;
+    overflow:visible;
+    padding:12px;
+    margin-bottom:12px;
+    color:#000;
+}
+
+/* @title Warning Section */
+/* @help This is the warning section */
+.section_warning {
+    background-color:#FF9900;
+    border:0;
+    border-radius:4px;
+    margin:12px;
+    color:#000;
+}
+
+/* @title Hint Section */
+/* @help This is the hint section */
+.section_hint {
+    background-color:#F7DD4F;
+    border:0;
+    border-radius:4px;
+    margin:12px;
+    color:#000;
+}
+/* @title File Section */
+/* @help This is the file section */
+.section_file {
+    background-color:#D4D7D9;
+    border:0;
+    border-radius:4px;
+    margin-bottom:12px;
+    color:#000;
+}
+/* @title Function Section */
+/* @help This is the function section */
+.section_function {
+    background-color:#949799;
+    margin-bottom:20px;
+    display:table;
+    width:100%;
+    font-size:14px;
+    border:0;
+    border-radius:4px;
+    color:#000;
+}
+/* @title Header Cell */
+/* @help This is the header cell section */
+.section_header_cell {
+    background-color:#D4D7D9;
+    display:table-cell;
+    padding:12px;
+    color:#000;
+}
+/* @title Function Title */
+/* @help This is the function title section */
+.section_function_title {
+    background-color:#D4D7D9;
+    padding:12px;
+    font-family:monospace;
+    border:0;
+    border-radius:4px;
+    color:#000;
+}

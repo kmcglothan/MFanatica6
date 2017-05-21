@@ -1,0 +1,163 @@
+User Comments module change log
+
+Version 1.9.4:
+ - New: "ignore_threading" jrCore_list option to bypass threading for comment lists
+
+Version 1.9.3:
+ - Change: Updated item_list.tpl so comment list image fits better on mobile devices
+ - Bug Fix: URL to commented item in item_action.tpl could point to wrong profile
+
+Version 1.9.2:
+ - Bug Fix: "mentions" of profiles could be processed in comments on private items
+
+Version 1.9.1:
+ - Bug Fix: Update to better handle private comments on private items by private profiles
+ - Bug Fix: Issues with the profile display name in timeline entries and destination urls
+
+Version 1.9.0:
+ - New: Improved handling of comments on private items for large systems
+
+Version 1.8.3:
+ - Change: Profile @mention emails are not sent on comments attached to Private Items
+
+Version 1.8.2:
+ - New: Improved privacy checking to check for comments on private items
+ - New: "private_item_ids" event trigger so modules can pass in item_id's of private items
+ - Change: Quoting retrieves quoted content from the server instead of from a hidden div on the page
+
+Version 1.8.1:
+ - Bug Fix: URL to item that was commented on could point to the wrong profile in Timeline entries
+ - Bug Fix: "Threaded Comments" setting could limit db_search_items result set in some instances
+
+Version 1.8.0:
+ - New: Updated to work with BBCode provided by the System Core 6.0.0
+ - Change: Updated to work with new Timeline updates found in System Core 6.0.0
+
+Version 1.7.9:
+ - Bug Fix: The TinyMCE editor (if selected) was showing on mobile devices. It now reverts to a text area.
+
+Version 1.7.8:
+ - New: "ignore_threading" jrCore_list parameter support added to bypass threaded comment ordering
+ - New: "add_to_timeline" event trigger is now sent before adding a new comment entry to the timeline
+
+Version 1.7.7:
+ - Bug Fix: Threaded Comments may not order correctly for comments embedded in custom profile templates
+ - Bug Fix: Deleting comments with "Save Threads" disabled does not correctly delete attached comments
+
+Version 1.7.6:
+ - Bug Fix: Modify / Delete hover buttons on posts could not show on mouse over on some occasions
+
+Version 1.7.5:
+ - Bug Fix: Possible SQL error in Activity Log when deleting a comment from a non-active module
+
+Version 1.7.4:
+ - New: Text field registration so that this module can work with the Change Owner module
+
+Version 1.7.3:
+ - Bug Fix: [bbcode] blocks could be shown twice in a comment or quoted comment
+
+Version 1.7.2:
+ - Bug Fix: [Security] able to embed code in comments using quote function if editor enabled
+
+Version 1.7.1:
+ - New: If threaded comments are enabled, users can be notified of responses to their comments
+ - Change: index.tpl comment listing is now only visible to profile admins
+
+Version 1.7.0:
+ - New: Updated to support new repair_module event provided by System Core
+ - Change: URLs in notifications now include comment ID as URL fragment to jump directly to comment
+ - Change: Database updates to remove some unused DataStore keys that should make listing a bit faster
+ - Bug Fix: "comment_profile_url" template variable is now working properly
+ - Bug Fix: comment_url variable in item_row template may not have correct profile_url
+
+Version 1.6.3:
+ - Change: Editor now fills 100% of the comment form width if editor is enabled
+ - Bug Fix: New Comments may show as a "reply" to another comment without clicking "reply"
+
+Version 1.6.2:
+ - New: "Show Quote Button" Global Config setting for enabling / disabling the Quota button
+ - Bug Fix: When attaching files to a comment, the uploaded file list was not being reset
+
+Version 1.6.1:
+ - New: Quote button shows for comments
+ - New: Comment ID parameter added for use in the email template
+
+Version 1.6.0:
+ - New: 'Only Active Modules' Global Config setting to enforce active module comments in comment listings
+ - New: Integrity Check worker moved to offline queue to help large systems Integrity Check finish faster
+ - Bug Fix: 'Reply' link fails if user name contains single or double quotes
+
+Version 1.5.6:
+ - Bug Fix: Comment RSS feed listener now includes comment text
+
+Version 1.5.5:
+ - New: Attaching files to comments is now supported
+ - Bug Fix: Enabling comment pagination can results in incorrect comments due to caching
+
+Version 1.5.4:
+ - Bug Fix: Comment threading order on refresh after posting new comment may be incorrect
+
+Version 1.5.3:
+ - Bug Fix: Comment order_by being overwritten for {jrCore_list} calls in skin templates
+ - Bug Fix: $comment_url template variable was incorrect for comments on a Profile
+
+Version 1.5.2:
+ - New: Admins, Profile Owners and Comment owners can modify their comment after posting
+
+Version 1.5.1:
+ - Bug Fix: comment validation could fail to complete on systems with a lot of comments
+
+Version 1.5.0:
+ - New: "Enable Threading" Global Config option to enable threaded comments
+ - New: "Save Threads" option for saving replies to a deleted comment
+ - Change: Lots of small UI improvements to make thigns work smoother
+ - Bug Fix: Comment Form user image now includes version to prevent old image caching
+
+Version 1.4.0:
+ - New: "Load More Comments" shows if comment pagination is enabled in Global Config
+ - New: "Comments Per Page" Global Config to set default comments per page load
+ - Change: jquery.scrollintoview.js file removed - replaced with jQuery
+
+Version 1.3.2:
+ - Change: jrCore_list for jrComment module will only return comments on items for active modules
+
+Version 1.3.1:
+ - Bug Fix: Activity Timeline entry for new Comment on a Profile not linking to proper profile page
+
+Version 1.3.0:
+ - New: "Enable Editor" global config to enable the WYSIWYG editor for the new comment form field
+
+Version 1.2.1:
+ - Bug Fix: URLs to item detail pages in Timeline for comments were incorrect
+
+Version 1.2.0:
+ - New: Comment list can be formatted using an alternate template
+ - Change: Removed comment specific CSS error and success classes - now uses skin classes
+ - Bug Fix: Comment URLs may not be correct when changing Jamroom URLs or directory
+ - Bug Fix: double ID in comment form section HTML
+ - Bug Fix: [code] blocks in comments now formatted correctly when new post is shown
+
+Version 1.1.5:
+ - Bug Fix: Comments by admin users not creating an action in the admin user's Timeline
+ - New: "Show on Detail Pages" quota config option for enabling/disabling comments showing per quota
+
+Version 1.1.4:
+ - Bug: Small language change
+
+Version 1.1.3:
+ - Bug Fix: Comments displayed in other areas need to link to the primary location the comment was made.
+
+Version 1.1.2:
+ - Bug Fix: Comment order on refresh after posting a new comment may not be ordered correctly
+
+Version 1.1.1:
+ - Bug Fix: Delete Comment button now shows on reloaded comments after posting a new comment
+
+Version 1.1.0:
+ - New "Comment Sort Direction" global config option to change direction comments are shown in by default.
+ - New "Profile Delete Comments" quota setting that if enabled allows profile owners to delete comments on any of their items.
+ - New ability for a module to define the comment sort order in the jrCore_item_detail_features function call via a comment_sort_order param.
+ - Multiple Comment forms can now be on the same page (as long as each is for a unique item)
+
+Version 1.0.0:
+ - Initial Release

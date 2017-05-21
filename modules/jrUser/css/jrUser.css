@@ -1,0 +1,90 @@
+.online_status_table {
+    display: table;
+    width: 100%;
+}
+
+/* @title Online Status Image */
+/* @help Cell class for image area in Online Status for an individual User */
+.online_status_image {
+    display: table-cell;
+    width: 10%;
+    padding: 6px;
+}
+
+/* @title Online Status User */
+/* @help Cell class for user name area in Online Status for an individual User */
+.online_status_user {
+    display: table-cell;
+    width: 80%;
+    vertical-align: middle;
+    padding: 2px 6px;
+}
+
+/* @title Online Status User Anchor */
+/* @help Cell class for user name area in Online Status for an individual User */
+.online_status_user a {
+    color: #000000;
+}
+
+/* @title User is Online */
+/* @help Class for small ONLINE box that shows when the user is actually online */
+.online_status_online {
+    background-color: #CCFF99;
+    color: #000000;
+    padding: 4px;
+    display: inline-block;
+    width: 100%;
+}
+
+/* @title User is Offline */
+/* @help Class for small OFFLINE box that shows when the user is not online */
+.online_status_offline {
+    color: #000000;
+    padding: 4px;
+    display: inline-block;
+    width: 100%;
+}
+
+/* @title Widget Font Size */
+/* @help sets the label font size for the Login and Signup widgets */
+.widget-item-widget_login {
+    font-size: 12px !important;
+}
+
+#user-notification-select {
+    margin: 10px 6px !important;
+    width: 35% !important;
+    text-transform: capitalize;
+}
+
+.user_notification_left {
+    width: 35% !important;
+    padding: 20px !important;
+}
+
+.user_notification_right {
+    width: 65% !important;
+    padding: 20px !important;
+}
+
+.user_notification_right input {
+    display: inline-block;
+    margin: 3px 6px 3px 3px;
+}
+
+#jrUser_account input[readonly="readonly"] {
+    background: inherit;
+    color: inherit;
+}
+
+.user-delete-modal {
+    text-align: center;
+    width: 290px;
+    padding: 20px;
+}
+
+.user-delete-modal input {
+    width: 250px;
+    display: inline-block;
+    margin: 10px 20px;
+}

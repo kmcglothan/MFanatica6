@@ -1,0 +1,1 @@
+<iframe width="{$width}" height="{$height}" scrolling="no" frameborder="no" src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F{$soundcloud_id}&amp;auto_play={$auto_play}&amp;show_artwork={$show_artwork}"></iframe>

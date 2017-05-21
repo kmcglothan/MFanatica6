@@ -1,0 +1,1 @@
+{jrEvent_calendar template="widget_calendar_`$widget_data.calendar_size`.tpl" tpl_dir="jrEvent"}

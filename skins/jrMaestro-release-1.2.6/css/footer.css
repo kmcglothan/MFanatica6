@@ -1,0 +1,42 @@
+/* @title Footer color */
+/* @help Footer */
+#footer {
+    background-image: url("{$n8Maestro4_img_url}/bckgrd.png");
+    background-color: #333333;
+}
+
+/* @title Footer Links */
+/* @help Footer text URL */
+#footer a {
+    text-transform: capitalize;
+    text-decoration: none;
+    color: #FFFFFF;
+}
+
+/* @title Footer Link Hover */
+/* @help Footer text URL hover */
+#footer a:hover {
+    text-decoration: underline;
+}
+
+#footer_content {
+    max-width: 1140px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* @title Footer Social Networks */
+/* @help the social network icons located in the footer */
+#footer_sn {
+    padding: 12px;
+    vertical-align: middle;
+}
+
+/* @title Footer Text */
+/* @help Footer text */
+#footer_text {
+    text-align: right;
+    color: #CCCCCC;
+    font-size: 14px;
+    padding: 12px;
+}

@@ -1,0 +1,13 @@
+Find New Music module changelog
+
+Version 1.1.0:
+ - New: Quota enable added to allow profiles access to the 'influence' field
+
+Version 1.0.1:
+ - New: no_results.tpl file to display if there are no audio files found to match the search
+ - Change: Results are now ordered by stream count (audio_file_stream_count)
+ - Change: recommend_pagination.tpl removed - now uses default core pagination template
+ - Change: Search results now exclude viewing user's own profile from search results
+
+Version 1.0.0:
+ - Initial Release

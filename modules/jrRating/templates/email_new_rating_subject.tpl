@@ -1,0 +1,1 @@
+[{$system_name}] New Rating on "{$rating_title}"

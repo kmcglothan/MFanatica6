@@ -1,0 +1,22 @@
+.create_video_box {
+    position: inherit;
+    text-align: left;
+    border: 1px solid #999999;
+    border-radius: 3px;
+    padding: 6px;
+    z-index: 100;
+    overflow: visible;
+    box-shadow: 3px 3px 3px 3px #CCCCCC;
+}
+
+.video-choice {
+    float: left;
+    text-align: center;
+    padding: 12px;
+}
+
+#video-close {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+}

@@ -1,0 +1,20 @@
+FAQ module changelog
+
+Version 1.0.5:
+ - New: Reordering system added to sort the FAQ into the desired structure
+
+Version 1.0.4:
+ - Bug Fix: Editor form fields were not being tested for banned words
+
+Version 1.0.3:
+ - New: updated to work with Change Owner module
+
+Version 1.0.2:
+ - Update: updated form to require a category.
+
+Version 1.0.1:
+ -Addition: Added category url variable.
+ - Change: Changed question limit per category to 50.
+
+Version 1.0.0:
+ - Initial Release

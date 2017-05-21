@@ -1,0 +1,12 @@
+.jrsupport-entry {
+    padding: 10px;
+    display: table-cell
+}
+
+.jrsupport-entry a:hover {
+    text-decoration: none !important;
+}
+
+.form_button_support {
+    width: 150px;
+}

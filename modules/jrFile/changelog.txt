@@ -1,0 +1,43 @@
+File Downloads module changelog
+
+Version 1.0.13:
+ - New: Added item_detail_meta.tpl for the Meta Tag Manager module to support custom meta tags
+
+Version 1.0.12:
+ - Change: javascript for embedding an item in an editor changed to target the editor where the button was clicked
+ - Change: facebook share structure added which shows an icon if no image exists
+
+Version 1.0.11:
+ - Change: Module name changed to "Files" and category changed to "Profiles"
+
+Version 1.0.10:
+ - Bug Fix: Quota info not being retrieved correctly when creating a file so quota settings not working
+
+Version 1.0.9:
+ - Change: Embedded file downloads instead of linking to download page
+
+Version 1.0.8:
+ - Change: Updated to work properly with new Editor Embedded Media module
+
+Version 1.0.7:
+ - Change: new "item_embed.tpl" template that works with new Embed module
+
+Version 1.0.6:
+ - Change: Updated to work with Editor Embedded Media module and TinyMCE 4
+
+Version 1.0.5:
+ - Change: item_bundle.tpl template updated to work properly with latest FoxyCart Bundle module
+ - Bug Fix: Fix for incorrect error result function used on a couple views
+ - Bug Fix: File Extension icons were not updated properly if replaced in images tab
+
+Version 1.0.4:
+ - Change: Updated file extension images
+
+Version 1.0.3:
+ - Bug Fix: Add to Bundle drop down not showing on file list or detail pages
+
+Version 1.0.2:
+ - Template updates to support new Item Action Buttons
+
+Version 1.0.0:
+ - Initial Release

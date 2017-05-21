@@ -1,0 +1,87 @@
+ShareThis module changelog
+
+Version 1.4.2:
+ - Bug Fix: Removed multi.swf player replaced so existing shared audio URL's still have a player
+
+Version 1.4.1:
+ - Bug Fix: Possible SQL error when non-existing short URL from previous version is received
+
+Version 1.4.0:
+ - New: Added "WhatsApp" Chicklet as an option in Global Config -> Service Config
+ - Change: Requires the Meta Tag Module to be installed in order to function
+ - Change: URL Shortening functionality moved to new URL Redirection module
+
+Version 1.3.6:
+ - Change: Creating a new Short URL for an item no longer updates the item's _updated timestamp
+
+Version 1.3.5:
+ - Bug Fix: Possible SQL Query error if module item does not have a DataStore
+
+Version 1.3.4:
+ - Change: Blogger chiclet removed - no longer supported by ShareThis
+
+Version 1.3.3:
+ - Change: Added image time to shared image to prevent stale images from showing
+ - Change: ShareThis Javascript only loads on pages where ShareThis buttons are displayed
+ - Change: OG Tags for the Profile are now used on profile pages that don't have their own OG Tags
+ - Change: Removed "displayText" parameter from button templates
+
+Version 1.3.2:
+ - Change: added image:width and image:height OG tags to Facebook share template
+
+Version 1.3.1:
+ - Bug Fix: OG:Description tag could contain HTML
+ - Bug Fix: disabling "Allow Facebook Player" in Quota Config disabling all OG tags for audio detail pages
+
+Version 1.3.0:
+ - New: "Enable Copy N Share" Global Config option to enable/disable ShareThis CopyNShare
+
+Version 1.2.1:
+ - New: Internal functionality added to make it easier for modules to integrate ShareThis into templates
+
+Version 1.2.0:
+ - New: "Create Short URLs" Global Config for creating short URLs for Open Graph tags
+ - Change: Profile, YouTube and Audio specific templates moved to respective modules
+
+Version 1.1.2:
+ - New: {jrShareThis} template function now accepts a "template" parameter for custom template
+
+Version 1.1.1:
+ - New: "get_item_info" event trigger to get Open Graph meta tag item info from modules
+
+Version 1.1.0:
+ - New: Open Graph template added for jrProfile to share a profile
+ - New: {jrShareThis} template function to place ShareThis buttons in a template
+ - Change: crop parameter removed from shared image URL
+
+Version 1.0.9:
+ - New: Added og:description meta tag if module has a description or desc field
+
+Version 1.0.8:
+ - Bug Fix: YouTube og:title tag was not being set correctly and could be empty
+ - Bug Fix: UTF-8 Characters should now be encoded correctly in the og:title tag
+
+Version 1.0.7:
+ - Bug Fix: small changes to Javascript loading to prevent load errors from impacting other Javascript
+
+Version 1.0.6:
+ - Bug Fix: disable adding ShareThis Javascript to page if Publisher Key is not entered
+
+Version 1.0.5:
+ - New: auto-detection of SSL/non-SSL for default Open Graph tags on non-audio pages
+ - New: "Show on Detail Pages" quota config option for enabling/disabling ShareThis showing per quota
+
+Version 1.0.4:
+ - New: Custom YouTube module template for pulling ShareThis image from YouTube
+
+Version 1.0.3:
+ - New: Open Graph tags are now added to all Item detail pages if ShareThis is enabled
+
+Version 1.0.2:
+ - Artist name added to audio title for Facebook shared MP3 player
+
+Version 1.0.1:
+ - New "Allow Facebook Player" quota setting so the shared to Facebook MP3 player can be enabled and disabled per quota (requires SSL)
+
+Version 1.0.0:
+ - Initial Release

@@ -1,0 +1,59 @@
+Editor Image Upload module changelog
+
+Version 1.1.7:
+ - Change: Updated error text for instances when an image may fail to upload
+
+Version 1.1.6:
+ - New: Added alt text to the uploaded image
+ - New: Setting choices remembered when uploading an image via Editor Embedded Media
+
+Version 1.1.5:
+ - New: Added 'original' as an image size option for uploaded images
+
+Version 1.1.4:
+ - Change: Removed overly-broad CSS that targeted h* tags
+
+Version 1.1.3:
+ - Change: Removed overly-broad CSS that targeted h* tags
+
+Version 1.1.2:
+ - Change: Embed tab now uses dynamic width to allow for very narrow browser when uploading files to embed.
+
+Version 1.1.1:
+ - Bug Fix: dynamic height for images in Insert Images widget could fail and be very small
+
+Version 1.1.0:
+ - Change: Updated to work properly with new Site Builder system
+ - Change: Added padding to the embed insert dialog options
+
+Version 1.0.10:
+ - Change: Updated to work properly with new Editor Embedded Media module
+
+Version 1.0.9:
+ - Change: internal function updates to integrate properly with core media functions
+
+Version 1.0.8:
+ - Change: ACP text changed to mirror marketplace text "TinyMCE Image Upload" is now "Editor Image Upload"
+
+Version 1.0.7:
+ - Change: removed custom CSS for module that was overriding core skin styles
+ - Change: altered the layout of the Upload Image tab in Editor Embedded Media module
+
+Version 1.0.6:
+ - Change: updated jrEmbed system to work with Tiny MCE version 4
+
+Version 1.0.5:
+ - Bug Fix: uploading an image fails if module URL is changed
+
+Version 1.0.4:
+ - Bug Fix: default image size is now "icon" so image cannot be saved without a valid size
+
+Version 1.0.3:
+ - Adding new image size selector for uploaded images
+
+Version 1.0.2:
+ - Adding new requires metadata to ensure jrEmbed is installed and active
+ - Adding new Changelog
+
+Version 1.0.0:
+ - Initial release

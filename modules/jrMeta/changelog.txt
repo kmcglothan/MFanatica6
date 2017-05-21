@@ -1,0 +1,46 @@
+Meta Tag Manager module changelog
+
+Version 1.1.0:
+ - New: Support added for custom detail, list, and index module meta tags via "meta" templates
+ - New: Twitter card tags added to available meta tags list
+ - Change: Updated module icon
+
+Version 1.0.11:
+ - Bug Fix: Meta Tags set for skin templates that are module overrides not being inserted
+
+Version 1.0.10:
+ - New: "generator" Meta Tag has been added to available Meta Tags
+ - Change: Available meta tags are now sorted properly in drop down selector
+
+Version 1.0.9:
+ - Change: Removed "Active" Global Config option - Meta Tags can be disabled by disabling the module
+
+Version 1.0.8:
+ - Bug Fix: Values used in meta tags may not have correct HTML Entity encoding
+
+Version 1.0.7:
+ - Bug Fix: Modify form did not contain the same Location values as the Create screen
+
+Version 1.0.6:
+ - Bug Fix: Extended the amount of meta tags that can be created so there should be plenty of space for any sized site.
+
+Version 1.0.5:
+ - New: Link to the meta tag browser from the Site Builder page settings config screen for easier navigation.
+ - Bug Fix: Site Builder pages could display the wrong meta tags.
+
+Version 1.0.4:
+ - New: Support for Site Builder pages has been added to the Meta Tag Browser
+ - New: Open Graph tags added as default Tag Names in the Meta tag Browser
+
+Version 1.0.3:
+ - New: New Meta Tag "Tag Names" added to default install to make it easier to configure
+
+Version 1.0.2:
+ - New: Ability to create tags for specific skin templates
+ - Bug Fix: tag replacements were being processed on some image views (where it is not used).
+
+Version 1.0.1:
+ - Bug Fix: [jrEmbed] calls in text causing media player CSS to not load
+
+Version 1.0.0:
+ - Initial Release

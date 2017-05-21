@@ -1,0 +1,63 @@
+RSS Feed Reader module changelog
+
+Version 1.2.1:
+ - Change: Modules must now register the "feed_support" module feature to allow module RSS Feeds
+
+Version 1.2.0:
+ - New: Updated to work with Atom feeds
+
+Version 1.1.8:
+ - Bug Fix: Feed was not working if a profile specified in url
+
+Version 1.1.7:
+ - Change: Feeds generated for a profile_url should be faster on very large systems
+
+Version 1.1.6:
+ - Bug Fix: Some HTML entities were showing in the title for the RSS Entry
+ - Bug Fix: Profile biography entries in a Profile RSS feed not showing emoji characters if entered
+
+Version 1.1.5:
+ - Change: CDATA tags added around titles to prevent non-supported entities from breaking feed
+
+Version 1.1.4:
+ - Change: RSS Feeds are now cached for the cache length as set in the Core Global Config
+ - Bug Fix: Some titles in the RSS XML were not being formatted correctly after the 1.1.3 release
+
+Version 1.1.3:
+ - New: added GUID and ATOM elements in RSS feeds to better adhere to the RSS 2.0 specification
+ - Bug Fix: emoji characters and some HTML entities causing feed validation errors
+
+Version 1.1.2:
+ - Update: changed the installed Jamroom feed URL to use the correct jamroom.net URL
+
+Version 1.1.1:
+ - New: Modules without a DataStore that provide an item_rss.tpl template can generate a feed
+ - Change: Updated to work with Combined Audio and Video modules
+ - Change: Layout changes in Feed Browser to make things work better with a large number of feeds
+
+Version 1.1.0:
+ - New: Optional url (post) search parameters added (i.e. site.com/feed/audio/limit=10/audio_genre=rock)
+
+Version 1.0.6:
+ - Change: Updated to work properly with new Site Builder system
+
+Version 1.0.5:
+ - New: skin (module name)_item_rss.tpl template can over-ride item_rss.tpl even if file does not exist
+
+Version 1.0.4:
+ - New: Better titles in RSS feeds for modules that don't format their own RSS
+ - New: module item_rss.tpl template can provide module specific RSS format
+
+Version 1.0.3:
+ - Bug Fix: Feed Level Title, Description, Pub Date and URL were not being set correctly
+ - Bug Fix: Fix for incorrect error result function used on a couple views
+ - Change: profile_url added to $_args in create_rss_feed trigger
+
+Version 1.0.2:
+ - Bug Fix: BBCode is now properly stripped from the Item Description in the feed if present
+
+version 1.0.1:
+ - Adding new Changelog
+
+Version 1.0.0:
+ - Initial Release

@@ -1,0 +1,1 @@
+Your {$_conf.jrCore_system_name} Subscription is about to expire

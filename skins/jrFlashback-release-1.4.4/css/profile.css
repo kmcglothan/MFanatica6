@@ -1,0 +1,190 @@
+/* jrFlashback Profile Page CSS */
+
+/* @title Profile Menu */
+/* @help This is the Profile menu */
+.profile_menu {
+    margin:0;
+    background-color:transparent;
+    padding:0 12px 6px 12px;
+}
+
+/* @title Profile Menu Entry */
+/* @help This is the Profile menu entries */
+.profile_menu_entry {
+    display:inline-block;
+    background: #001926;  /* @ignore */
+    background: -moz-linear-gradient(#001f2f, #001926); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#001f2f), to(#001926)); /* @ignore */
+    background: -webkit-linear-gradient(#001f2f, #001926); /* @ignore */
+    background: -o-linear-gradient(#001f2f, #001926); /* @ignore */
+    background: -ms-linear-gradient(#001f2f, #001926); /* @ignore */
+    background: linear-gradient(#001f2f, #001926); /* @ignore */
+    text-transform:uppercase;
+    margin-top:3px;
+    margin-right:1px;
+    padding:4px;
+    color:#FFF;
+    font-size:10px;
+    font-weight:bold;
+    border:1px solid #000;
+    cursor:pointer;
+}
+
+/* @title Menu Entry Link */
+/* @help This is the menu entry URL link */
+.profile_menu_entry a {
+    color:#FFF;
+}
+
+/* @title Menu Link Hover */
+/* @help This is the menu entry URL link hover effect */
+.profile_menu_entry:hover {
+    background:#069;  /* @ignore */
+    background: -moz-linear-gradient(#108EB2, #069); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#108EB2), to(#069)); /* @ignore */
+    background: -webkit-linear-gradient(#108EB2, #069);background: -o-linear-gradient(#108EB2, #069); /* @ignore */
+    background: -ms-linear-gradient(#108EB2, #069); /* @ignore */
+    background: linear-gradient(#108EB2, #069); /* @ignore */
+    box-shadow: 0 0 3px #004b74 inset;
+    border:1px solid #000408;
+    text-decoration: none;
+}
+
+/* @title Menu Entry Active */
+/* @help This is the menu entry active state */
+.profile_menu_entry_active {
+    /* background-color:#EEEEEE; */
+    background:#069;  /* @ignore */
+    background: -moz-linear-gradient(#108EB2, #069); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#108EB2), to(#069)); /* @ignore */
+    background: -webkit-linear-gradient(#108EB2, #069);background: -o-linear-gradient(#108EB2, #069); /* @ignore */
+    background: -ms-linear-gradient(#108EB2, #069); /* @ignore */
+    background: linear-gradient(#108EB2, #069); /* @ignore */
+    box-shadow: 0 0 3px #004b74 inset;
+    border:1px solid #000408;border-radius:3px;
+    text-decoration: none;
+}
+.profile_menu_entry_active:hover {
+    color:#CCC;
+}
+
+/* @title Profile Name Box */
+/* @help This is the box that the Profile Name text is in */
+.profile_name_box {
+    background: #001926;  /* @ignore */
+    background: -moz-linear-gradient(#00273B, #001926); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#00273B), to(#001926)); /* @ignore */
+    background: -webkit-linear-gradient(#00273B, #001926); /* @ignore */
+    background: -o-linear-gradient(#00273B, #001926); /* @ignore */
+    background: -ms-linear-gradient(#00273B, #001926); /* @ignore */
+    background: linear-gradient(#00273B, #001926); /* @ignore */
+    text-transform:capitalize;
+    padding:12px;
+    margin:12px;
+    box-shadow: 0 0 4px #000 inset;
+}
+/* @title Profile Name */
+/* @help This is the Profile Name text */
+.profile_name {
+	text-transform:capitalize;
+	font-size:28px;
+	font-weight:bold;
+    color:#C60;
+}
+/* @title Profile Link */
+/* @help This is the Profile Name URL link */
+.profile_name a {
+    text-decoration:none;
+}
+/* @title Profile Link Hover */
+/* @help This is the Profile Name link hover effect */
+.profile_name a:hover {
+    text-decoration:none;
+}
+
+.profile_actions {
+    float:right;
+    vertical-align:middle;
+    text-align:right;
+}
+
+.profile_image {
+    position: relative;
+}
+.profile_hoverimage {
+    background-color:#333333;
+    position:absolute;
+    top:15px;
+    left:15px;
+    padding:3px;
+    border:1px solid #ddd;
+    display: none;
+    opacity: 0.8;
+}
+.profile_hoverimage a {
+    text-decoration:none;
+}
+.profile_hoverimage a:hover {
+    text-decoration:none;
+}
+.profile_image:hover .profile_hoverimage {
+    display:block;
+    cursor:pointer;
+}
+.head_2 {
+    background-color:#0D4C72;
+    border-bottom:1px #069 solid;
+    font-size:11px;
+    height:25px;
+    font-weight:bold;
+    color:#9C0;
+    line-height:24px;
+    text-transform:uppercase;
+    padding:5px;
+    margin:5px 5px -5px 5px;
+}
+
+.stat_entry_box {
+    float:left;
+    background-color:#333;
+    border-width:1px;
+    padding:3px 9px;
+    margin:6px 6px 0 0;
+    font-size:12px;
+    text-transform:uppercase;
+}
+.stat_entry_box a {
+    color:#FFFFFF;
+    text-decoration:none;
+}
+.stat_entry_box a:hover {
+    color:#FFFFFF;
+    text-decoration:none;
+}
+.stat_entry_box:hover {
+    color:#FFFFFF;
+    background-color:#069;
+}
+.stat_entry_count {
+    color:#FFFFFF;
+    font-weight:bold;
+}
+/* @title User is Online */
+/* @help Class for small ONLINE box that shows when the user is actually online */
+.online_status_online {
+    background-color:transparent;
+    text-transform: capitalize;
+    color:#9C0;
+    padding:4px;
+    display:inline-block;
+    width:100%;
+}
+
+/* @title User is Offline */
+/* @help Class for small OFFLINE box that shows when the user is not online */
+.online_status_offline {
+    color:#000000;
+    padding:4px;
+    display:inline-block;
+    width:100%;
+}

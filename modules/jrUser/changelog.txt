@@ -1,0 +1,336 @@
+User Accounts module changelog
+
+Version 2.1.2:
+ - New: Activity Log entry for invalid password at login for admin and master users
+ - Bug Fix: Possible incorrect user_id after jrUser_session_sync()
+
+Version 2.1.1:
+- Bug Fix: Unchecking "Disable All Notifications" may not save changes
+
+Version 2.1.0:
+- New: "Active Session System" global config setting if module session handlers installed
+- New: "Login Note" global config setting to set a custom note (HTML allowed) on the login form
+- New: "Signup Note" global config setting to set a custom note (HTML allowed) on the signup form
+
+Version 2.0.8:
+ - Change: Daily Active Users dashboard shows active users for current day (vs previous 24 hours)
+ - Bug Fix: Cloned languages may not be setup properly on a new module install
+ - Bug Fix: Date in Daily Active Users dashboard graph was off by one
+ - Bug Fix: Banned Email match on User Email may not show correct error message
+
+Version 2.0.7:
+ - New: User Browser delete confirmation modal to delete user OR user + profile
+ - Change: "word-break" class added to Location column in Who's Online to break long URLs
+
+Version 2.0.6:
+ - Change: "Not Authorized" page continue button loads /user/login page for non-logged in users
+
+Version 2.0.5:
+ - New: "Export Language Strings" tool for exporting language strings to a file
+ - New: "Import Language Strings" tool for importing an exported language file
+ - Bug Fix: Some module tabs may not always show in the user Account Settings
+
+Version 2.0.4:
+ - Bug Fix: Signup Quota select field could show even if only one quota has signups enabled
+
+Version 2.0.3:
+ - New: Unsubscribe support for email addresses not tied to user accounts
+ - New: Updated to listen for new email_addresses Core event for suppression list
+
+Version 2.0.2:
+ - New: "Block" button in User data browser to easily block and unblock a user and profile
+ - Bug Fix: Possible error when modifying a user account created by different module
+
+Version 2.0.1:
+ - New: "Signup Redirect Page" Quota Config setting to redirect to specific page after signup
+ - Bug Fix: jrUser_session_sync() could delete valid form notices on location redirect
+
+Version 2.0.0:
+ - Bug Fix: Who's Online not showing different user accounts logged in on same IP Address
+ - Change: Notifications section updated to no longer use the Module name as the selector
+ - Change: Updated invalid login check functions to no longer "block"
+ - Change: "Change Notification" global config now notifies users when they change their password
+ - Change: Bundled Crawler Detect library updated to latest version
+
+Version 1.8.7:
+ - New: Whois lookup functionality changed to new tool using "whois" command from operating system
+ - Bug Fix: "unsubscribe_confirm" view redirecting to user login if Site Privacy is not public
+ - Bug Fix: "Auto Login Reset" function using 14 days internally instead of config value
+
+Version 1.8.6:
+ - New: Daily and Monthly active users dashboard panels and graphs
+ - Change: User Account form updated to prevent Safari auto fill for admin users
+
+Version 1.8.5:
+ - Change: Account/Notifications tabs will not show to Power users for profiles with no user account
+ - Bug Fix: Removing "Disable All Notifications" causes all notifications to be set to "Do Not Notify"
+ - Bug Fix: Possible that any notification that notifies multiple users by email could have multiple footers
+ - Bug Fix: Who's Online may not always show latest activity for logged in users
+ - Bug Fix: Newsletter notification option showing Private Note option although it does not work
+
+Version 1.8.4:
+ - Change: Double opt-out now implemented for removal of all Notifications for non-logged in users
+ - Change: Notification tab updated to be easier to use with a large number of notification options
+ - Bug Fix: Some notification options may not show that should based on Quota settings
+ - Bug Fix: Fix and cleanup of user passwords wrongly saved to the User DataStore
+ - Bug Fix: Some users getting cached error that they are not active after activating account
+
+Version 1.8.3:
+ - Bug Fix: Switching User accounts from Dashboard may not show all Account tabs correctly
+ - Bug Fix: Invalid URL created in the pending user search form field
+ - Bug Fix: Delete pending user button was sending the user id, and not the profile id
+ - Bug Fix: "Success" message was no longer showing when saving Account settings
+
+Version 1.8.2:
+ - Change: Users Online IP Address info check changed to https://dnsquery.org
+ - Bug Fix: Some Custom form designer fields may not be saved on Signup
+
+Version 1.8.1:
+ - New: Quota Config validation for Power User accounts to ensure valid Quotas are allowed
+ - Change: URL length for memory URL increased from 256 bytes to 4096 bytes
+
+Version 1.8.0:
+ - New: "Total User Accounts" and "Bots Online" Dashboard panels are now available
+ - New: MIN Activity Log entry is created when a user unsubscribes from all notifications
+ - New: Quota option to redirect users to specified page upon login
+ - New: Existing user image can be removed by clicking on "X" in existing user image
+ - New: "hourly_notification" event fired hourly for timed notifications from modules
+ - Change: Search form in Users Online now searches more fields than just the username.
+ - Change: Added session check on unsubscribe view to check user account if logged in
+ - Change: Added a confirm form on the unsubscribe page
+ - Change: Amount of session data that can be stored has been increased to prevent rare SQL error
+ - Change: Updated to work with new Repair Modules event provided by System Core
+ - Change: Login and Signup widgets now use existing login/signup form instead of a template
+ - Change: when modifying a user account the user name no longer shows if admin modifying own account
+ - Change: Updates to support new Jamroom Core 5.3.0 Recycle Bin
+ - Change: Module name changed from "User Accounts" to "Users"
+ - Bug Fix: "unsubscribe" view was not using language strings so could not be translated
+ - Bug Fix: Notification changes not being saved properly and may revert on refresh of form
+ - Bug Fix: User entering an invalid username on signup was getting an incorrect error message
+ - Bug Fix: User entering an invalid unsubscribe URL getting a blank error message
+ - Bug Fix: '@' could be entered as first character in User Name and Profile Name
+ - Bug Fix: Account Tabs may not show all options for Power and Multi-Profile users
+ - Bug Fix: Deleting active profile from a multi-profile user may not revert to remaining profile(s)
+ - Bug Fix: User Account tabs were checking current profile quota instead of home profile quota
+ - Bug Fix: "Remember Me" cookie could create invalid keys in DS after user account deleted
+ - Bug Fix: "Remember Me" cookie cleanup not always working
+ - Bug Fix: "Account Settings" and "Logout" could not be changed in language strings
+
+Version 1.7.3:
+ - New: "Show Bots" button in Who's Online listing to show known bots accessing the site
+ - Change: New Crawler-Detect library used to detect bots
+ - Change: URLs inside of [code] blocks are not changed if Create SSL URLs is enabled
+ - Bug Fix: jrUser_get_profile_home_key() content not being reset with Cache Reset
+ - Bug Fix: Some "remember me" cookies could be deleted earlier than configured
+
+Version 1.7.2:
+ - Bug Fix: Viewing account info for invalid account was showing User info of viewer
+ - Change: Loading of user language strings uses less memory
+
+Version 1.7.1:
+ - Bug Fix: User could be redirected to invalid page on login if attempting to view a private profile
+ - Bug Fix: "user_updated" event trigger not firing when admin updates a different user account
+
+Version 1.7.0:
+ - New: "notify_user" event fired when a user is about to be notified via email or PM
+ - New: Added "module" parameter to jrUser_whos_online template function
+ - Bug Fix: Fix regression introduced in 1.6.2 for signup quotas that prevented them from changing
+ - Bug Fix: "Site Privacy" index showing when visiting domain.com/user even if not enabled
+
+Version 1.6.2:
+ - Bug Fix: Embedded signup forms do not display signup quotas correctly if there are multiple options
+
+Version 1.6.1:
+ - Change: Signup widget for the Site Builder system submission method.
+
+Version 1.6.0:
+ - New: Login and Signup widget for the Site Builder system
+ - New: "site_privacy_check" event for modules to add allowed views when site is private
+ - New: quota_id passed to /user/signup now selected as default if multiple signup quotas allowed
+ - New: If saving Global Config with "Create SSL URLs" enabled, SSL support is checked before enabling
+ - Bug Fix: Setting a site to private could block the Support Tickets "webhook"
+ - Bug Fix: Signup Notification email sent twice if Admin Validation enabled and an account is approved
+
+Version 1.5.13:
+ - Bug Fix: URL in forgot password email forcing login on sites with "Private" Site Privacy
+
+Version 1.5.12:
+ - Bug Fix: "Create Account" button showing on Login page even if Signups are turned off
+
+Version 1.5.11:
+ - Change: Update so OneAll Login works correctly if Re-Authenticate config setting is "on"
+
+Version 1.5.10:
+ - New: Required signup form fields "display group" setting validated on Integrity Check
+
+Version 1.5.9:
+ - Change: "Signup" and "Forgot Login" forms show result page instead of refreshing form
+
+Version 1.5.8:
+ - Bug Fix: Admin created accounts with "Create Password" may not send new user email
+
+Version 1.5.7:
+ - New: "signup_validate" event trigger added for modules to validate submitted Signup data
+
+Version 1.5.6:
+ - Bug Fix: Options showing in Notifications when user does not have Quota access to the module
+ - Bug Fix: Searches in "View Keys" Datastore Browser mode reverting to normal user listing
+ - Bug Fix: Redirect for password authentication not working in some cases for Admin users
+
+Version 1.5.5:
+ - Bug Fix: Possible "Invalid Activation Key" error on new account validation
+
+Version 1.5.4:
+ - New: Detection of user language based on browser settings if language has not been set
+ - Bug Fix: user account information could show cached info in Account Settings section for admin
+
+Version 1.5.3
+ - Change: user_name and user_email are now "trimmed" on signup to prevent leading and trailing spaces
+
+Version 1.5.2:
+ - Change: Users with inactive accounts now have "not active" highlighted in User Browser
+ - Change: Admin modifying account from User Browser now returns to User Browser on save
+ - Bug Fix: "Log Off" button from Who's Online in Dashboard results in 404 not found page
+
+Version 1.5.1:
+ - Change: verify.php functionality moved to verify_module event listener
+ - Bug Fix: User could signup with same name as a module URL, resulting in a 404 not found
+
+Version 1.5.0:
+ - New: "Re-Athenticate" Global Setting to force entering old password on password and email changes
+ - New: "Email Change Notice" Global Setting sends an email to the old email address on email change
+ - New: "New Device Notice" Quota Config option for notifying users when logged in on new device
+ - New: 7, 30, 60 and 90 day options added to "Auto Login Reset" Global Setting
+ - Change: Global Options form layout updated to better group config options
+ - Change: Successfully updating User Account settings no longer redirects to User Profile
+ - Bug Fix: User Group select field may not always show on User Account form for Master Admin
+
+Version 1.4.1:
+ - Bug Fix: jrUser_notify in a loop may skip email notifications in some situations
+
+Version 1.4.0:
+ - New: "Site Privacy" Global Config option added for creating a public/private site
+
+Version 1.3.5:
+ - Change: Updated Account Settings form so Master Admin options show properly at bottom
+ - Bug Fix: jrUser_session_is_valid_session() was always returning false
+
+Version 1.3.4:
+ - Bug Fix: Users Online dashboard panel would sometimes show blank
+
+Version 1.3.3:
+ - Bug Fix: New language strings from updated modules and skins not being added to Cloned languages
+
+Version 1.3.2:
+ - Bug Fix: skip_session support not working correctly for views named the same in different modules
+
+Version 1.3.1:
+ - Bug Fix: Custom form fields on signup page not being saved properly to the User DataStore
+
+Version 1.3.0:
+ - New: "Clone Language" tool updated to update exiting languages with new module and skin Language Strings
+
+Version 1.2.9:
+ - Bug Fix: user_updated / user_created values in jrCore_list calls had their values swapped
+
+Version 1.2.8
+ - New: Ability to "undo" block all notifications when clicking on an unsubscribe link from an email footer
+ - Change: User session is now synced before any quota limit check is performed
+
+Version 1.2.7:
+ - New: Signup email address is now checked for Banned email/domain if Banned Items module is installed
+
+Version 1.2.6:
+ - Bug Fix: Login was broken after the 1.2.5 release
+
+Version 1.2.5:
+ - Change: URL history mechanism updated to handle session changes better
+
+Version 1.2.4:
+ - Bug Fix: invalid user_id in account tabs not loading viewing user information correctly
+ - Bug Fix: Create New User Account not redirecting to proper profile_id when Create Profile is checked
+
+Version 1.2.3:
+ - New: "Create User Profile" checkbox in Create User form to skip creating profile for new account (for linking to existing profile)
+
+Version 1.2.2:
+ - Bug Fix: Modify Account with linked profiles could unlink a user's home profile from their account
+
+Version 1.2.1:
+ - New: "Admin Validation" signup method support for allowing users to signup with admin validation
+ - New: "Reset Language Strings" tool for resetting the language strings for a specific module or skin
+ - Change: only language strings for active skin are loaded
+
+version 1.2.0:
+ - New: "Delete" button in User Browser to only delete the User Account (and not the linked Profile)
+ - New: "delete_user" event trigger fired when a user account is deleted
+
+Version 1.1.16:
+ - Bug Fix: URLs created for the Banned Items module to ban an IP Address were not correct
+ - Bug Fix: registered module Accounts Tabs could still show even if module was not allowed in Quota
+
+Version 1.1.15:
+ - Bug Fix: Default Language setting not working properly for first time site visitors
+
+Version 1.1.14:
+ - Bug Fix: radio selections on notifications account tab may not show properly
+ - Bug Fix: "login_success" event not being fired on successful login using "Remember Me" cookie
+
+Version 1.1.13:
+ - New: "account_tabs" event fired when a user is viewing their Account Settings section
+ - Change: online_status now cached for up to 15 seconds to improve performance
+ - Change: very long user action lines in Who's Online will now be wrapped
+ - Bug Fix: Language selection from Skin template may not "stick"
+
+Version 1.1.12:
+ - New: Profiles linked to more than 1 user account now show a User Account jumper in account settings
+ - Bug Fix: Profiles linked to more than 1 account passed incorrect user_id on account tabs
+
+Version 1.1.11:
+ - New: When admin is modifying tweaks for another profile, a message is shown
+
+Version 1.1.10
+ - Bug Fix: Who's Online not lined up correctly if Banned Items module not installed
+
+Version 1.1.9
+ - Bug Fix: logged out users not being shown the default system language.
+
+Version 1.1.8:
+ - Bug Fix: jrUser_reset_cache() was not working with user_id 0 to clear non-logged-in users cache
+
+Version 1.1.7:
+ - Bug Fix: searching the user browser for numeric values would return more than were actually matched
+ - Bug Fix: jrUser_notify() for email option now returns bool false on invalid email address
+
+Version 1.1.6:
+ - New: changes to support variable items per page in Data Browser
+
+Version 1.1.5:
+ - User Data Browser now searches all user fields by default
+
+Version 1.1.4
+ - Bug Fix: Default Profile Quota now properly used on signup page if there is more than one signup quota
+
+Version 1.1.3:
+ - Who's Online now shows logged in users first, with visitors last
+ - Known web crawlers/spiders/bots no longer show in Who's Online or Online counts
+
+Version 1.1.2:
+ - Bug Fix: Language Jumper in skin ACP is resetting to module view
+ - Users Online template updated to link with users profile for multi user profiles
+
+Version 1.1.1:
+ - New "Create SSL URLs" config setting to rewrite non-SSL URLs to SSL URLs for logged in users.
+ - If user is already logged in, clicking on login now takes them to their profile.
+ - Bug Fix: On unsubscribe from all notifications, the users cache is now reset so they see the correct notice.
+
+Version 1.1.0:
+ - New Signup Notification Global Config option for notifying admin users when a new account is created
+ - New Delete Language tool for deleting user languages no longer being used.
+ - Modules registering for notifications can define a custom quota field for showing/not showing in User Notifications section.
+ - Bug Fix: Fixed bug where removing all additional linked profiles from a user account resulted in an SQL error.
+ - Bug Fix: Instant Validation signup method was not working properly
+ - Adding new Changelog
+
+Version 1.0.0:
+ - Initial Release

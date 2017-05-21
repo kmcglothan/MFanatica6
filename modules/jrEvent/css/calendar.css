@@ -1,0 +1,109 @@
+#jrEvent_calendar .php-calendar a:hover {
+    opacity: .7;
+    filter: Alpha(Opacity=70);
+}
+
+#jrEvent_calendar .ecal-container {
+    min-width: 50%;
+}
+
+/* @title Calendar Background Color */
+/* @help this is background color for the calendar */
+#jrEvent_calendar table.ecal-main {
+    width: 100%;
+    background-color: #FFFFFF;
+    table-layout: fixed;
+}
+
+#jrEvent_calendar div.ecal-main {
+    padding: 0;
+}
+
+#jrEvent_calendar .ecal-main div {
+    padding-left: .5em;
+    padding-right: .5em;
+}
+
+#jrEvent_calendar .ecal-event-header {
+    padding: .5em;
+}
+
+#jrEvent_calendar col.ecal-week {
+    width: 3%;
+}
+
+#jrEvent_calendar col.ecal-day {
+    width: 14%;
+}
+
+#jrEvent_calendar .ecal-calendar td,
+#jrEvent_calendar .ecal-calendar th {
+    border-collapse: collapse;
+    vertical-align: text-top;
+}
+
+#jrEvent_calendar .ecal-calendar th {
+    background: url("{$jrEvent_img_url}/bg_date.png") repeat-x scroll 50% 50% #CCCCCC;
+    border: 1px solid #AAAAAA;
+    color: #222222;
+    font-weight: bold;
+}
+
+#jrEvent_calendar .ecal-calendar td {
+    padding: 0;
+    text-align: left;
+    height: 100px;
+}
+
+#jrEvent_calendar .ecal-calendar li {
+    margin: 4px;
+}
+
+#jrEvent_calendar .ecal-main ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+#jrEvent_calendar .ecal-calendar li a {
+    font-weight: normal !important;
+    display: block;
+    padding: 2px;
+    text-decoration: none;
+}
+
+#jrEvent_calendar .ecal-date {
+    padding: 5px 3px;
+    background: url("{$jrEvent_img_url}/bg_day.png") repeat-x scroll 50% 50% #E6E6E6;
+    border: 1px solid #D3D3D3;
+    color: #555555;
+    font-weight: normal;
+}
+
+#jrEvent_calendar .ecal-today {
+    background-image: url("{$jrEvent_img_url}/bg_today.png");
+    background-repeat: repeat-x;
+    background-position: 50% 50%;
+    background-color: #FBF9EE;
+    border: 1px solid #FCEFA1;
+    color: #363636;
+}
+
+#jrEvent_calendar .ecal-shadow {
+    opacity: .5;
+    filter: Alpha(Opacity=5);
+}
+
+#jrEvent_calendar .ecal-event-list li a {
+    display: block;
+    padding: 2px;
+    text-decoration: none;
+    border-radius: 3px;
+    background: url("{$jrEvent_img_url}/bg_event_item.png") repeat-x scroll 50% 50% #E6E6E6;
+    border: 1px solid #D3D3D3;
+    color: #555555;
+    font-weight: normal;
+    font-family: Verdana, Arial, sans-serif;
+    font-size: 1.1em;
+    overflow: hidden;
+}
+

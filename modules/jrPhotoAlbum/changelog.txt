@@ -1,0 +1,52 @@
+PhotoAlbum Module Changelog
+
+Version 1.0.14:
+ - Bug Fix: Photo Albums may not show correctly to admin users when viewing some profile image galleries
+
+Version 1.0.13:
+ - Bug Fix: Photo albums belonging to profiles with privacy set could be wrongly deleted by an event listener
+
+Version 1.0.12:
+ - Bug Fix: Embedded photo gallery title not linking to the correct location
+
+Version 1.0.11:
+ - Change: Clicking to add a new photo album now focuses on the new Photo album form field
+ - Bug Fix: New albums not showing in list of available albums until cache reset
+ - Bug Fix: Photo Album image count not updating when adding a new photo to an album
+
+Version 1.0.10:
+ - Change: New images added to a photo album now show as the first item (not the last)
+
+Version 1.0.9:
+ - Bug Fix: Next and Previous album page jumper was loading image instead in Gallery detail view
+ - Bug Fix: photoalbum_add.tpl updated as success message was not always showing on gallery create
+
+Version 1.0.8:
+ - Bug Fix: Icon size in gallery view was not using the proper icon size as defined by the skin
+ - Bug Fix: Dragging and dropping to re-order album was not always working correctly
+
+Version 1.0.7:
+ - Bug Fix: Add/Create Photo Album icon was not using the skins icon size.
+
+Version 1.0.6:
+ - Bug Fix: In a photo album listing the title may not link correctly to the album detail page.
+
+Version 1.0.5:
+ - New: PhotoAlbums can be added via embed tool.
+ - Change: Formatting the list in the same format as galleries use to show images contained.
+
+Version 1.0.4:
+ - Bug Fix: Removing the first image from an album caused the LightBox link not to show.
+
+Version 1.0.3:
+ - Bug Fix: Button size parameter fix.
+ - Change: An unused function removed.
+
+Version 1.0.2:
+ - Bug Fix: Default button was the wrong size.
+
+Version 1.0.1:
+ - Bug Fix: Album could break if one of the images in the album was deleted while the album was being re-ordered.
+
+Version 0.0.1:
+ - First release of Beta version

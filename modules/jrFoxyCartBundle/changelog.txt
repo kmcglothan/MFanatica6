@@ -1,0 +1,70 @@
+FoxyCart Bundles module changelog
+
+Version 1.3.0:
+ - New: Item Reordering is now supported from the module index page in a profile
+ - Change: item_index.tpl and item_list.tpl updated to look better with bundles that have a large number of items
+
+Version 1.2.9:
+ - Change: javascript for embedding an item in an editor changed to target the editor where the button was clicked
+
+Version 1.2.8:
+ - Bug Fix: Possible "Invalid HTML" error when updating a Bundle description
+
+Version 1.2.7:
+ - Change: Updated to work properly with new Editor Embedded Media module
+ - Change: Updated Editor Embedded media templates to better follow style of active site skin:
+     - tab_ajax_bundle.tpl
+     - tab_jrFoxyCartBundle.tpl
+
+Version 1.2.6:
+ - Bug Fix: Album check could cause invalid URL error if audio sample length is disabled
+
+Version 1.2.5:
+ - Change: Clicking on "add to cart" for a bundle now closes the bundle pop over
+
+Version 1.2.4:
+ - New: Search and browsing added to the Editor Embedded Media tab
+ - Change: Small change to DB queries used to add and remove an item from a bundle
+ - Bug Fix: Update Bundle form was not properly showing the form header
+
+Version 1.2.3:
+ - Change: Embed template has been renamed to "item_embed.tpl"
+
+Version 1.2.2:
+ - New: When a Bundle is sold, sale counts for individual items inside the bundle are incremented
+
+Version 1.2.1:
+ - Change: Updated to work with Editor Embedded Media module and TinyMCE 4
+
+Version 1.2.0:
+ - New: "add_bundle_item" and "delete_bundle_item" events
+ - New: "Show Bundle Only Option" quota config to disable "Bundle Only" checkbox on item forms
+ - Change: removed "Bundle Only Restrictions" field - module behavior changed and it is not needed
+ - Change: "Bundle Only" option has changed - items are now visible, but can only be purchased as part of a bundle
+ - Change: style updates to bundle detail and bundle purchase drop down templates
+
+Version 1.1.0:
+ - New: "Bundle Only Restrictions" item setting to change item visibility as well as download/stream access
+ - New: "Can Set Restrictions" Quota config option
+
+Version 1.0.7:
+ - Bug Fix: Album Price still showing even if FoxyCart module is no longer enabled
+
+Version 1.0.6:
+ - Bug Fix: Bundle Only option could cause some lists to not appear to users who are not logged in
+
+Version 1.0.5:
+ - New: Now supports bundle price update from album/gallery update forms
+
+Version 1.0.4:
+ - Bug Fix: Add to Cart not working for some bundles
+
+Version 1.0.3:
+ - Updates to support new Item Action Buttons
+
+Version 1.0.2:
+ - Bug Fix: Bundle Only checkbox no longer shows if FoxyCart module disabled
+
+Version 1.0.1:
+ - Update so downloads of FREE "bundle only" items are blocked
+ - Adding new Changelog

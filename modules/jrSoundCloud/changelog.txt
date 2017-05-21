@@ -1,0 +1,107 @@
+SoundCloud module changelog
+
+Version 1.2.4:
+ - New: Updated to work with version 1.2.1 of the RSS Feed Reader module
+
+Version 1.2.3:
+ - Change: The jrSoundCloud_embed template function now accepts "on" or "off" as an auto_play parameter value
+ - Bug Fix: jrSoundCloud_embed template function auto_play parameter not accepting uppercase values
+
+Version 1.2.2:
+ - New: Added item_detail_meta.tpl for the Meta Tag Manager module to support custom meta tags
+
+Version 1.2.1:
+ - Change: item_list.tpl updated to place play button in the lower right corner of the SoundCloud image
+ - Change: item_action.tpl updated to work better when importing tracks via the "Search" tool
+
+Version 1.2.0:
+ - Change: Updated to work with new repair_module event from System Core
+ - Change: Added extra debugging code for the unlikely event that the SoundCloud API response is not JSON
+ - Change: javascript for embedding an item in an editor changed to target the editor where the button was clicked
+
+Version 1.1.8:
+ - New: Site Builder widget grid templates added
+
+Version 1.1.7:
+ - Change: Removing profile name from facebook metatags in shared title
+ - Change: Making the shared image the same as the item list image
+
+Version 1.1.6:
+ - Bug Fix: Custom fields in the create form were not being added to the datastore
+
+Version 1.1.5:
+ - Change: added support for immediate embed feature of Media URL Scanner
+
+Version 1.1.4:
+ - Bug Fix: Button player might be cut off when used in narrow fields
+
+Version 1.1.3:
+ - New: Custom ShareThis facebook template so Profile image is used when sharing
+
+Version 1.1.2:
+ - Change: Updated to work properly with new Editor Embedded Media module
+ - Change: Updated to work properly with new Site Builder system.
+ - Bug Fix: Breadcrumb link in item_detail.tpl may use incorrect URL
+
+Version 1.1.1:
+ - New: Added support for new Combined Audio module
+
+Version 1.1.0:
+ - New: Timeline entry for created/updated now includes embedded SoundCloud player
+
+Version 1.0.19:
+ - New: Search and browsing added to the Editor Embedded Media tab
+ - New: Search box on index page to search only SoundCloud tracks
+
+Version 1.0.18:
+ - Change: new "item_embed.tpl" template that works with new Embed module
+
+Version 1.0.17:
+ - Change: Updated to work with Editor Embedded Media module and TinyMCE 4
+
+Version 1.0.16:
+ - Bug Fix: Fix for incorrect error result function used on a couple views
+
+Version 1.0.15:
+ - Bug Fix: fix invalid stream count variables
+
+Version 1.0.14:
+ - Change: item_playlist.tpl updated to have the same layout as the audio module item_playlist.tpl
+
+Version 1.0.13:
+ - New: Daily maintenance option added to remove invalid SoundCloud tracks
+ - Change: Updated so SoundCloud works better over SSL
+ - Bug Fix: Same SoundCloud track could be imported multiple times
+ - Bug Fix: SoundCloud player CSS interfering with Audio Module button player CSS
+
+Version 1.0.12
+ - New: jrPoll and jrUrlScan listeners added/modified
+ - Change: Actions template updated to make multiple SoundCloud track layout nicer
+
+Version 1.0.11:
+ - Bug Fix: Tags with multiple words being split up into individual words on import using "search"
+ - Bug Fix: Long track names were showing the text behind the item list action buttons
+
+Version 1.0.10
+ - Bug Fix: Tags with multiple words being split up into individual words on import
+
+Version 1.0.9:
+ - Bug Fix: SoundCloud importing tags makes tag cloud disappear
+
+Version 1.0.8:
+ - Bug Fix: hitting enter caused the form to submit in locations with one text field only
+
+Version 1.0.7:
+ - CSS Updates to support ability to override CSS images from module images tab
+
+Version 1.0.6:
+ - Template updates to support new Item Action Buttons
+
+Version 1.0.5:
+ - Integrity Check and optional tag imports
+
+Version 1.0.4:
+ - Added action support when creating multiple items via the search form
+
+version 1.0.3:
+ - Adding new Changelog

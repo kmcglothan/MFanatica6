@@ -1,0 +1,124 @@
+/* @title Site Wrapper */
+/* @help This is the wrapper for the Site Content */
+#wrapper {
+    background-color: #5C6470;
+    margin: 0 auto;
+    min-height: calc(100vh - 170px);
+    padding: 70px 0 100px;
+    position: relative;
+}
+
+/* @title Site Content */
+/* @help This is the main Site Content holder */
+#content {
+    background-color: #FFFFFF;
+    box-shadow: 0 0 2px #444444;
+    font-size: 1em;
+    height: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 1260px;
+    padding: 8px;
+}
+
+#content > .page_content {
+    padding: 3px;
+}
+
+#content > form {
+    padding: 3px;
+}
+
+#content > #admin_container {
+    padding: 3px;
+}
+
+#admin_container .form_select_and_text_text {
+    width: 28.4%;
+}
+
+.search_results_container {
+    padding: 9px;
+}
+
+/* @title block */
+/* @help This is the main style for the individual blocks of the page */
+.block {
+    background-color: transparent;
+    padding: 12px;
+    margin: 0 auto;
+}
+
+.recommend_box {
+    background-color: #EDEDED;
+    padding: 25px;
+    margin: 12px;
+    border-style: solid;
+    border-color: #DDDDDD;
+    border-width: 1px;
+    font-size: 16px;
+    color: #000000;
+}
+
+.recommend_box a {
+    color: #336699;
+    text-decoration: none;
+}
+
+.recommend_box a:hover {
+    color: #333333;
+    text-decoration: underline;
+}
+
+.search_box {
+    width: 330px;
+    box-sizing: border-box;
+    position: relative;
+    background-color: #ededed;
+    border: 1px solid #dddddd;
+    color: #000000;
+    font-size: 16px;
+    margin: 12px;
+    padding: 1em;
+}
+
+.search_box a {
+    color: #336699;
+    text-decoration: none;
+}
+
+.search_box a:hover {
+    color: #333333;
+    text-decoration: underline;
+}
+
+.search_box .simplemodal-close {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+}
+
+.mce-panel {
+    border-color: #CCCCCC !important;
+    border-radius: 2px;
+}
+
+.form_editor_holder {
+    width: 93%;
+    margin-left: 4px;
+}
+
+.form_editor_full_width {
+    width: 99%;
+}
+
+#jrchat-room-browser {
+    padding: 3px;
+}
+
+.index_form .checkbox_right {
+    font-size: 12px;
+    line-height: 2;
+}
+
+

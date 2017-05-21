@@ -1,0 +1,27 @@
+Emojis:
+CHEESE WEDGE: 🧀
+WATCH: ⌚️
+DOUBLE QUESTION MARK: ⁇
+WOLF FACE: 🐺
+
+Latin:
+LATIN SMALL LETTER OI: ƣ
+LATIN CAPITAL LETTER S WITH CARON AND DOT ABOVE: Ṧ
+
+Japanese:
+日本語
+驚いた彼は道を走っていった
+
+Chinese:
+hànbǎobāo, hànbǎo 汉堡包/漢堡包, 汉堡/漢堡
+汉语/漢語
+中文
+
+Hindi:
+मानक हिन्दी
+
+Arabic:
+المملكة العربية السعودية
+
+Swahili:
+ كِسوَهِل

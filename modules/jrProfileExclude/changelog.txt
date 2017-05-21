@@ -1,0 +1,7 @@
+Profile Exclude module changelog
+
+Version 1.0.1:
+ - Bug Fix: Excluded profile embedded media may not stream/download
+
+Version 1.0.0:
+ - Initial Release

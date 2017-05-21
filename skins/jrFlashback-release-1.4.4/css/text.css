@@ -1,0 +1,176 @@
+/*
+ * Jamroom 5 Flashback CSS
+ * Copyright 2003-2011 by Talldude Networks, LLC.
+ * @author Brian Johnson - brian@talldude.net
+ */
+
+.separator{
+    background:transparent url("{$jrFlashback_img_url}/div.gif") center no-repeat;
+    text-align:center;
+    height:16px;
+    width:16px;
+    display:inline;
+}
+
+.divider{
+    height:0;
+    border:0;
+    border-top:solid 1px #00324B;
+}
+
+/* @title Rank */
+/* @help This is the ranking number */
+.rank {
+    background-color:#001926;
+    padding:5px;
+    font-size:12px;
+    font-weight:bold;
+    text-align:center;
+    color:#CCC;
+    text-transform:uppercase;
+}
+
+/* @title Normal */
+/* @help This is the regular body text */
+.normal {
+	font-size:10px;
+    color:#FFF;
+}
+.normal a {
+    color:#c60;
+    text-decoration:none;
+}
+.normal a:hover {
+    text-decoration:underline;
+}
+/* @title Hilited */
+/* @help This is the hilite text */
+.hilite {
+	font-size:10px;
+	font-weight:bold;
+    color:#9C0;
+}
+.hilite_2 {
+    font-size:10px;
+    font-weight:bold;
+    color:#C60;
+}
+/* @title Sub Title */
+/* @help This is the Sub Title text. */
+.sub_title {
+    padding:0 0 0 5px;
+    vertical-align:middle;
+    line-height:24px;
+    font-size:10px;
+    font-weight:bold;
+    text-transform:capitalize;
+}
+/* @title Sub Title Link */
+/* @help This is the Sub Title link text */
+.sub_title a {
+    text-decoration:none;
+    color:#F60;
+}
+/* @title Media Title Hover */
+/* @help This is the Media Title hover text */
+.sub_title a:hover {
+    text-decoration:underline;
+}
+/* @title Alphabet Text */
+/* @help This is the Alphabet text when searching by letters. */
+.alpha_title {
+    background-color: #000408;
+    padding:0 0 0 5px;
+    margin: 0;
+    vertical-align:middle;
+    line-height:24px;
+    font-size:12px;
+    font-weight:bold;
+    text-transform:capitalize;
+    border-bottom: 1px solid #00273B;
+}
+/* @title Sub Title Link */
+/* @help This is the Sub Title link text */
+.alpha_title a {
+    text-decoration:none;
+    color:#9C0;
+}
+/* @title Media Title Hover */
+/* @help This is the Media Title hover text */
+.alpha_title a:hover {
+    text-decoration:underline;
+}
+/* Tag Cloud fonts */
+
+div.jqcloud {
+    font-family:Verdana,Helvetica,Arial,sans-serif;
+    font-size: 10px;
+    line-height: normal;
+}
+
+div.jqcloud a {
+    font-size: inherit;
+    text-decoration: none;
+}
+
+div.jqcloud span.w10 { font-size: 550%; }
+div.jqcloud span.w9 { font-size: 500%; }
+div.jqcloud span.w8 { font-size: 450%; }
+div.jqcloud span.w7 { font-size: 400%; }
+div.jqcloud span.w6 { font-size: 350%; }
+div.jqcloud span.w5 { font-size: 300%; }
+div.jqcloud span.w4 { font-size: 250%; }
+div.jqcloud span.w3 { font-size: 200%; }
+div.jqcloud span.w2 { font-size: 150%; }
+div.jqcloud span.w1 { font-size: 100%; }
+
+/* Tag Cloud colors */
+
+div.jqcloud { color: #fffec5; }
+div.jqcloud a { color: inherit; }
+div.jqcloud a:hover { text-decoration:underline; }
+div.jqcloud a:hover { color: inherit; }
+div.jqcloud span.w10 { color: #FFFF66; }
+div.jqcloud span.w9 { color: #FFFF66; }
+div.jqcloud span.w8 { color: #FFFF66; }
+div.jqcloud span.w7 { color: #ff9900; }
+div.jqcloud span.w6 { color: #ffc42d; }
+div.jqcloud span.w5 { color: #ffeb00; }
+div.jqcloud span.w4 { color: #FFF803; }
+div.jqcloud span.w3 { color: #ffcc00; }
+div.jqcloud span.w2 { color: #FF9900; }
+div.jqcloud span.w1 { color: #FF9900; }
+
+.tag_name_box {
+    float:left;
+    background-color:#333;
+    border-width:0;
+    border-color:#999999;
+    border-style:solid;
+    border-radius:0;
+    padding:3px 9px;
+    margin:6px 6px 0 0;
+    font-size:12px;
+    text-transform:uppercase;
+}
+.tag_name_box a {
+    color:#FFF;
+    text-decoration:none;
+}
+.tag_name_box a:hover {
+    color:#FFF;
+    text-decoration:none;
+}
+.tag_name_box:hover {
+    background-color:#069;
+}
+#tag_cloud {
+    background-color: #333;
+    color:#CCC;
+    border:1px solid #000;
+    border-radius:0;
+}
+#tag_cloud:hover {
+    background-color: #069;
+    color:#FFF;
+}

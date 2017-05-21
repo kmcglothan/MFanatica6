@@ -1,0 +1,58 @@
+Email Support module changelog
+
+Version 2.3.0:
+ - New: Newsletter filter plugins provided for new NewsLetter filter feature
+ - New: Platform and Browser information available in Campaign View detailed user info
+ - Change: "Opened" event from image proxies (such as Gmail) no longer counted as a view
+ - Bug Fix: "Russian Federation" changed to "Russia" for Campaign map view
+ - Bug Fix: HTML newsletter without any URLs was not including open tracking beacon
+
+Version 2.2.1:
+ - Bug Fix: Unsubscribe tracking may not work properly with customized HTML email footer
+
+Version 2.2.0:
+ - Change: Process Stats functionality now runs every minute during minute maintenance
+
+Version 2.1.3:
+ - Bug Fix: Possible SQL Error in Activity Log for entries with emoji in location name
+
+Version 2.1.2:
+ - Change: System Check message improved with a link to install Geo Location module
+
+Version 2.1.1:
+ - Bug Fix: Bounced email addresses reported by mail listeners not being unsubscribed
+
+Version 2.1.0:
+ - Change: Updated to work with new Core 6.0.0 functions
+
+Version 2.0.1:
+ - Bug Fix: Some mapped URLs may be incorrect based on their order in the message
+
+Version 2.0.0:
+ - New: All New Campaign Support for modules to utilize to track email delivery
+ - New: "gather_bounces" hourly event for email plugins to gather bounced email
+ - New: "process_bounces" hourly event for modules to process bounced email
+ - Change: Send Test Email tool updated to ensure test email queue is processed
+ - Change: Updated bundled SwiftMailer library to version 5.4.2
+
+Version 1.2.3:
+ - Change: Updated bundled SwiftMailer library to version 5.4.0
+
+Version 1.2.2
+ - New: Daily Maintenance listener to keep throttle table clean if throttling enabled
+
+Version 1.2.1:
+ - Change: HTML detection changed to look for opening <html> tag in message body
+
+Version 1.2.0:
+ - New: "Max Send Rate" Global config for limiting the number of emails sent per minute
+ - Change: If HTML is detected in message body, email will be sent as an HTML email
+ - Change: Updated bundled SwiftMailer to version 5.3.1
+
+Version 1.1.0:
+ - New: Enabled SSL/TLS config option for enabling SMTP over SSL/TLS
+ - New: Test Email tool for testing Mailer Configuration and sending test emails
+ - Change: SMTP Password field in Global Config is now a password field instead of text
+
+Version 1.0.0:
+ - Initial release

@@ -1,0 +1,122 @@
+.form_button {
+    color: #FFFFFF;
+    text-decoration: none;
+    text-transform: capitalize;
+    font-family: Verdana, sans-serif;
+    font-size: 12px;
+    height: 26px !important;
+    font-weight: bold;
+    padding: 4px 5px 4px 5px !important;
+    margin: 0 2px;
+    background: #000000;
+    border: solid 1px #006699;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.form_button:hover {
+    color: #99CC00;
+}
+
+.form_button_disabled {
+    background: #000000;
+    color: #666666;
+    border: solid 1px #666666;
+}
+
+.form_button_disabled:hover {
+    color: #666666;
+}
+
+.form_button a, .form_button_anchor a, .form_button_anchor:hover a {
+    text-decoration: none;
+    min-height: initial;
+}
+
+.upload_button {
+    margin-top: 0 !important;
+    padding: 4px 6px;
+    height: 16px;
+}
+
+.attachment_upload_button {
+    margin-top: 6px;
+}
+
+.form_tool_button {
+    height: 32px;
+}
+
+.follow_button {
+    color: #FFFFFF;
+    text-decoration: none;
+    text-transform: capitalize;
+    font-weight: bold;
+    font-size: 10px;
+    height: 24px !important;
+    padding: 4px 5px 4px 5px !important;
+    margin: 0 2px;
+    vertical-align: middle;
+    border: solid 1px #006699;
+}
+
+.follow {
+    cursor: pointer;
+    background: #333333;
+    border: 1px solid #006699;
+}
+
+.follow:hover {
+    cursor: pointer;
+    background: #006699;
+    border: 1px solid #333333;
+}
+
+.following {
+    cursor: pointer;
+    background: #006699;
+    border: 2px solid #333333;
+}
+
+.following:hover {
+    cursor: pointer;
+    background: #333333;
+    border: 2px solid #006699;
+}
+
+.follow_pending {
+    background: #AADDFF;
+    color: #000000;
+    border: 2px solid #000000;
+}
+
+#follow_indicator {
+    display: none;
+}
+
+.sprite_icon {
+    display: inline-block;
+    border: 1px solid #349ED8;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#349ED8', endColorstr='#03669F'); /* for IE */
+    background: #03669F; /* @ignore */
+    background: -moz-linear-gradient(#349ED8, #03669F); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#349ED8), to(#03669F)); /* @ignore */
+    background: -webkit-linear-gradient(#349ED8, #03669F); /* @ignore */
+    background: -o-linear-gradient(#349ED8, #03669F); /* @ignore */
+    background: -ms-linear-gradient(#349ED8, #03669F); /* @ignore */
+    background: linear-gradient(#349ED8, #03669F); /* @ignore */
+    border-radius: 10px;
+    cursor: pointer;
+    margin: 0;
+    vertical-align: middle;
+}
+
+.sprite_icon:hover {
+    border: 1px solid #349ED8;
+    box-shadow: inset 0 0 1px 1px #015788;
+}
+
+.sprite_icon_hilighted {
+    background: #CC6600;
+    border: 1px solid #FFFFFF;
+}

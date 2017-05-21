@@ -1,0 +1,1 @@
+[{$system_name}] An event you are attending is soon

@@ -1,0 +1,17 @@
+Activity Log Watcher module changelog
+
+Version 1.2.0:
+ - New: Ability to select the Activity Log priority for log watch rules
+
+Version 1.1.1:
+ - Bug Fix: Prevent SQL error on update if Log Watch is active and a rule is matched
+
+Version 1.1.0:
+ - New: Updated with new database schema to support larger rule sets
+ - New: "Rule Delay" setting to set how often the Rule Action is run
+
+Version 1.0.1:
+ - New: Notification on LogWatch rule browser screen to show if monitoring is enabled
+
+Version 1.0.0:
+ - Initial Release

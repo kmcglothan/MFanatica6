@@ -1,0 +1,10 @@
+Event Tracer module changelog
+
+Version 1.0.2:
+ - Change: Increased performance by selectively registering active event listeners
+
+Version 1.0.1:
+ - Change: daily maintenance now uses a core DS function to keep Trace DB cleaned up
+
+Version 1.0.0:
+ - Initial Release

@@ -1,0 +1,15 @@
+Elastic 2 Skin changelog
+
+Version 2.0.3:
+ - Bug Fix: Mobile footer was covering submit buttons. Modified override_mobile.css file and site.css file.
+ - Bug Fix: User birthdays may be incorrectly displayed
+ - Bug Fix: Missing index page login form language strings
+
+Version 2.0.2:
+ - Bug Fix: Mobile menu had inconsistent behavior
+
+Version 2.0.1:
+ - Bug Fix: Profile menu would at erratically when resizing window
+
+Version 2.0.0:
+ - Initial Release

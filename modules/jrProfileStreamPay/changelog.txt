@@ -1,0 +1,26 @@
+Profile Stream Pay module changelog
+
+Version 1.0.7:
+ - Change: Lowered module priority so event listeners run after other module listeners
+
+Version 1.0.6:
+ - Bug Fix: Possible SQL Error when searching the Credit Log
+
+Version 1.0.5:
+ - Change: Updated module icon
+
+Version 1.0.4:
+ - Bug Fix: User name not dispalying correctly in Credit Log
+
+Version 1.0.3:
+ - Bug Fix: Stream values under 1 cent may not be logged correctly
+ - Bug Fix: Stream Media title may not show correctly in Tools -> Credit Log
+
+Version 1.0.2:
+ - Change: Stream amount values under 1 cent are now allowed (i.e. 0.089, etc.)
+
+Version 1.0.1:
+ - Bug Fix: Typo in Help field text for entering Stream Pay Amount in a form
+
+Version 1.0.0:
+ - Initial Release

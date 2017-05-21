@@ -1,0 +1,61 @@
+/* @title Page Background */
+/* @help What color should the background be for the actual page content? */
+.page_content {
+    background-color:transparent;
+}
+
+.page_custom {
+    background:transparent;
+}
+
+/* @title Page Section */
+/* @help The Page Section is the small divider that can divide forms into logical groups. */
+.page_section_header {
+    background: #BFD5BF;
+    background: -moz-linear-gradient(#CFDFCF, #BFD5BF);
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#CFDFCF), to(#BFD5BF));
+    background: -webkit-linear-gradient(#CFDFCF, #BFD5BF);
+    background: -o-linear-gradient(#CFDFCF, #BFD5BF);
+    background: -ms-linear-gradient(#CFDFCF, #BFD5BF);
+    background: linear-gradient(#CFDFCF, #BFD5BF);
+    font-size:14px;
+    text-align:center;
+    text-transform:lowercase;
+    font-variant:small-caps;
+    padding:6px 10px 5px 13px;
+    margin:10px auto 0; /* @ignore */
+    color:#000;
+    border-bottom:1px solid #408140;
+    box-shadow: 1px 2px 4px rgba(64,129,64,0.33);
+}
+.page_section_header a {
+    color:#000;
+}
+/* @title Page Divider */
+/* @help The small horizontal line or section that can be used to divide large sections of a page */
+.page_divider {
+    background-color:#408140;
+    height:1px;
+    border:0;
+    margin:6px 6px 8px 6px; /* @ignore */
+}
+
+/* @title Page Note */
+/* @help If a module has a special &quot;note&quot; that it wants to display, this controls how it looks. */
+.page_note {
+    background-color: #aebeae;
+    font-size:14px;
+    padding:9px;
+    margin:12px;
+    text-align:center;
+    border-width: 1px;
+    border-style: solid;
+    border-color:#575655;
+}
+
+/* @title Page Search Hilight */
+/* @help For options that support searching and hilighting, this is the background color for text matching. */
+.page_search_highlight {
+    background-color:#408140;
+    color:#FFF;
+}

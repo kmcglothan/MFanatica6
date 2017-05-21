@@ -1,0 +1,25 @@
+Advanced Charts module changelog
+
+Version 1.0.8:
+ - Change: Updated module icon
+
+Version 1.0.7:
+ - Bug Fix: Previous position number could be incorrect on multi-page charts
+
+Version 1.0.6:
+ - Bug Fix: Chart ordering not always correct
+
+Version 1.0.5:
+ - Bug Fix: Chart Fields Tool checks that module is using a DataStore before listing keys
+
+Version 1.0.4:
+ - Bug Fix: invalid chart history entries now removed during an integrity check
+
+Version 1.0.3:
+ - Bug Fix: If order_by parameter is not set, set to chart_field numerical_desc
+
+Version 1.0.2:
+ - Change: Checks to ensure DS table exists before running count query
+
+Version 1.0.0:
+ - Initial Release

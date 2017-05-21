@@ -1,0 +1,53 @@
+.follow_button {
+    color: #484848;
+    text-decoration: none;
+    text-transform: capitalize;
+    font-weight: bold;
+    font-size: 14px;
+    height: 32px;
+    padding: 0 12px;
+    margin: 0 2px;
+    border-radius: 5px;
+    vertical-align: middle;
+    border: solid 1px #7F7F7F;
+}
+
+.follow {
+    cursor: pointer;
+    background: #FFDD00;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ddffaa', endColorstr='#bbee88'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#DDFFAA), to(#BBEE88)); /* for webkit browsers */
+    background: -moz-linear-gradient(top, #DDFFAA, #BBEE88); /* for firefox 3.6+ */
+}
+
+.following {
+    cursor: pointer;
+    background: #CCFF99;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ddffaa', endColorstr='#bbee88'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#DDFFAA), to(#BBEE88)); /* for webkit browsers */
+    background: -moz-linear-gradient(top, #DDFFAA, #BBEE88); /* for firefox 3.6+ */
+}
+
+.follow_pending {
+    background: #AADDFF;
+    color: #000000;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#bbeeff', endColorstr='#99ccee'); /* for IE */
+    background: -webkit-gradient(linear, left top, left bottom, from(#BBEEFF), to(#99CCEE)); /* for webkit browsers */
+    background: -moz-linear-gradient(top, #BBEEFF, #99CCEE); /* for firefox 3.6+ */
+}
+
+#follow_indicator {
+    display: none;
+}
+
+.follower_action {
+    position: absolute;
+    bottom: 28px;
+    left: 10px;
+}
+
+.follower_status {
+    position: absolute;
+    bottom: 28px;
+    right: 10px;
+}

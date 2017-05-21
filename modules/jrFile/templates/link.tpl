@@ -1,0 +1,1 @@
+<a href="{$jamroom_url}/file/download/file_file/{$jrFile._item_id}">{$jrFile.file_title}</a>

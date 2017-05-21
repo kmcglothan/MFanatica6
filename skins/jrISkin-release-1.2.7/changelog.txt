@@ -1,0 +1,105 @@
+ISkin changelog
+
+Version 1.2.7:
+ - Bug Fix: Embedded Videos And Playlists had a javascript error. Modified n8Player_playlist_player.tpl and n8Player_video_player.tpl
+ - Bug Fix: Changed out {"jrSkinName"} variable for $_conf.jrCore_active_skin variable for the skin settings menu links. Modified menu_main.tpl and menu_side.tpl
+ - Bug Fix: Can now optionally delete the uploaded profile header image
+ - Change: Updated jrFAQ_item_index.tpl and jrFAQ_item_list.tpl to work with new sort function.
+ - Bug Fix: User birthdays may be incorrectly displayed
+ - Bug Fix: Mark all as read button link not correct URL on the Forum Newest Posts page
+
+Version 1.2.6:
+ - Change: Added more padding to the top of the mobile side menu. modified core_slidebar.css
+ - Change: Added jrCore_lang function to home link. modified: menu_side.tpl
+ - Change: Added profile_menu_mobile.tpl
+ - Bug Fix: Video auto_play option fix
+
+Version 1.2.5:
+ - Bug Fix: Mobile menu had inconsistent behavior
+
+Version 1.2.4:
+ - Change: Removed option_img_pass class from acp.css
+ - Bug Fix: Fixed TinyMCE editor height issue. modified acp.css file.
+
+Version 1.2.3:
+ - Change: Site admins can now join groups 'officially'
+ - Bug Fix: fixed breadcrumbs bug when created by admin in the ACP
+ - Bug Fix: fixed error on Calendar Page when not on profile
+
+Version 1.2.2
+ - Bug Fix: removed double closing body tag
+ - Change: changed social links to inline-block
+
+Version 1.2.1
+ - Bug Fix: fixed ACP calendar next and prev
+
+Version 1.2.0
+ - New: Added mobile chat link.
+ - Change: Now named jrISkin / requires new install
+
+Version 1.1.12:
+ - Change: profile_menu.tpl adjusted to match module version to allow for System Tips to work
+
+Version 1.1.11:
+ - Bug Fix: share button not working on timelines added by Site Builder
+ - Bug Fix: chart_gallery.tpl chart_poll.tpl had the incorrect links for the "You May Also Like" sections
+
+Version 1.1.10:
+ - Change: more css image fixes. modified player.css
+
+Version 1.1.9:
+ - Change: css image fixes
+
+ Version 1.1.8:
+  - Change: css menu fixes
+
+Version 1.1.7:
+ - Bug Fix: removed bad listener
+
+Version 1.1.6:
+ - Change: Added accordion behavior to audio and video details pages
+
+Version 1.1.5
+ - Bug Fix: Fixed instance where jrISkin was not being used or the wrong module url was beings used.
+   Modified Files: profile.css, action_input.tpl, chart_bundle.tpl, chart_flikr,tpl, chart_gallery.tpl,chart_playlist.tpl,
+                   chart_poll.tpl,chart_video.tpl, jrLike_button.tpl, jrLike_detail_buttons.tpl, profile_contact.tpl
+ - Change: improve profile menu responsiveness
+
+Version 1.1.4
+
+Version 1.1.3
+ - Bug Fix: Slider is now disabled when only 1 image is showing.
+
+Version 1.1.2:
+ - Bug Fix: config file fixes
+
+Version 1.1.1:
+ - Change: added new player n8Player_playlist_action_player for timeline playlists.
+
+Version 1.1.0:
+ - Upgrade: Added sidebar to module index, details and category/albums for all modules.
+ - Upgrade: profile headers can now be hidden on all module pages
+ - Change: Added list pagebreak setting for dynamic lists
+
+Version 1.0.6:
+ - CHange: feedback buttons are now visible when not logged in.
+
+Version 1.0.5:
+ - Bug Fix: added missing jrStore_item_action.tpl
+ - Change: removed 'page_conent' class from module indexes
+
+Version 1.0.4:
+ - Change: Site forum now drops profile sidebar
+
+Version 1.0.3:
+ - Change: add config setting for show header
+ - Change: add code to hide header on groups and index forum
+
+Version 1.0.2:
+ - Change: removed truncate from profile bio and replaced it with max-height div
+
+Version 1.0.1:
+ - Change: minor css edits
+
+Version 1.0.0:
+ - Change: Initial Release

@@ -1,0 +1,27 @@
+Spam Blocker module changelog
+
+Version 1.1.4:
+ - Bug Fix: Better detection of when content contains actual HTML versus URL scan items
+
+Version 1.1.3:
+ - Bug Fix: Some item image URLs could trigger the Offsite URL Action
+
+Version 1.1.2:
+ - Change: If an item is going to be pending, dont strip URLs from the text
+
+Version 1.1.1:
+ - Change: HTML will only be stripped from modules that have an item_detail.tpl file
+
+Version 1.1.0:
+ - New: Added 6 hour and 12 hour user probation global config options
+ - New: "New User Probation" global config setting for setting new user probation length
+ - New: "Strip All HTML" global setting for stripping HTML from probation user posts
+ - New: "Offsite URL Action" global setting for reporting offiste URLs by probation users
+ - Change: The name of the module has been changed from "Akismet" to "Spam Blocker"
+ - Bug Fix: User probation may flag some users as being in probation when they are not
+
+Version 1.0.1:
+ - Bug Fix: URL to Akismet could be constructed without http: portion
+
+Version 1.0.0:
+ - Initial Release

@@ -1,0 +1,111 @@
+/* Jamroom 5 FoxyCart Bundle module CSS */
+.bundle_box {
+    position:inherit;
+    width:400px;
+    text-align:left;
+    background-color:#000;
+    border:1px solid #920B0C;
+    border-radius:5px;
+    padding:12px;
+    white-space:nowrap;
+    z-index:100;
+    overflow:visible;
+    box-shadow:3px 3px 3px 3px #000;
+}
+
+.bundle_item_section {
+    border-radius:5px;
+    padding:9px;
+    background:#000;
+}
+
+.bundle_item_table {
+}
+
+.bundle_section {
+    margin-top:12px;
+    padding:9px;
+    border:1px solid #920B0C;
+    border-radius:5px;
+    background:transparent;
+}
+
+.bundle_drop_section {
+    margin-top:12px;
+    padding:9px;
+    background-color:#000;
+    border:1px solid #920B0C;
+    border-radius:5px;
+}
+
+.bundle_table {
+}
+
+.bundle_table th {
+    color:#606060;
+    font-weight:bold;
+}
+
+.bundle_cart_image {
+    cursor:pointer;
+}
+
+@media handheld, only screen and (max-width: 767px) {
+    .bundle_box {
+        position:absolute;
+        width:80%;
+        right:0;
+    }
+}
+
+/* Jamroom 5 FoxyCart Bundle module CSS */
+.bundle_box {
+    position:inherit;
+    width:400px;
+    text-align:left;
+    background-color:#000;
+    border:4px solid #920B0C;
+    border-radius:5px;
+    padding:12px;
+    white-space:nowrap;
+    z-index:100;
+    overflow:visible;
+    box-shadow:none;
+}
+
+.bundle_item_section {
+    border-radius:5px;
+    padding:9px;
+    background:transparent;
+}
+
+.bundle_item_table {
+}
+
+.bundle_section {
+    margin-top:12px;
+    padding:9px;
+    border:1px solid #920B0C;
+    border-radius:5px;
+    background:transparent;
+}
+
+.bundle_table {
+}
+
+.bundle_table th {
+    color:#606060;
+    font-weight:bold;
+}
+
+.bundle_cart_image {
+    cursor:pointer;
+}
+
+@media handheld, only screen and (max-width: 767px) {
+    .bundle_box {
+        position:absolute;
+        width:80%;
+        right:0;
+    }
+}

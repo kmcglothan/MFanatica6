@@ -1,0 +1,35 @@
+Graph Support module change log
+
+Version 1.1.0:
+ - New: "pointRadius" graph config option can now be set to "0" (zero)
+ - New: "zerofill" graph option for filling in missing data points in graph data set
+ - Change: "zerofill" is no longer active by default
+
+Version 1.0.8:
+ - Change: Improved "zero fill" function to better handle time gaps in data sets
+
+Version 1.0.7:
+ - Change: Small change in Javascript function to allow additional graph parameters
+
+Version 1.0.6:
+ - New: "nofill" graph parameter to not auto-fill missing time chunks in data series
+ - Bug Fix: Setting "days" value in graph config was not working properly
+
+Version 1.0.5:
+ - New: Added a Plot function to allow graphs that do not have a timestamp as the x value
+
+Version 1.0.4:
+ - New: New module icon
+ - Change: Name changed to "Graph Core"
+
+Version 1.0.3:
+ - Bug Fix: Hourly graphs were not working correctly
+
+Version 1.0.2:
+ - New: support for URL parameters for registered graph functions
+
+Version 1.0.1:
+ - Bug Fix: Some graphs could be off by 1 day
+
+Version 1.0.0:
+ - Initial release

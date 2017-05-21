@@ -1,0 +1,89 @@
+/* Jamroom PhotoAlbum Module CSS */
+
+.photoalbum_lightbox {
+    float: left;
+    padding-top: 12px;
+}
+
+.photoalbum_lightbox a {
+    text-decoration: none;
+}
+
+.photoalbum_lightbox a:hover {
+    text-decoration: none;
+}
+
+.photoalbum_actions {
+    position: absolute;
+    top: 15px;
+    right: 18px;
+    display: none;
+}
+
+.photoalbum_box {
+    position: inherit;
+    width: 400px;
+    text-align: left;
+    background-color: #EEEEEE;
+    border: 1px solid #999999;
+    border-radius: 5px;
+    padding: 12px;
+    display: none;
+    z-index: 1000001;
+    overflow: visible;
+    box-shadow: 3px 3px 3px 3px #CCCCCC;
+}
+
+.photoalbum_name {
+    padding: 5px;
+}
+
+.photoalbum_name a {
+    width: 80%;
+    text-decoration: underline;
+}
+
+.photoalbum_count {
+    width: 10%;
+    white-space: nowrap;
+    font-size: 10px;
+    padding: 5px;
+}
+
+.photoalbum_button {
+    width: 70px;
+}
+
+.photoalbum_success {
+    border-radius: 5px;
+    background-color: #CCFF99;
+    color: #000000;
+}
+
+.photoalbum_error {
+    border-radius: 5px;
+    background-color: #FFDD00;
+    color: #000000;
+}
+
+#photoalbum_close,
+#photoalbum_prev,
+#photoalbum_next {
+    cursor: pointer;
+}
+
+@media handheld, only screen and (max-width: 767px) {
+    .photoalbum_box {
+        position: absolute;
+        width: 80%;
+        right: 0;
+    }
+
+    .photoalbum_button {
+        width: 50px;
+    }
+
+    .photoalbum_name {
+        font-size: 12px;
+    }
+}

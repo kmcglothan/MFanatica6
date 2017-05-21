@@ -1,0 +1,776 @@
+/*
+ * Skin for jPlayer Plugin (jQuery JavaScript Library)
+ * http://www.happyworm.com/jquery/jplayer
+ *
+ * Skin Name: Blue Monday
+ *
+ * Copyright (c) 2010-2012 Happyworm Ltd
+ * Dual licensed under the MIT and GPL licenses.
+ *  - http://www.opensource.org/licenses/mit-license.php
+ *  - http://www.gnu.org/copyleft/gpl.html
+ *
+ * Author: Silvia Benvenuti
+ * Skin Version: 4.1 (jPlayer 2.2.0)
+ * Date: 11th September 2012
+ */
+
+
+.video_container {
+    overflow: hidden;
+}
+
+.jrvideo_player_gray_overlay div.jp-audio,
+.jrvideo_player_gray_overlay div.jp-video {
+
+    /* Edit the font-size to counteract inherited font sizing.
+     * Eg. 1.25em = 1 / 0.8em
+     */
+
+    font-size:1.25em; /* 1.25em for testing in site pages */ /* No parent CSS that can effect the size in the demos ZIP */
+    background-color:transparent;
+    font-family:Verdana, Arial, sans-serif;
+    line-height:1.6;
+    color: #666;
+    border:0 solid #747474;
+}
+.jrvideo_player_gray_overlay div.jp-audio {
+    width:100%;
+}
+.jrvideo_player_gray_overlay div.jp-video-270p {
+    width:100%;
+}
+.jrvideo_player_gray_overlay div.jp-video-360p {
+    width:100%;
+}
+.jrvideo_player_gray_overlay div.jp-video-full {
+    /* Rules for IE6 (full-screen) */
+    width:480px;
+    height:270px;
+    /* Rules for IE7 (full-screen) - Otherwise the relative container causes other page items that are not position:static (default) to appear over the video/gui. */
+    position:static !important; position:relative
+}
+
+/* The z-index rule is defined in this manner to enable Popcorn plugins that add overlays to video area. EG. Subtitles. */
+.jrvideo_player_gray_overlay div.jp-video-full div div {
+    z-index:1000;
+}
+
+.jrvideo_player_gray_overlay div.jp-video-full div.jp-jplayer {
+    top: 0;
+    left: 0;
+    position: fixed !important; position: relative; /* Rules for IE6 (full-screen) */
+    overflow: hidden;
+}
+
+.jrvideo_player_gray_overlay div.jp-video-full div.jp-gui {
+    position: fixed !important; position: static; /* Rules for IE6 (full-screen) */
+    top: 0;
+    left: 0;
+    width:100%;
+    height:100%;
+    z-index:1001; /* 1 layer above the others. */
+}
+
+.jrvideo_player_gray_overlay div.jp-video-full div.jp-interface {
+    position: absolute !important; position: relative; /* Rules for IE6 (full-screen) */
+    bottom: 0;
+}
+
+.jrvideo_player_gray_overlay div.jp-interface {
+    position: relative;
+    background:#CACACA;
+    background: -moz-linear-gradient(#f1f1f1, #CACACA);
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#f1f1f1), to(#CACACA));
+    background: -webkit-linear-gradient(#f1f1f1, #CACACA);
+    background: -o-linear-gradient(#f1f1f1, #CACACA);
+    background: -ms-linear-gradient(#f1f1f1, #CACACA);
+    background: linear-gradient(#f1f1f1, #CACACA);
+    width:100%;
+    margin-top:-42px;
+}
+
+.jrvideo_player_gray_overlay div.jp-audio div.jp-type-single div.jp-interface {
+    height:80px;
+}
+.jrvideo_player_gray_overlay div.jp-audio div.jp-type-playlist div.jp-interface {
+    height:80px;
+}
+
+.jrvideo_player_gray_overlay div.jp-video div.jp-interface {
+    height:42px;
+}
+
+/* @group CONTROLS */
+
+.jrvideo_player_gray_overlay div.jp-controls-holder {
+    clear: both;
+    min-width: 300px;
+    padding-top:10px;
+    margin:0 auto;
+    position: static;
+    overflow:hidden;
+    top:0; /* This negative value depends on the size of the text in jp-currentTime and jp-duration */
+}
+
+.jrvideo_player_gray_overlay div.jp-interface ul.jp-controls {
+    list-style-type:none;
+    margin:0 10px 0 0;
+    padding: 0;
+    overflow:hidden;
+}
+
+.jrvideo_player_gray_overlay div.jp-audio ul.jp-controls {
+    width: 380px;
+    padding:20px 20px 0 20px;
+}
+
+.jrvideo_player_gray_overlay div.jp-video div.jp-type-single ul.jp-controls {
+    width: 78px;
+    margin-left: 200px;
+}
+
+.jrvideo_player_gray_overlay div.jp-video div.jp-type-playlist ul.jp-controls {
+    width: 25px;
+    margin-left: 15px;
+}
+.jrvideo_player_gray_overlay div.jp-video ul.jp-controls,
+.jrvideo_player_gray_overlay div.jp-interface ul.jp-controls li {
+    display:inline;
+    float: left;
+}
+
+.jrvideo_player_gray_overlay div.jp-interface ul.jp-controls a {
+    display:block;
+    overflow:hidden;
+    text-indent:-9999px;
+}
+.jrvideo_player_gray_overlay a.jp-play,
+.jrvideo_player_gray_overlay a.jp-pause {
+    width:16px;
+    height:16px;
+}
+
+.jrvideo_player_gray_overlay a.jp-play {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") 0 0 no-repeat;
+}
+.jrvideo_player_gray_overlay a.jp-play:hover {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -17px 0 no-repeat;
+}
+.jrvideo_player_gray_overlay a.jp-pause {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -34px 0 no-repeat;
+    display: none;
+}
+.jrvideo_player_gray_overlay a.jp-pause:hover {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -51px 0 no-repeat;
+}
+
+.jrvideo_player_gray_overlay a.jp-stop,
+.jrvideo_player_gray_overlay a.jp-previous,
+.jrvideo_player_gray_overlay a.jp-next {
+    width:16px;
+    height:16px;
+}
+
+.jrvideo_player_gray_overlay a.jp-stop {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -136px 0 no-repeat;
+}
+
+.jrvideo_player_gray_overlay a.jp-stop:hover {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -153px 0 no-repeat;
+}
+
+.jrvideo_player_gray_overlay a.jp-previous {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -68px 0 no-repeat;
+}
+.jrvideo_player_gray_overlay a.jp-previous:hover {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -85px 0 no-repeat;
+}
+
+.jrvideo_player_gray_overlay a.jp-next {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -102px 0 no-repeat;
+}
+.jrvideo_player_gray_overlay a.jp-next:hover {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -119px 0 no-repeat;
+}
+
+/* @end */
+
+/* Right contol box*/
+.jrvideo_player_gray_overlay .jp-right-controls{
+    float: right;
+    margin-right: 15px;
+}
+/* @end */
+
+/* @group progress bar */
+
+.jrvideo_player_gray_overlay div.jp-progress {
+    overflow:hidden;
+    background-color: #999;
+    -webkit-box-shadow:
+    inset 0px 1px 4px rgba(0,0,0,.4),
+    0px 1px 0px rgba(255,255,255,.4);
+    -moz-box-shadow:
+    inset 0px 1px 4px rgba(0,0,0,.4),
+    0px 1px 0px rgba(255,255,255,.4);
+    box-shadow:
+    inset 0px 1px 4px rgba(0,0,0,.4),
+    0px 1px 0px rgba(255,255,255,.4);
+}
+.jrvideo_player_gray_overlay div.jp-audio div.jp-progress {
+    position: absolute;
+    top:32px;
+    height:12px;
+}
+.jrvideo_player_gray_overlay div.jp-audio div.jp-type-single div.jp-progress {
+    left:110px;
+    width:186px;
+}
+.jrvideo_player_gray_overlay div.jp-audio div.jp-type-playlist div.jp-progress {
+    left:166px;
+    width:130px;
+}
+.jrvideo_player_gray_overlay div.jp-video div.jp-progress {
+    float:left;
+    width:100%;
+    height:5px;
+    margin-right:8px;
+    margin-top:1px;
+}
+.jrvideo_player_gray_overlay div.jp-seek-bar {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") 0 -53px repeat-x;
+    width:0px;
+    height:100%;
+    cursor: pointer;
+}
+.jrvideo_player_gray_overlay div.jp-play-bar {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") 0 -70px repeat-x ;
+    width:0px;
+    height:100%;
+}
+
+/* The seeking class is added/removed inside jPlayer */
+.jrvideo_player_gray_overlay div.jp-seeking-bg {
+    background: url("{$jrVideo_img_url}/jplayer.blue.monday.seeking.gif");
+}
+
+/* @end */
+
+/* @group volume controls */
+
+
+.jrvideo_player_gray_overlay a.jp-mute,
+.jrvideo_player_gray_overlay a.jp-unmute,
+.jrvideo_player_gray_overlay a.jp-volume-max {
+    width:16px;
+    height:16px;
+}
+
+.jrvideo_player_gray_overlay div.jp-audio div.jp-type-single a.jp-mute,
+.jrvideo_player_gray_overlay div.jp-audio div.jp-type-single a.jp-unmute {
+    margin-left: 210px;
+}
+
+.jrvideo_player_gray_overlay div.jp-audio div.jp-type-playlist a.jp-mute,
+.jrvideo_player_gray_overlay div.jp-audio div.jp-type-playlist a.jp-unmute {
+    margin-left: 154px;
+}
+
+.jrvideo_player_gray_overlay div.jp-audio a.jp-volume-max {
+    margin-left: 50px;
+}
+
+.jrvideo_player_gray_overlay div.jp-video a.jp-mute,
+.jrvideo_player_gray_overlay div.jp-video a.jp-unmute,
+.jrvideo_player_gray_overlay div.jp-video a.jp-volume-max {
+    float:left;
+    margin-top:0;
+}
+
+.jrvideo_player_gray_overlay div.jp-video a.jp-mute,
+.jrvideo_player_gray_overlay div.jp-video a.jp-unmute {
+    left: 50px;
+}
+
+.jrvideo_player_gray_overlay div.jp-video a.jp-volume-max {
+    left: 125px;
+}
+
+.jrvideo_player_gray_overlay a.jp-mute {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") 0 -17px no-repeat;
+}
+.jrvideo_player_gray_overlay a.jp-mute:hover {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -17px -17px no-repeat;
+}
+.jrvideo_player_gray_overlay a.jp-unmute {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -68px -17px no-repeat;
+    display: none;
+}
+.jrvideo_player_gray_overlay a.jp-unmute:hover {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -85px -17px no-repeat;
+}
+.jrvideo_player_gray_overlay a.jp-volume-max {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") 0 -17px no-repeat;
+}
+.jrvideo_player_gray_overlay a.jp-volume-max:hover {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -17px -17px no-repeat;
+}
+
+
+
+.jrvideo_player_gray_overlay div.jp-volume-bar {
+    position: static;
+    overflow:hidden;
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") 0 -90px repeat-x;
+    width:70px;
+    height:6px;
+    cursor: pointer;
+}
+.jrvideo_player_gray_overlay div.jp-audio div.jp-volume-bar {
+    top:37px;
+    left:330px;
+}
+.jrvideo_player_gray_overlay div.jp-video div.jp-volume-bar {
+    float:left;
+    margin-top:5px;
+}
+.jrvideo_player_gray_overlay div.jp-volume-bar-value {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") 0 -107px repeat-x;
+    width:0;
+    height:6px;
+}
+
+/* @end */
+
+/* @group current time and duration */
+
+.jrvideo_player_gray_overlay div.jp-audio div.jp-time-holder {
+    position:absolute;
+    top:50px;
+}
+.jrvideo_player_gray_overlay div.jp-audio div.jp-type-single div.jp-time-holder {
+    left:110px;
+    width:186px;
+}
+.jrvideo_player_gray_overlay div.jp-audio div.jp-type-playlist div.jp-time-holder {
+    left:166px;
+    width:130px;
+}
+
+.jrvideo_player_gray_overlay div.jp-current-time,
+.jrvideo_player_gray_overlay div.jp-duration {
+    width:30px;
+    font-size:.64em;
+    font-style:oblique;
+    margin-top:-1px;
+}
+.jrvideo_player_gray_overlay div.jp-current-time {
+    float:left;
+    display:inline;
+}
+.jrvideo_player_gray_overlay div.jp-duration {
+    float:left;
+    display:inline;
+    text-align: right;
+}
+
+.jrvideo_player_gray_overlay div.jp-video div.jp-current-time {
+    margin-left:10px;
+}
+.jrvideo_player_gray_overlay div.jp-video div.jp-duration {
+    margin-right:8px;
+}
+
+/* @end */
+
+/* @group playlist */
+
+.jrvideo_player_gray_overlay div.jp-title {
+    position:absolute;
+    font-weight:bold;
+    text-align:center;
+    background:#d2d2d2;
+    background: -moz-linear-gradient(#d2d2d2, #f1f1f1);
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#d2d2d2), to(#f1f1f1));
+    background: -webkit-linear-gradient(#d2d2d2, #f1f1f1);
+    background: -o-linear-gradient(#d2d2d2, #f1f1f1);
+    background: -ms-linear-gradient(#d2d2d2, #f1f1f1);
+    background: linear-gradient(#d2d2d2, #f1f1f1);
+    padding:10px;
+    bottom: 38px;
+}
+
+.jrvideo_player_gray_overlay div.jp-title,
+.jrvideo_player_gray_overlay div.jp-playlist {
+    width:100%;
+    max-height:150px;
+    background-color:transparent;
+    border-top:0 solid #CCCCCC;
+}
+.jrvideo_player_gray_overlay div.jp-type-single div.jp-title,
+.jrvideo_player_gray_overlay div.jp-type-playlist div.jp-title,
+.jrvideo_player_gray_overlay div.jp-type-single div.jp-playlist {
+    border-top:none;
+}
+.jrvideo_player_gray_overlay div.jp-title ul,
+.jrvideo_player_gray_overlay div.jp-playlist ul {
+    list-style-type:none;
+    margin:0;
+    padding:0 20px;
+    font-size: 1em;
+}
+
+.jrvideo_player_gray_overlay div.jp-title li {
+    padding:5px 0;
+    font-weight:bold;
+}
+.jrvideo_player_gray_overlay div.jp-playlist li {
+    padding:5px 0 4px 20px;
+    border-bottom:0 solid #eee;
+}
+
+.jrvideo_player_gray_overlay div.jp-playlist li div {
+    display:inline;
+}
+
+/* Note that the first-child (IE6) and last-child (IE6/7/8) selectors do not work on IE */
+
+.jrvideo_player_gray_overlay div.jp-type-playlist div.jp-playlist li:last-child {
+    padding:5px 0 5px 20px;
+    border-bottom:none;
+}
+.jrvideo_player_gray_overlay div.jp-type-playlist div.jp-playlist li.jp-playlist-current {
+    list-style-type:square;
+    list-style-position:inside;
+    padding-left:7px;
+}
+.jrvideo_player_gray_overlay div.jp-type-playlist div.jp-playlist a {
+    color: #333;
+    text-decoration: none;
+}
+.jrvideo_player_gray_overlay div.jp-type-playlist div.jp-playlist a:hover {
+    color:#666;
+}
+.jrvideo_player_gray_overlay div.jp-type-playlist div.jp-playlist a.jp-playlist-current {
+    color:#333;
+}
+
+.jrvideo_player_gray_overlay div.jp-type-playlist div.jp-playlist a.jp-playlist-item-remove {
+    float:right;
+    display:inline;
+    text-align:right;
+    margin-right:10px;
+    font-weight:bold;
+    color:#666;
+}
+.jrvideo_player_gray_overlay div.jp-type-playlist div.jp-playlist a.jp-playlist-item-remove:hover {
+    color:#666;
+}
+.jrvideo_player_gray_overlay div.jp-type-playlist div.jp-playlist span.jp-free-media {
+    float:right;
+    display:inline;
+    text-align:right;
+    margin-right:10px;
+}
+.jrvideo_player_gray_overlay div.jp-type-playlist div.jp-playlist span.jp-free-media a{
+    color:#666;
+}
+.jrvideo_player_gray_overlay div.jp-type-playlist div.jp-playlist span.jp-free-media a:hover{
+    color:#666;
+}
+.jrvideo_player_gray_overlay span.jp-artist {
+    font-size:.8em;
+    color:#666;
+}
+.jrvideo_player_gray_overlay span.jp-album {
+    font-size:.8em;
+    color:#666;
+    font-style: italic;
+}
+
+/* @end */
+
+.jrvideo_player_gray_overlay div.jp-video-play {
+    width:100%;
+    overflow:hidden; /* Important for nested negative margins to work in modern browsers */
+    cursor:pointer;
+    background-color:rgba(0,0,0,0); /* Makes IE9 work with the active area over the whole video area. IE6/7/8 only have the button as active area. */
+}
+.jrvideo_player_gray_overlay div.jp-video-270p div.jp-video-play {
+    margin-top:-270px;
+    height:270px;
+}
+.jrvideo_player_gray_overlay div.jp-video-360p div.jp-video-play {
+    margin-top:-360px;
+    height:360px;
+}
+.jrvideo_player_gray_overlay div.jp-video-full div.jp-video-play {
+    height:100%;
+}
+.jrvideo_player_gray_overlay a.jp-video-play-icon {
+    position:relative;
+    display:block;
+    width: 112px;
+    height: 100px;
+
+    margin-left:-56px;
+    margin-top:-50px;
+    left:50%;
+    top:20%;
+
+    background: url("{$jrVideo_img_url}/jplayer.blue.monday.video.play.png") 0 0 no-repeat;
+    text-indent:-9999px;
+}
+.jrvideo_player_gray_overlay div.jp-video-play:hover a.jp-video-play-icon {
+    background: url("{$jrVideo_img_url}/jplayer.blue.monday.video.play.png") 0 -100px no-repeat;
+}
+
+.jrvideo_player_gray_overlay div.jp-jplayer audio,
+.jrvideo_player_gray_overlay div.jp-jplayer {
+    width:0px;
+    height:0px;
+}
+
+.jrvideo_player_gray_overlay div.jp-jplayer {
+    margin:0 auto;
+    width:100%;
+    background-color: transparent;
+}
+
+
+/* @group TOGGLES */
+
+/* The audio toggles are nested inside jp-time-holder */
+
+.jrvideo_player_gray_overlay ul.jp-toggles {
+    float:left;
+    list-style-type:none;
+    padding:0;
+    margin:0 auto;
+    overflow:hidden;
+}
+
+.jrvideo_player_gray_overlay div.jp-audio .jp-type-single ul.jp-toggles {
+    width:25px;
+}
+.jrvideo_player_gray_overlay div.jp-audio .jp-type-playlist ul.jp-toggles {
+    width:100px;
+    margin: 0;
+    position: absolute;
+    left: 325px;
+    top: 100px;
+}
+
+.jrvideo_player_gray_overlay div.jp-video ul.jp-toggles {
+}
+
+.jrvideo_player_gray_overlay ul.jp-toggles li {
+    display:block;
+    float:right;
+}
+
+.jrvideo_player_gray_overlay ul.jp-toggles li a {
+    display:block;
+    width:16px;
+    height:16px;
+    text-indent:-9999px;
+    line-height:100%; /* need this for IE6 */
+}
+
+.jrvideo_player_gray_overlay a.jp-full-screen {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -68px -34px no-repeat;
+    margin-left: 10px;
+}
+
+.jrvideo_player_gray_overlay a.jp-full-screen:hover {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -85px -34px no-repeat;
+    margin-left: 10px;
+}
+
+.jrvideo_player_gray_overlay a.jp-restore-screen {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -102px -34px no-repeat;
+    margin-left: 10px;
+}
+
+.jrvideo_player_gray_overlay a.jp-restore-screen:hover {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -119px -34px no-repeat;
+    margin-left: 10px;
+}
+
+.jrvideo_player_gray_overlay a.jp-repeat {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") 0 -34px no-repeat;
+    margin-left: 10px;
+}
+
+.jrvideo_player_gray_overlay a.jp-repeat:hover {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -17px -34px no-repeat;
+    margin-left: 10px;
+}
+
+.jrvideo_player_gray_overlay a.jp-repeat-off {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -34px -34px no-repeat;
+    margin-left: 10px;
+}
+
+.jrvideo_player_gray_overlay a.jp-repeat-off:hover {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -51px -34px no-repeat;
+    margin-left: 10px;
+}
+
+.jrvideo_player_gray_overlay a.jp-shuffle {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -102px -17px no-repeat;
+    margin-left: 10px;
+}
+
+.jrvideo_player_gray_overlay a.jp-shuffle:hover {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -119px -17px no-repeat;
+    margin-left: 10px;
+}
+
+.jrvideo_player_gray_overlay a.jp-shuffle-off {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -136px -17px no-repeat;
+    margin-left: 10px;
+}
+
+.jrvideo_player_gray_overlay a.jp-shuffle-off:hover {
+    background: url("{$jrVideo_img_url}/jr_player_gray_overlay.png") -153px -17px no-repeat;
+    margin-left: 10px;
+}
+
+
+/* @end */
+
+/* @group NO SOLUTION error feedback */
+
+.jrvideo_player_gray_overlay .jp-no-solution {
+    position:absolute;
+    width:390px;
+    margin-left:-202px;
+    left:50%;
+    top: 10px;
+
+    padding:5px;
+    font-size:.8em;
+    background-color:#eee;
+    border:2px solid #CCCCCC;
+    color:#000;
+    display:none;
+}
+
+.jrvideo_player_gray_overlay .jp-no-solution a {
+    color:#000;
+}
+
+.jrvideo_player_gray_overlay .jp-no-solution span {
+    font-size:1em;
+    display:block;
+    text-align:center;
+    font-weight:bold;
+}
+
+/* Mobile */
+@media handheld, only screen and (max-width: 801px) {
+
+    .video_container {
+        height: auto;
+        padding:0;
+        margin:0;
+    }
+
+    .jrvideo_player_gray_overlay div.jp-controls-holder {
+        top:-2px; /* This negative value depends on the size of the text in jp-currentTime and jp-duration */
+    }
+
+    .jrvideo_player_gray_overlay div.jp-audio ul.jp-controls {
+        width: 100px;
+        margin:0 auto;
+        padding:20px 20px 0 20px;
+    }
+
+    .jrvideo_player_gray_overlay div.jp-video div.jp-type-single ul.jp-controls {
+        width: 78px;
+        margin-left:20px;
+    }
+
+    .jrvideo_player_gray_overlay div.jp-video div.jp-type-playlist ul.jp-controls {
+        max-width:200px;
+        margin-left: 17px;
+    }
+
+    .jrvideo_player_gray_overlay div.jp-audio div.jp-time-holder {
+        position:absolute;
+        top:40px;
+    }
+    .jrvideo_player_gray_overlay div.jp-audio div.jp-type-single div.jp-time-holder {
+        left:110px;
+        width:86px;
+    }
+    .jrvideo_player_gray_overlay div.jp-audio div.jp-type-playlist div.jp-time-holder {
+        left:66px;
+        width:130px;
+    }
+
+    .jrvideo_player_gray_overlay div.jp-current-time,
+    .jrvideo_player_gray_overlay div.jp-duration {
+        width:60px;
+        font-size:.64em;
+        font-style:oblique;
+    }
+    .jrvideo_player_gray_overlay div.jp-current-time {
+        float: left;
+        display:inline;
+    }
+    .jrvideo_player_gray_overlay div.jp-duration {
+        display:inline;
+        text-align: right;
+    }
+
+    .jrvideo_player_gray_overlay div.jp-video div.jp-current-time {
+        margin-left:20px;
+    }
+    .jrvideo_player_gray_overlay div.jp-video div.jp-duration {
+        float:right;
+        margin-right:20px;
+    }
+
+    .jrvideo_player_gray_overlay ul.jp-toggles li a.jp-repeat {
+        display:none;
+        visibility: hidden;
+    }
+    .jrvideo_player_gray_overlay ul.jp-toggles li a.jp-shuffle {
+        display:none;
+        visibility: hidden;
+    }
+    .jrvideo_player_gray_overlay div.jp-video ul.jp-toggles {
+        width:16px;
+        padding-bottom:15px;
+    }
+
+    .jrvideo_player_gray_overlay div.jp-volume-bar {
+        display:none;
+        visibility:hidden;
+    }
+
+    .jrvideo_player_gray_overlay div.jp-video a.jp-mute,
+    .jrvideo_player_gray_overlay div.jp-video a.jp-unmute {
+        display:none;
+        visibility:hidden;
+    }
+
+    .jrvideo_player_gray_overlay div.jp-video a.jp-volume-max {
+        display:none;
+        visibility:hidden;
+    }
+
+    .jrvideo_player_gray_overlay div.jp-video div.jp-progress {
+        top:0px;
+        left:0px;
+        width:100%;
+        height:10px;
+    }
+    .jrvideo_player_gray_overlay div.jp-video div.jp-interface {
+        height:auto;
+    }
+}
+
+/* @end */

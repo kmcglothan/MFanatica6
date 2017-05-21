@@ -1,0 +1,1 @@
+Your purchase is currently pending

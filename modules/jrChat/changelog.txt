@@ -1,0 +1,46 @@
+Simple Chat module changelog
+
+Version 1.1.1:
+ - Change: Lightbox from Jamroom site will no longer show images uploaded in Chat
+ - Change: CSS updates to be better at wrapping text when chat pane is very narrow
+
+Version 1.1.0:
+ - New: "Chat Pop Out" button to launch chat into it's own tab or window
+ - New: "New Message Sound" user chat config option to play a sound on new messages
+ - New: "css-fixed" HTML class on an element prevents sliding when chat is opened/closed
+ - Bug Fix: Chat message textarea still getting focus() even when chat pane was closed
+
+Version 1.0.3:
+ - New: Smiley selection interface shows if Smiley module is enabled and enabled in Quotas
+ - Change: Fixed padding for jrchat-msg-msg class. Modified jrChat.css file.
+
+Version 1.0.2:
+ - New: "Can Start Private Chat" Quota Config option to enable/disable private chat access
+ - Change: Cleanup in transcript HTML to make some messages easier to read
+ - Bug Fix: Some users may not automatically join the configured Public Room correctly
+
+Version 1.0.1:
+ - New: "Default Public Room" global setting to define a default public chat room for users to join
+ - Change: Additional Language string for "Chat" added for use in custom templates
+ - Change: Modified chat.tpl to hide slide-out button on Tablet devices (uses menu for chat pop-out)
+
+Version 1.0.0:
+ - Bug Fix: Private chats between users may not show to Admin users in room browser
+ - Bug Fix: Timestamps on chat messages between 12pm and 1pm showing "AM"
+ - Bug Fix: Non-admin users may not be able to join newly created Public chat rooms
+
+Version 1.0.0b5:
+ - Change: Media URL Scanner cards will now show for URLs in chat messages
+ - Bug Fix: Scrolling back in chat history may jump to the bottom of the chat window
+
+Version 1.0.0b4:
+ - Change: Small update to work properly with updated File Upload handling in Core 6.0.0b6
+
+Version 1.0.0b3:
+ - Bug Fix: Possible "permission denied" for Admin user deleting room they did not create
+
+Version 1.0.0b2:
+ - Bug Fix: Fixed element positioning may not always work correctly on MS Edge browser
+
+Version 1.0.0b1:
+ - Initial Beta Release

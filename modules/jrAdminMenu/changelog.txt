@@ -1,0 +1,47 @@
+Admin Hover Menu changelog
+
+Version 1.0.12:
+ - Bug Fix: Admin Hover Menu was showing in new Disk Report from Profiles module
+
+Version 1.0.11:
+ - Bug Fix: Removed slight margin on nested menu box to make transition smoother
+ - Bug Fix: arrow image not showing for nested menu items
+
+Version 1.0.10:
+ - Bug Fix: Links to skins from hover menu sub menu incorrect location
+
+Version 1.0.9:
+ - Bug Fix: Links to skins from hover menu incorrect location
+
+Version 1.0.8:
+ - Change: Skin Names in Skins section now shows the title instead of skin directory name
+
+Version 1.0.7:
+ - Change: Only Active modules now show in the hover menu
+ - Change: Menu categories are a bit narrower to work better on smaller screen devices
+
+Version 1.0.6:
+ - Change: Admin Menu no longer shows on mobile phones
+ - Bug Fix: Admin Menu was showing in popup windows for Module info and Changelogs
+
+Version 1.0.5:
+ - Bug Fix: Menu addition to page could corrupt the template compare screen
+
+Version 1.0.4:
+ - Bug Fix: DataStore Browser tool showing for modules that do not have a DataStore
+ - Bug Fix: Link to Database Admin in Developer tools was incorrect
+
+Version 1.0.3:
+ - Bug Fix: sometimes appears in ajax loaded locations.
+
+Version 1.0.2:
+ - Change: Updated to work better with skins that have a floated top header or menu bar
+ - Bug Fix: replacing arrow.png in images tab with custom image was not working
+
+Version 1.0.1:
+ - Refactor to be faster and fix bug where it would not work correctly without a cache reset
+ - Adding new Changelog
+
+Version 1.0.0:
+ - Initial Release
+

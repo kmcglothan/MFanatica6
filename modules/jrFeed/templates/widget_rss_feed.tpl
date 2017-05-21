@@ -1,0 +1,1 @@
+{jrFeed_list name=$name}

@@ -1,0 +1,109 @@
+Profile Events module changelog
+
+Version 1.3.6:
+ - New: Global Config option to select calendar start day of week
+ - New: Updated to work with version 1.2.1 of the RSS Feed Reader module
+ - Bug Fix: OG image tag not using correct $_item_id so image was not showing when shared
+
+Version 1.3.5:
+ - New: Added item_detail_meta.tpl for the Meta Tag Manager module to support custom meta tags
+
+Version 1.3.4:
+ - Change: "Show Past Events" Global Config is now a select field for more control over functionality
+ - Bug Fix: "Attending" Timeline entries may not show event information for past events
+
+Version 1.3.3
+ - New: Events Attending and Events Attended view added as a User Menu item
+ - Change: If "Show Past Events" is disabled, events will show until 1 hour past event start time
+
+Version 1.3.2
+ - New: Clicking the "Attending" button now adds an entry to the user's Timeline
+ - Bug Fix: Facebook Open Graph template fix
+
+Version 1.3.1:
+ - New: Clicks of the attending button can now be traced by the Event Tracer module
+ - Change: "Attending Event" button now defaults to inactive for event lists
+ - Change: when an event is shared to facebook which doesn't have an image, an icon will show instead
+ - Bug Fix: Events dissappear from lists an hour before the event is due to start
+
+Version 1.3.0:
+ - Change: Calendar icon in event list changed to use core icon support instead of image
+ - Change: Attending/Not Attending button updated to not override skin form button styling
+ - Change: Event dates now show as entered - no timezone adjustment is applied
+ - Change: Events will now show for up to 1 hour after the start time if Show Past Events is disabled
+ - Bug Fix: Recurring events set for specific day of week could be off by 1 day
+ - Bug Fix: Recurring event options text strings were not in the Language file
+
+Version 1.2.5:
+ - Change: Calendar now shows a full range of site event years in the select form
+ - Change: Widget calendar template updates
+
+Version 1.2.4:
+ - Change: Optimizations in how users attending an event are retrieved from the database
+
+Version 1.2.3:
+ - Bug Fix: menu link does not point to the correct month if clicked on the small calendar heading
+
+Version 1.2.2:
+ - Bug Fix: hovering over the calendar button showed an extra line.  Button now has hover text
+
+Version 1.2.1:
+ - New: "profile_button" class added to attending button to standardize skin class override
+ - New: "item_search.tpl" file added for custom listing in search results
+ - Change: event calendar text now overflow is hidden if text is to wide for cell
+
+Version 1.2.0:
+ - New: Event attendees are now stored in their own database table
+ - New: Event notifications for attendees
+
+Version 1.1.7:
+ - Change: Link to the main site calendar from the widget
+
+Version 1.1.6:
+ - New: Event calendar widget for the Site Builder system.
+
+Version 1.1.5:
+ - Bug Fix: Typo in item_index.tpl template file preventing events from showing to logged out users
+
+Version 1.1.4:
+ - Bug Fix: Possible "Invalid HTML" error when creating or updating an event
+
+Version 1.1.3:
+ - Update: Updated index.tpl and item_index.tpl to work with the jrEvent modules config show_past setting.
+
+Version 1.1.2:
+ - Bug Fix: If an event is set for admin approval on update, clicking the attending button would cause it to require approval again
+ - New: 'Event End Day' added to create and update forms (enabled via the Form Designer)
+
+Version 1.1.1:
+ - Bug Fix: Calendar Icon and Attending button could show on other module detail pages
+
+Version 1.1.0:
+ - New: Event Calendar image has been moved to an item list and detail button
+ - New: "Attending" event button has been moved to an item detail button
+ - Change: removed event_banner_search item key - was no longer needed
+
+Version 1.0.6:
+ - New: "Show Past Events" Global Config to toggle between showing or hiding past events
+ - Change: Attending button now reloads page so it can be clicked again if the user changes their mind
+ - Change: Updates to item_list and item_detail templates to remove "featuring" line
+ - Change: Made small calendar cell text aligned to center instead of left.
+
+Version 1.0.5:
+ - New: Event Calendar in profiles.
+
+Version 1.0.4:
+ - New: "attending" button feature so user can indicate if they are attending an event
+
+Version 1.0.3:
+ - Bug Fix: String formatters were not active on the event description on the event details page
+
+Version 1.0.2:
+ - Bug Fix: Fix for incorrect error result function used on a couple views
+
+version 1.0.1:
+ - jrFeed listener added
+
+Version 1.0.0:
+ - Adding new Changelog
+ - Initial Release

@@ -1,0 +1,43 @@
+Combined Video changelog
+
+Version 1.0.13:
+ - Bug Fix: Create Video modal may not show properly on some skins with custom button layouts
+
+Version 1.0.12:
+ - Bug Fix: item_rss.tpl updated to better support entries with HTML entities
+
+Version 1.0.11:
+ - Bug Fix: Language strings not showing for title if there is only one active video module
+
+Version 1.0.10:
+ - New: item_rss.tpl added to allow the Feed module to create combined video feeds
+
+Version 1.0.9:
+ - Bug Fix: If Video Module is installed after Combined Video module, the module URL may not work correctly
+
+Version 1.0.8:
+ - Bug Fix: "Video" profile menu option not showing to non-logged in users even if Video items were present
+
+Version 1.0.7:
+ - Bug Fix: "Video" profile menu option showing to non-profile owners even if no video items are available
+
+Version 1.0.6:
+ - Bug Fix: video index search was resulting in a Page Not Found
+
+Version 1.0.5:
+ - Bug Fix: Stream URL may not be redirected properly to uploaded_video URL
+
+Version 1.0.4:
+ - Bug Fix: "old" URLs to video images resulting in CRI debug log query error
+
+Version 1.0.3:
+ - Bug Fix: Create new Video overlay is transparent on some skins
+
+Version 1.0.2:
+ - New: Update to tell Admin Users if no active video modules are found
+
+Version 1.0.1:
+ - Bug Fix: Profile menu entry not showing for users other than the profile owner
+
+Version 1.0.0:
+ - Initial Release

@@ -1,0 +1,17 @@
+User Tips Module changelog
+
+Version 2.0.0:
+ - Change: Tips now show as hover reveal instead of modal tours
+ - Change: Updated CSS to a more neutral color scheme. Modified jquery.qtip.css file.
+
+Version 1.0.3:
+ - Bug Fix: Tips were attempting to be loaded on some image calls
+
+Version 1.0.2:
+ - Change: Autoplay set to "off" for YouTube Videos
+
+Version 1.0.1:
+ - Bug Fix: Tour could till start on Skin template even with Tours disabled (due to caching)
+
+Version 1.0.0:
+ - Initial Release

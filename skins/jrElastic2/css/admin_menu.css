@@ -1,0 +1,122 @@
+#item-holder {
+    margin-right: 9px;
+}
+
+#dashboard_container {
+    padding: 3px 3px 0 3px;
+}
+
+dd {
+    padding-top: 0;
+    padding-bottom: 6px;
+    margin: 0;
+    font-size: 12px;
+}
+
+.admin_section_header {
+    margin: 0 0 6px 0; /* @ignore */
+    font-weight: normal;
+    font-size: 16px;
+    padding: 4px;
+    padding-left: 12px;
+}
+
+.admin_section_search {
+    padding: 10px 12px;
+}
+
+.admin_section_search input {
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+/* @title Menu Row */
+/* @help The row for the menu list */
+.item-row {
+    width: 100%;
+    display: table-row;
+    cursor: pointer;
+    height: 40px;
+    background-color: #FFFFFF;
+}
+
+/* @title Menu Active Row */
+/* @help The active row for the menu list */
+.item-row-active {
+    background-color: #EEEEEE;
+}
+
+/* @title Menu Hover */
+/* @help The hover for the menu list */
+.item-row:hover {
+    background-color: #EEEEEE;
+}
+
+/* @title Menu Icon */
+/* @help The icon for the menu item */
+.item-icon {
+    display: table-cell;
+}
+
+/* @title Menu Entry */
+/* @help The text area for the menu item */
+.item-entry {
+    width: 100%;
+    display: table-cell;
+    padding: 6px;
+    font-size: 15px;
+    color: #000000;
+    vertical-align: middle;
+}
+
+/* @title Module Enabled */
+/* @help Contents of Small box to the right of an enabled module */
+.item-enabled {
+    display: table-cell;
+    padding-right: 6px;
+}
+
+/* @title Module Disabled */
+/* @help Contents of Small box to the right of a disabled module */
+.item-disabled {
+    display: table-cell;
+    color: #FFD984;
+    background: #FFD984;
+    font-size: 6px;
+    padding: 0 6px 4px 2px;
+    border: 1px solid #FFCC00;
+    border-radius: 50%;
+}
+
+/* @title Menu Item Active */
+/* @help The active state of a menu item */
+.item-active {
+    display: table-cell;
+    background-color: #CCFF99;
+    font-size: 11px;
+    padding: 6px;
+}
+
+#item-work {
+    background-color: #DDDDDD;
+}
+
+#info_box .page_table_cell strong {
+    font-size: 14px;
+    text-transform: lowercase;
+    font-variant: small-caps;
+}
+
+#info_box .img_scale {
+    border: 5px solid #FFFFFF;
+}
+
+.info_img {
+    border-radius: 26px;
+    box-shadow: 0 0 16px #999999;
+}
+
+.info_img img {
+    border-radius: 16px;
+}

@@ -1,0 +1,9 @@
+Spectrum changelog
+
+Version 1.0.1:
+ - Updated Spectrum jQuery to version 1.7.1
+ - Change: Clarified options configuration text
+ - Change: A slightly nicer icon
+
+Version 1.0.0:
+ - New: Added form field

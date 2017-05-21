@@ -1,0 +1,31 @@
+Video Pro changelog
+
+Version 1.0.7:
+ - Bug Fix: Embedded Videos And Playlists had a javascript error. Modified n8Player_playlist_player.tpl and n8Player_video_player.tpl
+ - Bug Fix: Added default audio and playlist players to the include.php for the light color scheme.
+ - Bug Fix: Can now optionally delete the uploaded profile header image
+ - Bug Fix: User birthdays may be incorrectly displayed
+
+Version 1.0.6:
+ - Bug Fix: Video auto_play option fix
+
+Version 1.0.5:
+ - Bug Fix: Mobile menu had inconsistent behavior
+
+Version 1.0.4:
+ - Bug Fix: log in button missing on mobile
+
+Version 1.0.3:
+ - Change: Removed option_img_pass class from acp.css
+ - Bug Fix: Fixed language ID for profile edit icon. Modified profile_header.tpl
+ - Bug Fix: Fixed TinyMCE editor height issue. modified acp.css file.
+
+Version 1.0.2:
+ - Bug Fix: Removed double closing tag for body
+
+Version 1.0.1:
+ - New: Added chat.css file.
+ - Bug Fix: Added ilogo class to header.css so profile custom logos do not bleed over the header div.
+
+Version 1.0.0:
+ - New: Initial Release

@@ -1,0 +1,550 @@
+
+.clearfix:after {
+    visibility: hidden;
+    display: block;
+    font-size: 0;
+    content: " ";
+    clear: both;
+    height: 0;
+}
+
+.clearfix {
+    display: inline-block;
+}
+
+* html .clearfix {
+    height: 1%;
+}
+
+.clearfix {
+    display: block;
+}
+
+/* jrElastic2 Profile Page CSS */
+
+/* @title Profile Menu */
+/* @help This is the Profile menu */
+.profile_menu {
+    background-color: #FFFFFF;
+    margin: 0;
+    margin-bottom: 6px;
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+/* @title Profile Menu Entry */
+/* @help This is the Profile menu entries */
+.profile_menu_entry {
+    display: inline-block;
+    background: rgba(0, 0, 0, 0) linear-gradient(#FFFFFF, #EEEEEE) repeat scroll 0 0;
+    border: 1px solid #CCCCCC;
+    border-radius: 2px;
+    cursor: pointer;
+    color: #000000;
+    margin-top: 6px;
+    margin-right: 3px;
+    padding: 7px 7px 6px 7px;
+    vertical-align: middle;
+    text-transform: capitalize;
+}
+
+/* @title Menu Entry Link */
+/* @help This is the menu entry URL link */
+.profile_menu_entry a {
+    color: #000000;
+}
+
+/* @title Menu Link Hover */
+/* @help This is the menu entry URL link hover effect */
+.profile_menu_entry:hover {
+    background-color: #EEEEEE;
+}
+
+/* @title Menu Entry Active */
+/* @help This is the menu entry active state */
+.profile_menu_entry_active {
+    background-color: #FFCC00;
+    color: #000000;
+}
+
+.profile_menu_entry_active:hover {
+    color: #000000;
+}
+
+/* @title Profile Name Box */
+/* @help This is the box that the Profile Name text is in */
+.profile_name_box {
+    background-image: url("{$jrElastic2_img_url}/bckgrd.png");
+    background-color: #333333;
+    vertical-align: middle;
+    text-transform: capitalize;
+    padding: 12px;
+    margin: 12px 12px 6px 12px;
+    border-radius: 2px;
+    box-shadow: inset 0 0 3px #000000;
+}
+
+/* @title Profile Name */
+/* @help This is the Profile Name text */
+.profile_name {
+    text-transform: capitalize;
+    font-size: 28px;
+    font-weight: 500;
+    color: #FFFFFF;
+}
+
+/* @title Profile Link */
+/* @help This is the Profile Name URL link */
+.profile_name a {
+    text-decoration: none;
+}
+
+/* @title Profile Link Hover */
+/* @help This is the Profile Name link hover effect */
+.profile_name a:hover {
+    text-decoration: none;
+}
+
+.profile_actions {
+    float: right;
+    vertical-align: middle;
+    text-align: right;
+}
+
+.block_profile_left {
+    padding-right: 3px;
+}
+
+/* @title Profile Image Hover */
+/* @help When Hovering over the Profile Image, the Change Profile Image hover box will appear */
+.profile_hoverimage {
+    background: rgba(0, 0, 0, 0.5) none repeat scroll 0 0;
+    color: white;
+    display: none;
+    height: 100%;
+    left: 0;
+    padding: 1.5em 0 0;
+    position: absolute;
+    text-align: center;
+    top: 0;
+    vertical-align: middle;
+    width: 100%;
+}
+
+.profile_hoverimage a {
+    text-decoration: none;
+}
+
+.profile_hoverimage a:hover {
+    text-decoration: none;
+}
+
+.profile_hoverimage .sprite_icon {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    border: medium none;
+}
+
+.stat_entry_box {
+    float: left;
+    background-color: #FFFFFF;
+    border-width: 1px;
+    border-color: #CCCCCC;
+    border-style: solid;
+    border-radius: 3px;
+    padding: 3px 9px;
+    margin: 6px 6px 0 0;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.stat_entry_box a {
+    text-decoration: none;
+}
+
+.stat_entry_box:hover {
+    background-color: #EEEEEE;
+}
+
+.stat_entry_count {
+    font-weight: 500;
+}
+
+.action_item_title {
+    font-weight: 500;
+}
+
+.action_item_shared {
+    background: transparent;
+    padding: 0;
+}
+
+.action_detail {
+    background: #F3F3F3;
+    border-radius: 2px;
+    border: 1px solid #DDDDDD;
+    margin-top: 6px;
+}
+
+.action_item_holder {
+    box-sizing: border-box;
+    padding: 12px 12px 12px 0;
+}
+
+.action_item_holder_shared {
+    border-radius: 2px;
+    border: 1px solid #DDDDDD;
+    box-sizing: border-box;
+}
+
+.action_item_delete {
+    right: 0;
+    padding: 0;
+}
+
+#quick_action_form .upload_button {
+    margin-left: 4px;
+    margin-bottom: 2px;
+}
+
+#action_submit {
+    margin-left: 4px;
+}
+
+#comment_form_section .form_button {
+    margin-left: 4px;
+}
+
+.profile_admin_buttons {
+    position: absolute;
+    top: 0;
+    width: 100%;
+}
+
+a.camera {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    border: 2px solid rgba(255, 255, 255, 0);
+    border-radius: 5px;
+    color: rgba(0, 0, 0, 0);
+    display: block;
+    line-height: 2.4;
+    max-width: 180px;
+    padding: 5px;
+    text-decoration: none;
+    transition: all 0.5s ease 0s;
+    width: 100%;
+}
+
+a.camera:hover {
+    background: rgba(0, 0, 0, 0.6) none repeat scroll 0 0;
+    border: 2px solid rgba(0, 0, 0, 0.7);
+    color: rgba(255, 255, 255, 1);
+}
+
+.camera .sprite_icon {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    border: medium none;
+    box-shadow: none;
+    margin: 0;
+    max-width: 40px;
+    opacity: 0.4;
+    padding: 0;
+}
+
+#profile_header .profile_name {
+    color: white;
+    font-size: 35px;
+    font-weight: bold;
+    position: static;
+    text-shadow: 1px 1px 3px #000000;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+div#profile_header {
+    background: #161E34 none repeat scroll 0 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.profile_hover {
+    background-image: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.5));
+    bottom: 0;
+    height: 40%;
+    left: 0;
+    min-height: 150px;
+    pointer-events: none;
+    position: absolute;
+    width: 100%;
+    z-index: 0;
+}
+
+#profile_header .profile_name span {
+    display: block;
+    font-size: 18px;
+    text-transform: lowercase;
+}
+
+#profile_header .profile_name span a {
+    color: #FFFFFF;
+    text-decoration: none;
+}
+
+.profile_image {
+    border: 3px solid white;
+    max-width: 80px;
+    overflow: hidden;
+    position: relative;
+}
+
+#profile_header .table-cell.profile-image {
+    width: 86px;
+}
+
+.profile_header_image {
+    left: 0;
+    position: absolute;
+    top: 0;
+}
+
+.table.profile_buttons {
+    height: 95px;
+}
+
+section#profile_menu {
+    min-height: 50px;
+}
+
+#profile_menu {
+    z-index: 89;
+    background: white;
+}
+
+ul#horizontal, #horizontal ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+#horizontal li {
+    float: left;
+    padding: 15px 0 0;
+}
+
+#horizontal {
+    float: left;
+    height: 50px;
+    visibility: collapse;
+    width: calc(100% - 112px);
+}
+
+#horizontal a {
+    color: #333333;
+    display: block;
+    font-size: 14px;
+    padding: 3px 19px;
+    text-decoration: none;
+    transition: border-color 0.218s ease 0s;
+    text-transform: uppercase;
+}
+
+#horizontal a:link, div.horizontal a:visited {
+    text-align: center;
+    text-decoration: none;
+}
+
+#horizontal li:hover {
+    border-bottom: 1px solid #F38C31;
+    color: #993333;
+    padding-bottom: 10px;
+}
+
+#submenu {
+    display: none;
+}
+
+#horizontal > li:first-child a {
+    border-left: medium none;
+}
+
+#horizontal > li:last-child a {
+    border-right: medium none;
+}
+
+#horizontal .active > a {
+    color: #F38C31;
+}
+
+#horizontal .hideshow > a:first-child {
+    border-right: medium none;
+}
+
+.menu_banner ul ul {
+    background: #FFFFFF none repeat scroll 0 0;
+    box-shadow: 2px 2px 8px #999999;
+    max-height: 300px;
+    max-width: 160px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: absolute;
+    right: 0;
+    text-transform: uppercase;
+    top: 52px;
+}
+
+.menu_banner ul#submenu > li {
+    border-bottom: 1px solid #EEEEEE;
+    float: none;
+    list-style: outside none none;
+    padding: 12px 20px 12px 12px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+#submenu > li:hover a {
+    color: #F38C31;
+    text-decoration: none;
+}
+
+li.hideshow {
+    display: none;
+    position: relative;
+}
+
+#horizontal .hideshow li a {
+    border: medium none;
+    padding: 0;
+    text-align: left;
+}
+
+.hideshow > ul {
+    z-index: 100;
+}
+
+.profile_body .item {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+}
+
+.menu_banner.clearfix {
+    border-bottom: 2px solid #EEEEEE;
+}
+
+.profile_body .title {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    color: #F38C31;
+}
+
+.block_image .button_player, .block_image .sc_button_player {
+    margin: 0 4px;
+    max-width: 30px;
+    min-width: 30px;
+}
+
+.head .sprite_icon, .profile_information .sprite_icon {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    border: medium none;
+}
+
+.row.profile_body {
+    min-height: 730px;
+}
+
+.profile_data span {
+    color: #666666;
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+.profile_data {
+    color: #F38C31;
+    font-size: 24px;
+    margin: 0;
+    padding: 0 0 1em;
+}
+
+.profile_data li {
+    cursor: pointer;
+    float: left;
+    text-align: center;
+    width: 33.33%;
+}
+
+.profile_information, .bio, .followers {
+    margin: auto;
+    padding: 1em;
+}
+
+.follow_button.following {
+    background: #338E64 none repeat scroll 0 0;
+    color: white;
+    font-weight: normal;
+}
+
+.follow_button {
+    background: #F38C31 none repeat scroll 0 0;
+    border: medium none;
+    color: white;
+    font-weight: normal;
+    margin: 0 5px;
+    vertical-align: middle;
+}
+
+#profile_menu .sprite_icon {
+    vertical-align: middle;
+}
+
+.profile_information > span {
+    display: block;
+    padding: 3px 0;
+}
+
+.profile_information > div > span {
+    display: block;
+    padding: 3px 0;
+}
+
+#profile .head {
+    border-bottom: 2px solid #EEEEEE;
+    font-size: 14px;
+    padding: 5px;
+    margin: 0;
+}
+
+#profile .head span {
+    vertical-align: baseline;
+}
+
+.block.block_profile_left {
+    padding: 12px 0;
+}
+
+.block_content.mt10 {
+    padding: 5px;
+}
+
+.profile_hoverimage .normal {
+    color: white;
+    pointer-events: none;
+}
+
+.profile_body .mt10 p {
+    color: #666666;
+    font-size: 16px;
+}
+
+.tag_name_box {
+    line-height: 1;
+    padding: 6px;
+}
+
+#profile_select_menu {
+    margin: 12px 12px 6px 12px;
+    padding: 3px;
+    font-size: 18px;
+    color: #000000;
+    text-transform: capitalize;
+}
+
+.title .block_config {
+    margin: 8px 0 0 6px;
+}

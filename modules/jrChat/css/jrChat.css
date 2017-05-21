@@ -1,0 +1,584 @@
+/* Chat CSS */
+
+html {
+    height: 100%;
+}
+
+body {
+    position: relative;
+}
+
+#jrchat-room {
+    background: #CCCCCC;
+    height: 100%;
+    position: fixed;
+    right: 0;
+    top: 0;
+    box-sizing: border-box;
+    z-index: 100000;
+    overflow-x: hidden;
+}
+
+#jrchat-tabs {
+    background: #EEEEEE;
+    position: fixed;
+    bottom: 70px;
+    display: table;
+    box-sizing: border-box;
+    z-index: 100000;
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+}
+
+#jrchat-hidden-tabs {
+    display: none;
+}
+
+.jrchat-tab {
+    cursor: pointer;
+}
+
+.jrchat-tab-inset {
+    margin: 5px;
+}
+
+#jrchat-box {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    -ms-overflow-style: none;
+}
+
+#jrchat-chat {
+    width: 100%;
+    background: #CCCCCC;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100000;
+    box-sizing: border-box;
+    border-left: 1px solid #EEEEEE;
+    overflow-x: hidden;
+}
+
+#jrchat-title {
+    background: #FFFFFF;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    z-index: 110000;
+    padding: 6px 8px 8px 8px;
+    box-sizing: border-box;
+    box-shadow: 0 1px 3px 3px #999999;
+}
+
+#jrchat-title img {
+    border-radius: 3px;
+}
+
+#jrchat-title .sprite_icon {
+    padding: 0;
+    margin: 0;
+}
+
+#jrchat-new-bubble {
+    background: #D9FFB3;
+    color: #000000;
+    font-size: 10px;
+    line-height: 18px;
+    position: absolute;
+    bottom: -2px;
+    left: -2px;
+    width: 18px;
+    height: 18px;
+    border: 1px solid #7F7F7F;
+    border-radius: 9px;
+    text-align: center;
+}
+
+#jrchat-available-rooms {
+    position: absolute;
+    top: 58px;
+    right: 30px;
+    width: 250px;
+    z-index: 110000;
+    overflow: scroll;
+}
+
+#jrchat-no-room-notice {
+    width: 80%;
+    margin: 20px auto;
+    padding: 20px;
+    background: #F9F9F9;
+    font-size: 15px;
+    text-align:center;
+    border-radius: 5px;
+}
+
+#jrchat-select-room {
+    display: inline-block;
+    vertical-align: top;
+    margin-bottom: 3px;
+}
+
+#jrchat-room-box {
+    background: #F9F9F9;
+    padding: 5px;
+    border-radius: 5px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.jrchat-room-opt {
+    position: relative;
+    background: #EEEEEE;
+    display: block;
+    padding: 6px 10px;
+    font-size: 16px;
+    margin: 5px;
+    border-radius: 4px;
+}
+
+.jrchat-room-dl {
+    position: absolute;
+    top: 3px;
+    right: 5px;
+}
+
+#jrchat-upload-images {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
+
+#chi {
+    position: absolute;
+    bottom: 9px;
+    right: 15px;
+}
+
+#jrchat-upload-images .qq-upload-list {
+    display: none !important;
+}
+
+.jrchat-config {
+    background: #D9FFB3;
+    color: #000000;
+    font-size: 11px;
+    line-height: 18px;
+    position: absolute;
+    bottom: -2px;
+    left: 22px;
+    width: 18px;
+    height: 18px;
+    border: 1px solid #A3BF86;
+    border-radius: 9px;
+    text-align: center;
+}
+
+.jrchat-bubble {
+    background: #D9FFB3;
+    color: #000000;
+    font-size: 11px;
+    line-height: 18px;
+    position: absolute;
+    bottom: -2px;
+    left: -2px;
+    width: 18px;
+    height: 18px;
+    border: 1px solid #7F7F7F;
+    border-radius: 9px;
+    text-align: center;
+}
+
+#jrchat-load-next-page {
+    height: 0;
+}
+
+#jrchat-room-search {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#jrchat-room-search div {
+    width: 100%;
+    box-sizing: border-box;
+    padding-top: 8px;
+}
+
+#jrchat-search-input {
+    display: inline;
+    vertical-align: middle;
+    padding: 3px 4px;
+    width: 68%;
+    margin: 0;
+}
+
+#jrchat-search-reset {
+    position: absolute;
+    right: 0;
+    display: inline;
+    vertical-align: middle;
+    width: 60px;
+    margin: 0;
+}
+
+#jrchat-room-browser {
+    background: #FFFFFF;
+    padding: 0 3px;
+    border-radius: 5px;
+    position: fixed;
+    top: 63px;
+    right: 10px;
+    width: 250px;
+    height: 300px;
+    display: none;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    z-index: 110000;
+}
+
+#jrchat-messages {
+    position: absolute;
+    right: 0;
+    bottom: 70px;
+    width: 100%;
+    padding: 10px 6px;
+    box-sizing: border-box;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+#jrchat-new-message {
+    background: #FFFFFF;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 70px;
+    padding: 10px 8px;
+    box-sizing: border-box;
+    z-index:100;
+}
+
+#jrchat-new-message-input {
+    font-family: inherit;
+    width: 60%;
+    position: absolute;
+    top: 9px;
+    left: 6px;
+    right: 36px;
+    height: 52px;
+    box-sizing: border-box;
+    resize: none;
+    font-size: 13px;
+}
+
+#jrchat-page-limit {
+    margin: 6px 0;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #000000;
+    text-align: center;
+}
+
+#jrchat-empty-chat {
+    padding: 24px;
+    background: #FFCC00;
+    overflow: hidden;
+    border-radius: 5px;
+    font-size: 16px;
+    text-align: center;
+}
+
+.jrchat-msg {
+    position: relative;
+    margin: 6px 0;
+    padding: 0;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.jrchat-msg-from {
+    padding: 9px 12px;
+    background: #FFF2BF;
+    margin-left: 26px;
+    overflow: hidden;
+}
+
+.jrchat-msg-from .urlscan_card {
+    padding: 0;
+    border: 0;
+}
+
+.jrchat-msg-to {
+    background: #F9F9F9;
+    margin-right: 26px;
+    overflow: hidden;
+}
+
+.jrchat-msg-added {
+    padding: 6px;
+    background: #CCFF99;
+    margin: 0 32px;
+    overflow: hidden;
+}
+
+.jrchat-msg-removed {
+    padding: 6px;
+    background: #FFCC00;
+    margin: 0 32px;
+    overflow: hidden;
+}
+
+.jrchat-msg-img {
+    display: table-cell;
+    width: 2%;
+    padding: 5px 0 5px 5px;
+    vertical-align: top;
+}
+
+.jrchat-msg-img img {
+    width: 40px;
+    height: 40px;
+    border-radius: 5px;
+}
+
+.jrchat-msg-msg {
+    position: relative;
+    display: table-cell;
+    vertical-align: middle;
+    padding: 9px 12px 18px 12px;
+    white-space: pre-wrap;
+    width: 98%;
+}
+
+.jrchat-msg-byline {
+    position: absolute;
+    right: 5px;
+    bottom: 0;
+    display: block;
+    font-size: 8px;
+    color: #AAAAAA;
+}
+
+.jrchat-controls {
+    position: absolute;
+    top: 4px;
+    right: 5px;
+    cursor: pointer;
+}
+
+.jrchat-controls .sprite_icon {
+    padding: 0;
+    margin: 0;
+}
+
+.jrchat-table {
+    display: table;
+    width: 100%;
+}
+
+.jrchat-table-row {
+    display: table-row;
+    width: 100%;
+}
+
+.jrchat-table-cell {
+    display: table-cell;
+}
+
+#jrchat-user-settings {
+    background: #FFFFFF;
+    padding: 0 3px;
+    border-radius: 5px;
+    position: fixed;
+    top: 63px;
+    right: 10px;
+    width: 260px;
+    height: 300px;
+    display: none;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+#jrChat_user_config .element_left {
+    width: 40% !important;
+}
+#jrChat_user_config .element_right {
+    width: 60% !important;
+}
+
+#jrchat-user-control {
+    background: #FFFFFF;
+    padding: 0 3px;
+    border-radius: 5px;
+    position: fixed;
+    top: 63px;
+    right: 10px;
+    width: 260px;
+    height: 300px;
+    display: none;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.jrchat-overlay {
+    opacity: 0.3;
+}
+
+.jrchat-room-title {
+    font-size: 16px;
+}
+
+#jrchat-new-chat-title {
+    width: 85%;
+}
+
+#jrchat-new-chat-type {
+    font-size: 12px;
+}
+
+#jrchat-user-search {
+    margin-top: 12px;
+    background: #FFFFFF;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+#jrchat-user-search-text {
+    width: 80%;
+    box-sizing: border-box;
+}
+
+.jrchat-code-box {
+    display: block;
+    margin: 5px 0 3px 0;
+    font-family: "Roboto Mono", monospace;
+    background: #FFFFFF;
+    padding: 6px;
+    font-size: 11px;
+    overflow: scroll;
+    border-radius: 5px;
+    word-break: break-all;
+}
+
+.jrchat-code-box code {
+    margin: 0;
+    padding: 0;
+}
+
+.jrchat-typing-img {
+    vertical-align: middle;
+    height: 11px;
+    margin: 10px 0 0 3px;
+}
+
+/* typing indicator */
+
+@-webkit-keyframes ellipsis_animated-toggle {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+@-moz-keyframes ellipsis_animated-toggle {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+@-ms-keyframes ellipsis_animated-toggle {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+@-o-keyframes ellipsis_animated-toggle {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes ellipsis_animated-toggle {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+.ellipsis_animated-inner span {
+
+    transform: translateZ(0);
+    font-size: 24px;
+    line-height: 14px;
+    letter-spacing: 2px;
+
+    -webkit-animation-name: ellipsis_animated-toggle;
+    -moz-animation-name: ellipsis_animated-toggle;
+    -ms-animation-name: ellipsis_animated-toggle;
+    -o-animation-name: ellipsis_animated-toggle;
+    animation-name: ellipsis_animated-toggle;
+
+    -webkit-animation-duration: 800ms;
+    -moz-animation-duration: 800ms;
+    -ms-animation-duration: 800ms;
+    -o-animation-duration: 800ms;
+    animation-duration: 800ms;
+
+    -webkit-animation-iteration-count: infinite;
+    -moz-animation-iteration-count: infinite;
+    -ms-animation-iteration-count: infinite;
+    -o-animation-iteration-count: infinite;
+    animation-iteration-count: infinite;
+
+    -webkit-animation-timing-function: cubic-bezier(.02, .85, .69, 1);
+    -moz-animation-timing-function: cubic-bezier(.02, .85, .69, 1);
+    -ms-animation-timing-function: cubic-bezier(.02, .85, .69, 1);
+    -o-animation-timing-function: cubic-bezier(.02, .85, .69, 1);
+    animation-timing-function: cubic-bezier(.02, .85, .69, 1);
+}
+
+.ellipsis_animated-inner span:nth-child(1) {
+    -webkit-animation-delay: -800ms;
+    -moz-animation-delay: -800ms;
+    -ms-animation-delay: -800ms;
+    -o-animation-delay: -800ms;
+    animation-delay: -800ms;
+}
+
+.ellipsis_animated-inner span:nth-child(2) {
+    -webkit-animation-delay: -700ms;
+    -moz-animation-delay: -700ms;
+    -ms-animation-delay: -700ms;
+    -o-animation-delay: -700ms;
+    animation-delay: -700ms;
+}
+
+.ellipsis_animated-inner span:nth-child(3) {
+    -webkit-animation-delay: -600ms;
+    -moz-animation-delay: -600ms;
+    -ms-animation-delay: -600ms;
+    -o-animation-delay: -600ms;
+    animation-delay: -600ms;
+}

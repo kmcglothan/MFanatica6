@@ -1,0 +1,165 @@
+/* jrProJam Profile Page CSS */
+
+/* @title Profile Menu */
+/* @help This is the Profile menu */
+.profile_menu {
+    margin:0;
+    background-color:transparent;
+    padding:0 12px 6px 12px;
+}
+
+/* @title Profile Menu Entry */
+/* @help This is the Profile menu entries */
+.profile_menu_entry {
+    display:inline-block;
+    background-color:#333;
+    text-transform:uppercase;
+    margin-top:3px;
+    margin-right:1px;
+    padding:10px 6px 10px 6px;
+    color:#FFF;
+    font-size:10px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+/* @title Menu Entry Link */
+/* @help This is the menu entry URL link */
+.profile_menu_entry a {
+    color:#FFF;
+}
+
+/* @title Menu Link Hover */
+/* @help This is the menu entry URL link hover effect */
+.profile_menu_entry:hover {
+    color:#FFF;
+    background-color:#9B1C26;
+}
+
+/* @title Menu Entry Active */
+/* @help This is the menu entry active state */
+.profile_menu_entry_active {
+    /* background-color:#EEEEEE; */
+    background-color:#AAA;
+    color:#222;
+}
+.profile_menu_entry_active:hover {
+    background-color:#AAA;
+    color:#000;
+}
+
+/* @title Profile Name Box */
+/* @help This is the box that the Profile Name text is in */
+.profile_name_box {
+    background-color:#111;
+    border:1px solid #333;
+    text-transform:capitalize;
+    padding:12px;
+    margin:12px;
+}
+/* @title Profile Name */
+/* @help This is the Profile Name text */
+.profile_name {
+    text-transform:capitalize;
+    font-size:28px;
+    font-weight:bold;
+    color:#CCC;
+}
+/* @title Profile Link */
+/* @help This is the Profile Name URL link */
+.profile_name a {
+    text-decoration:none;
+}
+/* @title Profile Link Hover */
+/* @help This is the Profile Name link hover effect */
+.profile_name a:hover {
+    color:#FC0;
+    text-decoration:none;
+}
+
+.profile_actions {
+    float:right;
+    vertical-align:middle;
+    text-align:right;
+}
+
+.profile_image {
+    text-align: center;
+    position: relative;
+}
+.profile_hoverimage {
+    background-color:#333333;
+    position:absolute;
+    top:15px;
+    left:15px;
+    padding:3px;
+    border:1px solid #ddd;
+    display: none;
+    opacity: 0.8;
+}
+.profile_hoverimage a {
+    text-decoration:none;
+}
+.profile_hoverimage a:hover {
+    text-decoration:none;
+}
+.profile_image:hover .profile_hoverimage {
+    display:block;
+    cursor:pointer;
+}
+.head_2{
+    background-color:#333;
+    border-bottom:1px #000 solid;
+    font-size:11px;
+    height:25px;
+    font-weight:bold;
+    color:#DDD;
+    line-height:24px;
+    text-transform:uppercase;
+    padding:5px;
+    margin:5px 5px -5px 5px;
+}
+
+.stat_entry_box {
+    float:left;
+    background-color:#222;
+    padding:5px 10px;
+    margin:6px 6px 0 0;
+    font-size:12px;
+    text-transform:uppercase;
+}
+.stat_entry_box a {
+    color:#FFF;
+    text-decoration:none;
+}
+.stat_entry_box a:hover {
+    color:#FFF;
+    text-decoration:none;
+}
+.stat_entry_box:hover {
+    color:#FFF;
+    background-color:#9B1C26;
+}
+.stat_entry_count {
+    font-weight:bold;
+    color:#FFF;
+}
+/* @title User is Online */
+/* @help Class for small ONLINE box that shows when the user is actually online */
+.online_status_online {
+    background-color:transparent;
+    text-transform: capitalize;
+    color:#9C0;
+    padding:4px;
+    display:inline-block;
+    width:100%;
+}
+
+/* @title User is Offline */
+/* @help Class for small OFFLINE box that shows when the user is not online */
+.online_status_offline {
+    color:#000000;
+    padding:4px;
+    display:inline-block;
+    width:100%;
+}

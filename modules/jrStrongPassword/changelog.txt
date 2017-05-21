@@ -1,0 +1,22 @@
+Strong Password Module Changelog
+
+Version 1.0.6:
+ - Bug Fix: Language string for bad password changed to fix a typo
+
+Version 1.0.5:
+ - Change: Global Config options moved to appropriate tabs
+
+Version 1.0.4:
+ - Bug Fix: Not working properly on PHP versions less than 5.4.0
+
+Version 1.0.3:
+ - Bug Fix: Bad Password message on Account Settings page if not changing password
+
+Version 1.0.2:
+ - Bug Fix: Packaging error in en-US.php language file was keeping lang strings from installing
+
+Version 1.0.1:
+ - New: Now works on User Account screen for users that are updating their password
+
+Version 1.0.0:
+ - Initial Release

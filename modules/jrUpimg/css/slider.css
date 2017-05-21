@@ -1,0 +1,167 @@
+/*! http://responsiveslides.com v1.32 by @viljamis */
+
+#swrapper {
+    padding: 26px 0 20px 0;
+    margin: 0 auto;
+}
+
+.upimg_rslides {
+    position: relative;
+    list-style: none;
+    overflow: hidden;
+    height: auto;
+    padding: 0;
+    margin: 0 auto;
+}
+
+.upimg_rslidesli {
+    position: absolute;
+    display: none;
+    height: auto;
+    left: 0;
+    top: 0;
+    margin: 0 auto;
+}
+
+.upimg_rslidesli:first-child {
+    position: relative;
+    display: block;
+    float: left;
+    margin: 0 auto;
+}
+
+.upimg_rslidesimg {
+    display: block;
+    height: auto;
+    float: left;
+    border: 0;
+    margin: 0 auto;
+}
+
+.upimg_rslides{
+    margin: 0 auto;
+}
+
+#slider2 {
+    box-shadow: none;
+    margin: 0 auto;
+}
+
+.upimg_rslides_tabs {
+    background-color: #EEEEEE;
+    list-style: none;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-left: 0;
+    font-size: 12px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.upimg_rslides_tabs li {
+    display: inline;
+    float: none;
+}
+
+.upimg_rslides_tabs a {
+    width: auto;
+    line-height: 20px;
+    padding: 3px 5px;
+    height: auto;
+    background: transparent;
+    display: inline;
+    color: #000000;
+}
+
+.upimg_rslides_tabs li:first-child {
+    margin-left: 0;
+}
+
+.upimg_rslides_tabs .upimg_rslides_here a {
+    background: #FFFFFF;
+    color: #000000;
+    font-weight: bold;
+}
+
+/* Callback example */
+
+.events {
+    list-style: none;
+}
+
+.callbacks_container {
+    margin-bottom: 10px;
+    position: relative;
+    float: left;
+    width: 100%;
+}
+
+.callbacks {
+    position: relative;
+    list-style: none;
+    overflow: hidden;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+.callbacks li {
+    position: absolute;
+    width: 100%;
+    left: 0;
+    top: 0;
+}
+
+.callbacks img {
+    display: block;
+    position: relative;
+    z-index: 1;
+    height: auto;
+    width: 100%;
+    border: 0;
+}
+
+.callbacks .caption {
+    display: block;
+    position: absolute;
+    z-index: 2;
+    font-size: 18px;
+    text-shadow: none;
+    color: #FFFFFF;
+    background: #000000;
+    background: rgba(0, 0, 0, .8);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 10px 20px;
+    margin: 0;
+    max-width: none;
+    border-top-width: 2px;
+    border-top-style: solid;
+    border-top-color: #EEEEEE;
+}
+
+.callbacks_nav {
+    position: absolute;
+    top: 52%;
+    left: 0;
+    opacity: 0.5;
+    z-index: 3;
+    text-indent: -9999px;
+    overflow: hidden;
+    text-decoration: none;
+    height: 61px;
+    width: 38px;
+    background: transparent url("{$jrUpimg_img_url}/themes.gif") no-repeat left top;
+    margin-top: -45px;
+}
+
+.callbacks_nav:active {
+    opacity: 1.0;
+}
+
+.callbacks_nav.next {
+    left: auto;
+    background-position: right top;
+    right: 0;
+}

@@ -1,0 +1,81 @@
+/* Jamroom 5 Gallery Module CSS */
+.jr_gallery_row {
+    display: inline-block;
+    vertical-align: top;
+}
+
+.jrstore_update_div {
+    display: -moz-inline-stack;
+    display: inline-block;
+    vertical-align: top;
+    zoom: 1;
+    *display: inline;
+    padding:12px;
+    margin:6px 12px 6px 3px;
+    border:1px solid #EEEEEE;
+    text-align:center;
+}
+.jrstore_update_div:hover {
+    background-color:#EEEEEE;
+}
+.jrstore_update_image {
+    border:1px solid #CCCCCC;
+    margin:1px;
+    margin-bottom:6px;
+}
+.jrstore_update_button {
+    font-size:10px;
+    width:60px;
+    margin:2px;
+}
+
+.jrstore_update_button:hover {
+    cursor:pointer;
+}
+
+.shipping_label {
+    background-color: #FFFFF7;
+    border-color: #999999;
+    border-style: solid;
+    border-width: 1px;
+    font-size: 16px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 15px;
+    line-height: 1.1em;
+}
+
+.shipping_label .l1 {
+    font-size: 1.2em;
+    text-transform: capitalize;
+}
+.shipping_label .l2 {
+}
+
+.shipping_label .l3 {
+}
+
+.shipping_label .l4 {
+}
+
+.shipping_label .l5 {
+    text-transform: capitalize;
+}
+
+.shipping_label .l6 {
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.shipping_label .l7 {
+}
+
+.item.success {
+    background-color: #CCFF99;
+    color: #000000;
+}
+.info_c.sold_out,
+.sold_out{
+    font-weight: bold;
+    color: red;
+}

@@ -1,0 +1,41 @@
+/* @title Banner Background */
+/* @help The Banner Background is the background color in the small section at the top of pages where the module icon appears */
+.page_banner_box {
+    background-color: transparent;
+}
+
+/* @title Page Banner border */
+/* @help The Page Banner border is the border around the section at the top of pages where the module icon appears */
+.page_banner {
+    background: #001926;
+    background: -moz-linear-gradient(#00273B, #001926);
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#00273B), to(#001926));
+    background: -webkit-linear-gradient(#00273B, #001926);
+    background: -o-linear-gradient(#00273B, #001926);
+    background: -ms-linear-gradient(#00273B, #001926);
+    background: linear-gradient(#00273B, #001926);
+    margin-bottom: 12px; /* @ignore */
+}
+
+/* the color editor is not setup to deal with gradients, so removing this from being editable. */
+.page_banner_icon {
+    width: 1%;
+    padding: 8px 0 8px 8px; /* @ignore */
+}
+
+.page_banner_left {
+    height: 40px;
+    text-align: left;
+    padding: 6px 18px;
+    font-size: 18px;
+    font-weight: bold;
+    text-transform: capitalize;
+    white-space: nowrap;
+    color: #FFFFFF;
+}
+
+.page_banner_right {
+    padding: 6px 12px; /* @ignore */
+    text-align: right;
+    color: #FFFFFF;
+}

@@ -1,0 +1,122 @@
+#wrapper {
+    margin:0 auto;
+}
+
+/* @title Site Content */
+/* @help This is the main Site Content holder */
+#content {
+    max-width:1140px;
+    margin-left:auto;  /* @ignore */
+    margin-right:auto; /* @ignore */
+    height:100%; /* @ignore */
+    font-size:16px;
+    padding:0;
+}
+
+/* @title Outer Div */
+/* @help This is the Outer Div */
+.outer {
+    background-color:transparent;
+    padding:8px;
+    font-size:12px;
+    -webkit-border-radius:8px;
+    -moz-border-radius:8px;
+    border-radius:8px;
+}
+/* @title Head Inner Div */
+/* @help This is the inner div for the site header */
+.head_inner {
+    background-color:#949799;
+    padding:6px;
+    -webkit-border-radius:4px;
+    -moz-border-radius:4px;
+    border-radius:4px 4px 0 0;
+    box-shadow: 0 0 5px #111;
+}
+/* @title Inner Div */
+/* @help This is the inner div */
+.inner {
+    background-color:#949799;
+    padding:6px;
+    -webkit-border-radius:4px;
+    -moz-border-radius:4px;
+    border-radius:4px;
+    box-shadow: 0 0 5px #111;
+}
+/* @title Featured Div */
+/* @help This is the Featured Artist, Featured Song and Featured Video section */
+.finner {
+    background-color:#949799;
+    height:245px;
+    padding:6px;
+    -webkit-border-radius:4px;
+    -moz-border-radius:4px;
+    border-radius:4px;
+    box-shadow: 0 0 5px #111;
+}
+
+/* @title Search Box */
+/* @help The modal window site search box */
+.search_box {
+    background-color:#949799;
+    padding:25px;
+    margin:12px;
+    font-size:16px;
+    color:#000000;
+    border-radius:5px;
+}
+
+/* @title Search Box Links */
+/* @help The modal window site search box link color */
+.search_box a {
+    color:#033652;
+    text-decoration:none;
+}
+/* @title Search Box Links Hover */
+/* @help The modal window site search box hover link color */
+.search_box a:hover {
+    color:#000;
+    text-decoration:underline;
+}
+.signup_box {
+    background-color:#EDEDED;
+    padding:25px;
+    margin:12px;
+    border-style:solid;
+    border-color:#DDDDDD;
+    border-width:1px;
+    font-size:16px;
+    color:#000000;
+    border-radius:5px;
+    width:400px;
+}
+
+.signup_box a {
+    color:#033652;
+    text-decoration:none;
+}
+.signup_box a:hover {
+    color:#000;
+    text-decoration:underline;
+}
+.login_box {
+    background-color:#EDEDED;
+    padding:25px;
+    margin:12px;
+    border-style:solid;
+    border-color:#DDDDDD;
+    border-width:1px;
+    font-size:16px;
+    color:#000000;
+    border-radius:5px;
+    width:400px;
+}
+
+.login_box a {
+    color:#033652;
+    text-decoration:none;
+}
+.login_box a:hover {
+    color:#000;
+    text-decoration:underline;
+}

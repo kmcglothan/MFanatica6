@@ -1,0 +1,19 @@
+Jamroom IFramer module changelog
+
+Version 1.0.5:
+ - Bug Fix: Changes in 1.0.4 prevented iframes from working correctly
+
+Version 1.0.4:
+ - Change: Global Config "active" option removed - module is can be disabled to turn off
+
+Version 1.0.3:
+ - BUg Fix: Fixed a typo in the module info tab
+
+Version 1.0.2:
+ - Bug Fix: "www" not being stripped from some URLs before testing if allowed
+
+Version 1.0.1:
+ - Bug Fix: Some src URLs were not being parsed correctly resulting in broken HTML
+
+version 1.0.0:
+ - Initial Release

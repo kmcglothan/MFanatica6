@@ -1,0 +1,399 @@
+Nova Skin Changelog
+
+Version 1.5.6:
+ - Change: Added check for tablet so mobile menu shows. Modified templates: header.tpl, header_menu_mobile.tpl and footer.tpl
+
+Version 1.5.5:
+- Change: Fixed padding for chat by line that overlapped the chat text.
+
+Version 1.5.4
+ - Change: Added timeline CSS for share modal window. Modified action.css file.
+ - Change: profile_menu.tpl adjusted to match module version to allow for System Tips to work
+
+Version 1.5.3
+ - New: Added modify button for admins in article_row.tpl
+ - Bug Fix: Removed profile_id="0" parameter from jrCore_list function in articles.tpl file.
+ - Change: Changed index article list to use item id instead of page title for the search parameter.
+   Modified Files: index_content.tpl and article.tpl.
+
+Version 1.5.2
+ - Change: Updated index.tpl to add text to the who is online block for logged out users.
+ - Change: Added language entries in the de-DE.php, en-US.php, es-ES.php, fr-FR.php, nl-NL.php and sl-Sl.php files for the who is online update.
+
+Version 1.5.1:
+ - New: Added chat CSS file for the new chat module.
+ - Change: Fixed blogs.tpl and blogs_row.tpl when clicking the title on the front page site news blog.
+ - Bug Fix: Removed unneeded onclick handler from the index_site_news.tpl file.
+ - Change: Changed scroll up to use an icon instead of an image. Templates modified: footer.css, footer.tpl
+
+Version 1.5.0:
+ - Change: Updated profile template files to accommodate new video player
+ - Change: Updated CSS files to fix attach file button.
+ - Change: Removed bottom positioning for share this checkbox on timeline form.
+ - Change: Replaced window.location with jrCore_window_location
+ - Fixed: Removed blogs_entry template and pointed blog titles to profile blog detail page.
+ - New: Added YouTube and Pinterest social links and images to the footer template.
+
+Version 1.4.9:
+ - Bug Fix: Fixed background color for combined video and audio drop down box.
+
+Version 1.4.8:
+ - Bug Fix: Fixed URL for Google link in the footer.tpl
+
+Version 1.4.7:
+ - Bug Fix: Fixed bad url on concert spotlight row.
+
+Version 1.4.6:
+ - New: Added social icons to the footer
+ - New: Added comments to profile index, controlled by skin settings.
+ - Change: Changed footer contact link to a mailto link if the custom from module is not active.
+ - Bug Fix: Fixed concerts page to show past events if the skin setting is set to show them.
+ - Bug Fix: Drop down header menu not working correctly on iPad
+
+Version 1.4.5:
+ - Bug Fix: Concerts page not paging correctly
+ - Bug Fix: YouTube by plays page not showing stream count
+
+Version 1.4.4:
+ - Bug Fix: Fix blog category typo sent to wrong profile url
+
+Version 1.4.3:
+ - Bug Fix: Fixed layout on pages with side by side images.
+
+Version 1.4.2:
+ - Bug Fix: Fixed the menu button to be on the same line as the logo image and still work on mobile devices.
+
+Version 1.4.1:
+ - Bug Fix: Added a check for the private notes module around the contact us link.
+ - Template Files:
+   ------------------------------------------------------
+    Modified: footer.tpl
+   ------------------------------------------------------
+
+Version 1.4.0:
+ - New: Modified Spotlight to change for every page.
+ - Modified: Split up skin config file into sections.
+ - Fixed: Fixed layout when Site Ads are hidden.
+ - New: Added checks in the desktop and mobile menu to check for the jrVideo and jrAudio modules being active.
+ - New: Added 3 small calendars to the events page.
+ - Fixed: Changed the layout of all pages to reduce empty spaces.
+ - Change: Replaced chart plays variable with the chart_count variable.
+ - Template Files:
+   ------------------------------------------------------
+    Modified: header.tpl, blogs.tpl, index.tpl
+              concerts.tpl, concerts_row.tpl,
+              song_chart_row.tpl, video_chart_row.tpl,
+              songs_row.tpl, you_tube_row.tpl,
+              vimeo_videos_row.tpl, videos_row.tpl,
+              sound_cloud_row.tpl, song_chart_row.tpl
+              and video_chart_row.tpl
+
+    Added: spotlight_row.tpl
+
+    Removed: index_spotlight_artist.tpl
+   ------------------------------------------------------
+ - Config Files
+   ------------------------------------------------------
+    Modified: config.php
+   ------------------------------------------------------
+
+
+Version 1.3.6:
+ - Change: Updated slide menu to new version
+ - Moved logo down on mobile view.
+ - Template Files Modified:
+   ------------------------------------------------------
+    header.tpl          footer.tpl
+   ------------------------------------------------------
+ - New Version of Javascript file:
+   ------------------------------------------------------
+    contrib/slidebars/slidebars.min.js
+   ------------------------------------------------------
+
+Version 1.3.5:
+ - New: Profile custom logo support
+ - Template Files Modified:
+   ------------------------------------------------------
+    header.tpl
+   ------------------------------------------------------
+
+Version 1.3.4:
+ - Bug Fix: Fixed recently rated box on the profile page
+
+Version 1.3.3:
+ - Bug Fix: Fixed unclosed link tag in the main menu.
+ - Change: Changed house radio and channel to use a popup window to play the audio and video.
+ - Template Files Modified/Added:
+   ------------------------------------------------------
+    header_menu_desktop.tpl             index.tpl
+    index_channel.tpl                   channel_player.tpl
+    channel_playlist.tpl                index_radio.tpl
+    radio_player.tpl                    radio_playlist.tpl
+   ------------------------------------------------------
+ - Image Files Modified/Added:
+   ------------------------------------------------------
+    button_player_pause.png         button_player_pause_hover.png
+    button_player_play.png          button_player_play_hover.png
+   ------------------------------------------------------
+
+Version 1.3.2:
+ - Bug Fix: Fixed music and video lists to show PayPal button if being used instead of FoxyCart.
+ - Template Files Modified/Added:
+   ------------------------------------------------------
+    music_row.tpl               music_chart_row.tpl
+    videos_row.tpl              video_chart_row.tpl
+   ------------------------------------------------------
+
+Version 1.3.1:
+ - New: Added skin language link to ACP > Skin Settings drop down.
+ - New: Applied auto scroll on Top Artists and Top Songs pagination on the home page.
+ - PHP Files Modified/Added:
+   ------------------------------------------------------
+    en-US.php                   de-DE.php
+    es-ES.php                   fr-FR.php
+    nl-NL.php                   sl_Sl.php
+   ------------------------------------------------------
+ - Template Files Modified/Added:
+   ------------------------------------------------------
+    header_menu_desktop.tpl     header_menu_mobile.tpl
+    index.tpl                   index_list_profiles.tpl
+    index_list_songs.tpl
+   ------------------------------------------------------
+
+Version 1.3.0:
+ - Change: New Mobile Menu for the main nav and for the profile nav.
+ - New: Scroll To Top jQuery function added.
+ - Change: Added skin links and debug and php error links to the ACP drop down menu.
+ - PHP Files Modified/Added:
+   ------------------------------------------------------
+    include.php                 en-US.php
+    de-DE.php                   es-ES.php
+    fr-FR.php                   nl-NL.php
+    sl_Sl.php
+   ------------------------------------------------------
+ - JS Files Modified/Added:
+   ------------------------------------------------------
+    jrNova.js                   contrib/slidebars/slidebars.min.js
+   ------------------------------------------------------
+ - CSS Files Modified/Added:
+   ------------------------------------------------------
+    mobile_core.css             core_footer.css
+    core_menu.css               slidebar.css
+   ------------------------------------------------------
+ - Template Files Modified/Added:
+   ------------------------------------------------------
+    footer.tpl                  header.tpl
+    header_menu_desktop.tpl     header_menu_mobile.tpl
+    profile_header.tpl          profile_menu_mobile.tpl
+   ------------------------------------------------------
+ - Image Files Modified/Added:
+   ------------------------------------------------------
+    menu.png                    icon_top.png
+   ------------------------------------------------------
+
+Version 1.2.6:
+ - New: Added a Jamroom 180x150 banner instead of using the skins icon in the 180x150 Ad space.
+ - File Modified:
+   ------------------------------------------------------
+    index.tpl
+   ------------------------------------------------------
+
+Version 1.2.5:
+ - Change: Added default group_by to artists tab if invalid URL option is passed in
+ - File Modified:
+   ------------------------------------------------------
+    artists.tpl
+   ------------------------------------------------------
+
+Version 1.2.4:
+ - Change: Centered profile image on the profile page for mobile devices when logged out.
+ - File Modified:
+   ------------------------------------------------------
+    profile_header.tpl
+   ------------------------------------------------------
+
+Version 1.2.3:
+ - Bug Fix: Removed code from the body tag that was keeping the admin menu from working.
+ - File Modified:
+   ------------------------------------------------------
+    header.tpl
+   ------------------------------------------------------
+
+Version 1.2.2:
+ - Change: Centered profile image on the profile page for mobile devices.
+ - New: Added System Updates link to the ACP drop down menu.
+ - File Modified:
+   ------------------------------------------------------
+    mobile_core.css             en-US.php
+    es-ES.php                   de-DE.php
+    fr-FR.php                   nl-NL.php
+    sl-SL.php                   header.tpl
+   ------------------------------------------------------
+
+Version 1.2.1:
+ - New: Added more editable sections skins CSS admin panel area.
+
+Version 1.2.0:
+ - Change: Updated all CSS files to include editable elements to the styles tab.
+ - Files Modified:
+   ------------------------------------------------------
+    core_header.css             core_action.css
+    core_admin_log.css          core_admin_menu.css
+    core_html.css               core_form_button.css
+    core_form_input.css         core_form_layout.css
+    core_list.css               core_site.css
+    core_text.css
+   ------------------------------------------------------
+
+Version 1.1.20:
+ - Update to use smarty3 syntax for javascript wrappers
+
+Version 1.1.19:
+ - New: Added top ad background to skin styles tab.
+ - File Modified:
+   ------------------------------------------------------
+    core_header.css
+   ------------------------------------------------------
+
+Version 1.1.18:
+ - Change: Updated page-table-jumper style.
+ - Change: Add more profile CSS to the Styles tab.
+ - File Modified:
+   ------------------------------------------------------
+    core_table.css          core_profile.css
+   ------------------------------------------------------
+
+Version 1.1.17:
+ - Change: Updated all skin images to use jrCore_image function instead of img tags.
+ - Bug Fix: Fixed footer contact link.
+ - Change: Added a check on the profile page to see if the jrFollower module is active.
+ - Templates Modified:
+   ------------------------------------------------------
+    footer.tpl              blogs_entry.tpl
+    blogs_row.tpl           header.tpl
+    index.tpl               index_radio_row.tpl
+    index_site_news.tpl     profile_index.tpl
+    songs_row.tpl           song_chart_row.tpl
+    video_chart_row.tpl     profile_header.tpl
+   ------------------------------------------------------
+
+Version 1.1.16:
+ - Change: updated CSS for new actions styles.
+    ------------------------------------------------------
+    CSS File Modified: core_action.css
+    ------------------------------------------------------
+
+Version 1.1.15:
+ - Bug Fix: Blogs page wasn't using an ID in the URL.
+   ------------------------------------------------------
+   Files Modified: blogs.tpl    blogs_row.tpl
+                   blogs_entry.tpl  index_site_news.tpl
+   ------------------------------------------------------
+
+Version 1.1.14:
+ - New: German language file.
+ - New: Dutch language file.
+   ------------------------------------------------------
+   Files added:  jrNova/lang/de-DE.php jrNova/lang/nl-NL.php
+   ------------------------------------------------------
+   Files Modified: footer.tpl
+   ------------------------------------------------------
+
+Version 1.1.13:
+ - New: Slovenian language file.
+ - Modified: Spanish language file.
+   ------------------------------------------------------
+   Files added:  jrNova/lang/sl-Sl.php
+   ------------------------------------------------------
+   Files Modified: footer.tpl lang/es-ES.php
+   ------------------------------------------------------
+
+Version 1.1.12:
+ - Change: French language file updated to fix typos.
+   ------------------------------------------------------
+   File Modified: jrNova/lang/fr-FR.php
+   ------------------------------------------------------
+
+Version 1.1.11:
+ - New: French language file and link in the footer.
+   ------------------------------------------------------
+   Templates Modified: footer.tpl
+   ------------------------------------------------------
+   Files Added: jrNova/lang/fr-FR.php
+   ------------------------------------------------------
+
+Version 1.1.10:
+ - Bug Fix: Gallery URLs could point to incorrect gallery if multiple galleries had the same name
+ - Change: update to use new Title Support in ACP
+
+Version 1.1.9:
+ - New: Added language flag images and Spanish language file.
+   ------------------------------------------------------
+   Templates Modified: footer.tpl
+   ------------------------------------------------------
+   Files Added: jrNova/lang/es-ES.php
+                jrNova/img/flags directory
+   ------------------------------------------------------
+
+
+Version 1.1.8:
+ - Updated CSS urls to allow for override by image upload override in the ACP
+
+Version 1.1.7:
+ - Truncated long category titles to keep them inside the div for the buttons on the blogs category tab.
+   ------------------------------------------------------
+   Templates Modified: blogs_row.tpl
+   ------------------------------------------------------
+
+Version 1.1.6:
+ - Fixed Dasboard link from not showing to site admins.
+   ------------------------------------------------------
+   Templates Modified: header.tpl
+   ------------------------------------------------------
+
+ - Fixed chart pagination links.
+   ------------------------------------------------------
+   Template Files Modified:
+        song_chart.tpl   song_chart_row.tpl
+        video_chart.tpl  video_chart_row.tpl
+   ------------------------------------------------------
+
+ - Removed tpl_dir="jrNova" parameter from jrCore_list functions.
+   ------------------------------------------------------
+   Template Files Modified:
+        song_chart.tpl  video_chart.tpl
+        videos.tpl      songs.tpl
+        members.tpl     artists.tpl
+        article.tpl
+   ------------------------------------------------------
+
+Version 1.1.5:
+ - Fixed events row displaying different link url's for the same event
+ - Updated mobile CSS styles.
+   ------------------------------------------------------
+   CSS Files Modified: core_menu.css, mobile_core.css and tablet_core.css
+   ------------------------------------------------------
+
+Version 1.1.4:
+ - Fixed Site News and Site Article links.
+ - Modified layout to fix spacing issues.
+
+Version 1.1.3:
+ - Fixed Skin Settings link in the header.tpl file to use the active skin variable.
+
+Version 1.1.2:
+ - Fixed index Spotlight random order.
+ - Fixed all "Newest" jrCore_list function orders.
+ - New: Added created date to all "Newest" listings.
+
+Version 1.1.1:
+ - New: Added download button if price isn't set and download block is turned off.
+
+Version 1.1.0:
+ - Style overhaul to make things look cleaner
+
+Version 1.0.2:
+ - New: Added User Online Status to profile page
+
+Version 1.0.1:
+ - Adding new Changelog

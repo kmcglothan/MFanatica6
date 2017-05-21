@@ -1,0 +1,37 @@
+#birthday_share_modal {
+    display: none;
+    height: auto;
+    width: 600px;
+    z-index: 100000;
+}
+
+#birthday_share_modal_box {
+    position: relative;
+    border-radius: 5px;
+    display: block;
+    padding: 15px;
+}
+
+#birthday_share_modal_close {
+    position: absolute;
+    bottom: 18px;
+    right: 18px;
+}
+
+.birthday_share {
+    text-decoration: underline;
+}
+
+#birthday_update {
+    height: 50px;
+    margin: 0 0 5px;
+    padding: 5px;
+    width: 98%;
+}
+
+#birthday_share_indicator {
+    display: none;
+    vertical-align: middle;
+    margin: 9px 9px 0 3px;
+    border: 0;
+}

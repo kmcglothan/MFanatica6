@@ -1,0 +1,11 @@
+Group Mailer Changelog
+
+Version 1.1.0:
+ - New: Site admins can now email members of any group
+ - Bug Fix: Send group email button could show on groups not owned
+
+Version 1.0.1:
+ - Bug Fix: Emails could be sent to some non group members
+
+Version 1.0.0:
+ - Initial Release

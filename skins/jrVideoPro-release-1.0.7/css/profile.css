@@ -1,0 +1,734 @@
+
+.profile_body .col4 ul {
+    margin: 0;
+    padding: 0;
+}
+
+.clearfix:after {
+    visibility: hidden;
+    display: block;
+    font-size: 0;
+    content: " ";
+    clear: both;
+    height: 0;
+}
+
+.clearfix {
+    display: inline-block;
+}
+
+* html .clearfix {
+    height: 1%;
+}
+
+.clearfix {
+    display: block;
+}
+
+section#profile {
+    background: #f1f1f1 none repeat scroll 0 0;
+    box-shadow: 0 0 10px #888;
+    margin: 0 auto;
+    max-width: 1280px;
+    min-height: calc(100vh - 286px);
+    padding: 0;
+}
+
+div#profile_header {
+    margin: 0 auto;
+    max-width: 1280px;
+    padding: 0;
+}
+
+#profile_menu {
+    background: #f1f1f1 none repeat scroll 0 0;
+    z-index: 150;
+    position: relative;
+}
+
+ul#horizontal, #horizontal ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+#horizontal li {
+    float: left;
+    padding: 15px 0 0;
+}
+
+#horizontal {
+    float: left;
+    height: 50px;
+    visibility: collapse;
+    width: calc(100% - 112px);
+}
+
+#horizontal a {
+    color: #333333;
+    display: block;
+    font-size: 14px;
+    padding: 3px 19px;
+    text-decoration: none;
+    transition: border-color 0.218s ease 0s;
+    text-transform: uppercase;
+}
+
+#horizontal a:link, div.horizontal a:visited {
+    text-align: center;
+    text-decoration: none;
+}
+
+#horizontal li:hover {
+    border-bottom: 1px solid #5588CC;
+    color: #993333;
+    padding-bottom: 10px;
+}
+
+#submenu {
+    display: none;
+}
+
+#horizontal > li:first-child a {
+    border-left: medium none;
+}
+
+#horizontal > li:last-child a {
+    border-right: medium none;
+}
+
+#horizontal .active > a {
+    color: #5588CC;
+}
+
+#horizontal .hideshow > a:first-child {
+    border-right: medium none;
+}
+
+.menu_banner ul ul {
+    background: #f1f1f1 none repeat scroll 0 0;
+    box-shadow: 2px 2px 8px #999999;
+    max-height: 300px;
+    max-width: 160px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: absolute;
+    right: 0;
+    text-transform: uppercase;
+    top: 50px;
+}
+
+.menu_banner ul#submenu > li {
+    border-bottom: 1px solid #cccccc;
+    border-top: 1px solid #ffffff;
+    float: none;
+    list-style: outside none none;
+    padding: 12px 20px 12px 12px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+#submenu > li:hover a {
+    color: #5588CC;
+    text-decoration: none;
+}
+
+li.hideshow {
+    display: none;
+    position: relative;
+}
+
+#horizontal .hideshow li a {
+    border: medium none;
+    padding: 0;
+    text-align: left;
+}
+
+.wrap {
+    padding: 1em;
+}
+
+.profile_admin_buttons {
+    position: absolute;
+    top: 0;
+    width: 100%;
+}
+
+a.camera {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    border: 2px solid rgba(255, 255, 255, 0);
+    border-radius: 5px;
+    color: rgba(0, 0, 0, 0);
+    display: block;
+    line-height: 2.4;
+    max-width: 180px;
+    padding: 5px;
+    text-decoration: none;
+    transition: all 0.5s ease 0s;
+    width: 100%;
+}
+
+a.camera:hover {
+    background: rgba(0, 0, 0, 0.6) none repeat scroll 0 0;
+    border: 2px solid rgba(0, 0, 0, 0.7);
+    color: rgba(255, 255, 255, 1);
+}
+
+.camera .sprite_icon {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    box-shadow: none;
+    border: medium none;
+    margin: 0;
+    max-width: 40px;
+    opacity: 0.4;
+    padding: 0;
+}
+
+#profile_header .profile_name {
+    color: white;
+    font-size: 35px;
+    font-weight: bold;
+    text-shadow: 1px 1px 3px #000;
+    text-transform: uppercase;
+    position: static;
+}
+
+.profile_info {
+    bottom: 0;
+    left: 0;
+    position: absolute;
+    width: 100%;
+}
+
+.profile_hover {
+    background-image: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.5));
+    bottom: 0;
+    height: 40%;
+    left: 0;
+    min-height: 150px;
+    pointer-events: none;
+    position: absolute;
+    width: 100%;
+    z-index: 0;
+}
+
+#profile_header .profile_name span {
+    display: block;
+    font-size: 18px;
+    text-transform: lowercase;
+}
+
+#profile_header .profile_name span a {
+    text-decoration: none;
+    color: #ffffff;
+}
+
+.title {
+    background-color: #f1f1f1;
+    border-bottom: 1px solid #ccc;
+}
+
+.title h1 {
+    color: #333333;
+    font-size: 35px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.breadcrumbs > a {
+    color: #777777;
+}
+
+.gallery_view_all {
+    float: left;
+}
+
+.profile_data span {
+    color: #444444;
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+.profile_data {
+    color: #5588CC;
+    font-size: 20px;
+    margin: 0;
+    padding: 0 0 1em;
+}
+
+.profile_data li {
+    cursor: pointer;
+    float: left;
+    text-align: center;
+    width: 33.33%;
+}
+
+.profile_information, .bio, .followers {
+    margin: auto;
+    padding: 1em;
+    border-top: 1px solid #eee;
+}
+
+.follow_button.following {
+    background: #338e64 none repeat scroll 0 0;
+    border: medium none;
+    border-radius: 5px;
+    color: white;
+    font-weight: normal;
+}
+
+.follow_button {
+    background: rgba(0, 0, 0, 0) linear-gradient(#fff, #eee) repeat scroll 0 0;
+    border: 1px solid #ccc;
+    color: #333;
+    font-weight: bold;
+    margin: 0 1px;
+    vertical-align: middle;
+}
+
+#profile_menu .sprite_icon {
+    vertical-align: middle;
+}
+
+.bio {
+    line-height: 1.4;
+}
+
+.bio-more {
+    font-weight: bold;
+    text-align: center;
+    margin: 0 0 10px;
+}
+
+.followers .img_shadow {
+    background: white none repeat scroll 0 0;
+    border-radius: 50%;
+    margin-left: -12px;
+    padding: 2px;
+}
+
+.head {
+    font-size: 16px;
+    text-transform: uppercase;
+    padding: 0 0 1em;
+    color: #333333;
+}
+
+div.jqcloud a {
+    color: #5588CC;
+}
+
+.modal.simplemodal-data {
+    background: white none repeat scroll 0 0;
+    border-radius: 5px;
+    box-shadow: 0 0 10px #222;
+    margin: auto;
+    max-width: 600px;
+}
+
+.add_to_cart_section {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    border-radius: 6px;
+    box-shadow: none;
+    display: inline-block;
+}
+
+.jp-type-single .jp-controls img {
+    width: 30px;
+}
+
+.profile_image {
+    position: relative;
+    border: 3px solid white;
+    border-radius: 50%;
+    max-width: 80px;
+    overflow: hidden;
+}
+
+.profile_hoverimage {
+    background: rgba(0, 0, 0, 0.5) none repeat scroll 0 0;
+    color: white;
+    display: none;
+    height: 100%;
+    left: 0;
+    padding: 1.6em 0 0;
+    position: absolute;
+    text-align: center;
+    top: 0;
+    vertical-align: middle;
+    width: 100%;
+}
+
+.border_left {
+    border-left: 1px solid #eee;
+}
+
+.sprite_icon {
+    background-image: linear-gradient(#fff, #eee);
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.sidebar .sprite_icon, .head .sprite_icon {
+    background: none;
+    border: medium none;
+    box-shadow: none;
+}
+
+.menu_banner.clearfix {
+    border-bottom: 1px solid #ccc;
+}
+
+.stat_entry_box {
+    background-image: linear-gradient(#fff, #eee);
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    color: #666;
+    float: left;
+    margin: 10px 2px 0;
+    padding: 5px 8px;
+    text-transform: capitalize;
+}
+
+.profile_hoverimage .sprite_icon {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    border: medium none;
+}
+
+.item {
+    border-bottom: 1px solid #cccccc;
+    border-top: 1px solid #ffffff;
+}
+
+.item h1 {
+    display: inline;
+}
+
+#profile .head {
+    border-bottom: 1px solid #CCCCCC;
+    font-size: 14px;
+}
+
+.profile_information, .bio, .followers, .profile_body {
+    border-top: 1px solid #FFFFFF;
+}
+
+.profile_information > span {
+    display: block;
+    padding: 3px 0;
+}
+
+.profile_information > div > span {
+    display: block;
+    padding: 3px 0;
+}
+
+.star-rating {
+    margin: 12px 5px 0;
+}
+
+.like_button_box {
+    padding: 0 10px 0 0;
+}
+
+.col2 .star-rating {
+    margin: 0;
+}
+
+.profile_index {
+    padding: 1em;
+}
+
+.activity {
+    max-height: 560px;
+    overflow: auto;
+}
+
+.home.clearfix .col3 > .wrap {
+    padding: 2px;
+}
+
+#profile_header .table-cell.profile-image {
+    width: 87px;
+}
+
+.profile_body {
+    color: #444444;
+    border-top: 1px solid #fff;
+}
+
+.profile_body a {
+    color: #222222;
+}
+
+.profile_body .action_item_holder {
+    background: #f1f1f1 none repeat scroll 0 0;
+    border-bottom: 1px solid #cccccc;
+    border-top: 1px solid #ffffff;
+}
+
+.profile_body .action_item_holder:first-child {
+    border-top: medium none;
+}
+
+.profile_body .action_item_holder:hover {
+    background: #e8e8e8 none repeat scroll 0 0;
+}
+
+.profile_body .black {
+    background: #cccccc;
+    box-shadow: none;
+}
+
+.block .block_content .block {
+    border-top: 1px solid #ffffff;
+}
+
+.profile_body .block > .block_content > .p10 {
+    border-bottom: 1px solid #cccccc;
+    border-top: 1px solid #fff;
+    padding: 0 0 10px;
+}
+
+.p20.pt10 {
+    font-size: 16px;
+}
+
+.block_content .item > h2 {
+    border-bottom: 1px solid #111111;
+    margin-bottom: 0;
+    padding-bottom: 10px;
+}
+
+.profile_body .jr_audio_player_dark div.jp-audio, .profile_body .jr_audio_player_dark div.jp-video {
+    padding-top: 10px;
+}
+
+.profile_body .jp-playlist {
+    padding: 10px 0 0;
+}
+
+.profile_body .jr_audio_player_dark div.jp-playlist li {
+    padding: 5px 0 4px 20px;
+}
+
+section ul.sortable li:last-child > .item {
+    border-bottom: medium none;
+}
+
+.table {
+    display: table;
+    width: 100%;
+}
+
+.table-row {
+    display: table-row;
+}
+
+.table-cell {
+    display: table-cell;
+    padding: 5px;
+    vertical-align: middle;
+}
+
+.profile_minimal .profile_info {
+    position: relative;
+}
+
+.profile_minimal .profile-image {
+    width: 40px;
+}
+
+.profile_minimal .action_buttons {
+    text-align: right;
+}
+
+.profile_minimal .wrap {
+    padding: 5px 1em;
+}
+
+.profile_minimal .profile_name {
+    font-weight: bold;
+}
+
+.profile_minimal .profile_name > span {
+    font-size: 12px;
+    font-weight: normal;
+}
+
+section#video_play > .wrap {
+    padding: 3px 1em 1em;
+}
+
+.profile_minimal .follow_button {
+    position: relative;
+    top: 6px;
+}
+
+section#video_play {
+    margin: 0;
+}
+
+.detail_box .wrap {
+    padding: 0 3em;
+}
+
+.detail_box h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.detail_box .text_right, .mt10.text_right {
+    text-align: right;
+}
+
+.comment_button {
+    padding: 0 5px;
+}
+
+.videos > .wrap {
+    padding: 0 3em;
+}
+
+#profile .videos .head {
+    border: medium none;
+    color: #888;
+    font-size: 20px;
+    padding: 30px 0 10px;
+}
+
+.videos .list_nav.previous {
+    left: -38px;
+}
+
+.videos .list_nav.next {
+    right: -38px;
+}
+
+.list_wrap {
+    position: relative;
+}
+
+section.detail_box {
+    margin: 0;
+}
+
+.videos {
+    padding-bottom: 3em;
+}
+
+.detail_box .wrap > .row {
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 2em;
+}
+
+.videos > .wrap > .row:first-child {
+    border-top: 1px solid #fff;
+}
+
+.italic {
+    color: #999;
+    display: block;
+    font-style: italic;
+    margin: 10px 0 0;
+}
+
+section.detail_box a {
+    text-decoration: none;
+}
+
+.detail_box .item {
+    border: medium none;
+    padding: 0;
+}
+.detail_box .item h3 {
+    margin: 16px 0 0;
+}
+
+
+.detail_box .text_right, .detail_box .text_right a {
+    color: #999;
+}
+.detail_box .text_right h3 {
+    color: #333;
+}
+
+.jrVideoPro_modal {
+    background: white none repeat scroll 0 0;
+    border-radius: 10px;
+    height: 540px;
+    padding: 1em;
+    width: 600px;
+}
+
+.jrVideoPro_modal .comment_page_section {
+    max-height: 376px;
+    overflow: auto;
+}
+
+.simplemodal-close {
+    color: white;
+    cursor: pointer;
+    display: block;
+    font-size: 28px;
+    position: absolute;
+    right: 0;
+    bottom: -37px;
+}
+
+.jrVideoPro_modal a {
+    color: #58c;
+}
+
+#list .item:last-child {
+    border-bottom: medium none;
+}
+
+.profile_body .no-items {
+    border-top: 1px solid #ffffff;
+    font-size: 20px;
+    padding: 1em;
+    text-align: center;
+}
+
+.playlist_box {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+
+}
+
+.block .block_content .item:last-child {
+    border-bottom: medium none;
+}
+
+select#profile_select_menu {
+    background: #eeeeee none repeat scroll 0 0;
+    border: 1px solid #cccccc;
+    color: #333333;
+    padding: 4px;
+}
+
+.menu_select {
+    padding: 8px;
+}
+
+.see-all {
+    float: right;
+}
+
+.sortable {
+    border-bottom: 1px solid #ccc;
+}
+
+.add_to_cart_price {
+    background: rgba(0, 0, 0, 0) linear-gradient(#fff, #e5e5e5) repeat scroll 0 0;
+    border: 1px solid #ccc;
+    border-radius: 3px 0 0 3px;
+    color: #666666;
+    top:8px;
+    padding-top:5px;
+    padding-bottom:2px;
+    box-shadow:none;
+}
+

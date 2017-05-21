@@ -1,0 +1,154 @@
+Profile Groups module changelog
+
+Version 1.5.16:
+ - New: Search box added to group members list page
+ - Bug Fix: RSS feed listener fix
+ - Bug Fix: Pagination on group discuss topics could fail to return results
+
+Version 1.5.15:
+ - Change: Removed extra jrCore_item_detail_features in item_detail.tpl
+
+Version 1.5.14:
+ - New: Global Config option so non-members become a member if they comment on an item in a public group
+
+Version 1.5.13:
+ - Change: Successfully modifying a group member now returns you to the Group index
+ - Bug Fix: Language strings on private group message we not in language file
+ - Bug Fix: Some group comments were not showing to private members of private groups
+
+Version 1.5.12:
+ - Change: Updated functionality to return private groups for Comment module privacy checking
+ - Bug Fix: Group discussion transfer tool members bug and email template fix
+
+Version 1.5.11:
+ - Change: Profile Admins can now "join" Groups and will show as a member of the Group
+
+Version 1.5.10:
+ - Change: Optimized datastore event listener to be faster when showing Group images
+ - Bug Fix: URL in Transfer tool notification email template was incorrect
+
+Version 1.5.9:
+ - New: Tools for transferring Group Discuss and Group Page item to other groups added
+
+Version 1.5.8:
+ - New: "group_member_count" key added to allow sorting of lists based on group membership count
+
+Version 1.5.7:
+ - Bug Fix: Error when member of a private group tried to view all discussions
+
+Version 1.5.6:
+ - Bug Fix: RSS Feeds from Group Discussions may not show group name correctly
+
+Version 1.5.5:
+ - Bug Fix: Group member count was not being returned correctly
+
+Version 1.5.4:
+ - Change: db_search_items listener optimization
+ - Bug Fix: Fix to detail template
+
+Version 1.5.3:
+ - Bug Fix: Template fix to not show the Comment Wall header if comments are disabled
+
+Version 1.5.2:
+ - Bug Fix: Group cache was not being reset upon a new or leaving group member
+
+Version 1.5.1:
+ - Bug Fix: Profile cache was not being reset upon a new or leaving group member
+
+Version 1.5.0:
+ - New: Integrity Check queue worker to validate group membership
+ - Bug Fix: User Leaving a group email notification is not including the user name that is leaving
+
+Version 1.5.0b5:
+ - New: Site Builder widget grid templates added
+
+Version 1.5.0b4:
+ - Bug Fix: Users now de-activated on member table if deleted
+
+Version 1.5.0b3:
+ - Bug Fix: Updates to item_detail.tpl to fix URLs that might display a "jrImage_display" error in the members image section
+
+Version 1.5.0b2:
+ - New: ChangeOwner module listener that removes the original owner from the member list and adds the new owner.
+
+Version 1.5.0b1:
+ - New: Group members stored on their own table
+ - New: System Reset listener to truncate the member table
+
+Version 1.4.4:
+ - Bug Fix: in rare instance "group_members" could be corrupted if JSON does not decode correctly
+
+Version 1.4.3:
+ - Bug Fix: follow discussion button should only show for members of the group
+
+Version 1.4.2:
+ - Bug Fix: Group member images may not show when viewing a group if Group information is cached
+
+Version 1.4.1:
+ - Change: Visual formatting of the follow button changed to match how forums button is displayed
+
+Version 1.4.0:
+ - New: added support for the new group follow button in group discuss
+ - Bug Fix: Minor item_detail.tpl template bug fix
+
+Version 1.3.5:
+ - New: adjusted to work with the Group Discuss config option to allow recently active discussions to be displayed at the top of the list.
+
+Version 1.3.4:
+ - Bug Fix: Group privacy issue where pending members had access fixed
+
+Version 1.3.3:
+ - Bug Fix: Comments and comment form being shown to non members
+
+Version 1.3.2:
+ - Bug Fix: create and update form description fields' validation changed from 'printable' to 'allowed_html'
+
+Version 1.3.1:
+ - Change: Max Member Images now used to set the number of images on the view all members list too
+
+Version 1.3.0:
+ - New: "Allow Comment Wall" Group config setting to enable/disable group Comment Wall
+ - Change: item_detail.tpl updated with Comment Wall change + fixed missing language strings
+
+Version 1.2.1:
+ - Bug Fix: "group_members_count" key may not be set on a group item
+
+Version 1.2.0:
+ - New: "Groups You Follow" section added to User Account drop down menu
+ - New: Updated to support new NingJa skin "Show Profile Header" global setting
+ - Change: Templates modified: item_detail.tpl, item_index.tpl, item_members.tpl
+
+Version 1.1.8:
+ - Bug Fix: User name and URL in Recent Discussion list could be incorrect for Admin user accounts
+
+Version 1.1.7:
+ - Bug Fix: If an group is set for admin approval on update, clicking the join button would cause it to require approval again
+
+Version 1.1.6:
+ - Bug Fix: Language strings in Group Config for user were not in the Language file
+
+Version 1.1.5:
+ - Bug Fix: Group member pagination url fix
+
+Version 1.1.4:
+ - Bug Fix: Group discussions were not being deleted when a group was deleted
+
+Version 1.1.3:
+ - New: Form Designer support added to group create and update
+ - New: Updated so group_title is now a searchable field
+ - New: group_members_count DataStore field added
+ - Bug Fix: Group Discussion and Pages checkboxes may not "stick" in User Config
+ - Bug Fix: "joined" group member key being deleted on User Config save
+ - Bug Fix: "user_config" and "user_config_defaults" event triggers properly registered
+
+Version 1.1.2:
+ - Bug Fix: Ordering of Group Discussions and Group Pages may be incorrect
+
+Version 1.1.1:
+ - Change: deleted unused User menu link
+
+Version 1.1.0:
+ - Change: All new Profile Group framework for developing Profile Group modules
+
+Version 1.0.0:
+ - Initial Release

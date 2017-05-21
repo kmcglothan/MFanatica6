@@ -1,0 +1,33 @@
+PayPal Buy It Now module changelog
+
+Version 1.1.4:
+ - Change: Updated module icon
+
+Version 1.1.3:
+ - Bug Fix: Item Price field may not show in Audio Import tool
+
+Version 1.1.2:
+ - Bug Fix: Item price now not added to item create/update forms if no profile PayPal email address has been added
+
+Version 1.1.1:
+ - Bug Fix: Button Text in downloads section may be double encoded if button text is translated
+ - Bug Fix: Admin viewing the "downloads" tab for another user was seeing their own downloads
+
+Version 1.1.0:
+ - New: "Default Currency" and "Allow Currency Selection" Quota config options
+
+Version 1.0.4:
+ - Bug Fix: add_paypal_price_field event trigger sending incorrect $_args to listeners
+
+Version 1.0.3:
+ - New: Updates to support pricing in album creation as well as audio import
+
+Version 1.0.2:
+ - Bug Fix: Buy Now button may still show for a quota with PayPal access not enabled
+
+Version 1.0.1:
+ - Template Updates to support new Item Action Buttons
+ - Bug Fix: Buy Now button now scales properly to match skin icon size
+
+Version 1.0.0:
+ - Initial Release

@@ -1,0 +1,90 @@
+#footer ul {float:left;text-align:left;margin:0;padding:0;width:20%;}
+#footer ul li {list-style: none;line-height: 16px;font-size: 13px;}
+#footer ul li a {text-decoration:none;color:#AAA;}
+#footer ul li a:hover {color:#BA4B0D;}
+
+#footer-bar {
+    color: #999;
+    padding: 10px;
+    text-align: center;
+    background: #222;
+    border-top: 1px solid #393939;
+}
+
+.footer-copy {
+    float:left;
+    padding-left:16px;
+}
+.footer-design {
+    float:right;
+    padding-right:16px;
+}
+.rss-footer {
+    background-image: url("{$jrProJamLight_img_url}/rss_sml.png");
+    background-repeat: no-repeat;
+    background-position: top left;
+    padding-left: 20px;
+}
+
+#footer {
+    background:#333;
+    vertical-align:middle;
+    margin:0 auto;
+    font-size:11px;
+    color:#CCC;
+    padding:10px;
+    border-bottom: 1px solid #000;
+}
+
+/* @title Footer Links */
+/* @help Footer text URL */
+#footer a {
+    text-transform:capitalize;
+    text-decoration:none;
+    color:#fff;
+}
+/* @title Footer Link Hover */
+/* @help Footer text URL hover */
+#footer a:hover {
+    text-decoration:underline;
+}
+
+#footer_content {
+    max-width:1140px;
+    margin-left:auto;
+    margin-right:auto;
+}
+
+#footer_logo {
+    padding:12px;
+    vertical-align:middle;
+}
+
+/* @title Footer Text */
+/* @help Footer text */
+#footer_text {
+    text-align:right;
+    color:#CCCCCC;
+    font-size:14px;
+    padding:12px;
+}
+/* @title Footer Social Networks */
+/* @help the social network icons located in the footer */
+#footer_sn {
+    padding: 12px;
+    text-align: right;
+    vertical-align: middle;
+}
+
+.scrollup{
+    width:40px;
+    height:40px;
+    opacity:0.5;
+    position:fixed;
+    bottom:10px;
+    right:65px;
+    display:none;
+}
+.scrollup:hover{
+    opacity:1;
+}

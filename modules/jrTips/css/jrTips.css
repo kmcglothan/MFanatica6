@@ -1,0 +1,48 @@
+.tour-list {
+    margin: 24px 0 0 0;
+    padding: 0;
+    padding-top: 12px;
+}
+
+.tour-stop {
+    position: absolute;
+    bottom: 8px;
+    right: 10px;
+    font-size: 9px;
+}
+
+.tour-stop a {
+    color: #BBBBBB !important;
+    text-decoration: none !important;
+}
+
+.tour-stop a:hover {
+    color: #333333 !important;
+    text-decoration: none !important;
+}
+
+/* @title Tour popup URLs */
+/* @help Controls the font in the Tour modal popups */
+.tour-extra {
+    position: absolute;
+    bottom: 8px;
+    left: 10px;
+    margin: 2px;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    line-height: 20px;
+}
+
+.tour-extra a {
+    color: #000000;
+}
+
+.tour-close {
+    display: none;
+    margin-top: 12px;
+}
+
+.tour-img {
+    vertical-align: middle;
+}

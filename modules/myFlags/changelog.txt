@@ -1,0 +1,9 @@
+Geo Flags module changelog
+
+
+
+
+Version 1.0.1: - Updated Function Call
+
+Version 1.0.0:
+ - Initial Release

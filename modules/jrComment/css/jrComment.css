@@ -1,0 +1,80 @@
+/* @title Main Comment Indent */
+/* @help This controls how far the MAIN LEVEL comments on an item is indented */
+.comment-level-0 {
+    margin-left: 0;
+}
+
+/* @title Comment Level 1 */
+/* @help This controls how far FIRST LEVEL comment replies on an item are indented */
+.comment-level-1 {
+    margin-left: 25px !important;
+}
+
+/* @title Comment Level 2 */
+/* @help This controls how far SECOND LEVEL comment replies on an item are indented */
+.comment-level-2 {
+    margin-left: 50px !important;
+}
+
+/* @title Comment Level 3 */
+/* @help This controls how far THIRD LEVEL comment replies on an item are indented */
+.comment-level-3 {
+    margin-left: 75px !important;
+}
+
+/* @title Comment Level 4 */
+/* @help This controls how far FOURTH LEVEL comment replies on an item are indented */
+.comment-level-4 {
+    margin-left: 100px !important;
+}
+
+/* @title Comment Level 5 */
+/* @help This controls how far FIFTH LEVEL comment replies on an item are indented */
+.comment-level-5 {
+    margin-left: 125px !important;
+}
+
+/* @title Comment Level 6 */
+/* @help This controls how far SIXTH LEVEL comment replies on an item are indented */
+.comment-level-6 {
+    margin-left: 150px !important;
+}
+
+/* @title Comment Level 7 */
+/* @help This controls how far SEVENTH LEVEL comment replies on an item are indented */
+.comment-level-7 {
+    margin-left: 175px !important;
+}
+
+/* @title Comment Level 8 */
+/* @help This controls how far EIGHTH LEVEL and HIGHER comment replies on an item are indented */
+.comment-level-last {
+    margin-left: 200px !important;
+}
+
+/* @title Comment Reply Tag */
+/* @help Controls the text of the &quot;Reply&quot; text shown on a comment when threading is enabled */
+.comment-reply {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+.jrcomment_upload_attachment {
+    margin-top: -32px;
+    text-align: right;
+    width: 100%;
+}
+
+.jrcomment_upload_attachment li.qq-upload-success {
+    text-align: left;
+}
+
+.jrcomment_upload_attachment .qq-uploader {
+    float: right;
+}
+
+#comment_form_holder .form_editor_holder {
+    width: 100%;
+}

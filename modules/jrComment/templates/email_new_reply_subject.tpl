@@ -1,0 +1,1 @@
+[{$system_name}] New Reply on "{$comment_item_title}"

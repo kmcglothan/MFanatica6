@@ -1,0 +1,137 @@
+/* remove Firefox's dotted outlines... */
+:focus {
+    outline: none;
+}
+
+::-moz-focus-inner {
+    border: 0;
+}
+
+form {
+    margin-bottom: 0;
+}
+
+.element {
+}
+
+/* @title Element Left */
+/* @help This is the left side of pages and forms where the label and sub-label will appear */
+.element_left {
+    font-size: 12px;
+    background-color: transparent;
+    text-align: right;
+    text-transform: capitalize;
+    padding: 5px 0 7px 6px;
+    width: 25%;
+}
+
+/* @title Element Right */
+/* @help This is the right side of pages and forms where the form elements appear */
+.element_right {
+    background-color: transparent;
+    padding: 6px 12px;
+    width: 75%;
+}
+
+.tool_element_right {
+    font-size: 13px;
+    padding: 3px 12px 9px 12px;
+}
+
+/* @title Element Right URLs */
+/* @help This is the color of URLs that might appear on the right side of the form */
+.element_right a {
+    color: #222222;
+}
+
+.form_input_left {
+    height: 30px;
+}
+
+.form_input_right {
+}
+
+.sublabel {
+    font-size: 11px;
+    text-transform: none;
+}
+
+.form_help_button {
+    float: right;
+}
+
+/* @title Form Help */
+/* @help This is for the help sections for the forms */
+.form_help {
+    background-color: #0D4C72;
+    padding: 9px;
+    margin-right: 3px;
+}
+
+/* @title Form Help Drop */
+/* @help This is for the help drop down section for the forms */
+.form_help_drop {
+    padding-top: 8px;
+    background-color: #00324B;
+    width: 100%;
+    box-shadow: inset 0 3px 5px #001926;
+}
+
+/* @title Form Help Drop Left */
+/* @help This is for the left side help drop down section for the forms */
+.form_help_drop_left {
+    width: 95%;
+    padding: 10px 20px 20px 20px;
+    font-size: 14px;
+    text-align: left;
+    text-transform: none;
+}
+
+/* @title Form Help Drop Right */
+/* @help This is for the right side help drop down section for the forms */
+.form_help_drop_right {
+    width: 5%;
+    padding: 10px 20px 20px 20px;
+}
+
+.form_help_default {
+    display: inline-block;
+    margin-top: 12px;
+}
+
+/* @title Form Help Small */
+/* @help This is for the small help text */
+.form_help_small {
+    display: inline-block;
+    font-size: 10px;
+    margin-top: 12px;
+    color: #CCCCCC;
+    font-style: italic;
+}
+
+.form_submit_box {
+    background-color: transparent;
+    padding-top: 12px;
+}
+
+/* @title Form Submit */
+/* @help This is for the form submit section */
+.form_submit_section {
+    background: #001926;
+    background: -moz-linear-gradient(#00273B, #001926);
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#00273B), to(#001926));
+    background: -webkit-linear-gradient(#00273B, #001926);
+    background: -o-linear-gradient(#00273B, #001926);
+    background: -ms-linear-gradient(#00273B, #001926);
+    background: linear-gradient(#00273B, #001926);
+    border: 0;
+    padding: 10px;
+    margin: 6px 0 8px 0; /* @ignore */
+    text-align: center;
+}
+
+#form_submit_indicator {
+    display: none;
+    margin-right: 10px;
+    vertical-align: middle;
+}

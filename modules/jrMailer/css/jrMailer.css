@@ -1,0 +1,4 @@
+#cp-display-area {
+    overflow-x: hidden;
+    overflow-y: scroll;
+}

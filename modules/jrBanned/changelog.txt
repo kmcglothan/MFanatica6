@@ -1,0 +1,41 @@
+Banned Items module changelog
+
+Version 1.3.1:
+ - Bug Fix: Some "name" banned items could get used as "word" banned items
+
+Version 1.3.0:
+ - New: Support for modules to register "banned_type" support for custom ban functions
+
+Version 1.2.1:
+ - Change: Banned words must be at least 2 characters in length
+ - Bug Fix: Multi-byte banned words may not be caught as substring of string
+
+Version 1.2.0:
+ - New: Banned Item check runs on all text fields by default (no more requiring module config)
+ - New: Searches that include banned words result in no items found for non-admin users
+
+Version 1.1.3:
+ - Bug Fix: Item Value error when entering certain characters for a banned name
+
+Version 1.1.2:
+ - Bug Fix: "word" boundaries added in 1.1.1 may not work properly on HTML string
+
+Version 1.1.1:
+ - Change: "word" banned items no longer match substrings of longer words
+ - Bug Fix: Searching in the Banned Items browser was resulting in a 404 not found page
+
+Version 1.1.0:
+ - New: "Test Items" tool will test a value against currently configured banned items
+ - Change: Partial IP Addresses can now be entered as Banned Items
+
+Version 1.0.3:
+ - New: Support added for banning email addresses and email domains
+
+Version 1.0.2:
+ - New "Banned Items" tab in ACP that is the default view for the module
+
+Version 1.0.1:
+ - Update error message for banned IP to use jrCore_notice()
+
+Version 1.0.0:
+ - Initial Release
