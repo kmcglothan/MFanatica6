@@ -1,5 +1,8 @@
 Advanced Charts module changelog
 
+Version 1.0.9:
+ - Bug Fix: chart history table not being reset during a Developer Tools -> System Reset
+
 Version 1.0.8:
  - Change: Updated module icon
 

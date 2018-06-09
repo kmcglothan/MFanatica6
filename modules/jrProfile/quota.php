@@ -2,7 +2,7 @@
 /**
  * Jamroom Profiles module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -79,10 +79,10 @@ function jrProfile_quota_config()
         'name'     => 'cap_type',
         'type'     => 'select',
         'options'  => $_opt,
-        'default'  => 'soft',
+        'default'  => 'hard',
         'validate' => 'not_empty',
         'label'    => 'quota limit type',
-        'help'     => 'The Quota Limit Type setting affects how items are shown on a Profile when a profile matches or exceeds the number of items allowed by their quota.<br><br><b>SOFT</b>: All items are viewable on the profile but the profile owners will no longer be able to add any new items until the number of items falls below the amount allowed in their quota.<br><br><b>HARD</b>: Items that exceed the number allowed in the quota will only be visible to admin users and profile owners.  All other users will see a notification that the profile has exceeded the number if items allowed.',
+        'help'     => 'The Quota Limit Type setting affects how items are shown on a Profile when a profile matches or exceeds the number of items allowed by their quota.<br><br><b>SOFT</b>: All items are viewable on the profile but the profile owners will no longer be able to add any new items until the number of items falls below the amount allowed in their quota.<br><br><b>HARD</b>: Items that exceed the number allowed in the quota will only be visible to admin users and profile owners.  All other users will see a notification that the profile has exceeded the number of items allowed.',
         'order'    => 3
     );
     jrProfile_register_quota_setting('jrProfile', $_tmp);

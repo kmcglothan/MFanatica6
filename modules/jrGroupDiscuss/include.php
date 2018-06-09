@@ -2,7 +2,7 @@
 /**
  * Jamroom Group Discussions module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -46,12 +46,13 @@ function jrGroupDiscuss_meta()
     $_tmp = array(
         'name'        => 'Group Discussions',
         'url'         => 'group_discuss',
-        'version'     => '1.4.10',
+        'version'     => '1.4.13',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Adds simple discussions to Profile Groups',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/3897/group-discussions',
         'license'     => 'jcl',
         'category'    => 'profiles',
+        'priority'    => 250,
         'requires'    => 'jrGroup,jrCore:6.0.0,jrComment,jrAction:2.0.8'
     );
     return $_tmp;
@@ -180,7 +181,7 @@ function jrGroupDiscuss_init()
  * @param $_args Smarty function parameters
  * @param $smarty Smarty Object
  * @param $test_only - check if button WOULD be shown for given module
- * @return string
+ * @return mixed
  */
 function jrGroupDiscuss_rss_feed_button($module, $_item, $_args, $smarty, $test_only = false)
 {
@@ -262,15 +263,16 @@ function jrGroupDiscuss_template_variables_listener($_data, $_user, $_conf, $_ar
             $_rs[$iid] = $k;
             $_tt[$k]   = $_i['discuss_title_url'];
             $_pr[$iid] = $_i['_group_data']['profile_url'];
-            $_pn[$k]   = ceil($_i['discuss_comment_count'] / $_conf['jrComment_pagebreak']);
+            $_pn[$k]   = ($_conf['jrComment_pagebreak'] > 0) ? ceil($_i['discuss_comment_count'] / $_conf['jrComment_pagebreak']) : 1;
         }
-        if (count($_id) > 0) {
+        $cnt = count($_id);
+        if ($cnt > 0) {
             $_sp = array(
                 'search'                       => array(
                     'comment_item_id in ' . implode(',', $_id),
                     'comment_module = jrGroupDiscuss'
                 ),
-                'order_by'                     => array('_item_id' => 'asc'),
+                'order_by'                     => array('_item_id' => 'desc'),
                 'privacy_check'                => false,
                 'quota_check'                  => false,
                 'ignore_pending'               => true,
@@ -283,18 +285,27 @@ function jrGroupDiscuss_template_variables_listener($_data, $_user, $_conf, $_ar
             $_sp = jrCore_db_search_items('jrComment', $_sp);
             if ($_sp && is_array($_sp) && isset($_sp['_items'])) {
                 $url = jrCore_get_module_url('jrGroupDiscuss');
+                $_fn = array();
                 foreach ($_sp['_items'] as $_i) {
-                    $iid  = (int) $_i['comment_item_id'];
-                    $uid  = $_rs[$iid];
-                    $page = '';
-                    if (isset($_pn[$iid]) && $_pn[$iid] > 1) {
-                        $page = '/p=' . $page;
+                    $iid = (int) $_i['comment_item_id'];
+                    if (!isset($_fn[$iid])) {
+                        $uid  = $_rs[$iid];
+                        $page = '';
+                        if (isset($_pn[$iid]) && $_pn[$iid] > 1) {
+                            $page = '/p=' . $page;
+                        }
+                        $_data['_items'][$uid]['last_comment']             = $_i;
+                        $_data['_items'][$uid]['discuss_last_comment_url'] = "{$_conf['jrCore_base_url']}/" . $_pr[$iid] . "/{$url}/{$iid}/" . $_tt[$iid] . "{$page}#cm{$_i['_item_id']}";
+                        $_fn[$iid] = 1;
+                        if (count($_fn) === $cnt) {
+                            // We've filled all slots
+                            break;
+                        }
                     }
-                    $_data['_items'][$uid]['last_comment']             = $_i;
-                    $_data['_items'][$uid]['discuss_last_comment_url'] = "{$_conf['jrCore_base_url']}/" . $_pr[$iid] . "/{$url}/{$iid}/" . $_tt[$iid] . "{$page}#cm{$_i['_item_id']}";
                 }
             }
         }
+
     }
     return $_data;
 }
@@ -415,7 +426,7 @@ function jrGroupDiscuss_owner_changed_listener($_data, $_user, $_conf, $_args, $
 function jrGroupDiscuss_db_get_item_listener($_data, $_user, $_conf, $_args, $event)
 {
     global $_post;
-    if (jrCore_is_view_request() && $_args['module'] == 'jrGroupDiscuss' && is_array($_data)) {
+    if ($_args['module'] == 'jrGroupDiscuss' && is_array($_data)) {
 
         // Add Home Profile info for creating user
         $_id = array($_data['_user_id']);

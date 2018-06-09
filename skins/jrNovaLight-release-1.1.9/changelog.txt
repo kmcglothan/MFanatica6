@@ -1,0 +1,86 @@
+Nova Light Skin Changelog
+
+Version 1.1.9
+ - Change: Replaced all instances of onclick window.location to jrCore_window_location function. Modified template tos_pp_row.tpl.
+
+Version 1.1.8
+ - New: Added default menu for SiteBuilder. Modified header_menu_desktop.tpl and header_menu_mobile.tpl
+ - Bug Fix: Modified footer.tpl to update social links to work with a full profile URL or just the profile name.
+
+Version 1.1.7
+ - Change: Moved new payment module view cart icon to main menu.
+ - Change: Updated profile Followers section to have a view all link. Modified profile_header.tpl
+
+Version 1.1.6:
+ - Change: Added check for tablet so mobile menu shows. Modified templates: header.tpl, header_menu_mobile.tpl and footer.tpl
+
+Version 1.1.5:
+- Change: Fixed padding for chat by line that overlapped the chat text.
+
+Version 1.1.4
+ - Change: Added timeline CSS for share modal window. Modified action.css file.
+ - Change: profile_menu.tpl adjusted to match module version to allow for System Tips to work
+
+Version 1.1.3
+ - New: Added modify button for admins in article_row.tpl
+ - Bug Fix: Removed profile_id="0" parameter from jrCore_list function in articles.tpl file.
+ - Change: Changed index article list to use item id instead of page title for the search parameter.
+   Modified Files: index_content.tpl and article.tpl.
+
+Version 1.1.2
+ - Change: Updated index.tpl to add text to the who is online block for logged out users.
+ - Change: Added language entries in the de-DE.php, en-US.php, es-ES.php, fr-FR.php, nl-NL.php and sl-Sl.php files for the who is online update.
+
+Version 1.1.1:
+ - New: Added chat CSS file for the new chat module.
+ - Change: Fixed blogs.tpl and blogs_row.tpl when clicking the title on the front page site news blog.
+ - Change: Changed scroll up to use an icon instead of an image. Templates modified: footer.css, footer.tpl
+ - Bug Fix: Removed unneeded onclick handler from the index_site_news.tpl file.
+
+Version 1.1.0:
+ - Change: Updated profile template files to accommodate new video player
+ - Change: Updated CSS files to fix attach file button.
+ - Change: Updated readme.html file.
+ - Change: Removed bottom positioning for share this checkbox on timeline form.
+ - Change: Replaced window.location with jrCore_window_location
+ - Fixed: Removed blogs_entry template and pointed blog titles to profile blog detail page.
+ - New: Added YouTube and Pinterest social links and images to the footer template.
+
+Version 1.0.9:
+ - Bug Fix: Fixed background color for combined video and audio drop down box.
+
+Version 1.0.8:
+ - Bug Fix: Fixed URL for Google link in the footer.tpl
+
+Version 1.0.7:
+ - Bug Fix: Fixed bad url on concert spotlight row.
+
+Version 1.0.6:
+ - New: Added social icons to the footer
+ - New: Added comments to profile index, controlled by skin settings.
+ - Change: Changed footer contact link to a mailto link if the custom from module is not active.
+ - Bug Fix: Fixed concerts page to show past events if the skin setting is set to show them.
+ - Bug Fix: Drop down header menu not working correctly on iPad
+
+Version 1.0.5:
+ - Bug Fix: Concerts page not paging correctly
+ - Bug Fix: YouTube by plays page not showing stream count
+
+Version 1.0.4:
+ - Bug Fix: Fix blog category typo sent to wrong profile url
+
+Version 1.0.3:
+ - Bug Fix: Fixed layout on pages with side by side images.
+
+Version 1.0.2:
+ - Bug Fix: Fixed the menu button to be on the same line as the logo image and still work on mobile devices.
+
+Version 1.0.1:
+ - Bug Fix: Added a check for the private notes module around the contact us link.
+ - Template Files:
+   ------------------------------------------------------
+    Modified: footer.tpl
+   ------------------------------------------------------
+
+Version 1.0.0:
+ - New Version

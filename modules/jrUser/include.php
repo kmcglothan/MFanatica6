@@ -2,7 +2,7 @@
 /**
  * Jamroom Users module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -52,12 +52,12 @@ function jrUser_meta()
     $_tmp = array(
         'name'        => 'Users',
         'url'         => 'user',
-        'version'     => '2.1.2',
+        'version'     => '2.3.1',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Core support for User Accounts, Sessions and Languages',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/945/users',
         'category'    => 'users',
-        'requires'    => 'jrCore:6.0.0',
+        'requires'    => 'jrCore:6.1.6b7',
         'license'     => 'mpl',
         'priority'    => 1, // HIGHEST load priority
         'locked'      => true,
@@ -73,6 +73,7 @@ function jrUser_init()
 {
     // Register the module's javascript
     jrCore_register_module_feature('jrCore', 'javascript', 'jrUser', 'jrUser.js');
+    jrCore_register_module_feature('jrCore', 'javascript', 'jrUser', 'jrUser_admin.js', 'admin');
 
     // register our triggers
     jrCore_register_event_trigger('jrUser', 'signup_validate', 'Fired when a user submits account data for a new account');
@@ -111,8 +112,17 @@ function jrUser_init()
     // Listen for force User SSL
     jrCore_register_event_listener('jrCore', 'view_results', 'jrUser_view_results_listener');
 
+    // Add login to timeline
+    jrCore_register_event_listener('jrUser', 'login_success', 'jrUser_login_success_listener');
+
     // Listen for site pages and check site against site privacy setting
     jrCore_register_event_listener('jrUser', 'session_started', 'jrUser_session_started_listener');
+
+    // System reset listener
+    jrCore_register_event_listener('jrDeveloper', 'reset_system', 'jrUser_reset_system_listener');
+
+    // Sync user sessions when profile info is changed
+    jrCore_register_event_listener('jrProfile', 'profile_updated', 'jrUser_profile_updated_listener');
 
     // User tool views
     jrCore_register_module_feature('jrCore', 'tool_view', 'jrUser', 'create', array('Create a New User', 'Create a new User Account'));
@@ -166,7 +176,9 @@ function jrUser_init()
     jrCore_register_module_feature('jrCore', 'dashboard_panel', 'jrUser', 'total user accounts', 'jrUser_dashboard_panels');
     jrCore_register_module_feature('jrCore', 'dashboard_panel', 'jrUser', 'daily active users', 'jrUser_dashboard_panels');
     jrCore_register_module_feature('jrCore', 'dashboard_panel', 'jrUser', 'monthly active users', 'jrUser_dashboard_panels');
+    jrCore_register_module_feature('jrCore', 'dashboard_panel', 'jrUser', 'users and visitors online', 'jrUser_dashboard_panels');
     jrCore_register_module_feature('jrCore', 'dashboard_panel', 'jrUser', 'users online', 'jrUser_dashboard_panels');
+    jrCore_register_module_feature('jrCore', 'dashboard_panel', 'jrUser', 'visitors online', 'jrUser_dashboard_panels');
     jrCore_register_module_feature('jrCore', 'dashboard_panel', 'jrUser', 'bots online', 'jrUser_dashboard_panels');
 
     // Site Builder widgets
@@ -182,6 +194,10 @@ function jrUser_init()
 
     // Register our session plugins
     jrCore_register_system_plugin('jrUser', 'session', 'mysql', 'User Session (default)');
+
+    // Action support
+    jrCore_register_module_feature('jrCore', 'action_support', 'jrUser', 'signup', 'item_action.tpl');
+    jrCore_register_module_feature('jrCore', 'action_support', 'jrUser', 'login', 'item_action.tpl');
 
     return true;
 }
@@ -214,8 +230,27 @@ function jrUser_widget_login_config($_post, $_user, $_conf, $_wg)
         'default'  => 'login',
         'required' => true,
         'layout'   => 'vertical',
-        'value'    => (isset($_wg['widget_data']['signup'])) ? $_wg['widget_data']['signup'] : '',
+        'value'    => (isset($_wg['widget_data']['type'])) ? $_wg['widget_data']['type'] : '',
         'validate' => 'onoff',
+    );
+    jrCore_form_field_create($_tmp);
+
+    $_qta = jrProfile_get_signup_quotas();
+    $_opt = array();
+    if (isset($_qta) && is_array($_qta)) {
+        foreach ($_qta as $qid => $qname) {
+            $_opt[$qid] = "(quota) {$qname}";
+        }
+    }
+    $_tmp = array(
+        'name'     => 'signup_quota',
+        'label'    => 'Signup Quotas',
+        'sublabel' => 'more than 1 allowed',
+        'help'     => 'You have more than 1 signup quota active, select which options are available from this location. Use shift+click to select many, or ctrl+click to select individually',
+        'type'     => 'select_multiple',
+        'options'  => $_opt,
+        'value'    => (isset($_wg['widget_data']['signup_quota'])) ? $_wg['widget_data']['signup_quota'] : '',
+        'validate' => 'number_nz'
     );
     jrCore_form_field_create($_tmp);
 
@@ -236,8 +271,15 @@ function jrUser_widget_login_config_save($_post)
         jrCore_db_query($req);
     }
 
+    if ($_post['widget_type'] == 'signup' && empty($_post['signup_quota'])) {
+        // error
+        jrCore_set_form_notice('error', 'There must be at least 1 quota selected if you want to add a signup widget to the page.');
+        jrCore_form_result();
+    }
+
     $_data = array(
-        'type' => $_post['widget_type']
+        'type'         => $_post['widget_type'],
+        'signup_quota' => $_post['signup_quota']
     );
     return array('widget_data' => $_data);
 }
@@ -250,7 +292,20 @@ function jrUser_widget_login_config_save($_post)
 function jrUser_widget_login_display($_widget)
 {
     if (!jrUser_is_logged_in()) {
-        return jrCore_capture_module_view_function('jrUser', $_widget['widget_data']['type'], array('_1' => 'widget'));
+        if ($_widget['widget_data']['type'] == 'signup') {
+            $_quotas = array();
+            $_q      = jrProfile_get_signup_quotas();
+            foreach ($_q as $quota_id => $quota_name) {
+                if (in_array($quota_id, $_widget['widget_data']['signup_quota'])) {
+                    $_quotas[$quota_id] = $quota_name;
+                }
+            }
+            jrCore_set_flag('jrprofile_get_signup_quotas', $_quotas);
+
+        }
+        $out = jrCore_capture_module_view_function('jrUser', $_widget['widget_data']['type'], array('_1' => 'widget'));
+        jrCore_delete_flag('jrprofile_get_signup_quotas');
+        return $out;
     }
     elseif (jrUser_is_admin()) {
         return ucfirst($_widget['widget_data']['type']) . " box shows here to logged out users";
@@ -293,11 +348,12 @@ function jrUser_graph_daily_active_users($module, $name, $_args)
             $yr = substr($v['c'], 0, 4);
             $mn = substr($v['c'], 4, 2);
             $dy = substr($v['c'], 6, 2);
-            $tm = (string) (mktime(0, 0, 0, $mn, $dy, $yr) - 86400);
-            if (!isset($_rs['_sets'][0]['_data']["{$tm}"])) {
-                $_rs['_sets'][0]['_data']["{$tm}"] = 0;
+            $tm = mktime(0, 0, 0, $mn, $dy, $yr);
+            $tm = "{$tm}";
+            if (!isset($_rs['_sets'][0]['_data'][$tm])) {
+                $_rs['_sets'][0]['_data'][$tm] = 0;
             }
-            $_rs['_sets'][0]['_data']["{$tm}"] += $v['v'];
+            $_rs['_sets'][0]['_data'][$tm] += $v['v'];
         }
     }
     return $_rs;
@@ -314,6 +370,7 @@ function jrUser_graph_daily_active_users($module, $name, $_args)
  */
 function jrUser_dashboard_panels($panel)
 {
+    global $_conf;
     // The panel being asked for will come in as $panel
     $out = false;
     switch ($panel) {
@@ -322,10 +379,34 @@ function jrUser_dashboard_panels($panel)
             $out = array('title' => jrCore_number_format(jrCore_db_get_datastore_item_count('jrUser')));
             break;
 
-        case 'users online':
-            $num = jrUser_session_online_user_count(900);
+        case 'users and visitors online':
+            $num = jrUser_session_online_user_count(900, 'combined');
             if ($num == 0) {
                 $num = 1;  // We always have the dashboard viewing user online
+            }
+            $out = array('title' => jrCore_number_format($num));
+            break;
+
+        case 'users online':
+            $num = jrUser_session_online_user_count(900, 'user');
+            if ($num == 0) {
+                $num = 1;  // We always have the dashboard viewing user online
+            }
+            $out = array('title' => jrCore_number_format($num));
+            break;
+
+        case 'visitors online':
+            $num = jrUser_session_online_user_count(900, 'visitor');
+            if ($num == 0) {
+                $num = 1;  // We always have the dashboard viewing user online
+            }
+            $out = array('title' => jrCore_number_format($num));
+            break;
+
+        case 'bots online':
+            $num = 0;
+            if (!isset($_conf['jrUser_bot_sessions']) || $_conf['jrUser_bot_sessions'] == 'on') {
+                $num = jrUser_session_online_user_count(900, 'bot');
             }
             $out = array('title' => jrCore_number_format($num));
             break;
@@ -348,24 +429,70 @@ function jrUser_dashboard_panels($panel)
             );
             break;
 
-        case 'bots online':
-            $num = 0;
-            $tbl = jrCore_db_table_name('jrUser', 'session');
-            $req = "SELECT COUNT(DISTINCT(session_user_ip)) AS online FROM {$tbl} WHERE session_updated > (UNIX_TIMESTAMP() - 900) AND session_user_name LIKE 'bot:%'";
-            $_rt = jrCore_db_query($req, 'SINGLE');
-            if ($_rt && is_array($_rt) && isset($_rt['online'])) {
-                $num = (int) $_rt['online'];
-            }
-            $out = array('title' => jrCore_number_format($num));
-            break;
-
     }
     return ($out) ? $out : false;
 }
 
 //------------------------------------
-// USER EVENT LISTENERS
+// EVENT LISTENERS
 //------------------------------------
+
+/**
+ * System Reset listener
+ * @param $_data array incoming data array
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return array
+ */
+function jrUser_reset_system_listener($_data, $_user, $_conf, $_args, $event)
+{
+    $_tb = array(
+        'cookie',
+        'forgot',
+        'url',
+        'pw_attempt',
+        'device',
+        'stat',
+        'suppressed'
+    );
+    foreach ($_tb as $table) {
+        $tbl = jrCore_db_table_name('jrUser', $table);
+        jrCore_db_query("TRUNCATE TABLE {$tbl}");
+        jrCore_db_query("OPTIMIZE TABLE {$tbl}");
+    }
+    return $_data;
+}
+
+/**
+ * Sync user sessions when profile info is changed by an admin
+ * @param $_data array incoming data array
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return array
+ */
+function jrUser_profile_updated_listener($_data, $_user, $_conf, $_args, $event)
+{
+    global $_post;
+    if (jrUser_is_admin() && isset($_data['_profile_id']) && jrCore_checktype($_data['_profile_id'], 'number_nz')) {
+        // Are we changing quota_id's ?
+        if (isset($_post['profile_quota_id']) && $_post['profile_quota_id'] != $_data['profile_quota_id']) {
+            // We are changing quota_id's for a profile - find users and sync sessions
+            if ($_us = jrProfile_get_owner_info($_data['_profile_id'])) {
+                foreach ($_us as $u) {
+                    if (isset($u['_user_id']) && $u['_user_id'] != $_user['_user_id']) {
+                        jrUser_set_session_sync_for_user_id($u['_user_id'], 'on');
+                    }
+                }
+            }
+        }
+
+    }
+    return $_data;
+}
 
 /**
  * Make sure none of the addresses being sent are suppressed
@@ -511,6 +638,7 @@ function jrUser_repair_module_listener($_data, $_user, $_conf, $_args, $event)
     jrCore_db_delete_key_from_all_items('jrUser', 'user_passwd1');
     jrCore_db_delete_key_from_all_items('jrUser', 'user_passwd2');
     jrCore_db_delete_key_from_all_items('jrUser', 'user_id');
+    jrCore_db_delete_key_from_all_items('jrUser', 'user_linked_profiles');
 
     // Bad user accounts that only have single keys - not complete accounts
     $_id = jrCore_db_get_items_missing_key('jrUser', 'user_name');
@@ -646,16 +774,43 @@ function jrUser_template_variables_listener($_data, $_user, $_conf, $_args, $eve
  */
 function jrUser_minute_maintenance_listener($_data, $_user, $_conf, $_args, $event)
 {
-    // Session Cleanup
+    global $_conf;
+
+    // Session cleanup - Max 15 minutes for bots
     $tbl = jrCore_db_table_name('jrUser', 'session');
-    $req = "DELETE FROM {$tbl} WHERE session_updated < (UNIX_TIMESTAMP() - ({$_conf['jrUser_session_expire_min']} * 60))";
-    jrCore_db_query($req);
+    $req = "SELECT session_id AS s FROM {$tbl} WHERE session_user_name LIKE 'bot:' AND session_updated < (UNIX_TIMESTAMP() - 900)";
+    $_rt = jrCore_db_query($req, 's', false, 's');
+    if ($_rt && is_array($_rt)) {
+        $req = "DELETE FROM {$tbl} WHERE session_id IN('" . implode("','", $_rt) . "')";
+        jrCore_db_query($req);
+    }
+
+    // Delete non-logged in user sessions once form expiration has hit
+    $hrs = 4;
+    if (isset($_conf['jrCore_form_session_expire_hours']) && jrCore_checktype($_conf['jrCore_form_session_expire_hours'], 'number_nz')) {
+        $hrs = (int) $_conf['jrCore_form_session_expire_hours'];
+    }
+    $req = "SELECT session_id AS s FROM {$tbl} WHERE session_user_id = 0 AND session_updated < (UNIX_TIMESTAMP() - ({$hrs} * 3600))";
+    $_rt = jrCore_db_query($req, 's', false, 's');
+    if ($_rt && is_array($_rt)) {
+        $req = "DELETE FROM {$tbl} WHERE session_id IN('" . implode("','", $_rt) . "')";
+        jrCore_db_query($req);
+    }
+
+    // session_expire_min for all logged in users
+    $req = "SELECT session_id AS s FROM {$tbl} WHERE session_updated < (UNIX_TIMESTAMP() - ({$_conf['jrUser_session_expire_min']} * 60))";
+    $_rt = jrCore_db_query($req, 's', false, 's');
+    if ($_rt && is_array($_rt)) {
+        $req = "DELETE FROM {$tbl} WHERE session_id IN('" . implode("','", $_rt) . "')";
+        jrCore_db_query($req);
+    }
+
     return $_data;
 }
 
 /**
  * Rewrite non-SSL URLs to SSL
- * @param $_data array Array of information from trigger
+ * @param $_data mixed information from trigger
  * @param $_user array Current user
  * @param $_conf array Global Config
  * @param $_args array additional parameters passed in by trigger caller
@@ -722,9 +877,14 @@ function jrUser_daily_maintenance_listener($_data, $_user, $_conf, $_args, $even
             $old = (int) $_conf['jrUser_autologin'];
             break;
     }
+
     $tbl = jrCore_db_table_name('jrUser', 'cookie');
-    $req = "DELETE FROM {$tbl} WHERE cookie_time < (UNIX_TIMESTAMP() - ({$old} * 86400))";
-    jrCore_db_query($req);
+    $req = "SELECT cookie_id FROM {$tbl} WHERE cookie_time < (UNIX_TIMESTAMP() - ({$old} * 86400))";
+    $_id = jrCore_db_query($req, 'cookie_id', false, 'cookie_id');
+    if ($_id && is_array($_id)) {
+        $req = "DELETE FROM {$tbl} WHERE cookie_id IN(" . implode(',', $_id) . ')';
+        jrCore_db_query($req);
+    }
 
     // Old Brute Force entries
     jrCore_clean_temp('jrUser', 7200);
@@ -758,20 +918,18 @@ function jrUser_daily_maintenance_listener($_data, $_user, $_conf, $_args, $even
     // insert stats
     //---------------------------------
 
-    $cnt = jrCore_db_get_datastore_item_count('jrUser');
-
     // Daily active users
     $end = strtotime('midnight', time());
     $beg = strtotime('midnight', (time() - 86400));
     $_sc = array(
         'search'         => array(
-            "user_last_login > {$beg}",
-            "user_last_login < {$end}"
+            "user_last_login between {$beg},{$end}"
         ),
         'return_count'   => true,
         'skip_triggers'  => true,
+        'privacy_check'  => false,
         'ignore_pending' => true,
-        'limit'          => $cnt
+        'limit'          => 1000000
     );
     $num = jrCore_db_search_items('jrUser', $_sc);
     jrUser_save_daily_stat('daily_active_users', $num);
@@ -780,13 +938,13 @@ function jrUser_daily_maintenance_listener($_data, $_user, $_conf, $_args, $even
     $beg = strtotime('midnight', (time() - (30 * 86400)));
     $_sc = array(
         'search'         => array(
-            "user_last_login > {$beg}",
-            "user_last_login < {$end}"
+            "user_last_login between {$beg},{$end}"
         ),
         'return_count'   => true,
         'skip_triggers'  => true,
         'ignore_pending' => true,
-        'limit'          => $cnt
+        'privacy_check'  => false,
+        'limit'          => 1000000
     );
     $num = jrCore_db_search_items('jrUser', $_sc);
     jrUser_save_daily_stat('monthly_active_users', $num);
@@ -805,11 +963,30 @@ function jrUser_daily_maintenance_listener($_data, $_user, $_conf, $_args, $even
  */
 function jrUser_signup_activated_listener($_data, $_user, $_conf, $_args, $event)
 {
+    // Get profile info for the user being activated
+    $_pr = jrCore_db_get_item('jrProfile', $_data['_profile_id']);
+    if (jrCore_module_is_active('jrAction') && isset($_pr['quota_jrUser_add_to_timeline']) && $_pr['quota_jrUser_add_to_timeline'] == 'on') {
+        // Add to Actions...
+        $time  = time();
+        $_tmp  = array(
+            'action_pending' => 0,
+            'action_item_id' => $_data['_user_id'],
+            'action_module'  => 'jrUser',
+            'action_mode'    => 'signup'
+        );
+        $_core = array(
+            '_profile_id' => $_data['_profile_id'],
+            '_user_id'    => $_data['_user_id'],
+            '_created'    => $time,
+            '_updated'    => $time,
+        );
+        jrCore_db_create_item('jrAction', $_tmp, $_core);
+    }
+
     // We have a new account - notify admins
     if (isset($_conf['jrUser_signup_notify']) && $_conf['jrUser_signup_notify'] == 'on') {
 
         // Get profile info for the user being activated
-        $_pr = jrCore_db_get_item('jrProfile', $_data['_profile_id']);
         if ($_pr && is_array($_pr)) {
             $_qt = jrProfile_get_quota($_pr['profile_quota_id']);
             if ($_qt && is_array($_qt) && isset($_qt['quota_jrUser_signup_method']) && $_qt['quota_jrUser_signup_method'] == 'admin') {
@@ -826,7 +1003,7 @@ function jrUser_signup_activated_listener($_data, $_user, $_conf, $_args, $event
             $_rp['system_name']     = $_conf['jrCore_system_name'];
             $_rp['ip_address']      = jrCore_get_ip();
             $new_profile_url        = jrCore_db_get_item_key('jrProfile', $_rp['_profile_id'], 'profile_url');
-            $_rp['new_profile_url'] = "{$_conf['jrCore_base_url']}/{$new_profile_url}";
+            $_rp['new_profile_url'] = "{$_conf['jrCore_base_url']}/" . rawurldecode($new_profile_url);
             list($sub, $msg) = jrCore_parse_email_templates('jrUser', 'notify_signup', $_rp);
             foreach ($_ad as $uid) {
                 jrUser_notify($uid, 0, 'jrUser', 'signup_notify', $sub, $msg);
@@ -937,9 +1114,9 @@ function jrUser_db_search_items_listener($_data, $_user, $_conf, $_args, $event)
 
         // See if only specific keys are being requested - if none of them are user keys
         // then we do not need to go back to the DB to get any user info
-        if (isset($_params['return_keys']) && is_array($_params['return_keys']) && count($_params['return_keys']) > 0) {
+        if (isset($_args['return_keys']) && is_array($_args['return_keys']) && count($_args['return_keys']) > 0) {
             $found = false;
-            foreach ($_params['return_keys'] as $key) {
+            foreach ($_args['return_keys'] as $key) {
                 if (strpos($key, 'user_') === 0) {
                     $found = true;
                     break;
@@ -987,9 +1164,71 @@ function jrUser_db_search_items_listener($_data, $_user, $_conf, $_args, $event)
     return $_data;
 }
 
+/**
+ * login_success listener to optionally add it to the timeline
+ * @param $_data array incoming data array from jrCore_save_media_file()
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return array
+ */
+function jrUser_login_success_listener($_data, $_user, $_conf, $_args, $event)
+{
+    if (jrCore_module_is_active('jrAction') && isset($_data['quota_jrUser_add_to_timeline']) && $_data['quota_jrUser_add_to_timeline'] == 'on') {
+        // Add to Actions...
+        jrCore_run_module_function('jrAction_save', 'login', 'jrUser', $_data['_user_id'], $_data);
+    }
+    return $_data;
+}
+
 //------------------------------------
 // USER FUNCTIONS
 //------------------------------------
+
+/**
+ * Get a hash for a password
+ * @param string $password
+ * @return bool|string
+ */
+function jrUser_get_password_hash($password)
+{
+    if (!class_exists('PasswordHash')) {
+        require_once APP_DIR . '/modules/jrUser/contrib/phpass/PasswordHash.php';
+    }
+    $iter = jrCore_get_advanced_setting('jrUser', 'password_iterations', 12);
+    $hash = new PasswordHash($iter, false);
+    return $hash->HashPassword($password);
+}
+
+/**
+ * Verify a given string matches the hashed password
+ * @param string $string String to check if it is correct
+ * @param string $password_hash Existing password hash to check against
+ * @return bool
+ */
+function jrUser_verify_password_hash($string, $password_hash)
+{
+    if (!class_exists('PasswordHash')) {
+        require_once APP_DIR . '/modules/jrUser/contrib/phpass/PasswordHash.php';
+    }
+    $iter = jrCore_get_advanced_setting('jrUser', 'password_iterations', 12);
+    $hash = new PasswordHash($iter, false);
+    return $hash->CheckPassword($string, $password_hash);
+}
+
+/**
+ * Delete entries in the forgot table for a user_id
+ * @param int $user_id
+ * @return mixed
+ */
+function jrUser_delete_forgot_password_entries($user_id)
+{
+    $uid = (int) $user_id;
+    $tbl = jrCore_db_table_name('jrUser', 'forgot');
+    $req = "DELETE FROM {$tbl} WHERE forgot_user_id = {$uid}";
+    return jrCore_db_query($req);
+}
 
 /**
  * Suppress an email address so we don't send to it
@@ -1225,9 +1464,11 @@ function jrUser_data_browser($_post, $_user, $_conf)
     if (isset($_post['order_by'])) {
         switch ($_post['order_by']) {
             case '_item_id':
-            case 'user_last_login':
                 $order_dir = 'numerical_' . $order_dir;
                 $order_opp = 'numerical_' . $order_opp;
+                $order_by  = $_post['order_by'];
+                break;
+            case 'user_last_login':
             case 'user_name':
             case 'user_email':
                 $order_by = $_post['order_by'];
@@ -1275,17 +1516,17 @@ function jrUser_data_browser($_post, $_user, $_conf)
     $url             = $_conf['jrCore_base_url'] . jrCore_strip_url_params($_post['_uri'], array('order_by', 'order_dir'));
     $dat             = array();
     $dat[1]['title'] = '&nbsp;';
-    $dat[1]['width'] = '1%';
+    $dat[1]['width'] = '2%';
     $dat[2]['title'] = 'ID';
-    $dat[2]['width'] = '4%';
+    $dat[2]['width'] = '2%';
     $dat[3]['title'] = '<a href="' . $url . '/order_by=user_name/order_dir=' . $order_opp . '">user name</a>';
-    $dat[3]['width'] = '22%';
-    $dat[4]['title'] = 'profile name';
-    $dat[4]['width'] = '22%';
+    $dat[3]['width'] = '23%';
+    $dat[4]['title'] = 'linked profile(s)';
+    $dat[4]['width'] = '23%';
     $dat[5]['title'] = '<a href="' . $url . '/order_by=user_email/order_dir=' . $order_opp . '">email</a>';
-    $dat[5]['width'] = '25%';
+    $dat[5]['width'] = '23%';
     $dat[6]['title'] = '<a href="' . $url . '/order_by=user_last_login/order_dir=' . $order_opp . '">last login</a>';
-    $dat[6]['width'] = '10%';
+    $dat[6]['width'] = '12%';
     $dat[7]['title'] = 'modify';
     $dat[7]['width'] = '5%';
     $dat[8]['title'] = 'delete';
@@ -1298,21 +1539,54 @@ function jrUser_data_browser($_post, $_user, $_conf)
     if (isset($_us['_items']) && is_array($_us['_items'])) {
 
         // Get profile info for these users
-        $_pi = array();
-        foreach ($_us['_items'] as $_usr) {
-            $_pi[] = (int) $_usr['_profile_id'];
+        $_pn = array();
+        $_ui = array();
+        foreach ($_us['_items'] as $_tmp) {
+            $_ui[]                   = (int) $_tmp['_user_id'];
+            $_usr[$_tmp['_user_id']] = $_tmp;
         }
-        $_pi = jrCore_db_get_multiple_items('jrProfile', $_pi);
-        $_pd = array();
-        if ($_pi && is_array($_pi)) {
-            foreach ($_pi as $_prf) {
-                $_pd["{$_prf['_profile_id']}"] = $_prf;
+        $tbl = jrCore_db_table_name('jrProfile', 'profile_link');
+        $req = "SELECT * FROM {$tbl} WHERE user_id IN(" . implode(',', $_ui) . ") ORDER BY profile_id ASC";
+        $_ui = jrCore_db_query($req, 'NUMERIC');
+        if ($_ui && is_array($_ui)) {
+
+            $_id = array();
+            foreach ($_ui as $v) {
+                $_id["{$v['profile_id']}"] = $v['profile_id'];
             }
+
+            // get profiles
+            $_pr = array(
+                'search'         => array(
+                    '_profile_id in ' . implode(',', $_id)
+                ),
+                'return_keys'    => array('_profile_id', 'profile_name', 'profile_url'),
+                'skip_triggers'  => true,
+                'ignore_pending' => true,
+                'privacy_check'  => false,
+                'no_cache'       => true,
+                'limit'          => 250
+            );
+            $_pi = jrCore_db_search_items('jrProfile', $_pr);
+            if (isset($_pi['_items']) && is_array($_pi['_items'])) {
+                $_pn = array();
+                $_pr = array();
+                foreach ($_pi['_items'] as $_profile) {
+                    $_pr["{$_profile['_profile_id']}"] = $_profile;
+                }
+                foreach ($_ui as $_link) {
+                    if (isset($_pr["{$_link['profile_id']}"])) {
+                        if (!isset($_pn["{$_link['user_id']}"])) {
+                            $_pn["{$_link['user_id']}"] = array();
+                        }
+                        $_pn["{$_link['user_id']}"][] = "<a href=\"{$_conf['jrCore_base_url']}/{$_pr["{$_link['profile_id']}"]['profile_url']}\">@" . rawurldecode($_pr["{$_link['profile_id']}"]['profile_url']) . "</a>";
+                    }
+                }
+            }
+            unset($_pi);
         }
-        unset($_pi);
 
         foreach ($_us['_items'] as $k => $_usr) {
-            $_prf = (isset($_pd["{$_usr['_profile_id']}"])) ? $_pd["{$_usr['_profile_id']}"] : array();
             $dat  = array();
             $lbox = '';
             if (isset($_usr['user_image_time']) && $_usr['user_image_time'] > 0) {
@@ -1331,7 +1605,7 @@ function jrUser_data_browser($_post, $_user, $_conf)
             $dat[2]['class'] = 'center';
             $dat[3]['title'] = '<h3>' . $_usr['user_name'] . '</h3>';
             $dat[3]['class'] = 'word-break';
-            $dat[4]['title'] = (isset($_prf['profile_url'])) ? "<a href=\"{$_conf['jrCore_base_url']}/{$_prf['profile_url']}\">@{$_prf['profile_name']}</a>" : 'Profile Not Found';
+            $dat[4]['title'] = (isset($_pn["{$_usr['_user_id']}"])) ? implode('<br>', $_pn["{$_usr['_user_id']}"]) : 'Profile Not Found';
             $dat[4]['class'] = 'center word-break';
 
             if (strpos($_usr['user_email'], '@')) {
@@ -1458,7 +1732,7 @@ function jrUser_account_tabs($active = 'account', $_active_user = null)
     $_tbs = array();
     // Check for registered user tabs
     $_tmp = jrCore_get_registered_module_features('jrUser', 'account_tab');
-    if ($_tmp) {
+    if ($_tmp && is_array($_tmp)) {
 
         // For ADMIN users, we always show the user tabs IF there is a user
         // account who's HOME PROFILE is this profile
@@ -1481,11 +1755,15 @@ function jrUser_account_tabs($active = 'account', $_active_user = null)
         }
 
         // Make sure tabs from Profile and User modules load up first
-        $_tm2 = array(
-            'jrProfile' => $_tmp['jrProfile'],
-            'jrUser'    => $_tmp['jrUser']
-        );
-        unset($_tmp['jrProfile'], $_tmp['jrUser']);
+        $_tm2 = array();
+        if (isset($_tmp['jrProfile'])) {
+            $_tm2['jrProfile'] = $_tmp['jrProfile'];
+            unset($_tmp['jrProfile']);
+        }
+        if (isset($_tmp['jrUser'])) {
+            $_tm2['jrUser'] = $_tmp['jrUser'];
+            unset($_tmp['jrUser']);
+        }
         $_tmp = array_merge($_tm2, $_tmp);
 
         $_lng = jrUser_load_lang_strings();
@@ -1742,11 +2020,15 @@ function jrUser_check_quota_access($module = null)
     }
     // User has access - check that they are not on a CREATE form and have reached max items
     if (isset($_post['option']) && strpos(' ' . $_post['option'], 'create')) {
-        if (isset($_user["quota_{$module}_max_items"]) && jrCore_checktype($_user["quota_{$module}_max_items"], 'number_nz') && isset($_user["profile_{$module}_item_count"]) && $_user["profile_{$module}_item_count"] >= $_user["quota_{$module}_max_items"]) {
-            jrUser_reset_cache($_user['_user_id']);
-            $_lang = jrUser_load_lang_strings();
-            jrCore_set_form_notice('error', $_lang['jrCore'][70]);
-            jrUser_set_session_key('quota_max_items_reached', true);
+        if (isset($_user["quota_{$module}_max_items"]) && jrCore_checktype($_user["quota_{$module}_max_items"], 'number_nz')) {
+            if ($p_cnt = jrCore_db_get_item_key('jrProfile', $_user['user_active_profile_id'], "profile_{$module}_item_count")) {
+                if ($p_cnt >= $_user["quota_{$module}_max_items"]) {
+                    jrUser_reset_cache($_user['_user_id']);
+                    $_lang = jrUser_load_lang_strings();
+                    jrCore_set_form_notice('error', $_lang['jrCore'][70]);
+                    jrUser_set_session_key('quota_max_items_reached', true);
+                }
+            }
         }
     }
     return true;
@@ -1767,7 +2049,7 @@ function jrUser_show_module_lang_strings($type, $module, $_post, $_user, $_conf)
     $_lang = jrUser_load_lang_strings();
 
     // Generate our output
-    if (isset($type) && $type == 'module') {
+    if ($type == 'module') {
         $url = "{$_conf['jrCore_base_url']}/{$_post['module_url']}/admin/language";
         jrCore_page_admin_tabs($module, 'language');
 
@@ -1798,7 +2080,7 @@ function jrUser_show_module_lang_strings($type, $module, $_post, $_user, $_conf)
                 $_mta = jrCore_skin_meta_data($skin_dir);
                 $name = (isset($_mta['title'])) ? $_mta['title'] : $skin_dir;
                 if ($skin_dir == $_post['skin']) {
-                    $subtitle .= '<option value="' . $skin_dir . '" selected="selected"> ' . $name . "</option>\n";
+                    $subtitle .= '<option value="' . $skin_dir . '" selected> ' . $name . "</option>\n";
                 }
                 else {
                     $subtitle .= '<option value="' . $skin_dir . '"> ' . $name . "</option>\n";
@@ -1825,7 +2107,7 @@ function jrUser_show_module_lang_strings($type, $module, $_post, $_user, $_conf)
     if (!isset($_qt["{$_post['lang_code']}"])) {
         $_post['lang_code'] = 'en-US';
     }
-
+    $url .= "/lang_code={$_post['lang_code']}";
     jrCore_page_search('search', $url);
 
     // Form init
@@ -1883,8 +2165,8 @@ function jrUser_show_module_lang_strings($type, $module, $_post, $_user, $_conf)
     if (isset($_post['search_string']) && strlen($_post['search_string']) > 0) {
         $_post['search_string'] = trim(urldecode($_post['search_string']));
         $str                    = jrCore_db_escape($_post['search_string']);
-        $req .= "AND lang_text LIKE '%{$str}%' ";
-        $_ex = array('search_string' => $_post['search_string']);
+        $req                    .= "AND lang_text LIKE '%{$str}%' ";
+        $_ex                    = array('search_string' => $_post['search_string']);
     }
     elseif (isset($_post['id']) && jrCore_checktype($_post['id'], 'number_nz')) {
         $req .= "AND lang_key = " . intval($_post['id']) . ' ';
@@ -1996,6 +2278,7 @@ function jrUser_load_lang_strings($lang = null, $cache = true, $only_active = tr
                 if (jrUser_is_logged_in() && $_user['user_language'] != $lang) {
                     jrCore_db_update_item('jrUser', $_user['_user_id'], array('user_language' => $lang));
                     $_user['user_language'] = $lang;
+                    jrUser_session_sync($_user['_user_id']);
                 }
                 setcookie('jr_lang', $lang, time() + 86400000);
                 $_COOKIE['jr_lang'] = $lang;
@@ -2533,7 +2816,7 @@ function jrUser_is_master()
  */
 function jrUser_is_admin()
 {
-    if (jrUser_is_logged_in()) {
+    if (jrUser_is_logged_in() && isset($_SESSION['user_group'])) {
         switch ($_SESSION['user_group']) {
             case 'master':
             case 'admin':
@@ -2605,11 +2888,13 @@ function jrUser_master_only()
 function jrUser_admin_only()
 {
     jrUser_session_require_login();
-    switch ($_SESSION['user_group']) {
-        case 'master':
-        case 'admin':
-            return true;
-            break;
+    if (isset($_SESSION['user_group'])) {
+        switch ($_SESSION['user_group']) {
+            case 'master':
+            case 'admin':
+                return true;
+                break;
+        }
     }
     return jrUser_not_authorized();
 }
@@ -2625,18 +2910,17 @@ function jrUser_not_authorized()
     if (jrCore_is_ajax_request()) {
         jrCore_notice_page('error', $_ln['jrCore'][41]);
     }
-    else {
-        jrCore_page_notice('error', '<div class="p20">' . $_ln['jrCore'][41] . '</div>', false);
-        if (jrUser_is_logged_in()) {
-            jrCore_page_cancel_button('referrer', $_ln['jrCore'][87]);
+    elseif (jrUser_is_logged_in()) {
+        $ref = 'referrer';
+        if (strpos(jrCore_get_local_referrer(), '/login')) {
+            $ref = $_conf['jrCore_base_url'];
         }
-        else {
-            $murl = jrCore_get_module_url('jrUser');
-            jrCore_page_cancel_button("{$_conf['jrCore_base_url']}/{$murl}/login", $_ln['jrCore'][87]);
-        }
-        jrCore_page_display();
+        jrCore_notice_page('error', '<div class="p20">' . $_ln['jrCore'][41] . '</div>', $ref, $_ln['jrCore'][87], false);
     }
-    jrCore_db_close();
+    else {
+        $murl = jrCore_get_module_url('jrUser');
+        jrCore_notice_page('error', '<div class="p20">' . $_ln['jrCore'][41] . '</div>', "{$_conf['jrCore_base_url']}/{$murl}/login", $_ln['jrCore'][87], false);
+    }
     exit;
 }
 
@@ -2688,6 +2972,75 @@ function jrUser_reset_cache($uid, $module = null)
 //------------------------------------
 // User Session
 //------------------------------------
+
+/**
+ * Set a new session value
+ * @param string $key
+ * @param mixed $value
+ * @return bool
+ */
+function jrUser_set_session_key($key, $value)
+{
+    global $_user;
+    $_user[$key]    = $value;
+    $_SESSION[$key] = $value;
+    return true;
+}
+
+/**
+ * Get a previously set session value
+ * @param string $key
+ * @return bool
+ */
+function jrUser_get_session_key($key)
+{
+    return (isset($_SESSION[$key])) ? $_SESSION[$key] : false;
+}
+
+/**
+ * Return TRUE if a session key exists
+ * @param string $key
+ * @return bool
+ */
+function jrUser_session_key_exists($key)
+{
+    return (isset($_SESSION[$key]));
+}
+
+/**
+ * Delete a session key if it exists
+ * @param string $key
+ * @return bool
+ */
+function jrUser_delete_session_key($key)
+{
+    global $_user;
+    if (isset($_user[$key])) {
+        unset($_user[$key]);
+    }
+    if (isset($_SESSION[$key])) {
+        unset($_SESSION[$key]);
+    }
+    return true;
+}
+
+/**
+ * End a user session
+ * @param array $_user
+ * @return bool
+ */
+function jrUser_end_user_session($_user)
+{
+    // Send logout trigger
+    jrCore_trigger_event('jrUser', 'logout', $_user);
+
+    // Destroy session
+    $sid = jrUser_session_destroy();
+
+    // Successful logout
+    jrCore_trigger_event('jrUser', 'logout_success', $_user, array('session_id' => $sid));
+    return true;
+}
 
 /**
  * @ignore
@@ -2751,9 +3104,6 @@ function jrUser_session_init()
 
     ini_set('session.gc_maxlifetime', ($exp + 7200));
     $act = jrUser_get_active_session_system();
-    if (!$act) {
-        $act = 'jrUser_mysql';
-    }
     session_set_save_handler("_{$act}_session_open", "_{$act}_session_close", "_{$act}_session_read", "_{$act}_session_write", "_{$act}_session_destroy", "_{$act}_session_collect");
     session_name('sess' . jrUser_unique_install_id());
     session_start();
@@ -2812,6 +3162,36 @@ function jrUser_session_remove($user_id)
 }
 
 /**
+ * Remove all sessions for a given User ID except active session
+ * @param $user_id int User ID
+ * @param $active_sid string Active Session ID
+ * @return bool
+ */
+function jrUser_session_remove_all_other_sessions($user_id, $active_sid)
+{
+    $act = jrUser_get_active_session_system();
+    if (!$act) {
+        $act = 'jrUser_mysql';
+    }
+    $fnc = "_{$act}_session_remove_all_other_sessions";
+    if (function_exists($fnc)) {
+
+        // Remove Remember Me cookies
+        $uid = (int) $user_id;
+        $tbl = jrCore_db_table_name('jrUser', 'cookie');
+        $req = "SELECT cookie_id FROM {$tbl} WHERE cookie_user_id = '{$uid}'";
+        $_rt = jrCore_db_query($req, 'cookie_id');
+        if ($_rt && is_array($_rt)) {
+            $req = "DELETE FROM {$tbl} WHERE cookie_id IN('" . implode("','", array_keys($_rt)) . "')";
+            jrCore_db_query($req);
+        }
+        return $fnc($user_id, $active_sid);
+
+    }
+    return false;
+}
+
+/**
  * Get session information by SID
  * @param $sid string Active Session ID
  * @return bool
@@ -2832,9 +3212,10 @@ function jrUser_session_is_valid_session($sid)
 /**
  * Get total number of online users
  * @param $length int Max number of seconds with no activity a session is considered "active"
+ * @param $type string user|bot to get count by online user type
  * @return int
  */
-function jrUser_session_online_user_count($length = 900)
+function jrUser_session_online_user_count($length = 900, $type = 'combined')
 {
     $act = jrUser_get_active_session_system();
     if (!$act) {
@@ -2842,7 +3223,7 @@ function jrUser_session_online_user_count($length = 900)
     }
     $fnc = "_{$act}_session_online_user_count";
     if (function_exists($fnc)) {
-        return $fnc($length);
+        return $fnc($length, $type);
     }
     return false;
 }
@@ -2905,74 +3286,22 @@ function jrUser_set_session_sync_for_quota($quota_id, $state)
 }
 
 /**
- * Refresh an existing user session with the latest User and Profile info
- * @param int $user_id User to synchronize session for
+ * Set the session_sync flag for a User ID
+ * @param int $user_id User ID
+ * @param $state string on|off
  * @return bool
  */
-function jrUser_session_sync($user_id)
+function jrUser_set_session_sync_for_user_id($user_id, $state)
 {
-    // Get latest user info
-    if (jrUser_is_logged_in()) {
-
-        $_rt = jrCore_db_get_item('jrUser', $user_id, true, true);
-        if ($_rt && is_array($_rt)) {
-
-            // Add in Profile Info
-            $pid = (int) $_SESSION['user_active_profile_id'];
-            $_tm = jrCore_db_get_item('jrProfile', $pid, false, true);
-            if ($_tm && is_array($_tm)) {
-                unset($_tm['_item_id']);
-                $_rt = $_rt + $_tm;
-            }
-            // Get profiles we link to
-            $_pn = jrProfile_get_user_linked_profiles($user_id);
-            if ($_pn && is_array($_pn)) {
-                $_rt['user_linked_profile_ids'] = implode(',', array_keys($_pn));
-            }
-            $_SESSION             = array_merge($_SESSION, $_rt);
-            $_SESSION['_user_id'] = $user_id;
-
-            // Refresh cached value
-            jrCore_add_to_cache('jrUser', "{$user_id}-{$pid}-" . session_id(), $_rt);
-
-            // reset our skin_cache menu to pick up any new settings
-            jrCore_delete_cache('jrCore', "skin_menu_{$user_id}");
-            return true;
-
-        }
+    $act = jrUser_get_active_session_system();
+    if (!$act) {
+        $act = 'jrUser_mysql';
+    }
+    $fnc = "_{$act}_session_sync_for_user_id";
+    if (function_exists($fnc)) {
+        return $fnc($user_id, $state);
     }
     return false;
-}
-
-/**
- * Set a session variable to a value
- * @param string $key
- * @param mixed $val
- * @return bool
- */
-function jrUser_set_session_key($key, $val)
-{
-    global $_user;
-    $_user[$key]    = $val;
-    $_SESSION[$key] = $val;
-    return true;
-}
-
-/**
- * Delete an existing session key
- * @param $key
- * @return bool
- */
-function jrUser_delete_session_key($key)
-{
-    global $_user;
-    if (isset($_user[$key])) {
-        unset($_user[$key]);
-    }
-    if (isset($_SESSION[$key])) {
-        unset($_SESSION[$key]);
-    }
-    return true;
 }
 
 /**
@@ -3011,10 +3340,9 @@ function jrUser_session_get_login_cookie_name()
 /**
  * Sets a Browser "Remember Me" Login cookie
  * @param $user_id integer User ID to set cookie for
- * @param $cookie_id integer If given $cookie_id will be updated with value
  * @return bool
  */
-function jrUser_session_set_login_cookie($user_id, $cookie_id = 0)
+function jrUser_session_set_login_cookie($user_id)
 {
     global $_conf;
     if (!jrCore_checktype($user_id, 'number_nz')) {
@@ -3022,12 +3350,7 @@ function jrUser_session_set_login_cookie($user_id, $cookie_id = 0)
     }
     $val = md5(microtime());
     $tbl = jrCore_db_table_name('jrUser', 'cookie');
-    if ($cookie_id === 0) {
-        $req = "INSERT INTO {$tbl} (cookie_user_id,cookie_time,cookie_value) VALUES ('{$user_id}',UNIX_TIMESTAMP(),'" . sha1($val) . "')";
-    }
-    else {
-        $req = "UPDATE {$tbl} SET cookie_time = UNIX_TIMESTAMP(), cookie_value = '" . sha1($val) . "' WHERE cookie_id = " . intval($cookie_id);
-    }
+    $req = "INSERT INTO {$tbl} (cookie_user_id,cookie_time,cookie_value) VALUES ('{$user_id}',UNIX_TIMESTAMP(),'" . sha1($val) . "')";
     $cnt = jrCore_db_query($req, 'COUNT');
     if (!$cnt || $cnt !== 1) {
         jrCore_logger('CRI', "jrUser_session_set_login_cookie() unable to set autologin cookie for user_id: {$user_id} - check error log");
@@ -3035,17 +3358,17 @@ function jrUser_session_set_login_cookie($user_id, $cookie_id = 0)
     else {
         // Create new cookie
         $tim = (14 * 86400); // Default: 14 days
-        $cid = jrUser_session_get_login_cookie_name();
-        if (isset($_conf['jrUser_autologin']) && jrCore_checktype($_conf['jrUser_autologin'], 'number_nz')) {
-            switch (intval($_conf['jrUser_autologin'])) {
-                case 7:
-                case 30:
-                case 60:
-                case 90:
-                    $tim = (intval($_conf['jrUser_autologin']) * 86400);
-                    break;
+        if (isset($_conf['jrUser_autologin']) && jrCore_checktype($_conf['jrUser_autologin'], 'number_nz') && $_conf['jrUser_autologin'] != '2') {
+            // If we are 3, that is the old value for "permanent"
+            if ($_conf['jrUser_autologin'] == '3') {
+                // Set it for really far in the future
+                $tim = (1000 * 86400);
+            }
+            else {
+                $tim = (intval($_conf['jrUser_autologin']) * 86400);
             }
         }
+        $cid = jrUser_session_get_login_cookie_name();
         setcookie($cid, "{$user_id}-{$val}", time() + $tim, '/');
         $_COOKIE[$cid] = "{$user_id}-{$val}";
     }
@@ -3124,6 +3447,10 @@ function jrUser_get_user_id_from_login_cookie()
             case 90:
                 $val = (intval($_conf['jrUser_autologin']) * 86400);
                 break;
+            case 3:
+                // 3 is "never" so we just set it really far off
+                $val = (1000 * 86400);
+                break;
         }
     }
     $tbl = jrCore_db_table_name('jrUser', 'cookie');
@@ -3135,11 +3462,7 @@ function jrUser_get_user_id_from_login_cookie()
         jrUser_session_delete_login_cookie($cid);
         return false;
     }
-    // Looks good - let's update this current cookie with a new value
-    if (jrUser_session_set_login_cookie($user_id, $_rt['cookie_id'])) {
-        return intval($user_id);
-    }
-    return false;
+    return intval($user_id);
 }
 
 /**
@@ -3149,21 +3472,20 @@ function jrUser_get_user_id_from_login_cookie()
  */
 function jrUser_session_start($option_check = true)
 {
-    global $_post, $_conf;
+    global $_post;
 
-    // Some "options" have no need for a full session load - we can
-    // check for those here and just return true.
+    // Some "options" have no need for a full session load
     if ($option_check && isset($_post['option']) && strlen($_post['option']) > 0) {
         $_tmp = jrCore_get_registered_module_features('jrUser', 'skip_session');
         if (is_array($_tmp)) {
             // Quick check for exact option
             if (isset($_tmp["{$_post['module']}"]["{$_post['option']}"])) {
-                return true;
+                return jrUser_get_logged_out_user_session();
             }
             // Fall through for magic view check
             foreach ($_tmp as $mod => $_opts) {
                 if (isset($_opts["{$_post['option']}"]) && $_opts["{$_post['option']}"] === 'magic_view') {
-                    return true;
+                    return jrUser_get_logged_out_user_session();
                 }
             }
         }
@@ -3171,86 +3493,168 @@ function jrUser_session_start($option_check = true)
 
     jrUser_session_init();
 
-    // If we are requiring a login, check
-    $trigger = false;
-    $sess_id = false;
-    if (!jrUser_is_logged_in()) {
+    if (!isset($_SESSION['is_logged_in'])) {
 
-        if ($sess_id = jrUser_get_user_id_from_login_cookie()) {
-            // Update last login time for user
-            $_dt = array('user_last_login' => 'UNIX_TIMESTAMP()');
-            jrCore_db_update_item('jrUser', $sess_id, $_dt);
-            $trigger = true;
-        }
-    }
+        if ($user_id = jrUser_get_user_id_from_login_cookie()) {
 
-    if (jrUser_is_logged_in() || jrCore_checktype($sess_id, 'number_nz')) {
+            // We got a good user_id from our login cookie
+            // Get associated user and profile data for this user
+            if ($_user = jrUser_get_user_session_data($user_id)) {
 
-        $uid = (jrCore_checktype($sess_id, 'number_nz')) ? $sess_id : $_SESSION['_user_id'];
+                // Update last login time for user
+                jrCore_db_update_item('jrUser', $user_id, array('user_last_login' => 'UNIX_TIMESTAMP()'), null, false);
 
-        // See if we have cached this user's info
-        $ckey = false;
-        $_tmp = false;
-        if (isset($_SESSION['user_active_profile_id'])) {
-            $ckey = "{$uid}-{$_SESSION['user_active_profile_id']}-" . session_id();
-            $_tmp = jrCore_is_cached('jrUser', $ckey);
-        }
+                // Trigger "login_success" since this user came back with a cookie
+                $_user = jrCore_trigger_event('jrUser', 'login_success', $_user);
 
-        // We need to get this user's info + the profile info for their active profile ID
-        if (!$_tmp || !is_array($_tmp)) {
-            $_rt = jrCore_db_get_item('jrUser', $uid, true);
-            if ($_rt && is_array($_rt)) {
+                // Save to cache
+                $c_key = "{$user_id}-{$_user['_profile_id']}-" . session_id();
+                jrCore_add_to_cache('jrUser', $c_key, $_user);
 
-                $_SESSION['is_logged_in'] = 'yes';
-                if (!isset($_SESSION['user_active_profile_id']) && isset($_rt['_profile_id'])) {
-                    $_SESSION['user_active_profile_id'] = $_rt['_profile_id'];
-                }
-
-                $_tm = jrCore_db_get_item('jrProfile', $_SESSION['user_active_profile_id']);
-                if ($_tm && is_array($_tm)) {
-                    unset($_tm['_item_id']);
-                    $_rt = $_rt + $_tm;
-                }
-
-                // See what profiles we link to
-                $_pn = jrProfile_get_user_linked_profiles($uid);
-                if ($_pn && is_array($_pn)) {
-                    $_rt['user_linked_profile_ids'] = implode(',', array_keys($_pn));
-                }
-                foreach ($_rt as $key => $val) {
-                    $_SESSION[$key] = $val;
-                }
-                jrCore_add_to_cache('jrUser', $ckey, $_rt);
-
+                // Save off profile home keys
                 jrUser_save_profile_home_keys();
 
-                // See if this is an auto login (from cookie above)
-                if ($trigger) {
-                    $_SESSION = jrCore_trigger_event('jrUser', 'login_success', $_SESSION);
-                }
-            }
-            else {
-                // Bad user account
-                jrUser_session_destroy();
             }
         }
         else {
-            $_SESSION['is_logged_in'] = 'yes';
-            foreach ($_tmp as $key => $val) {
-                $_SESSION[$key] = $val;
-            }
+
+            // Unable to get valid user_id from login cookie
+            $_user = jrUser_get_logged_out_user_session();
+
         }
+
+        // Add each key and value to our session
+        foreach ($_user as $k => $v) {
+            $_SESSION[$k] = $v;
+        }
+
     }
 
-    if (!isset($_SESSION['is_logged_in'])) {
-        // Defaults for users that are not logged in
-        $_SESSION['quota_id']      = 0;
-        $_SESSION['user_language'] = $_conf['jrUser_default_language'];
-        $_SESSION['is_logged_in']  = 'no';
+    // Is this user logged in?
+    if (isset($_SESSION) && isset($_SESSION['_user_id']) && $_SESSION['_user_id'] > 0) {
+
+        // We are now logged in
+        $_SESSION['is_logged_in'] = 'yes';
+
+        // Update last_login_time if greater than 24 hours ago
+        if (!isset($_SESSION['user_last_login']) || $_SESSION['user_last_login'] < (time() - 86400)) {
+            // Update last login time for user
+            jrCore_db_update_item('jrUser', $_SESSION['_user_id'], array('user_last_login' => time()), null, false);
+            $_SESSION['user_last_login'] = time();
+        }
+
+    }
+
+    // Do we have a session sync?
+    if (jrCore_get_flag('user_session_sync') == 1) {
+        jrUser_session_sync($_SESSION['_user_id']);
     }
 
     // Trigger session started event
     return jrCore_trigger_event('jrUser', 'session_started', $_SESSION);
+}
+
+/**
+ * Refresh an existing user session with the latest User and Profile info
+ * @param int $user_id User to synchronize session for
+ * @return bool
+ */
+function jrUser_session_sync($user_id)
+{
+    // Get latest user info
+    if (jrUser_is_logged_in()) {
+
+        $uid = (int) $user_id;
+        $pid = (isset($_SESSION['user_active_profile_id'])) ? intval($_SESSION['user_active_profile_id']) : 0;
+        if ($_user = jrUser_get_user_session_data($uid, $pid)) {
+
+            $_SESSION = array_merge($_SESSION, $_user);
+
+            // Refresh cached value
+            jrCore_add_to_cache('jrUser', "{$uid}-{$pid}-" . session_id(), $_user);
+
+            // reset our skin_cache menu to pick up any new settings
+            jrCore_delete_cache('jrCore', "skin_menu_{$uid}");
+
+            return true;
+
+        }
+        else {
+            global $_user;
+            jrUser_end_user_session($_user);
+        }
+    }
+    return false;
+}
+
+/**
+ * Get all session data for a User
+ * @param int $user_id
+ * @param int $profile_id
+ * @return array|bool
+ */
+function jrUser_get_user_session_data($user_id, $profile_id = 0)
+{
+    $uid = (int) $user_id;
+    $_rt = jrCore_db_get_item('jrUser', $uid, true, true);
+    if ($_rt && is_array($_rt)) {
+
+        // Add in Profile Info
+        if ($profile_id > 0) {
+            $pid = (int) $profile_id;
+        }
+        else {
+            $pid = (int) $_rt['_profile_id'];
+        }
+
+        // Get profiles we link to
+        $_pn = jrProfile_get_user_linked_profiles($uid);
+        if (!$_pn || !is_array($_pn)) {
+            // Do we have info on the profile? If we do, then it could just be a linking issue
+            jrCore_logger('CRI', "no profiles found for user_id {$uid} ({$_rt['user_name']})", $_rt);
+            return false;
+        }
+        if (!isset($_pn[$pid]) && $_rt['user_group'] == 'user') {
+            // Bad profile id
+            $pid = jrUser_get_profile_home_key('_profile_id');
+            if (!isset($_pn[$pid])) {
+                // We cannot figure out this user's profile
+                jrCore_logger('CRI', "invalid linked profiles found for user_id {$uid} ({$_rt['user_name']})", $_rt);
+                return true;
+            }
+        }
+        $_rt['user_linked_profile_ids'] = implode(',', array_keys($_pn));
+
+        // Bring in Profile Info
+        // NOTE: We do not skip_triggers here - this way quota data gets added in
+        $_tm = jrCore_db_get_item('jrProfile', $pid, false, true);
+        if ($_tm && is_array($_tm)) {
+            $_rt['profile_created'] = $_tm['_created'];
+            $_rt['profile_updated'] = $_tm['_updated'];
+            $_rt                    = array_merge($_tm, $_rt);
+        }
+        $_rt['_item_id']               = $uid;
+        $_rt['_user_id']               = $uid;
+        $_rt['_profile_id']            = $pid;
+        $_rt['user_active_profile_id'] = $pid;
+        return $_rt;
+
+    }
+    return false;
+}
+
+/**
+ * Return array of user info used for logged out users
+ * @return array
+ */
+function jrUser_get_logged_out_user_session()
+{
+    global $_conf;
+    return array(
+        'profile_quota_id' => 0,
+        'user_language'    => $_conf['jrUser_default_language'],
+        'is_logged_in'     => 'no'
+    );
 }
 
 /**
@@ -3356,18 +3760,14 @@ function jrUser_get_saved_location()
  */
 function jrUser_save_url_location($url = null)
 {
-    global $_user;
     if (!jrUser_is_logged_in()) {
         return false;
     }
     if (is_null($url)) {
         $url = jrCore_get_current_url();
     }
-    $uid = (int) $_user['_user_id'];
-    $url = jrCore_db_escape($url);
-    $tbl = jrCore_db_table_name('jrUser', 'url');
-    $req = "INSERT INTO {$tbl} (user_id, user_url) VALUES ('{$uid}', '{$url}') ON DUPLICATE KEY UPDATE user_url = '{$url}'";
-    return jrCore_db_query($req, 'COUNT', false, null, false);
+    $_SESSION['user_memory_url'] = $url;
+    return true;
 }
 
 /**
@@ -3377,21 +3777,10 @@ function jrUser_save_url_location($url = null)
  */
 function jrUser_get_saved_url_location($user_id = 0)
 {
-    global $_user;
     if (!jrUser_is_logged_in()) {
         return false;
     }
-    if ($user_id === 0 || !jrCore_checktype($user_id, 'number_nz')) {
-        $user_id = (int) $_user['_user_id'];
-    }
-    $uid = (int) $user_id;
-    $tbl = jrCore_db_table_name('jrUser', 'url');
-    $req = "SELECT user_url FROM {$tbl} WHERE user_id = '{$uid}'";
-    $_rt = jrCore_db_query($req, 'SINGLE', false, null, false);
-    if ($_rt && isset($_rt['user_url'])) {
-        return $_rt['user_url'];
-    }
-    return false;
+    return (isset($_SESSION['user_memory_url'])) ? $_SESSION['user_memory_url'] : false;
 }
 
 /**
@@ -3401,17 +3790,10 @@ function jrUser_get_saved_url_location($user_id = 0)
  */
 function jrUser_delete_saved_url_location($user_id = 0)
 {
-    global $_user;
-    if (!jrUser_is_logged_in()) {
-        return false;
+    if (isset($_SESSION['user_memory_url'])) {
+        unset($_SESSION['user_memory_url']);
     }
-    if ($user_id === 0 || !jrCore_checktype($user_id, 'number_nz')) {
-        $user_id = (int) $_user['_user_id'];
-    }
-    $uid = (int) $user_id;
-    $tbl = jrCore_db_table_name('jrUser', 'url');
-    $req = "DELETE FROM {$tbl} WHERE user_id = '{$uid}'";
-    return jrCore_db_query($req, 'COUNT', false, null, false);
+    return true;
 }
 
 /**
@@ -3619,11 +4001,13 @@ function jrUser_get_lang_name($code)
  */
 function jrUser_get_bot_name()
 {
-    require_once APP_DIR . "/modules/jrUser/contrib/crawler-detect/CrawlerDetect.php";
-    require_once APP_DIR . "/modules/jrUser/contrib/crawler-detect/Fixtures/AbstractProvider.php";
-    require_once APP_DIR . "/modules/jrUser/contrib/crawler-detect/Fixtures/Crawlers.php";
-    require_once APP_DIR . "/modules/jrUser/contrib/crawler-detect/Fixtures/Exclusions.php";
-    require_once APP_DIR . "/modules/jrUser/contrib/crawler-detect/Fixtures/Headers.php";
+    if (!class_exists('CrawlerDetect')) {
+        require_once APP_DIR . "/modules/jrUser/contrib/crawler-detect/CrawlerDetect.php";
+        require_once APP_DIR . "/modules/jrUser/contrib/crawler-detect/Fixtures/AbstractProvider.php";
+        require_once APP_DIR . "/modules/jrUser/contrib/crawler-detect/Fixtures/Crawlers.php";
+        require_once APP_DIR . "/modules/jrUser/contrib/crawler-detect/Fixtures/Exclusions.php";
+        require_once APP_DIR . "/modules/jrUser/contrib/crawler-detect/Fixtures/Headers.php";
+    }
     $cd = new CrawlerDetect;
     if ($cd->isCrawler()) {
         return "bot: " . $cd->getMatches();
@@ -3639,11 +4023,11 @@ function jrUser_get_bot_name()
  */
 function jrUser_save_daily_stat($key, $value)
 {
-    $dat = strftime('%Y%m%d');
+    $dat = (int) strftime('%Y%m%d');
     $key = jrCore_db_escape($key);
     $val = (int) $value;
     $tbl = jrCore_db_table_name('jrUser', 'stat');
-    $req = "INSERT IGNORE INTO {$tbl} (stat_date, stat_key, stat_value) VALUES ('{$dat}', '{$key}', '{$val}')";
+    $req = "INSERT IGNORE INTO {$tbl} (stat_date, stat_key, stat_value) VALUES ({$dat}, '{$key}', {$val})";
     return jrCore_db_query($req, 'COUNT');
 }
 
@@ -3678,6 +4062,343 @@ function jrUser_whois_lookup($ip)
         }
     }
     return $_res;
+}
+
+/**
+ * Check if a given name is a reserved name
+ * @param string $name
+ * @returns bool
+ */
+function jrUser_is_reserved_name($name)
+{
+    $_names = array(
+        'about',
+        'access',
+        'account',
+        'accounts',
+        'add',
+        'address',
+        'adm',
+        'admin',
+        'administration',
+        'adult',
+        'advertising',
+        'affiliate',
+        'affiliates',
+        'ajax',
+        'analytics',
+        'android',
+        'anon',
+        'anonymous',
+        'api',
+        'app',
+        'apps',
+        'archive',
+        'atom',
+        'auth',
+        'authentication',
+        'avatar',
+        'backup',
+        'banner',
+        'banners',
+        'billing',
+        'bin',
+        'blog',
+        'blogs',
+        'board',
+        'bot',
+        'bots',
+        'business',
+        'cache',
+        'cadastro',
+        'calendar',
+        'campaign',
+        'careers',
+        'cgi',
+        'chat',
+        'client',
+        'cliente',
+        'code',
+        'comercial',
+        'compare',
+        'compras',
+        'config',
+        'connect',
+        'contact',
+        'contest',
+        'create',
+        'css',
+        'dashboard',
+        'data',
+        'db',
+        'delete',
+        'demo',
+        'design',
+        'designer',
+        'dev',
+        'devel',
+        'dir',
+        'directory',
+        'doc',
+        'docs',
+        'domain',
+        'download',
+        'downloads',
+        'ecommerce',
+        'edit',
+        'editor',
+        'email',
+        'faq',
+        'favorite',
+        'feed',
+        'feedback',
+        'file',
+        'files',
+        'flog',
+        'follow',
+        'forgot',
+        'forgotpass',
+        'forgot_pass',
+        'forgotpassword',
+        'forgot_password',
+        'forum',
+        'forums',
+        'free',
+        'ftp',
+        'gadget',
+        'gadgets',
+        'games',
+        'group',
+        'groups',
+        'guest',
+        'help',
+        'home',
+        'homepage',
+        'host',
+        'hosting',
+        'hostname',
+        'hpg',
+        'html',
+        'http',
+        'httpd',
+        'https',
+        'image',
+        'images',
+        'imap',
+        'img',
+        'index',
+        'indice',
+        'info',
+        'information',
+        'intranet',
+        'invite',
+        'ipad',
+        'iphone',
+        'irc',
+        'java',
+        'javascript',
+        'job',
+        'jobs',
+        'js',
+        'knowledgebase',
+        'list',
+        'lists',
+        'log',
+        'login',
+        'log_in',
+        'logon',
+        'log_on',
+        'logout',
+        'log_out',
+        'logs',
+        'mail',
+        'mail1',
+        'mail2',
+        'mail3',
+        'mail4',
+        'mail5',
+        'mailer',
+        'mailing',
+        'manager',
+        'marketing',
+        'master',
+        'me',
+        'media',
+        'message',
+        'messenger',
+        'microblog',
+        'microblogs',
+        'mine',
+        'mob',
+        'mobile',
+        'movie',
+        'movies',
+        'mp3',
+        'msg',
+        'msn',
+        'music',
+        'musicas',
+        'mx',
+        'my',
+        'mysql',
+        'name',
+        'named',
+        'net',
+        'network',
+        'new',
+        'news',
+        'newsletter',
+        'nick',
+        'nickname',
+        'notes',
+        'noticias',
+        'ns',
+        'ns1',
+        'ns2',
+        'ns3',
+        'ns4',
+        'old',
+        'online',
+        'operator',
+        'order',
+        'orders',
+        'page',
+        'pager',
+        'pages',
+        'panel',
+        'pass',
+        'passchange',
+        'pass_change',
+        'password',
+        'passwordchange',
+        'password_change',
+        'perl',
+        'photo',
+        'photoalbum',
+        'photos',
+        'php',
+        'pic',
+        'pics',
+        'plugin',
+        'plugins',
+        'pop',
+        'pop3',
+        'post',
+        'postfix',
+        'postmaster',
+        'posts',
+        'profile',
+        'project',
+        'projects',
+        'promo',
+        'pub',
+        'public',
+        'python',
+        'random',
+        'register',
+        'registration',
+        'root',
+        'rss',
+        'ruby',
+        'sale',
+        'sales',
+        'sample',
+        'samples',
+        'script',
+        'scripts',
+        'search',
+        'secure',
+        'security',
+        'send',
+        'service',
+        'setting',
+        'settings',
+        'setup',
+        'shop',
+        'signin',
+        'signup',
+        'site',
+        'sitemap',
+        'sites',
+        'smtp',
+        'soporte',
+        'sql',
+        'ssh',
+        'stage',
+        'staging',
+        'start',
+        'stat',
+        'static',
+        'stats',
+        'status',
+        'store',
+        'stores',
+        'subdomain',
+        'subscribe',
+        'suporte',
+        'support',
+        'system',
+        'tablet',
+        'tablets',
+        'talk',
+        'task',
+        'tasks',
+        'tech',
+        'telnet',
+        'test',
+        'test1',
+        'test2',
+        'test3',
+        'teste',
+        'tests',
+        'theme',
+        'themes',
+        'tmp',
+        'todo',
+        'tools',
+        'tv',
+        'update',
+        'upload',
+        'url',
+        'usage',
+        'user',
+        'username',
+        'usuario',
+        'vendas',
+        'video',
+        'videos',
+        'visitor',
+        'web',
+        'webmail',
+        'webmaster',
+        'website',
+        'websites',
+        'win',
+        'workshop',
+        'ww',
+        'wws',
+        'www',
+        'www1',
+        'www2',
+        'www3',
+        'www4',
+        'www5',
+        'www6',
+        'www7',
+        'wwws',
+        'wwww',
+        'xpg',
+        'xxx',
+        'you',
+        'yourdomain',
+        'yourname',
+        'yoursite',
+        'yourusername'
+    );
+    if (in_array(jrCore_str_to_lower(trim($name)), $_names)) {
+        return true;
+    }
+    return false;
 }
 
 //------------------------------------
@@ -3717,9 +4438,13 @@ function _jrUser_mysql_session_read($sid)
     global $_conf;
     $exp = ($_conf['jrUser_session_expire_min'] * 60);
     $tbl = jrCore_db_table_name('jrUser', 'session');
-    $req = "SELECT session_data FROM {$tbl} WHERE session_id = '" . jrCore_db_escape($sid) . "' AND session_updated > (UNIX_TIMESTAMP() - {$exp})";
+    $req = "SELECT session_sync, session_data FROM {$tbl} WHERE session_id = '" . jrCore_db_escape($sid) . "' AND session_updated > (UNIX_TIMESTAMP() - {$exp})";
     $_rt = jrCore_db_query($req, 'SINGLE');
-    return ($_rt && isset($_rt['session_data']{0})) ? $_rt['session_data'] : '';
+    if ($_rt && is_array($_rt)) {
+        jrCore_set_flag('user_session_sync', $_rt['session_sync']);
+        return $_rt['session_data'];
+    }
+    return '';
 }
 
 /**
@@ -3731,15 +4456,32 @@ function _jrUser_mysql_session_read($sid)
  */
 function _jrUser_mysql_session_write($sid, $val)
 {
-    global $_post;
-    // check out _user_id
+    global $_conf, $_post;
+
+    // check for user and profile id's
     if (!isset($_SESSION['_user_id']) || !is_numeric($_SESSION['_user_id'])) {
         $_SESSION['_user_id'] = '0';
     }
     if (!isset($_SESSION['_profile_id']) || !is_numeric($_SESSION['_profile_id'])) {
         $_SESSION['_profile_id'] = '0';
     }
-    // Check for user action for Who is Online...
+
+    // Check for bot sessions
+    if (!empty($_SESSION['user_name'])) {
+        $nam = mb_substr($_SESSION['user_name'], 0, 127);
+    }
+    else {
+        $nam = jrUser_get_bot_name();
+        if (strpos($nam, 'bot:') === 0) {
+            if (isset($_conf['jrUser_bot_sessions']) && $_conf['jrUser_bot_sessions'] == 'off') {
+                // We're not doing sessions for bots
+                return true;
+            }
+        }
+    }
+    $nam = jrCore_db_escape($nam);
+
+    // Get user action
     $ad1 = '';
     $ad2 = '';
     $ad3 = '';
@@ -3758,13 +4500,17 @@ function _jrUser_mysql_session_write($sid, $val)
     $qid = (isset($_SESSION['profile_quota_id']) && is_numeric($_SESSION['profile_quota_id'])) ? intval($_SESSION['profile_quota_id']) : 0;
     $val = jrCore_db_escape($val);
     $uip = jrCore_db_escape(jrCore_get_ip());
-    $nam = (isset($_SESSION['user_name']) && strlen($_SESSION['user_name']) > 0) ? jrCore_db_escape(mb_substr($_SESSION['user_name'], 0, 127)) : jrCore_db_escape(jrUser_get_bot_name());
-    $grp = (isset($_SESSION['user_group'])) ? jrCore_db_escape($_SESSION['user_group']) : '';
+
+    $grp = 'user';
+    if (isset($_SESSION['user_group']) && ($_SESSION['user_group'] == 'master' || $_SESSION['user_group'] == 'admin')) {
+        $grp = $_SESSION['user_group'];
+    }
+
     $tbl = jrCore_db_table_name('jrUser', 'session');
     $req = "INSERT INTO {$tbl} (session_id,session_updated,session_user_id,session_user_name,session_user_group,session_profile_id,session_quota_id,session_user_ip{$ad1},session_data)
             VALUES ('{$sid}',UNIX_TIMESTAMP(),'{$_SESSION['_user_id']}','{$nam}','{$grp}','{$_SESSION['_profile_id']}','{$qid}','{$uip}'{$ad2},'{$val}')
             ON DUPLICATE KEY UPDATE session_updated = UNIX_TIMESTAMP(),session_user_id = '{$_SESSION['_user_id']}',session_user_name = '{$nam}',session_user_group = '{$grp}',
-            session_profile_id = '{$_SESSION['_profile_id']}',session_quota_id = '{$qid}',session_user_ip = '{$uip}'{$ad3},session_data = VALUES(session_data)";
+            session_profile_id = '{$_SESSION['_profile_id']}',session_quota_id = '{$qid}',session_user_ip = '{$uip}'{$ad3},session_sync = 0,session_data = VALUES(session_data)";
     jrCore_db_query($req);
     return true;
 }
@@ -3777,11 +4523,10 @@ function _jrUser_mysql_session_write($sid, $val)
  */
 function _jrUser_mysql_session_destroy($sid)
 {
-    // Session table cleanup
-    $tbl = jrCore_db_table_name('jrUser', 'session');
-    $exp = isset($_conf['jrUser_session_expire_min']) ? ($_conf['jrUser_session_expire_min'] * 60) : 7200;
+    // Destroy a session
     $sid = jrCore_db_escape($sid);
-    $req = "DELETE FROM {$tbl} WHERE session_id = '{$sid}' OR session_updated < (UNIX_TIMESTAMP() - {$exp})";
+    $tbl = jrCore_db_table_name('jrUser', 'session');
+    $req = "DELETE FROM {$tbl} WHERE session_id = '{$sid}'";
     jrCore_db_query($req);
     return true;
 }
@@ -3806,8 +4551,9 @@ function _jrUser_mysql_session_collect($max)
  */
 function _jrUser_mysql_session_delete_session_id($sid)
 {
+    $sid = jrCore_db_escape($sid);
     $tbl = jrCore_db_table_name('jrUser', 'session');
-    $req = "DELETE FROM {$tbl} WHERE session_id = '" . jrCore_db_escape($sid) . "'";
+    $req = "DELETE FROM {$tbl} WHERE session_id = '{$sid}'";
     return jrCore_db_query($req, 'COUNT');
 }
 
@@ -3834,8 +4580,35 @@ function _jrUser_mysql_session_remove($user_id)
             return false;
         }
     }
-    $req = "DELETE FROM {$tbl} WHERE session_user_id IN(" . implode(',', $user_id) . ')';
-    return jrCore_db_query($req, 'COUNT');
+    $req = "SELECT session_id FROM {$tbl} WHERE session_user_id IN(" . implode(',', $user_id) . ')';
+    $_rt = jrCore_db_query($req, 'session_id');
+    if ($_rt && is_array($_rt)) {
+        $req = "DELETE FROM {$tbl} WHERE session_id IN('" . implode("','", array_keys($_rt)) . "')";
+        return jrCore_db_query($req, 'COUNT');
+    }
+    return false;
+}
+
+/**
+ * @ignore
+ * Remove all sessions for a specific user id except active session
+ * @param $user_id mixed User ID or array of User ID's
+ * @param $active_sid string Active session ID
+ * @return mixed
+ */
+function _jrUser_mysql_session_remove_all_other_sessions($user_id, $active_sid)
+{
+    // Remove all session entries for a user id
+    $sid = jrCore_db_escape($active_sid);
+    $uid = (int) $user_id;
+    $tbl = jrCore_db_table_name('jrUser', 'session');
+    $req = "SELECT session_id FROM {$tbl} WHERE session_user_id = '{$uid}' AND session_id != '{$sid}'";
+    $_rt = jrCore_db_query($req, 'session_id');
+    if ($_rt && is_array($_rt)) {
+        $req = "DELETE FROM {$tbl} WHERE session_id IN('" . implode("','", array_keys($_rt)) . "')";
+        jrCore_db_query($req);
+    }
+    return true;
 }
 
 /**
@@ -3876,20 +4649,80 @@ function _jrUser_mysql_session_sync_for_quota($quota_id, $state)
         return false;
     }
     $tbl = jrCore_db_table_name('jrUser', 'session');
-    $req = "UPDATE {$tbl} SET session_sync = {$flg} WHERE session_quota_id IN(" . implode(',', $_qi) . ')';
-    return jrCore_db_query($req);
+    $req = "SELECT session_id FROM {$tbl} WHERE session_quota_id IN(" . implode(',', $_qi) . ')';
+    $_rt = jrCore_db_query($req, 'session_id');
+    if ($_rt && is_array($_rt)) {
+        $req = "UPDATE {$tbl} SET session_sync = {$flg} WHERE session_id IN('" . implode("','", array_keys($_rt)) . "')";
+        return jrCore_db_query($req);
+    }
+    return false;
+}
+
+/**
+ * Set the session_sync flag for a User ID
+ * @param int $user_id User ID to session sync flag for
+ * @param $state string on|off
+ * @return mixed
+ */
+function _jrUser_mysql_session_sync_for_user_id($user_id, $state)
+{
+    $flg = ($state == 'on') ? 1 : 0;
+    $_us = array();
+    if (jrCore_checktype($user_id, 'number_nz')) {
+        $_us[] = (int) $user_id;
+    }
+    elseif (is_array($user_id)) {
+        foreach ($user_id as $uid) {
+            if (jrCore_checktype($uid, 'number_nz')) {
+                $_us[] = (int) $uid;
+            }
+        }
+    }
+    if (count($_us) === 0) {
+        return false;
+    }
+    $tbl = jrCore_db_table_name('jrUser', 'session');
+    $req = "SELECT session_id FROM {$tbl} WHERE session_user_id IN(" . implode(',', $_us) . ')';
+    $_rt = jrCore_db_query($req, 'session_id');
+    if ($_rt && is_array($_rt)) {
+        $req = "UPDATE {$tbl} SET session_sync = {$flg} WHERE session_id IN('" . implode("','", array_keys($_rt)) . "')";
+        return jrCore_db_query($req);
+    }
+    return false;
 }
 
 /**
  * @ignore
  * Get number of active online users
  * @param $length int Max number of seconds with no activity a session is considered "active"
+ * @param $type string type of online user count to get = combined|bot|user|visitor
  * @return int
  */
-function _jrUser_mysql_session_online_user_count($length)
+function _jrUser_mysql_session_online_user_count($length, $type = 'combined')
 {
+    global $_conf;
     $tbl = jrCore_db_table_name('jrUser', 'session');
-    $req = "SELECT COUNT(DISTINCT(session_user_ip)) AS online FROM {$tbl} WHERE session_updated > (UNIX_TIMESTAMP() - " . intval($length) . ") AND session_user_name NOT LIKE 'bot:%'";
+    switch ($type) {
+        case 'bot':
+            if (isset($_conf['jrUser_bot_sessions']) && $_conf['jrUser_bot_sessions'] == 'off') {
+                // We are NOT tracking bot sessions - return 0
+                return 0;
+            }
+            $req = "SELECT COUNT(DISTINCT(session_user_ip)) AS online FROM {$tbl} WHERE session_updated > (UNIX_TIMESTAMP() - " . intval($length) . ") AND session_user_name LIKE 'bot:%'";
+            break;
+        case 'visitor':
+            // user_id = 0 and is not a bot
+            $req = "SELECT COUNT(DISTINCT(session_user_ip)) AS online FROM {$tbl} WHERE session_updated > (UNIX_TIMESTAMP() - " . intval($length) . ") AND session_user_id = 0 AND session_user_name NOT LIKE 'bot:%'";
+            break;
+        case 'user':
+            // user_id > 0
+            $req = "SELECT COUNT(DISTINCT(session_user_ip)) AS online FROM {$tbl} WHERE session_updated > (UNIX_TIMESTAMP() - " . intval($length) . ") AND session_user_id > 0";
+            break;
+        default:
+            // combined user + visitor
+            $req = "SELECT COUNT(DISTINCT(session_user_ip)) AS online FROM {$tbl} WHERE session_updated > (UNIX_TIMESTAMP() - " . intval($length) . ") AND session_user_name NOT LIKE 'bot:%'";
+            break;
+    }
     $_rt = jrCore_db_query($req, 'SINGLE');
     if ($_rt && is_array($_rt) && isset($_rt['online'])) {
         return intval($_rt['online']);
@@ -3908,7 +4741,7 @@ function _jrUser_mysql_session_online_user_ids($length = 900, $_ids = null)
 {
     $tbl = jrCore_db_table_name('jrUser', 'session');
     $req = "SELECT session_user_id AS i, session_updated AS u FROM {$tbl} WHERE session_updated > (UNIX_TIMESTAMP() - " . intval($length) . ")";
-    if (!is_null($_ids) && is_array($_ids)) {
+    if (is_array($_ids)) {
         foreach ($_ids as $k => $uid) {
             $_ids[$k] = (int) $uid;
         }
@@ -3931,18 +4764,38 @@ function _jrUser_mysql_session_online_user_ids($length = 900, $_ids = null)
 function _jrUser_mysql_session_online_user_info($length = 900, $search = null)
 {
     $sst = '';
-    $tbl = jrCore_db_table_name('jrUser', 'session');
     if (!is_null($search) && strlen($search) > 0) {
         $sst = jrCore_db_escape($search);
-        $sst = " AND (s.session_user_action LIKE '%{$sst}%' OR s.session_user_name LIKE '%{$sst}%' OR s.session_user_group LIKE '%{$sst}%' OR s.session_user_ip LIKE '%{$sst}%')";
+        $sst = " AND (session_user_action LIKE '%{$sst}%' OR session_user_name LIKE '%{$sst}%' OR session_user_ip LIKE '%{$sst}%')";
     }
-    $req = "SELECT s.*, CONCAT(s.session_user_name, s.session_user_ip, s.session_user_id) AS gb FROM {$tbl} s
-        INNER JOIN (SELECT MAX(session_updated) AS session_updated, session_user_ip, session_user_id FROM {$tbl} GROUP BY session_user_ip, session_user_id) p ON (s.session_updated = p.session_updated AND s.session_user_ip = p.session_user_ip AND s.session_user_id = p.session_user_id)
-             WHERE s.session_updated > (UNIX_TIMESTAMP() - " . intval($length) . "){$sst}
-             GROUP BY gb ORDER BY s.session_updated DESC, s.session_user_id DESC";
-    $_rt = jrCore_db_query($req, 'NUMERIC');
-    if ($_rt && is_array($_rt)) {
-        return $_rt;
+    $tbl = jrCore_db_table_name('jrUser', 'session');
+    $req = "SELECT session_id AS i, session_updated AS u, session_user_id AS uid, session_user_name AS n, session_user_group AS g,
+                   session_profile_id AS pid, session_quota_id AS q, session_user_ip AS ip, session_user_action AS a, session_sync AS s FROM {$tbl}
+             WHERE session_updated > (UNIX_TIMESTAMP() - " . intval($length) . "){$sst}
+             ORDER BY session_updated DESC, session_user_id DESC";
+    $_ss = jrCore_db_query($req, 'NUMERIC');
+    if ($_ss && is_array($_ss)) {
+        $_rt = array();
+        foreach ($_ss as $s) {
+            $key = "{$s['n']}:{$s['ip']}:{$s['uid']}";
+            if (!isset($_rt[$key])) {
+                $_rt[$key] = array(
+                    'session_id'          => $s['i'],
+                    'session_updated'     => $s['u'],
+                    'session_user_id'     => $s['uid'],
+                    'session_user_name'   => $s['n'],
+                    'session_user_group'  => $s['g'],
+                    'session_profile_id'  => $s['pid'],
+                    'session_quota_id'    => $s['q'],
+                    'session_user_ip'     => $s['ip'],
+                    'session_user_action' => $s['a'],
+                    'session_sync'        => $s['s']
+                );
+            }
+        }
+        if (count($_rt) > 0) {
+            return array_values($_rt);
+        }
     }
     return false;
 }
@@ -4093,15 +4946,8 @@ function smarty_function_jrUser_whos_online($params, $smarty)
     if (isset($params['length']) && jrCore_checktype($params['length'], 'number_nz')) {
         $tim = intval($params['length'] * 60); //  override (in minutes)
     }
-    $tbl = jrCore_db_table_name('jrUser', 'session');
-    $req = "SELECT CONCAT_WS('_',session_user_ip,session_user_group,session_user_id) AS session_uniq, session_updated, session_user_id, session_quota_id, session_user_action FROM {$tbl} WHERE session_updated > (UNIX_TIMESTAMP() - {$tim})";
-    if (isset($params['quota_id']) && jrCore_checktype($params['quota_id'], 'number_nz')) {
-        $req .= " AND session_quota_id = '" . intval($params['quota_id']) . "'";
-    }
-    $req .= " GROUP BY session_uniq ORDER BY session_updated DESC";
-
-    $_su = jrCore_db_query($req, 'NUMERIC');
-    if (isset($_su) && is_array($_su)) {
+    $_su = jrUser_session_online_user_info($tim);
+    if ($_su && is_array($_su)) {
         $_id = array();
         foreach ($_su as $_session) {
             if ($_session['session_user_id'] > 0) {

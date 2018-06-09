@@ -588,7 +588,7 @@ function view_jrSoundCloud_search($_post, $_user, $_conf)
 
             // Show the search results
             $purl            = "{$_conf['jrCore_base_url']}/{$murl}/img/{$_post['module_url']}/button_play_soundcloud.png";
-            $dat[0]['title'] = '<a href="javascript:void(0);" onclick="javascript:window.open(\'http://w.soundcloud.com/player/?url=http%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F' . $_x['id'] . '&auto_play=TRUE&show_artwork=true\',\'Popup\',\'toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=no,width=520,height=186,left=200,top=200\');"><img src="' . $purl . '" alt="play" border="0"></a>';
+            $dat[0]['title'] = '<a onclick="window.open(\'http://w.soundcloud.com/player/?url=http%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F' . $_x['id'] . '&auto_play=TRUE&show_artwork=true\',\'Popup\',\'toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=no,width=520,height=186,left=200,top=200\');"><img src="' . $purl . '" alt="play" border="0"></a>';
             $dat[0]['class'] = 'center';
             $dat[1]['title'] = $_x['title'];
             $dat[2]['title'] = $_x['user']['username'];

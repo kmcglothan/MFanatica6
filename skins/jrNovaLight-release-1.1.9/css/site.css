@@ -1,0 +1,79 @@
+#wrapper {
+    margin:0 auto;
+}
+
+/* @title Site Content */
+/* @help This is the main Site Content holder */
+#content {
+    max-width:1280px;
+    margin-left:auto;  /* @ignore */
+    margin-right:auto; /* @ignore */
+    height:100%; /* @ignore */
+    font-size:16px;
+    padding:0;
+}
+
+/* @title Outer Div */
+/* @help This is the Outer Div */
+.outer {
+    background-color:transparent;
+    padding:0;
+    font-size:12px;
+    -webkit-border-radius:8px;
+    -moz-border-radius:8px;
+    border-radius:8px;
+}
+/* @title Head Inner Div */
+/* @help This is the inner div for the site header */
+.head_inner {
+    background-color:#FFFFFF;
+    padding:6px;
+    -webkit-border-radius:4px;
+    -moz-border-radius:4px;
+    border:1px solid #999999;
+    border-radius:4px 4px 0 0;
+}
+/* @title Inner Div */
+/* @help This is the inner div */
+.inner {
+    background-color:#FFFFFF;
+    padding:6px;
+    -webkit-border-radius:4px;
+    -moz-border-radius:4px;
+    border-radius:4px;
+    border:1px solid #999999;
+}
+/* @title Featured Div */
+/* @help This is the Featured Artist, Featured Song and Featured Video section */
+.finner {
+    background-color:#FFFFFF;
+    height:245px;
+    padding:6px;
+    -webkit-border-radius:4px;
+    -moz-border-radius:4px;
+    border-radius:4px;
+    border:1px solid #999999;
+}
+/* @title Search Box */
+/* @help The modal window site search box */
+.search_box {
+    background-color:#FFFFFF;
+    padding:25px;
+    margin:12px;
+    font-size:16px;
+    color:#000000;
+    border-radius:5px;
+}
+
+/* @title Search Box Links */
+/* @help The modal window site search box link color */
+.search_box a {
+    color:#F7DD4F;
+    text-decoration:none;
+}
+/* @title Search Box Links Hover */
+/* @help The modal window site search box hover link color */
+.search_box a:hover {
+    color:#333333;
+    text-decoration:underline;
+}

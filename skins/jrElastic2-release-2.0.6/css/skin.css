@@ -1,0 +1,487 @@
+li {
+    list-style: outside none none;
+}
+
+.item li {
+    list-style: unset;
+}
+
+.wrap {
+    padding: 1em;
+}
+
+.center {
+    text-align: center;
+}
+
+.img_scale {
+    width: 100%;
+}
+
+.index {
+    background: #333333 url("{$jrElastic2_img_url}/1.jpg") no-repeat fixed 50% 0 / 100% auto;
+    box-shadow: 0 0 130px rgba(0, 0, 0, 0.35) inset;
+    position: relative;
+    color: #EEEEEE;
+    font-size: 18px;
+    min-height: 450px;
+    padding: 60px 1em;
+}
+
+.index .overlay, .dark .overlay {
+    background: rgba(22, 30, 52, 0.8) none no-repeat scroll 0 0;
+    height: 100%;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+
+}
+
+.index_form .form_text {
+    background: white none repeat scroll 0 0;
+    border: none;
+    border-radius: 2px;
+    color: #A3A6A9;
+    font-size: 16px;
+    margin: 0 0 1em;
+    padding: 8px 12px;
+    width: 92%;
+}
+
+.index_form .form_text:focus {
+    border: none;
+}
+
+.index_form {
+    background: rgba(22, 30, 52, 0.8) none no-repeat scroll 0 0;
+    border-radius: 4px;
+    color: #CCCCCC;
+    margin: auto;
+    max-width: 350px;
+}
+
+.index_form .wrap {
+    padding: 20px;
+}
+
+.index_form a {
+    color: white;
+    font-weight: bold;
+}
+
+.index_form {
+    color: #CCCCCC;
+}
+
+.row.index_sign_up {
+    max-width: 840px;
+}
+
+.index_sign_up > .wrap {
+    padding: 12px;
+}
+
+.index_form input[type="button"] {
+    background: rgba(0, 0, 0, 0) linear-gradient(rgba(100, 100, 100, 0.6), rgba(100, 100, 100, 0.3)) repeat scroll 0 0;
+    border: medium none;
+    border-radius: 4px;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 0 0 rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.25);
+    color: white;
+    font-size: 20px;
+    height: auto;
+    padding: 10px;
+    text-transform: capitalize;
+    width: 100%;
+}
+
+.index_form input[type="button"]:hover {
+    background: rgba(0, 0, 0, 0) linear-gradient(rgba(160, 160, 160, 0.6), rgba(160, 160, 160, 0.3)) repeat scroll 0 0;
+}
+
+.index_form input[type="button"].login, .index_form input[type="button"].login:hover {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    font-size: 18px;
+    text-align: center;
+    cursor: pointer;
+    text-transform: none;
+}
+
+.index_form .form_notice {
+    margin: 1em 0;
+}
+
+.index_form .form_help_button {
+    display: none;
+}
+
+.index_form .page_content {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    border-radius: 0;
+    box-shadow: none;
+    color: inherit;
+    margin: 0;
+    padding: 0;
+}
+
+.index_form .element_left {
+    display: none;
+}
+
+.index_form .element_right {
+    padding: 0;
+    width: 100%;
+}
+
+.index_form .form_submit_section {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    padding: 0;
+}
+
+.index_form .form_submit_box {
+    padding: 15px 0 0 0;
+}
+
+.index_form select {
+    display: none;
+}
+
+.index_form iframe {
+    height: 200px;
+    padding-top: 10px;
+}
+
+.index h1 {
+    color: white;
+    font-size: 48px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-shadow: 1px 1px 3px #000000;
+    text-transform: uppercase;
+}
+
+.index_form .element_right {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+}
+
+.index_form .form_submit_box {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+}
+
+.social.clearfix > li {
+    float: left;
+    margin: 0 10px;
+}
+
+.social li a {
+    display: block;
+    height: 50px;
+    width: 50px;
+}
+
+.social li a.social-facebook {
+    background: rgba(0, 0, 0, 0) url("{$jrElastic2_img_url}/social-facebook.png") no-repeat scroll 0 0;
+}
+
+.social li a.social-twitter {
+    background: rgba(0, 0, 0, 0) url("{$jrElastic2_img_url}/social-twitter.png") no-repeat scroll 0 0;
+}
+
+.social li a.social-google {
+    background: rgba(0, 0, 0, 0) url("{$jrElastic2_img_url}/social-google.png") no-repeat scroll 0 0;
+}
+
+.social li a.social-linkedin {
+    background: rgba(0, 0, 0, 0) url("{$jrElastic2_img_url}/social-linkedin.png") no-repeat scroll 0 0;
+}
+
+.social li a.social-youtube {
+    background: rgba(0, 0, 0, 0) url("{$jrElastic2_img_url}/social-youtube.png") no-repeat scroll 0 0;
+}
+
+.social li a.social-facebook:hover,
+.social li a.social-twitter:hover,
+.social li a.social-linkedin:hover,
+.social li a.social-youtube:hover,
+.social li a.social-google:hover {
+    background-position: 0 -50px;
+}
+
+section.white {
+    background: white none repeat scroll 0 0;
+}
+
+section .col12 h1 {
+    color: #555555;
+    font-size: 21px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.image {
+    border-radius: 5px;
+    box-shadow: 0 0 8px #666666;
+    margin-top: 1em;
+    overflow: hidden;
+    position: relative;
+}
+
+.white a {
+    color: #446688;
+}
+
+.white.alt {
+    background: #F3F3F3 none repeat scroll 0 0;
+}
+
+.list_item {
+    background: white none repeat scroll 0 0;
+    border-radius: 5px;
+    margin: 2px 0;
+}
+
+.white .add_to_cart_section {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    box-shadow: none;
+    float: right;
+    margin: 0 10px 0 0;
+}
+
+.white .add_to_cart_price {
+    display: none;
+}
+
+.white .like_button_box {
+    float: right;
+}
+
+.white .item {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+}
+
+.item.blogpost {
+    color: #777777;
+    font-size: 16px;
+    line-height: 1.5;
+    padding: 0;
+}
+
+.blogpost .p10 {
+    padding: 0 40px 20px 0;
+}
+
+.float-right {
+    float: right;
+}
+
+.head > h1 {
+    color: #333333;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.item.blogpost > h1 {
+    display: block;
+    font-size: 22px;
+    margin: 0 0 10px;
+}
+
+.elastic_list > li {
+    list-style: outside none disc;
+    padding: 5px 0;
+}
+
+.elastic_list {
+    margin: 2em;
+    padding: 0;
+}
+
+section.dark {
+    position: relative;
+}
+
+section.dark .col12 h1 {
+    color: white;
+}
+
+section .row {
+    position: relative;
+}
+
+.dark {
+    color: white;
+}
+
+.calendar {
+    background: #333333 url("{$jrElastic2_img_url}/2.jpg") no-repeat fixed 50% 50% / cover;
+}
+
+.dark a {
+    color: white;
+}
+
+.table.event, .table.audio {
+    border-bottom: 1px dashed #666666;
+    margin: 5px 0;
+    padding-bottom: 5px;
+}
+
+.list {
+    padding: 1em 0;
+}
+
+.table.audio .button_player div.jp-interface ul.jp-controls li {
+    float: none;
+}
+
+.wrap.gallery {
+    padding: 10px;
+}
+
+.event_attend_button {
+    font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #FFFFFF linear-gradient(#FFFFFF, #EEEEEE) repeat scroll 0 0;
+    border: 1px solid #CCCCCC;
+    border-radius: 2px;
+    box-shadow: none;
+    color: #555555;
+    padding: 3px 5px;
+}
+
+.dark .form_button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.button_player img, .sc_button_player img {
+    width: 100%;
+}
+
+.dark .button_player {
+    width: 30px;
+    min-width: 30px;
+}
+
+.dark.audio {
+    background: #333333 url("{$jrElastic2_img_url}/3.jpg") no-repeat fixed 50% 50% / cover;
+}
+
+.head {
+    font-size: 16px;
+    text-transform: uppercase;
+}
+
+.white, .dark {
+    padding: 80px 0;
+}
+
+.white small {
+    color: #999999;
+}
+
+.dark .img_scale, .index .img_scale {
+    border-radius: 5px;
+    box-shadow: 0 0 8px #222222;
+}
+
+.dark.calendar .img_scale {
+    border-radius: 5px;
+    box-shadow: 0 0 8px #000000;
+}
+
+.table.forum {
+    border-bottom: 1px dashed #DDDDDD;
+    margin: 5px 0;
+    width: auto;
+}
+
+.plugin .footer #branding a {
+    color: white !important;
+}
+
+.name {
+    color: white !important;
+}
+
+.hover {
+    background: rgba(22, 30, 52, 0.8) none no-repeat scroll 0 0;
+    color: white;
+    height: 101%;
+    left: 0;
+    position: absolute;
+    text-align: center;
+    top: 0;
+    width: 100%;
+    opacity: 0;
+    transition: all 0.25s ease 0.25s;
+    transform: rotate(360deg);
+}
+
+.hover:hover {
+    opacity: 1;
+    transform: rotate(0deg);
+}
+
+.p5 {
+    padding: 5px;
+}
+
+.p10 {
+    padding: 10px;
+}
+
+.p20 {
+    padding: 20px;
+}
+
+.hover .table {
+    height: 100%;
+}
+
+.hover a {
+    color: white;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.hover .sprite_icon {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    border: medium none;
+    box-shadow: none;
+}
+
+.blogpost .img_scale {
+    border-radius: 5px;
+    box-shadow: 0 0 8px #666666;
+}
+
+section.calendar, section.audio, section.core, section.videos, section.gallery {
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.blog_image {
+    float: right;
+    margin: 12px;
+    width: 35%;
+}
+
+.event-date {
+    width: 180px;
+    text-align: right
+}
+
+.event-attending {
+    width: 80px;
+    text-align: right
+}
+
+.right {
+    text-align: right;
+}
+
+.rounded {
+    border-radius: 2px;
+}

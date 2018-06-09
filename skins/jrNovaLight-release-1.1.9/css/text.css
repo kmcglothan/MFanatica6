@@ -1,0 +1,125 @@
+/*
+ * Jamroom 5 Nova CSS
+ * Copyright 2003-2011 by Talldude Networks, LLC.
+ * @author Brian Johnson - brian@talldude.net
+ */
+
+/* @title Rank */
+/* @help This is the ranking number */
+.rank {
+    font-size:20px;
+    text-align:center;
+    color:#033652;
+    padding:0;
+}
+
+/* @title Normal */
+/* @help This is the regular body text */
+.normal {
+	font-size:12px;
+    color:#111111;
+}
+/* @title Hilited */
+/* @help This is the hilite text */
+.hilite {
+    background-color: #033652;
+	font-size:12px;
+	font-weight:bold;
+    color:#FC0;
+}
+
+/* @title Media Title */
+/* @help This is the Media Title text. */
+.media_title {
+	text-transform:capitalize;
+	font-size:12px;
+	font-weight:bold;
+    color:#111111;
+}
+/* @title Media Title Link */
+/* @help This is the Media Title link text */
+.media_title a {
+    color:#033652;
+    text-decoration:none;
+}
+/* @title Media Title Hover */
+/* @help This is the Media Title hover text */
+.media_title a:hover {
+    color:#000;
+    text-decoration:underline;
+}
+/* @title Leader */
+/* @help This is the Leader section of the block titles. */
+.leader {
+    background:#BBBBBB;
+    color:#111111;
+    font-size:18px;
+    padding-left:12px;
+}
+/* Tag Cloud fonts */
+
+/* @title Tag Cloud Fonts */
+/* @help The Tag Cloud font */
+div.jqcloud {
+    font-family:Tahoma,Verdana,Helvetica,Arial,sans-serif;
+    font-size: 10px;
+    line-height: normal;
+}
+
+div.jqcloud a {
+    font-size: inherit;
+    text-decoration: none;
+}
+
+div.jqcloud span.w10 { font-size: 550%; }
+div.jqcloud span.w9 { font-size: 500%; }
+div.jqcloud span.w8 { font-size: 450%; }
+div.jqcloud span.w7 { font-size: 400%; }
+div.jqcloud span.w6 { font-size: 350%; }
+div.jqcloud span.w5 { font-size: 300%; }
+div.jqcloud span.w4 { font-size: 250%; }
+div.jqcloud span.w3 { font-size: 200%; }
+div.jqcloud span.w2 { font-size: 150%; }
+div.jqcloud span.w1 { font-size: 100%; }
+
+/* Tag Cloud colors */
+
+/* @title Tag Cloud Font Main Color */
+/* @help The Tag Cloud font main color */
+div.jqcloud { color: #D6DDFF; }
+div.jqcloud a { color: inherit; }
+div.jqcloud a:hover { text-decoration:underline; }
+/* @title Tag Cloud Link Hover */
+/* @help The Tag Cloud link hover color */
+div.jqcloud a:hover { color: #333333; }
+/* @title Tag Cloud Text Color 10 */
+/* @help The Tag Cloud weight 10 text color */
+div.jqcloud span.w10 { color: #0373AE; }
+/* @title Tag Cloud Text Color 9 */
+/* @help The Tag Cloud weight 9 text color */
+div.jqcloud span.w9 { color: #0373AE; }
+/* @title Tag Cloud Text Color 8 */
+/* @help The Tag Cloud weight 8 text color */
+div.jqcloud span.w8 { color: #0373AE; }
+/* @title Tag Cloud Text Color 7 */
+/* @help The Tag Cloud weight 7 text color */
+div.jqcloud span.w7 { color: #033652; }
+/* @title Tag Cloud Text Color 6 */
+/* @help The Tag Cloud weight 6 text color */
+div.jqcloud span.w6 { color: #034062; }
+/* @title Tag Cloud Text Color 5 */
+/* @help The Tag Cloud weight 5 text color */
+div.jqcloud span.w5 { color: #036294; }
+/* @title Tag Cloud Text Color 4 */
+/* @help The Tag Cloud weight 4 text color */
+div.jqcloud span.w4 { color: #035B89; }
+/* @title Tag Cloud Text Color 3 */
+/* @help The Tag Cloud weight 3 text color */
+div.jqcloud span.w3 { color: #034C73; }
+/* @title Tag Cloud Text Color 2 */
+/* @help The Tag Cloud weight 2 text color */
+div.jqcloud span.w2 { color: #033652; }
+/* @title Tag Cloud Text Color 1 */
+/* @help The Tag Cloud weight 1 text color */
+div.jqcloud span.w1 { color: #033652; }
+

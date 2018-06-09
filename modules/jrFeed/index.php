@@ -440,7 +440,7 @@ function view_jrFeed_default($_post, $_user, $_conf)
                         elseif (isset($_itm["{$pfx}_body"])) {
                             $description = $_itm["{$pfx}_body"];
                         }
-                        $_rt['_items'][$k]['description'] = ($description) ? jrCore_replace_emoji(jrCore_strip_html(smarty_modifier_jrCore_format_string($description, 0))) : '';
+                        $_rt['_items'][$k]['description'] = ($description) ? jrCore_replace_emoji(jrCore_strip_html(smarty_modifier_jrCore_format_string(nl2br($description), 0), 'br')) : '';
                         break;
                 }
                 $_rt['_items'][$k]['pubdate'] = strftime("%a, %d %b %Y %T %z", $_itm['_created']);

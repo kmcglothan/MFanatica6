@@ -2,7 +2,7 @@
 /**
  * Jamroom Banned Items module
  *
- * copyright 2016 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -53,8 +53,9 @@ function jrBanned_db_schema()
         "ban_updated INT(10) UNSIGNED NOT NULL DEFAULT '0'",
         "ban_type VARCHAR(32) NOT NULL DEFAULT ''",
         "ban_value VARCHAR(128) NOT NULL DEFAULT ''",
+        "ban_note VARCHAR(4096) NOT NULL DEFAULT ''",
         "UNIQUE ban_key (ban_type,ban_value)",
         "INDEX ban_value (ban_value)"
     );
-    jrCore_db_verify_table('jrBanned', 'banned', $_tmp, 'MyISAM');
+    jrCore_db_verify_table('jrBanned', 'banned', $_tmp, 'InnoDB');
 }

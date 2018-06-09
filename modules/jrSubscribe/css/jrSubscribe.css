@@ -1,0 +1,84 @@
+/* @title Subscription Plan Box */
+/* @help The div that holds each subscription plan */
+.sub-plan-box {
+    min-height:335px;
+    padding:8px;
+    margin:5px 20px 20px 5px;
+    border:1px solid #EDEDED;
+    border-radius:8px;
+    box-shadow: 0 0 2px 0 #000;
+}
+
+/* @title Subscription Plan Box Header */
+/* @help The header class inside each subscription plan box*/
+.sub-header {
+    background-color: #EDEDED;
+    text-align: center;
+    padding: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: capitalize;
+    white-space: nowrap;
+    color: #000000;
+}
+
+/* @title Subscription Header H2 */
+/* @help The subscription header H2 element */
+.sub-header h2 {
+    color:#000;
+}
+/* @title Subscription Plan Features */
+/* @help The div that holds the features for each subscription plan */
+.sub-features {
+    font-size: 13px;
+    padding:10px;
+    font-variant: small-caps;
+}
+
+.sub-features ul {
+    list-style:circle inside url('{$jrSubscribe_img_url}/checkmark_green.png');
+    font-variant: normal;
+}
+
+.sub-features ul li {
+    font-size:14px;
+    padding:5px;
+    margin-left:-40px;
+}
+
+.sub-features li:nth-child(odd) {
+    background-color:#EDEDED;
+    box-shadow:0 0 1px #999;
+    padding:5px;
+    color: #000000;
+}
+
+/* @title Subscription Plan Price */
+/* @help The div that holds the price for each subscription plan */
+.sub-price {
+    text-align:center;
+    font-size: 13px;
+    padding:10px;
+}
+
+/* @title Subscription Plan Price H4 */
+/* @help The H4 element for the subscription price */
+.sub-price h4{
+    font-size: 14px;
+    font-weight:bold;
+}
+
+#sub-price-modal {
+    width: 300px;
+    height: 80px;
+}
+
+#sub-price-message {
+    display: inline-block;
+    margin: 0 0 10px 5px;
+}
+
+#sub-price-text {
+    width: 150px;
+}
+

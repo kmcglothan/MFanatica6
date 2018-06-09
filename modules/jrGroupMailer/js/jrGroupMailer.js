@@ -1,4 +1,4 @@
-// Jamroom 5 jrGroupMailer module Javascript
+// Jamroom jrGroupMailer module Javascript
 // @copyright 2003-2011 by Talldude Networks LLC
 // @author Paul Asher - paul@jamroom.net
 

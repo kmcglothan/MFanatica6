@@ -1,5 +1,42 @@
 Search module change log
 
+Version 2.0.4:
+ - Bug Fix: Search strings in quotes could return invalid results depending on module searched
+ - Bug Fix: Possible error if BOTH dedicated index and disabled option is checked for a module
+
+Version 2.0.3:
+ - Bug Fix: "AND" and "OR" search operators may return more or less results than they should
+
+Version 2.0.2:
+ - Bug Fix: Removing the last tag from an item was not removing it from the search index
+
+Version 2.0.1:
+ - New: Better search results when searching for exact matches using quotes
+
+Version 2.0.0:
+ - New: Dedicated module search index support enabled in "Unique Module Index" global config
+ - New: Ability to set the Search result display order added to Global Config
+ - New: "Disabled Modules" Global Config setting to disable searching specific modules
+ - Change: Updated search SQL query to be a bit faster on really large search indexes
+ - Change: Module index search button no longer shows if there are no items
+ - Change: Search results for empty set shows "results not found" instead of Page Not Found
+ - Bug Fix: Index Rebuild tool could cause high load due to rapid cache create/delete
+ - Bug Fix: Updating an item may not update all values in item entry in search index
+ - Bug Fix: Direct URL to a module search could return all items instead of matched items
+
+Version 1.7.3:
+ - New: Support added for "jrSearch_match_limit" advanced config key to set internal match limit
+ - Change: Default internal match limit raised from 1000 to 10000 match results
+
+Version 1.7.2:
+ - Bug Fix: Search result function not returning comments with the correct pagination
+
+Version 1.7.1:
+ - Bug Fix: Full Text search index not being removed when Developer Tools "Reset System" tool is run
+
+Version 1.7.0:
+ - New: Support added for "full_text" match operator when using jrCore_db_search_items()
+
 Version 1.6.6:
  - Bug Fix: SQL error on some installs due to schema check for InnoDB tables
 

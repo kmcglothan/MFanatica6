@@ -2,7 +2,7 @@
 /**
  * Jamroom Users module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -110,7 +110,7 @@ $lang[64]  = 'Notifications';
 $lang[65]  = 'Do Not Notify';
 $lang[66]  = 'Send Email';
 $lang[67]  = 'Send Private Note';
-$lang[68]  = 'Please enter an email address - you will not be able to retrieve your account information if you need it!';
+$lang[68]  = 'Please enter an email address - without an email address you will not be able to retrieve your account information if needed.';
 $lang[69]  = 'This is a quick email to let you know that your email address on your';
 $lang[70]  = 'account has been changed to';
 $lang[71]  = 'If you did NOT change this in your account, please login ASAP and change your email address back, and let us know.';
@@ -167,3 +167,8 @@ $lang[121] = 'Your Email Address will be removed from all future notifications';
 $lang[122] = 'disable all notifications';
 $lang[123] = 'An email with an unsubscribe confirm link has been sent to ';
 $lang[124] = 'Please open that email and confirm you wish to unsubscribe or login and change your notifications from the notifications tab.';
+$lang[125] = 'Enter the email address or username you used to signup with.';
+$lang[126] = 'has signed up';
+$lang[127] = 'has logged in';
+$lang[128] = 'Users';
+$lang[129] = 'You have entered an invalid User Name';

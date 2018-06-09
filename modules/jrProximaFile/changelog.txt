@@ -1,0 +1,9 @@
+Proxima File changelog
+
+Version 1.1.0:
+ - New: "download" and "stream" view functions for downloading/streaming files
+ - Change: Updates and performance improvements to work with new Proxima Core 2.0
+ - Change: Files attached to objects are now returned in a separate _files array
+
+Version 1.0.0:
+ - Initial Release

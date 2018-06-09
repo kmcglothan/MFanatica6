@@ -1,5 +1,34 @@
 Site Builder Core module changelog
 
+Version 2.2.0:
+ - Change: page_container.tpl and page_row_column.tpl updated with page specific CSS classes
+ - Change: Improved performance with updates to page rendering and display
+ - Bug Fix: Possible "Smarty: Source: Missing name" error in HTML and Template widgets
+
+Version 2.1.5:
+ - Change: Saving with no content in the HTML widget shows correct error instead of Smarty error
+ - Bug Fix: Widgets with a corrupt widget title could cause a blank site builder page
+
+Version 2.1.4:
+ - Change: default template shows to non-master users if Site Builder page fails to load
+
+Version 2.1.3:
+ - Bug Fix: Notification numbers visible in the menu on some skins
+
+Version 2.1.2:
+ - Bug Fix: ordered lists not showing numbers to admin in Site Builder
+
+Version 2.1.1:
+ - Change: Updated to use new core provided jrCore_confirm() and jrCore_alert() prompts
+ - Change: Text changed in some sections to make actions more clear
+ - Bug Fix: "add" button when creating a new menu entry could be cut off on some skins
+
+Version 2.1.0:
+ - New: Updated template syntax error checking is now provided by System Core 6.1.0
+ - New: Tabbed container tabs can now be accessed by their title on a hash in the page url
+ - New: Updated to work with Sitemap module to add custom Site Builder pages to sitemap.xml
+ - Change: pressing tab to move between fields in forms has been improved
+
 Version 2.0.2:
  - Bug Fix: Possible SQL Error when running an Integrity Check
 

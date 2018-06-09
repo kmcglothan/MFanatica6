@@ -1,5 +1,14 @@
 RSS Feed Reader module changelog
 
+Version 1.2.4:
+ - Bug Fix: Newline breaks were being stripped from multi line feed content
+
+Version 1.2.3:
+ - Change: Example RSS feed updated to a currently working URL
+
+Version 1.2.2:
+ - Change: RSS Feeds created by the module are now cached
+
 Version 1.2.1:
  - Change: Modules must now register the "feed_support" module feature to allow module RSS Feeds
 

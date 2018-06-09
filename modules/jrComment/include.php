@@ -2,20 +2,17 @@
 /**
  * Jamroom Comments module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0.  Please see the included "license.html" file.
+ * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
+ *
+ * This Source Code is subject to the terms of the Jamroom Network
+ * Commercial License -  please see the included "license.html" file.
  *
  * This module may include works that are not developed by
  * The Jamroom Network
  * and are used under license - any licenses are included and
  * can be found in the "contrib" directory within this module.
- *
- * Jamroom may use modules and skins that are licensed by third party
- * developers, and licensed under a different license  - please
- * reference the individual module or skin license that is included
- * with your installation.
  *
  * This software is provided "as is" and any express or implied
  * warranties, including, but not limited to, the implied warranties
@@ -49,7 +46,7 @@ function jrComment_meta()
     $_tmp = array(
         'name'        => 'Comments',
         'url'         => 'comment',
-        'version'     => '1.9.4',
+        'version'     => '2.0.4',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Adds Users Comments to Profiles and Item Detail pages',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/275/comments',
@@ -81,10 +78,12 @@ function jrComment_init()
     jrCore_register_event_listener('jrFeed', 'create_rss_feed', 'jrComment_create_rss_feed_listener');
     jrCore_register_event_listener('jrMarket', 'updated_module', 'jrComment_updated_module_listener');
     jrCore_register_event_listener('jrProfile', 'item_detail_view', 'jrComment_item_detail_view_listener');
+    jrCore_register_event_listener('jrImage', 'item_image_info', 'jrComment_item_image_info_listener');
 
     // Let the core Action System know we are adding action Support
     jrCore_register_module_feature('jrCore', 'quota_support', 'jrComment', 'on');
     jrCore_register_module_feature('jrCore', 'pending_support', 'jrComment', 'on');
+    jrCore_register_module_feature('jrCore', 'attachment_support', 'jrComment', 'comment_file');
     jrCore_register_module_feature('jrCore', 'action_support', 'jrComment', 'create', 'item_action.tpl');
 
     // Pulse Key support
@@ -147,24 +146,79 @@ function jrComment_init()
  */
 function jrComment_verify_db_worker($_queue)
 {
+    ini_set('max_execution_time', 28800); // 8 hours max
     // Add comment_thread_id to items that do not have it
-    $_rt = jrCore_db_get_items_missing_key('jrComment', 'comment_thread_id');
-    if ($_rt && is_array($_rt)) {
-        $_up = array();
-        while (true) {
+    $max = 0;
+    $cnt = 0;
+    while (true) {
+        $max++;
+        $_rt = jrCore_db_get_items_missing_key('jrComment', 'comment_thread_id', 2000);
+        if ($_rt && is_array($_rt)) {
+            $tot = count($_rt);
+            $_up = array();
             foreach ($_rt as $k => $id) {
                 $_up[$id] = array('comment_thread_id' => $id);
-                if ($k > 0 && ($k % 1000) === 0 && count($_up) > 0) {
-                    jrCore_db_update_multiple_items('jrComment', $_up);
+                $cnt++;
+                if (($cnt % 200) === 0 || ($k + 1) >= $tot) {
+                    jrCore_db_update_multiple_items('jrComment', $_up, null, false, false);
                     $_up = array();
                 }
             }
-            if (count($_up) > 0) {
-                jrCore_db_update_multiple_items('jrComment', $_up);
+        }
+        else {
+            if ($cnt > 0) {
+                jrCore_logger('INF', "added correct comment_thread_id key to " . jrCore_number_format($cnt) . " comments");
             }
             break;
         }
-        jrCore_logger('INF', "added correct comment_thread_id key to " . jrCore_number_format(count($_rt)) . " comments");
+        if ($max > 1000) {
+            // fail safe - break out
+            jrCore_logger('CRI', "failsafe hit adding comment_thread_id key to comments");
+            break;
+        }
+    }
+    // Add comment_item_ckey and comment_profile_ckey to items
+    $max = 0;
+    $cnt = 0;
+    while (true) {
+        $max++;
+        $_rt = jrCore_db_get_items_missing_key('jrComment', 'comment_item_ckey', 2000);
+        if ($_rt && is_array($_rt)) {
+            $tot = count($_rt);
+            $_id = array();
+            foreach ($_rt as $k => $id) {
+                $_id[] = $id;
+                $cnt++;
+                if (($cnt % 200) === 0 || ($k + 1) >= $tot) {
+                    $_cm = jrCore_db_get_multiple_items('jrComment', $_id, null, true);
+                    if ($_cm && is_array($_cm)) {
+                        $_up = array();
+                        foreach ($_cm as $c) {
+                            $iid       = (int) $c['_item_id'];
+                            $_up[$iid] = array(
+                                'comment_item_ckey'    => "{$c['comment_item_id']}:{$c['comment_module']}:i",
+                                'comment_profile_ckey' => "{$c['comment_profile_id']}:{$c['comment_module']}:p"
+                            );
+                        }
+                        if (count($_up) > 0) {
+                            jrCore_db_update_multiple_items('jrComment', $_up, null, false, false);
+                            $_id = array();
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            if ($cnt > 0) {
+                jrCore_logger('INF', "added comment_item_ckey compound key to " . jrCore_number_format($cnt) . " comments");
+            }
+            break;
+        }
+        if ($max > 1000) {
+            // fail safe - break out
+            jrCore_logger('CRI', "failsafe hit adding comment_item_ckey compound key to comments");
+            break;
+        }
     }
     return true;
 }
@@ -247,6 +301,40 @@ function jrComment_item_comments_feature($module, $_item, $params, $smarty)
 //---------------------
 
 /**
+ * Block comment images for comments on private items
+ * @param $_data string Array of information from trigger
+ * @param $_user array Current user
+ * @param $_conf array Global Config
+ * @param $_args array additional parameters passed in by trigger caller
+ * @param $event string Triggered Event name
+ * @return string
+ */
+function jrComment_item_image_info_listener($_data, $_user, $_conf, $_args, $event)
+{
+    global $_user, $_post;
+    if (isset($_post['option']) && $_post['option'] == 'image' && isset($_post['module']) && $_post['module'] == 'jrComment' && isset($_post['_2']) && jrCore_checktype($_post['_2'], 'number_nz')) {
+
+        /** @noinspection PhpUnusedLocalVariableInspection */
+        $_user = jrUser_session_start(false);
+
+        if (!jrUser_is_admin()) {
+            // Is this a private comment?
+            $cid = (int) $_post['_2'];
+            $tbl = jrCore_db_table_name('jrComment', 'private_id');
+            $req = "SELECT profile_id AS p FROM {$tbl} WHERE comment_id = {$cid}";
+            $_rt = jrCore_db_query($req, 'SINGLE');
+            if ($_rt && is_array($_rt) && isset($_rt['p'])) {
+                if (!jrProfile_is_profile_owner($_rt['p'])) {
+                    $_data['profile_private'] = 0;
+                }
+            }
+        }
+
+    }
+    return $_data;
+}
+
+/**
  * Updated module - ensure private_id table is populated
  * @param array $_data incoming data array
  * @param array $_user current user info
@@ -258,14 +346,9 @@ function jrComment_item_comments_feature($module, $_item, $params, $smarty)
 function jrComment_minute_maintenance_listener($_data, $_user, $_conf, $_args, $event)
 {
     // Kick off private comment collector if we're empty
-    $tbl = jrCore_db_table_name('jrComment', 'private_id');
-    $req = "SELECT COUNT(*) AS c FROM {$tbl}";
-    $_rt = jrCore_db_query($req, 'SINGLE');
-    if ($_rt && is_array($_rt) && isset($_rt['c']) && intval($_rt['c']) === 0) {
-
+    if (jrCore_db_number_rows('jrComment', 'private_id') > 0) {
         // We have no items in our private_id table - kick off queue entry to gather
         jrCore_queue_create('jrComment', 'private_id', array('truncate' => false));
-
     }
     return $_data;
 }
@@ -357,10 +440,10 @@ function jrComment_repair_module_listener($_data, $_user, $_conf, $_args, $event
     if ($num > 0) {
 
         // Verify comments
-        jrCore_queue_create('jrComment', 'verify_db', array('count' => $num));
+        jrCore_queue_create('jrComment', 'verify_db', array('count' => $num), 0, null, 1);
 
         // Reset and reload private comments
-        jrCore_queue_create('jrComment', 'private_id', array('truncate' => true));
+        jrCore_queue_create('jrComment', 'private_id', array('truncate' => true), 0, null, 1);
 
     }
 
@@ -477,12 +560,7 @@ function jrComment_db_get_item_listener($_data, $_user, $_conf, $_args, $event)
 {
     global $_conf;
     if ($_args['module'] == 'jrComment' && is_array($_data)) {
-        if (isset($_data['profile_url'])) {
-            $purl = $_data['profile_url'];
-        }
-        else {
-            $purl = jrCore_db_get_item_key('jrProfile', $_data['_profile_id'], 'profile_url');
-        }
+        $purl = jrCore_db_get_item_key('jrProfile', $_data['comment_profile_id'], 'profile_url');
         if ($purl) {
             $murl                 = jrCore_get_module_url($_data['comment_module']);
             $_data['comment_url'] = "{$_conf['jrCore_base_url']}/{$purl}/{$murl}/{$_data['comment_item_id']}";
@@ -627,10 +705,10 @@ function jrComment_db_search_items_listener($_data, $_user, $_conf, $_args, $eve
         foreach ($_data['_items'] as $k => $_v) {
             $_id[] = $_v['comment_profile_id'];
         }
+        $_ur = array();
         if (count($_id) > 0) {
             $_pr = jrCore_db_get_multiple_items('jrProfile', $_id, array('_profile_id', 'profile_url'));
             if ($_pr && is_array($_pr)) {
-                $_ur = array();
                 foreach ($_pr as $_p) {
                     $_ur["{$_p['_profile_id']}"] = $_p['profile_url'];
                 }
@@ -746,8 +824,7 @@ function jrComment_get_comment_ids_for_item($module, $item_id)
     $iid = (int) $item_id;
     $_rt = array(
         'search'              => array(
-            "comment_item_id = {$iid}",
-            "comment_module = {$module}"
+            "% = {$iid}:{$module}:i"
         ),
         'return_item_id_only' => true,
         'skip_triggers'       => true,

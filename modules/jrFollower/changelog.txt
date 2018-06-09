@@ -1,5 +1,14 @@
 Profile Followers module changelog
 
+Version 1.5.7:
+ - New: Added custom item_index_help.tpl file to display in place of default profile help template
+
+Version 1.5.6:
+ - Change: Wording for "Approve Followers" changed to "Followers Require Approval"
+
+Version 1.5.5:
+ - New: "Following" profile section updated to show all profiles the profile user(s) are following
+
 Version 1.5.4:
  - Bug Fix: It is possible to follow a profile that doesn't exist if you know the follow url structure
 
@@ -50,11 +59,11 @@ Version 1.2.0:
  - Change: Email links to browse now include profile id and name for better multi-profile use
 
 Version 1.1.1:
- - Bug Fix: Approve Followers checkbox still showing in some cases when module was disabled
+ - Bug Fix: Followers Require Approval checkbox still showing in some cases when module was disabled
 
 Version 1.1.0:
  - New: Follower Integrity Check tool to validate Profile Follower counts
- - Bug Fix: Approve Followers checkbox in Profile Settings still showing when module is disabled
+ - Bug Fix: Followers Require Approval checkbox in Profile Settings still showing when module is disabled
  - Bug Fix: profile follower count key not being updated properly on follower create/delete
 
 Version 1.0.6:

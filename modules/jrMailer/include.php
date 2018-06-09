@@ -2,7 +2,7 @@
 /**
  * Jamroom Email Support module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -49,7 +49,7 @@ function jrMailer_meta()
     $_tmp = array(
         'name'        => 'Email Support',
         'url'         => 'mailer',
-        'version'     => '2.3.0',
+        'version'     => '2.3.4',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Core support for Sending Email via an SMTP Server',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2864/email-core',
@@ -71,7 +71,7 @@ function jrMailer_init()
 {
     // Register our JS
     jrCore_register_module_feature('jrCore', 'css', 'jrMailer', 'jrMailer.css');
-    jrCore_register_module_feature('jrCore', 'javascript', 'jrMailer', 'jrMailer.js');
+    jrCore_register_module_feature('jrCore', 'javascript', 'jrMailer', 'jrMailer.js', 'admin');
 
     // Register our email plugin
     jrCore_register_system_plugin('jrMailer', 'email', 'smtp', 'SMTP Server configured in Delivery Settings (default)');
@@ -106,8 +106,7 @@ function jrMailer_init()
     jrCore_register_event_trigger('jrMailer', 'campaign_result_row', 'Fired in stats results for detail row');
 
     // Our Geo queue worker
-    jrCore_register_queue_worker('jrMailer', 'process_stats', 'jrMailer_process_stats_worker', 0, 3, 170);
-    jrCore_register_queue_worker('jrMailer', 'process_agent', 'jrMailer_process_agent_worker', 0, 1, 300);
+    jrCore_register_queue_worker('jrMailer', 'process_stats', 'jrMailer_process_stats_worker', 0, 1, 170);
     return true;
 }
 
@@ -182,76 +181,50 @@ function jrMailer_process_stats_worker($_queue)
 {
     // Update Geo Location if enabled
     if (jrCore_module_is_active('jrGeo')) {
+
         $pid = $_queue['pid'];
         $tbl = jrCore_db_table_name('jrMailer', 'track');
-        $req = "UPDATE {$tbl} SET t_lat = '_pid_{$pid}' WHERE LENGTH(t_ip) > 0 AND LENGTH(t_lat) = 0 LIMIT 20";
+        $req = "UPDATE {$tbl} SET t_lat = '_pid_{$pid}' WHERE t_ip != '' AND t_lat = '' LIMIT 1000";
         $cnt = jrCore_db_query($req, 'COUNT');
         if ($cnt && $cnt > 0) {
 
             // We have rows to update
-            $req = "SELECT t_id, t_cid, t_uid, t_ip FROM {$tbl} WHERE t_lat = '_pid_{$pid}'";
+            $req = "SELECT t_id, t_cid, t_uid, t_ip, t_agent FROM {$tbl} WHERE t_lat = '_pid_{$pid}'";
             $_rt = jrCore_db_query($req, 'NUMERIC');
             if ($_rt && is_array($_rt)) {
-                $_rs = array();
                 foreach ($_rt as $s) {
-                    $req = false;
+
+                    // Get Agent info
+                    $inf = '';
+                    if (strlen($s['t_agent']) > 0) {
+                        $_in = jrMailer_get_browser_info($s['t_agent']);
+                        if ($_in && is_array($_in)) {
+                            $inf = jrCore_db_escape(json_encode($_in));
+                        }
+                    }
+
+                    // Get IP Info
+                    $lat = '';
+                    $lng = '';
+                    $cny = '';
+                    $rgn = '';
+                    $cty = '';
                     if (strlen($s['t_ip']) > 0) {
                         $_ip = jrGeo_location($s['t_ip']);
                         if ($_ip && is_array($_ip) && isset($_ip['latitude'])) {
                             $lat = jrCore_db_escape($_ip['latitude']);
                             $lng = jrCore_db_escape($_ip['longitude']);
-
-                            // Change some country's for Google Maps
-                            switch ($_ip['country_name']) {
-                                case 'Russian Federation':
-                                    $_ip['country_name'] = 'Russia';
-                                    break;
-                            }
-
                             $cny = jrCore_db_escape(jrCore_strip_emoji($_ip['country_name'], false));
                             $rgn = jrCore_db_escape(jrCore_strip_emoji($_ip['region'], false));
                             $cty = jrCore_db_escape(jrCore_strip_emoji($_ip['city'], false));
-                            $req = "UPDATE {$tbl} SET t_lat = '{$lat}', t_long = '{$lng}', t_country = '{$cny}', t_region = '{$rgn}', t_city = '{$cty}' WHERE t_id = '{$s['t_id']}'";
-                            jrCore_db_query($req);
                         }
                     }
-                    if (!$req) {
-                        // Could not get info
-                        $_rs[] = $s['t_id'];
-                    }
-                }
-                if (count($_rs) > 0) {
-                    $req = "UPDATE {$tbl} SET t_lat = '0', t_long = '0', t_country = '?', t_region = '?', t_city = '?' WHERE t_id IN(" . implode(',', $_rs) . ')';
+
+                    // Update
+                    $req = "UPDATE {$tbl} SET t_time = UNIX_TIMESTAMP(), t_lat = '{$lat}', t_long = '{$lng}', t_country = '{$cny}', t_region = '{$rgn}', t_city = '{$cty}', t_agent = '{$inf}' WHERE t_id = {$s['t_id']}";
                     jrCore_db_query($req);
                 }
             }
-        }
-    }
-    return true;
-}
-
-/**
- * Update Agent info
- * @param $_queue array Queue entry
- * @return bool
- */
-function jrMailer_process_agent_worker($_queue)
-{
-    $max = 100;
-    $tbl = jrCore_db_table_name('jrMailer', 'track');
-    $req = "SELECT t_id, t_agent FROM {$tbl} WHERE t_infou = 0 LIMIT {$max}";
-    $_rt = jrCore_db_query($req, 't_id', false, 't_agent', false, null, false);
-    if ($_rt && is_array($_rt)) {
-        foreach ($_rt as $tid => $agent) {
-            $inf = '';
-            if (strlen($agent) > 0) {
-                $_in = jrMailer_get_browser_info($agent);
-                if ($_in && is_array($_in)) {
-                    $inf = jrCore_db_escape(json_encode($_in));
-                }
-            }
-            $req = "UPDATE {$tbl} SET t_info = '{$inf}', t_infou = UNIX_TIMESTAMP() WHERE t_id = '{$tid}'";
-            jrCore_db_query($req);
         }
     }
     return true;
@@ -303,8 +276,9 @@ function jrMailer_newsletter_filters_listener($_data, $_user, $_conf, $_args, $e
 function jrMailer_minute_maintenance_listener($_data, $_user, $_conf, $_args, $event)
 {
     // NOTE: We only ever have 1 queue entry active at any time for process_stats
-    jrCore_queue_create('jrMailer', 'process_stats', array('pid' => getmypid()), 0, null, 1);
-    jrCore_queue_create('jrMailer', 'process_agent', array('pid' => getmypid()), 0, null, 1);
+    if (jrCore_module_is_active('jrGeo')) {
+        jrCore_queue_create('jrMailer', 'process_stats', array('pid' => getmypid()), 0, null, 1);
+    }
     return $_data;
 }
 
@@ -358,6 +332,7 @@ function jrMailer_notify_user_listener($_data, $_user, $_conf, $_args, $event)
  */
 function jrMailer_hourly_maintenance_listener($_data, $_user, $_conf, $_args, $event)
 {
+    // Gather bounces
     $_bounces = jrCore_trigger_event('jrMailer', 'gather_bounces', array());
     if ($_bounces && is_array($_bounces)) {
 
@@ -379,6 +354,12 @@ function jrMailer_hourly_maintenance_listener($_data, $_user, $_conf, $_args, $e
         }
         jrCore_trigger_event('jrMailer', 'process_bounces', $_bounces);
     }
+
+    // Makes sure any hung Geo workers are reset
+    $tbl = jrCore_db_table_name('jrMailer', 'track');
+    $req = "UPDATE {$tbl} SET t_lat = '' WHERE t_lat LIKE '_pid_%' AND t_time < (UNIX_TIMESTAMP() - 3600)";
+    jrCore_db_query($req);
+
     return $_data;
 }
 
@@ -497,8 +478,12 @@ function jrMailer_daily_maintenance_listener($_data, $_user, $_conf, $_args, $ev
     if (isset($_conf['jrMailer_throttle']) && jrCore_checktype($_conf['jrMailer_throttle'], 'number_nz')) {
         $min = strftime('%y%m%d%H%M');
         $tbl = jrCore_db_table_name('jrMailer', 'throttle');
-        $req = "DELETE FROM {$tbl} WHERE t_min < {$min}";
-        jrCore_db_query($req);
+        $req = "SELECT t_min FROM {$tbl} WHERE t_min < {$min}";
+        $_rt = jrCore_db_query($req, 't_min');
+        if ($_rt && is_array($_rt) && count($_rt) > 0) {
+            $req = "DELETE FROM {$tbl} WHERE t_min IN(" . implode(',', array_keys($_rt)) . ')';
+            jrCore_db_query($req);
+        }
     }
     return $_data;
 }
@@ -517,7 +502,7 @@ function jrMailer_template_variables_listener($_data, $_user, $_conf, $_args, $e
     if (isset($_data['jr_template']) && ($_data['jr_template'] == 'email_preferences_footer.tpl' || $_data['jr_template'] == 'email_preferences_html_footer.tpl')) {
         if ($cid = jrMailer_get_active_campaign_id()) {
             // We have an active campaign - add to unsubscribe URL so we can track unsubscribes
-            $md5                      = md5($cid);
+            $md5 = md5($cid);
             if (strpos($_data['unsubscribe_url'], '?r=1')) {
                 $_data['unsubscribe_url'] = jrCore_strip_url_params($_data['unsubscribe_url'], array('r'));
                 $_data['unsubscribe_url'] = "{$_data['unsubscribe_url']}/r=1/cid={$md5}";
@@ -589,9 +574,6 @@ function jrMailer_form_display_listener($_data, $_user, $_conf, $_args, $event)
                         'value' => $_post['cid']
                     );
                     jrCore_form_field_create($_tmp);
-                }
-                else {
-                    // We know the user VIEWED this one
                 }
                 break;
 
@@ -777,6 +759,26 @@ function jrMailer_system_check_listener($_data, $_user, $_conf, $_args, $event)
 //-----------------------------------
 
 /**
+ * Get the adjusted country name for the Google Geo map
+ * @param string $country
+ * @return bool|string
+ */
+function jrMailer_get_country_name_for_map($country)
+{
+    switch ($country) {
+        case 'Russian Federation':
+            return 'Russia';
+            break;
+        default:
+            if (strpos($country, ',')) {
+                return substr($country, 0, strpos($country, ','));
+            }
+            break;
+    }
+    return $country;
+}
+
+/**
  * Return TRUE if viewer is a "real" viewer
  * @return bool
  */
@@ -807,7 +809,9 @@ function jrMailer_is_real_user_agent()
  */
 function jrMailer_get_browser_info($agent)
 {
-    require_once APP_DIR . '/modules/jrMailer/contrib/PhpUserAgent/Source/UserAgentParser.php';
+    if (!function_exists('parse_user_agent')) {
+        require_once APP_DIR . '/modules/jrMailer/contrib/PhpUserAgent/Source/UserAgentParser.php';
+    }
     if ($_rt = parse_user_agent($agent)) {
         if (is_null($_rt['platform']) && stripos(' ' . $agent, 'windows')) {
             $_rt['platform'] = 'Windows';
@@ -890,11 +894,6 @@ function jrMailer_delete_campaign($campaign_id)
     $req = "DELETE FROM {$tbl} WHERE click_campaign_id = '{$cid}'";
     jrCore_db_query($req);
 
-    // Delete URLs
-    $tbl = jrCore_db_table_name('jrMailer', 'url');
-    $req = "DELETE FROM {$tbl} WHERE url_cid = '{$cid}'";
-    jrCore_db_query($req);
-
     // Delete Tracks
     $tbl = jrCore_db_table_name('jrMailer', 'track');
     $req = "DELETE FROM {$tbl} WHERE t_cid = '{$cid}'";
@@ -904,6 +903,9 @@ function jrMailer_delete_campaign($campaign_id)
     $tbl = jrCore_db_table_name('jrMailer', 'unsubscribe');
     $req = "DELETE FROM {$tbl} WHERE u_cid = '{$cid}'";
     jrCore_db_query($req);
+
+    // NOTE: We do not delete from URLs - this way future clicks
+    // on a tracked URL still work and forward correctly
 
     return true;
 }
@@ -1390,7 +1392,7 @@ function jrMailer_get_campaign_id($module, $unique_id, $title, $message)
     if (isset($_mods[$module])) {
         $uid = jrCore_db_escape($unique_id);
         $ttl = jrCore_db_escape(jrCore_strip_html($title));
-        $msg = jrCore_db_escape($message);
+        $msg = jrCore_db_escape(jrCore_strip_non_utf8($message));
         $tbl = jrCore_db_table_name('jrMailer', 'campaign');
         $req = "INSERT INTO {$tbl} (c_module, c_unique, c_created, c_updated, c_title, c_message)
                 VALUES ('{$module}', '{$uid}', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), '{$ttl}', '{$msg}')
@@ -1590,6 +1592,7 @@ function _jrMailer_smtp_send_email($_email_to, $_user, $_conf, $_email_info)
     // optional - 'mailing_module' = module sending the email
     // optional - 'mailing_event' = specific jrUser_notify event from mailing module
     // optional - 'headers' = array of additional email text headers
+    // optional = 'queue_sleep' = seconds to sleep before delivering email
     //
     // Our module config also includes some items:
     // 'from' - specifies email address for bounces
@@ -1709,7 +1712,7 @@ function _jrMailer_smtp_send_email($_email_to, $_user, $_conf, $_email_info)
         $msg->addPart(jrCore_strip_html($_email_info['message']), 'text/plain');
     }
     else {
-        $msg->setBody(jrCore_strip_html($_email_info['message']));
+        $msg->setBody($_email_info['message']);
     }
 
     // Send the message

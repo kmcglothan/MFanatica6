@@ -2,7 +2,7 @@
 /**
  * Jamroom Groups module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -46,7 +46,7 @@ function jrGroup_meta()
     $_tmp = array(
         'name'        => 'Groups',
         'url'         => 'group',
-        'version'     => '1.5.16',
+        'version'     => '1.5.21',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Provides low level support for Profile Groups and Group modules',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2905/groups',
@@ -87,6 +87,7 @@ function jrGroup_init()
     jrCore_register_event_listener('jrCore', 'db_search_params', 'jrGroup_db_search_params_listener');
     jrCore_register_event_listener('jrCore', 'db_update_item', 'jrGroup_db_update_item_listener');
     jrCore_register_event_listener('jrChangeOwner', 'owner_changed', 'jrGroup_owner_changed_listener');
+    jrCore_register_event_listener('jrImage', 'item_image_info', 'jrGroup_item_image_info_listener');
 
     // Recycle Bin
     jrCore_register_event_listener('jrCore', 'empty_recycle_bin', 'jrGroup_empty_recycle_bin_listener');
@@ -154,6 +155,9 @@ function jrGroup_init()
     if (jrCore_module_is_active('jrGroupPage')) {
         jrCore_register_module_feature('jrCore', 'tool_view', 'jrGroup', 'transfer_page', array('Transfer Group Page', 'Transfer group page(s) to another group'));
     }
+
+    // When an action is shared via jrOneAll, we can provide the text of the shared item
+    jrCore_register_event_listener('jrOneAll', 'network_share_text', 'jrGroup_network_share_text_listener');
 
     return true;
 }
@@ -411,7 +415,7 @@ function jrGroup_restore_recycle_bin_item_listener($_data, $_user, $_conf, $_arg
     switch ($_args['module']) {
 
         case 'jrGroup':
-            // A group is being restored - undelete users in group
+            // A group is being restored - restore users in group
             $tbl = jrCore_db_table_name('jrGroup', 'member');
             $req = "UPDATE {$tbl} SET member_active = '1' WHERE member_group_id = '" . intval($_args['item_id']) . "'";
             jrCore_db_query($req);
@@ -496,10 +500,14 @@ function jrGroup_create_rss_feed_listener($_data, $_user, $_conf, $_args, $event
             }
         }
         else {
-            if (!isset($_post["{$pfx}_group_id"]) || !jrCore_checktype($_post["{$pfx}_group_id"], 'number_nz')) {
+            if (isset($_post["{$pfx}_group_id"])) {
+                $_post['group_id'] = (int) $_post["{$pfx}_group_id"];
+            }
+            // Getting RSS feed for group
+            if (!isset($_post['group_id']) || !jrCore_checktype($_post['group_id'], 'number_nz')) {
                 jrCore_page_not_found();
             }
-            $_gr = jrCore_db_get_item('jrGroup', $_post["{$pfx}_group_id"]);
+            $_gr = jrCore_db_get_item('jrGroup', $_post['group_id'], true);
             if (!jrUser_is_admin() && isset($_gr['group_private']) && $_gr['group_private'] == 'on') {
                 if (!jrUser_is_logged_in()) {
                     // Must be logged in
@@ -512,7 +520,7 @@ function jrGroup_create_rss_feed_listener($_data, $_user, $_conf, $_args, $event
                 }
             }
             foreach ($_data as $k => $_itm) {
-                if ($_itm["{$pfx}_group_id"] != $_post["{$pfx}_group_id"]) {
+                if ($_itm["{$pfx}_group_id"] != $_post['group_id']) {
                     unset($_data[$k]);
                     continue;
                 }
@@ -693,7 +701,7 @@ function jrGroup_verify_module_listener($_data, $_user, $_conf, $_args, $event)
 
     // Group membership validation
     $_queue = array('module' => 'jrGroup');
-    jrCore_queue_create('jrGroup', 'verify_module', $_queue);
+    jrCore_queue_create('jrGroup', 'verify_module', $_queue, 0, null, 1);
     return $_data;
 }
 
@@ -715,6 +723,7 @@ function jrGroup_db_search_params_listener($_data, $_user, $_conf, $_args, $even
         $_mf = jrCore_get_registered_module_features('jrGroup', 'group_support');
         if (isset($_args['module']) && $_args['module'] == 'jrComment' && jrUser_is_logged_in()) {
             if (isset($_post['item_module']) && ($_post['item_module'] == 'jrGroup' || isset($_mf["{$_post['item_module']}"]))) {
+
                 // This is a view_comment listing on a group module - check that the user has access to the group
                 if ($_post['item_module'] == 'jrGroupDiscuss') {
                     $_group = jrCore_db_get_item('jrGroupDiscuss', $_post['item_id']);
@@ -734,25 +743,31 @@ function jrGroup_db_search_params_listener($_data, $_user, $_conf, $_args, $even
             }
         }
         else {
+
             // See if this listing is for a Group module
             if ($_mf && is_array($_mf) && isset($_mf["{$_args['module']}"])) {
                 if ($pfx = jrCore_db_get_prefix($_args['module'])) {
 
                     // We want to NOT SHOW registered items that are part of a private group unless the user is the OWNER or a MEMBER
                     if (jrUser_is_logged_in()) {
-                        // Get public groups and groups they own or are members of
-                        $tbl  = jrCore_db_table_name('jrGroup', 'member');
-                        $req  = "SELECT * FROM {$tbl} WHERE `member_user_id` = '{$_user['_user_id']}'";
-                        $_rt  = jrCore_db_query($req, 'NUMERIC');
-                        $_gid = array();
-                        if ($_rt && is_array($_rt) && count($_rt) > 0) {
-                            foreach ($_rt as $rt) {
-                                $_gid["{$rt['member_group_id']}"] = $rt['member_group_id'];
+
+                        // Get groups this user can access
+                        $_allowed = jrGroup_get_user_groups($_user['_user_id']);
+
+                        // If this is a request for an RSS Feed, we will get the group_id in $_post
+                        if (isset($_post['module']) && $_post['module'] == 'jrFeed' && isset($_post['group_id']) && jrCore_checktype($_post['group_id'], 'number_nz')) {
+                            // This is an RSS feed request for a group module - make sure user is member
+                            if (!$_allowed || !in_array($_post['group_id'], $_allowed)) {
+                                // This user is not allowed to view this group - set impossible condition
+                                $_data['search'][] = "_item_id < 0";
+                                return $_data;
                             }
-                            $gid = implode(',', $_gid);
+                        }
+                        // Get public groups and groups they own or are members of
+                        if ($_allowed && is_array($_allowed)) {
                             $_sp = array(
                                 'search'              => array(
-                                    "group_private = off || _profile_id = {$_user['_profile_id']} || _item_id in {$gid}"
+                                    "group_private = off || _profile_id = {$_user['_profile_id']} || _item_id in " . implode(',', $_allowed)
                                 ),
                                 'skip_triggers'       => true,
                                 'return_item_id_only' => true,
@@ -769,6 +784,7 @@ function jrGroup_db_search_params_listener($_data, $_user, $_conf, $_args, $even
                                 'limit'               => 100000
                             );
                         }
+
                     }
                     else {
                         // Get public groups only
@@ -841,32 +857,30 @@ function jrGroup_db_create_item_listener($_data, $_user, $_conf, $_args, $event)
  */
 function jrGroup_db_get_item_listener($_data, $_user, $_conf, $_args, $event)
 {
-    if (jrCore_is_view_request()) {
-        if (isset($_args['module']) && $_args['module'] == 'jrGroup') {
-            // Add in Group Member info - but not if this is an image check
-            $_data['group_member']       = jrGroup_get_group_members($_data['_item_id']);
-            $_data['group_member_count'] = count($_data['group_member']);
-        }
-        else {
-            // See if this is a registered group module
-            $_mf = jrCore_get_registered_module_features('jrGroup', 'group_support');
-            if ($_mf && is_array($_mf) && isset($_mf["{$_args['module']}"])) {
-                // This is a groups module - add Group info
-                if ($pfx = jrCore_db_get_prefix($_args['module'])) {
-                    if (isset($_data["{$pfx}_group_id"]) && jrCore_checktype($_data["{$pfx}_group_id"], 'number_nz')) {
-                        $_gr = jrCore_db_get_item('jrGroup', $_data["{$pfx}_group_id"]);
-                        if ($_gr && is_array($_gr)) {
-                            foreach ($_gr as $k => $v) {
-                                // Override item with profile info for hosting profile
-                                if (strpos($k, 'profile_') === 0) {
-                                    if (isset($_data[$k])) {
-                                        $_data["original_{$k}"] = $_data[$k];
-                                    }
-                                    $_data[$k] = $v;
+    if (isset($_args['module']) && $_args['module'] == 'jrGroup') {
+        // Add in Group Member info - but not if this is an image check
+        $_data['group_member']       = jrGroup_get_group_members($_data['_item_id']);
+        $_data['group_member_count'] = count($_data['group_member']);
+    }
+    else {
+        // See if this is a registered group module
+        $_mf = jrCore_get_registered_module_features('jrGroup', 'group_support');
+        if ($_mf && is_array($_mf) && isset($_mf["{$_args['module']}"])) {
+            // This is a groups module - add Group info
+            if ($pfx = jrCore_db_get_prefix($_args['module'])) {
+                if (isset($_data["{$pfx}_group_id"]) && jrCore_checktype($_data["{$pfx}_group_id"], 'number_nz')) {
+                    $_gr = jrCore_db_get_item('jrGroup', $_data["{$pfx}_group_id"]);
+                    if ($_gr && is_array($_gr)) {
+                        foreach ($_gr as $k => $v) {
+                            // Override item with profile info for hosting profile
+                            if (strpos($k, 'profile_') === 0) {
+                                if (isset($_data[$k])) {
+                                    $_data["original_{$k}"] = $_data[$k];
                                 }
-                                elseif (strpos($k, 'group_') === 0 || strpos($k, 'quota_') === 0 || $k == '_profile_id') {
-                                    $_data[$k] = $v;
-                                }
+                                $_data[$k] = $v;
+                            }
+                            elseif (strpos($k, 'group_') === 0 || strpos($k, 'quota_') === 0 || $k == '_profile_id') {
+                                $_data[$k] = $v;
                             }
                         }
                     }
@@ -910,6 +924,7 @@ function jrGroup_db_search_items_listener($_data, $_user, $_conf, $_args, $event
                     'order_by'       => false,
                     'privacy_check'  => false,
                     'ignore_pending' => true,
+                    'ignore_missing' => true,
                     'limit'          => count($_gi)
                 );
                 $_gr = jrCore_db_search_items('jrGroup', $_gr);
@@ -928,6 +943,41 @@ function jrGroup_db_search_items_listener($_data, $_user, $_conf, $_args, $event
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+    return $_data;
+}
+
+/**
+ * Block tracker images to users without access to the tracker
+ * @param $_data string Array of information from trigger
+ * @param $_user array Current user
+ * @param $_conf array Global Config
+ * @param $_args array additional parameters passed in by trigger caller
+ * @param $event string Triggered Event name
+ * @return string
+ */
+function jrGroup_item_image_info_listener($_data, $_user, $_conf, $_args, $event)
+{
+    global $_user, $_post;
+    if (isset($_post['option']) && $_post['option'] == 'image' && isset($_post['_2']) && jrCore_checktype($_post['_2'], 'number_nz')) {
+        $_mf = jrCore_get_registered_module_features('jrGroup', 'group_support');
+        if ($_mf && is_array($_mf) && isset($_mf["{$_post['module']}"])) {
+            // Is this group private?
+            if (!isset($_data['group_private'])) {
+                // group_private is not set on a cached image call
+                $_data = jrCore_db_get_item($_post['module'], $_post['_2']);
+            }
+            if (isset($_data['group_private']) && $_data['group_private'] == 'on') {
+                // The image view is a no_session magic view - we have to
+                // start session here to make sure user is part of this group
+                /** @noinspection PhpUnusedLocalVariableInspection */
+                $_user = jrUser_session_start(false);
+                if (!jrGroup_member_has_access($_data)) {
+                    // This user is not a member of this group - block image
+                    $_data['profile_private'] = 0;
                 }
             }
         }
@@ -980,6 +1030,54 @@ function jrGroup_db_delete_item_listener($_data, $_user, $_conf, $_args, $event)
         jrCore_db_query($req);
     }
     return $_data;
+}
+
+/**
+ * Add share data to a jrOneAll network share
+ * @param $_data array incoming data array
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return mixed
+ */
+function jrGroup_network_share_text_listener($_data, $_user, $_conf, $_args, $event)
+{
+    // $_data:
+    // [providers] => twitter
+    // [user_token] => c64xxxxa-b66e-4c6c-xxxx-cdea7xxxxx03
+    // [user_id] => 1
+    // [action_module] => jrGroup
+    // [action_data] => (JSON array of data for item initiating action)
+    $_data = json_decode($_data['action_data'], true);
+    if (!isset($_data) || !is_array($_data)) {
+        return false;
+    }
+    $_ln = jrUser_load_lang_strings($_data['user_language']);
+
+    // We return an array:
+    // 'text' => text to post (i.e. "tweet")
+    // 'url'  => URL to media item,
+    // 'name' => name of media item
+    $url = jrCore_get_module_url('jrGroup');
+    $txt = $_ln['jrGroup'][11];
+    if ($_data['action_mode'] == 'update') {
+        $txt = $_ln['jrGroup'][12];
+    }
+    $_out = array(
+        'text' => "{$_conf['jrCore_base_url']}/{$_data['profile_url']} {$_data['profile_name']} {$txt}: \"{$_data['group_title']}\" {$_conf['jrCore_base_url']}/{$_data['profile_url']}/{$url}/{$_data['_item_id']}/{$_data['group_title_url']}",
+        'link' => array(
+            'url'  => "{$_conf['jrCore_base_url']}/{$_data['profile_url']}/{$url}/{$_data['_item_id']}/{$_data['group_title_url']}",
+            'name' => $_data['group_title']
+        )
+    );
+    // See if they included a picture with the song
+    if (isset($_data['group_image_size']) && jrCore_checktype($_data['group_image_size'], 'number_nz')) {
+        $_out['picture'] = array(
+            'url' => "{$_conf['jrCore_base_url']}/{$url}/image/group_image/{$_data['_item_id']}/large"
+        );
+    }
+    return $_out;
 }
 
 //----------------------
@@ -1134,7 +1232,13 @@ function jrGroup_get_user_config($module, $option, $_group, $user_id)
 function jrGroup_member_has_access($_group)
 {
     global $_user;
-    if (jrUser_is_admin() || jrProfile_is_profile_owner($_group['_profile_id']) || (isset($_group['group_member']["{$_user['_user_id']}"]['member_status']) && $_group['group_member']["{$_user['_user_id']}"]['member_status'] == 1)) {
+
+    // Admin users and group owners always have access
+    if (jrUser_is_admin() || jrProfile_is_profile_owner($_group['_profile_id'])) {
+        return true;
+    }
+    // Otherwise check for membership
+    if (isset($_group['group_member']) && isset($_group['group_member']["{$_user['_user_id']}"]) && isset($_group['group_member']["{$_user['_user_id']}"]['member_status']) && $_group['group_member']["{$_user['_user_id']}"]['member_status'] == 1) {
         return true;
     }
     return false;

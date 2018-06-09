@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -120,7 +120,7 @@ function jrCore_widget_list_config($_post, $_user, $_conf, $_wg)
     if (isset($_wg['list_module'])) {
         foreach (array(0, 1, 2) as $k) {
             if (isset($_wg["list_search{$k}"]{1})) {
-                list($_sel[$k], $_opt[$k], $_val[$k]) = explode(' ', $_wg["list_search{$k}"]);
+                list($_sel[$k], $_opt[$k], $_val[$k]) = explode(' ', $_wg["list_search{$k}"], 3);
                 if (strlen($_opt[$k]) > 0) {
                     switch ($_opt[$k]) {
                         case '=':
@@ -134,6 +134,19 @@ function jrCore_widget_list_config($_post, $_user, $_conf, $_wg)
                             break;
                         case '>':
                             $_opt[$k] = 'gt';
+                            break;
+                        case 'like':
+                            // We use LIKE for "contains", "begins with" and "ends with"
+                            if (strpos($_val[$k], '%') === 0 && substr($_val[$k], -1, 1) === '%') {
+                                $_opt[$k] = 'like';
+                            }
+                            elseif (substr($_val[$k], -1, 1) === '%') {
+                                $_opt[$k] = 'bw';
+                            }
+                            elseif (strpos($_val[$k], '%') === 0) {
+                                $_opt[$k] = 'ew';
+                            }
+                            $_val[$k] = trim(trim($_val[$k]), '%');
                             break;
                     }
                 }
@@ -163,20 +176,20 @@ function jrCore_widget_list_config($_post, $_user, $_conf, $_wg)
                     }
                     foreach (array(0, 1, 2) as $k) {
                         if (isset($_sel[$k]) && $_sel[$k] == $fld) {
-                            $_ops[$k][] = "<option selected=\"selected\" value=\"{$fld}\"> {$fld}</option>";
+                            $_ops[$k][] = "<option selected value=\"{$fld}\"> {$fld}</option>";
                         }
                         else {
                             $_ops[$k][] = "<option value=\"{$fld}\"> {$fld}</option>";
                         }
                     }
                     if (isset($obv) && $obv == $fld) {
-                        $_obs[] = "<option selected=\"selected\" value=\"{$fld}\"> {$fld}</option>";
+                        $_obs[] = "<option selected value=\"{$fld}\"> {$fld}</option>";
                     }
                     else {
                         $_obs[] = "<option value=\"{$fld}\"> {$fld}</option>";
                     }
                     if (isset($gby) && $gby == $fld) {
-                        $_ogs[] = "<option selected=\"selected\" value=\"{$fld}\"> {$fld}</option>";
+                        $_ogs[] = "<option selected value=\"{$fld}\"> {$fld}</option>";
                     }
                     else {
                         $_ogs[] = "<option value=\"{$fld}\"> {$fld}</option>";
@@ -188,23 +201,25 @@ function jrCore_widget_list_config($_post, $_user, $_conf, $_wg)
 
     // Options
     $_sop = array(
-        'eq'       => 'is equal to',
-        'neq'      => 'does not equal',
-        'lt'       => 'is less than',
-        'gt'       => 'is greater than',
-        'like'     => 'contains',
-        'bw'       => 'begins with',
-        'ew'       => 'ends with',
-        'not_like' => 'does not contain',
-        'in'       => 'is in comma list',
-        'not_in'   => 'is not in comma list',
-        'regexp'   => 'matches expression'
+        'eq'          => 'is equal to',
+        'neq'         => 'does not equal',
+        'lt'          => 'is less than',
+        'gt'          => 'is greater than',
+        'like'        => 'contains',
+        'bw'          => 'begins with',
+        'ew'          => 'ends with',
+        'not_like'    => 'does not contain',
+        'in'          => 'is in comma list',
+        'not_in'      => 'is not in comma list',
+        'regexp'      => 'matches expression',
+        'between'     => 'is between',
+        'not_between' => 'is not between',
     );
     $_mop = array();
     foreach ($_sop as $sk => $sv) {
         foreach (array(0, 1, 2) as $k) {
             if (isset($_opt[$k]) && $_opt[$k] == $sk) {
-                $_mop[$k][] = "<option selected=\"selected\" value=\"{$sk}\"> {$sv}</option>";
+                $_mop[$k][] = "<option selected value=\"{$sk}\"> {$sv}</option>";
             }
             else {
                 $_mop[$k][] = "<option value=\"{$sk}\"> {$sv}</option>";
@@ -250,7 +265,7 @@ function jrCore_widget_list_config($_post, $_user, $_conf, $_wg)
     );
     foreach ($_obd as $k => $v) {
         if (isset($obd) && $obd == $k) {
-            $_obc[] = "<option selected=\"selected\" value=\"{$k}\"> {$v}</option>";
+            $_obc[] = "<option selected value=\"{$k}\"> {$v}</option>";
         }
         else {
             $_obc[] = "<option value=\"{$k}\"> {$v}</option>";
@@ -279,7 +294,7 @@ function jrCore_widget_list_config($_post, $_user, $_conf, $_wg)
     </td></tr>
     <tr><td class="element_left form_input_left" style="padding:0;height:0"></td><td>
     <div id="h_list_search" class="form_help" style="display:none"><table class="form_help_drop"><tr><td class="form_help_drop_left">
-        You can add up to 3 search parameters to help create a more focused list of items.<br><br><b>Example:</b> If you wanted to create a list of blog entries from a specific blog_category - i.e. &quot;featured&quot;, you would:<br><br>&bull; Select the "blog_category" as the search key.<br>&bull; Select &quot;is equal to&quot; as the search option.<br>&bull; Enter &quot;featured&quot; (without the quotes) in the search value text field.
+        You can add up to 3 search parameters to help create a more focused list of items.<br><br><b>Example:</b> If you wanted to create a list of blog entries from a specific blog_category - i.e. &quot;featured&quot;, you would:<br><br>&bull; Select the "blog_category" as the search key.<br>&bull; Select &quot;is equal to&quot; as the search option.<br>&bull; Enter &quot;featured&quot; (without the quotes) in the search value text field.<br><br><b>Note:</b> When using the &quot;is between&quot; or &quot;is not between&quot; operators enter the low and high numeric values separated by a comma - i.e. &quot;5,15&quot; would find values between (and including) 5 and 15.
     </td></tr></table></div></td></tr>
     ';
     jrCore_page_custom($html);
@@ -292,7 +307,7 @@ function jrCore_widget_list_config($_post, $_user, $_conf, $_wg)
     }
     $html = '<select id="list_order_by_key" name="list_order_by_key" class="form_select list_search_key' . $cls . '"' . $att . ' style="width:30%">' . implode("\n", $_obs) . '</select>&nbsp;
              <select id="list_order_by_dir" name="list_order_by_dir" class="form_select list_search_dir' . $cls . '"' . $att . ' style="width:17%">' . implode("\n", $_obc) . '</select>';
-    jrCore_page_custom($html, 'Order By', null, 'If you would like the Item List to be ordered by a specific key, select it here.<br><br><b>Example:</b> To create a list of &quot;newest&quot; items, order by the <b>_created</b> key, descending.');
+    jrCore_page_custom($html, 'Order By', null, 'If you would like the Item List to be ordered by a specific key, select it here.<br><br><b>Example:</b> To create a list of &quot;newest&quot; items, order by the <b>_item_id</b> key, descending.');
 
     $_num = array(
         0 => ' '
@@ -356,7 +371,7 @@ function jrCore_widget_list_config($_post, $_user, $_conf, $_wg)
         if ($_tmp && is_array($_tmp)) {
             foreach ($_tmp as $k => $v) {
                 if (isset($_wg['list_template']) && $_wg['list_template'] == $k) {
-                    $_tpl[] = "<option selected=\"selected\" value=\"{$k}\"> {$v}</option>";
+                    $_tpl[] = "<option selected value=\"{$k}\"> {$v}</option>";
                 }
                 else {
                     $_tpl[] = "<option value=\"{$k}\"> {$v}</option>";
@@ -365,7 +380,7 @@ function jrCore_widget_list_config($_post, $_user, $_conf, $_wg)
         }
         if (isset($_wg['list_template']) && $_wg['list_template'] == 'custom') {
             $rows   = '';
-            $_tpl[] = "<option selected=\"selected\" value=\"custom\"> custom</option>";
+            $_tpl[] = "<option selected value=\"custom\"> custom</option>";
         }
         else {
             $_tpl[] = "<option value=\"custom\"> custom</option>";
@@ -375,10 +390,10 @@ function jrCore_widget_list_config($_post, $_user, $_conf, $_wg)
         if (isset($_wg['list_template']) && $_wg['list_template'] == 'custom') {
             $rows   = '';
             $_tpl[] = "<option value=\"item_list.tpl\"> default</option>";
-            $_tpl[] = "<option selected=\"selected\" value=\"custom\"> custom</option>";
+            $_tpl[] = "<option selected value=\"custom\"> custom</option>";
         }
         else {
-            $_tpl[] = "<option selected=\"selected\" value=\"item_list.tpl\"> default</option>";
+            $_tpl[] = "<option selected value=\"item_list.tpl\"> default</option>";
             $_tpl[] = "<option value=\"custom\"> custom</option>";
         }
     }
@@ -417,17 +432,11 @@ function jrCore_widget_list_config_save($_post)
     global $_conf;
     // check custom list template for errors
     if (isset($_post['list_template']) && $_post['list_template'] == 'custom' && strlen($_post['list_custom_template']) > 0) {
-        $cdr = jrCore_get_module_cache_dir('jrCore');
-        $nam = time() . ".tpl";
-        jrCore_write_to_file("{$cdr}/{$nam}", $_post['list_custom_template']);
-        $url = jrCore_get_module_url('jrCore');
-        $out = jrCore_load_url("{$_conf['jrCore_base_url']}/{$url}/test_template/{$nam}");
-        if (isset($out) && strlen($out) > 1 && (strpos($out, 'error:') === 0 || stristr($out, 'fatal error'))) {
-            unlink("{$cdr}/{$nam}");
-            jrCore_set_form_notice('error', 'There is a syntax error in your template - please fix and try again');
+        $err = jrCore_test_template_for_errors($_conf['jrCore_active_skin'], $_post['list_custom_template']);
+        if ($err && strpos($err, 'error') === 0) {
+            jrCore_set_form_notice('error', substr($err, 7), false);
             return jrCore_form_result();
         }
-        unlink("{$cdr}/{$nam}");
     }
 
     $_out = array();
@@ -451,27 +460,19 @@ function jrCore_widget_list_config_save($_post)
                         break;
                     case 'bw':
                         $op = 'like';
-                        if (!strpos($v, '%')) {
-                            $v = "{$v}%";
-                        }
+                        $v  = trim(trim($v), '%') . '%';
                         break;
                     case 'ew':
                         $op = 'like';
-                        if (!strpos(' ' . $v, '%')) {
-                            $v = "%{$v}";
-                        }
+                        $v  = '%' . trim(trim($v), '%');
                         break;
                     case 'like':
                         $op = 'like';
-                        if (!strpos(' ' . $v, '%')) {
-                            $v = "%{$v}%";
-                        }
+                        $v  = '%' . trim(trim($v), '%') . '%';
                         break;
                     case 'not_like':
                         $op = 'not_like';
-                        if (!strpos(' ' . $v, '%')) {
-                            $v = "%{$v}%";
-                        }
+                        $v  = '%' . trim(trim($v), '%') . '%';
                         break;
                     default:
                         $op = $_post['list_search_op'][$k];
@@ -562,6 +563,7 @@ function jrCore_widget_list_display($_widget, $_full, $_config)
     }
 
     $params['widget_item_list_active'] = 1;
+    $params['ignore_missing']          = true;
 
     // Generate our jrCore_list call
     $smarty = new stdClass;

@@ -8,6 +8,7 @@ var __jrchat_nr = '';
 var __jrchat_ip = false;
 var __jrchat_lm = false;
 var __jrchat_ls = 5000;
+var __jrchat_cc = 30000;
 
 $(window).resize(function()
 {
@@ -39,9 +40,6 @@ $(window).on('beforeunload', function()
         var h = c.html();
         jrChat_set_local_item('messages', h);
 
-        var n = jrChat_get_notification_number();
-        jrChat_set_local_item('new_messages', n);
-
         var t = $('#jrchat-new-message-input').val();
         jrChat_set_local_item('cm_content', t);
 
@@ -71,7 +69,7 @@ $(document).ready(function()
 function jrChat_init(cb)
 {
     var r = true;
-    
+
     // Restore what user was typing
     var p = jrChat_get_local_item('cm_content', '');
     if (p.length > 0 && p != "undefined") {
@@ -110,8 +108,8 @@ function jrChat_init(cb)
     jrChat_store_fixed_element_positions();
 
     var c = $('#jrchat-room');
-    var i = jrChat_get_local_item('new_messages', 0);
-    var s = jrChat_get_local_item('state', 'closed');
+    var i = jrChat_get_notification_number();
+    var s = jrChat_get_item('state', 'closed');
     if (s == 'open' || c.css('right') == '0px') {
         jrChat_set_local_item('focused', 1);
         jrChat_set_initial_tab_state('open');
@@ -127,17 +125,15 @@ function jrChat_init(cb)
             }
         }
         jrChat_position_fixed_elements(w, 0, w);
-        jrChat_set_local_item('state', 'open');
+        jrChat_set_item('state', 'open');
         jrChat_set_new_indicator(i);
     }
     else {
-        jrChat_set_local_item('state', 'closed');
+        jrChat_set_item('state', 'closed');
         jrChat_set_notification_number(Number(i));
-        __jrchat_ls = 30000;
-        jrChat_set_local_item('loop_timer', 30000);
+        __jrchat_ls = __jrchat_cc;
+        jrChat_set_local_item('loop_timer', __jrchat_cc);
     }
-
-    jrChat_set_local_item('new_messages', 0);
 
     // Get our active room_id and init
     jrChat_get_active_room_id(function(i)
@@ -150,6 +146,7 @@ function jrChat_init(cb)
         }
         else {
             if (r) {
+                // new browser window
                 jrChat_get_messages(0, function()
                 {
                     jrChat_init_chat_controls();
@@ -225,7 +222,7 @@ function jrChat_delete_message_id(i)
                 id.remove();
             }
             else if (id.length > 0) {
-                alert(r.error);
+                jrCore_alert(r.error);
             }
         }
     });
@@ -283,7 +280,7 @@ function jrChat_complete_file_uploads()
 {
     var tkn = $('#jrchat-new-message').find("input[name='upload_token']").val();
     if (typeof tkn == "undefined") {
-        alert('error uploading file - unable to determine upload token');
+        jrCore_alert('error uploading file - unable to determine upload token');
     }
     else {
         var rid = jrChat_get_current_room_id();
@@ -393,7 +390,7 @@ function jrChat_set_tab_state(s)
         $('#jrchat-open-close').find('span[class$="_chat-close"]').each(function() {
             this.className = this.className.replace(new RegExp('_chat-close', 'g'), '_chat-open');
         });
-        jrChat_set_local_item('state', 'closed');
+        jrChat_set_item('state', 'closed');
         jrChat_save_state('closed');
         $('#jrchat-new-message-input').attr('disabled', 'disabled');
     }
@@ -406,7 +403,7 @@ function jrChat_set_tab_state(s)
                 this.className = this.className.replace(new RegExp('_chat-open', 'g'), '_chat-close');
             });
         }
-        jrChat_set_local_item('state', 'open');
+        jrChat_set_item('state', 'open');
         jrChat_save_state('open');
     }
 }
@@ -416,7 +413,7 @@ function jrChat_set_tab_state(s)
  */
 function jrChat_get_tab_state()
 {
-    return jrChat_get_local_item('state', 'closed');
+    return jrChat_get_item('state', 'closed');
 }
 
 /**
@@ -495,10 +492,10 @@ function jrChat_toggle(state)
         $('body').stop().animate({'padding-right': '0'}, s);
         c.stop().animate({'right': '-' + (w + 1) + 'px'}, s);
         t.stop().animate({'right': '0'}, s);
-        if (jrChat_get_active_loop_timer() < 30000) {
-            jrChat_set_local_item('loop_timer', 30000);
+        if (jrChat_get_active_loop_timer() < __jrchat_cc) {
+            jrChat_set_local_item('loop_timer', __jrchat_cc);
             jrChat_set_local_item('loop_number', 5);
-            __jrchat_ls = 30000;
+            __jrchat_ls = __jrchat_cc;
         }
 
     }
@@ -840,8 +837,8 @@ function jrChat_set_item(key, val)
 /**
  * Get a temp storage item
  * @param key string
- * @param def string Default to return if not set
- * @returns {boolean}
+ * @param def mixed Default to return if not set
+ * @returns {*}
  */
 function jrChat_get_item(key, def)
 {
@@ -961,6 +958,10 @@ function jrChat_save_message(msg)
                 {
                     if (s === true) {
                         // Success...
+                        var ms = $('#jrchat-mobile-send');
+                        if (ms.length > 0) {
+                            ms.find('span').removeClass('sprite_icon_hilighted');
+                        }
                         frm.removeClass('form_disabled').removeAttr('disabled').val('').focus().jrChat_is_typing();
                         jrChat_get_new_messages();
                         c.fadeOut(500, function()
@@ -992,10 +993,10 @@ function jrChat_save_message(msg)
                                 }
                                 else {
                                     if (e == 'timeout') {
-                                        alert('the request timed out trying to communicate with the server - please try again');
+                                        jrCore_alert('the request timed out trying to communicate with the server - please try again');
                                     }
                                     else {
-                                        alert('there was an error communicating with the server - please try again');
+                                        jrCore_alert('there was an error communicating with the server - please try again');
                                     }
                                     frm.removeClass('form_disabled').removeAttr('disabled').focus().jrChat_is_typing();
                                     jrChat_get_new_messages();
@@ -1162,6 +1163,7 @@ function jrChat_get_new_messages(cb)
             }
 
             var n = 0;
+            var q = 0;
             var dn = {};
             var chr = $('#jrchat-room');
             var chm = $('#jrchat-messages');
@@ -1172,21 +1174,18 @@ function jrChat_get_new_messages(cb)
 
                     // Update Title to show new message count if on mobile
                     var foc = jrChat_get_local_item('focused', 0);
-                    if (foc == 0) {
-                        if (jrChat_is_mobile_view()) {
-                            var bnm = z;
-                            var ttl = document.title;
-                            if (ttl.indexOf('[') === 0) {
-                                var brk = ttl.indexOf(']');
-                                bnm = Number(ttl.substr(1, (brk - 1)));
-                                if (bnm > 0) {
-                                    bnm = Number(bnm + z);
-                                }
-                                ttl = ttl.substr(brk + 2);
+                    if (foc == 0 && jrChat_is_mobile_view()) {
+                        var bnm = z;
+                        var ttl = document.title;
+                        if (ttl.indexOf('[') === 0) {
+                            var brk = ttl.indexOf(']');
+                            bnm = Number(ttl.substr(1, (brk - 1)));
+                            if (bnm > 0) {
+                                bnm = Number(bnm + z);
                             }
-                            document.title = '[' + bnm + '] ' + ttl;
+                            ttl = ttl.substr(brk + 2);
                         }
-
+                        document.title = '[' + bnm + '] ' + ttl;
                     }
 
                     var s = '';
@@ -1198,6 +1197,7 @@ function jrChat_get_new_messages(cb)
                     var li = jrChat_get_local_item('last_notification_id', 0);
                     var nw = ((new Date).getTime() - 86400000);
                     var ps = false;
+                    var nn = false;
                     for (var m in r.new) {
                         if (r.new.hasOwnProperty(m)) {
 
@@ -1210,11 +1210,13 @@ function jrChat_get_new_messages(cb)
                             if (r.new[m].r == rid) {
                                 // We match the active room_id - show message if we are not already
                                 if (chr.find('#m' + r.new[m].i).length === 0) {
-                                    r.new[m].c = jrChat_process_message_action(r, r.new[m].c);
-                                    s = s + jrChat_get_message_html(r.uid, r.new[m], nw);
-                                    dn[r.new[m].u] = 1;
-                                    if (r.new[m].i > lid) {
-                                        n++;
+                                    r.new[m].c = jrChat_process_message_action(r.new[m].i, r, r.new[m].c);
+                                    if (typeof r.new[m].c !== "undefined" && r.new[m].c.length > 0) {
+                                        s = s + jrChat_get_message_html(r.uid, r.new[m], nw);
+                                        dn[r.new[m].u] = 1;
+                                        if (r.new[m].i > lid) {
+                                            n++;
+                                        }
                                     }
                                 }
 
@@ -1245,7 +1247,7 @@ function jrChat_get_new_messages(cb)
                     chm.append(s);
 
                     // If any of these are NOT from us, create notification
-                    if (jrChat_get_tab_state() == 'open') {
+                    if (jrChat_get_tab_state() == 'open' && !nn) {
                         if (foc == 0 && c > 0 && r.notify == 'on') {
                             // Is API Supported?
                             if ('Notification' in window) {
@@ -1279,8 +1281,7 @@ function jrChat_get_new_messages(cb)
                         }
                     }
                     else if (n > 0) {
-                        var q = jrChat_get_notification_number() + n;
-                        jrChat_set_notification_number(q);
+                        q = jrChat_get_notification_number() + n;
                     }
                 }
             }
@@ -1335,10 +1336,14 @@ function jrChat_get_new_messages(cb)
                         b += r.other[bn];
                     }
                 }
+                b += q;
                 jrChat_set_new_indicator(b);
-                if (jrChat_get_tab_state() != 'open') {
+                if (jrChat_get_tab_state() != 'open' && b > 0) {
                     jrChat_set_notification_number(b);
                 }
+            }
+            else if (jrChat_get_tab_state() != 'open' && q > 0) {
+                jrChat_set_notification_number(q);
             }
 
             if (typeof cb == "function") {
@@ -1363,19 +1368,25 @@ function jrChat_update_room_count(r)
 
 /**
  * Process a message action
+ * @param i int Message ID
  * @param r object Response object
  * @param m string Message
  * @returns {*}
  */
-function jrChat_process_message_action(r, m)
+function jrChat_process_message_action(i, r, m)
 {
     // i.e. ~page:user_id~{
     // i.e. ~page:everyone~{
+    // i.e. ~delmsg:5~{
     if (m.indexOf('~') === 0 && m.indexOf('~{') !== -1) {
         var t = m.substr(1).substr(0, m.indexOf('~{') - 1).split(':');
         var f = 'jrChat_action_' + t[0];
         if (typeof window[f] !== "undefined" && typeof window[f] == "function") {
-            return jrChat_strip_message_action(window[f](t, r, m));
+            var n = window[f](i, t, r, m);
+            if (typeof n !== "undefined" && n.length > 0) {
+                return jrChat_strip_message_action(n);
+            }
+            return '';
         }
     }
     return m;
@@ -1396,12 +1407,13 @@ function jrChat_strip_message_action(msg)
 
 /**
  * Action: page
+ * @param i int message id
  * @param t array action function params
  * @param r object Response object
  * @param m string Message
  * @returns {string}
  */
-function jrChat_action_page(t, r, m)
+function jrChat_action_page(i, t, r, m)
 {
     // We have to get our username from this message - if it is US,
     // then we need to ring the bell - otherwise just remove the action
@@ -1410,22 +1422,37 @@ function jrChat_action_page(t, r, m)
         var s = new Audio(core_system_url + '/modules/jrChat/contrib/chime.mp3');
         s.play();
         var n = 0;
-        var i = setInterval(function()
+        var v = setInterval(function()
         {
             var f = Number(jrChat_get_local_item('focused', 0));
             if (f === 0) {
                 s.play();
                 n++;
                 if (n == 2) {
-                    clearInterval(i);
+                    clearInterval(v);
                 }
             }
             else {
-                clearInterval(i);
+                clearInterval(v);
             }
         }, 3000);
     }
     return m;
+}
+
+/**
+ * Action: delmsg
+ * @param i int message id
+ * @param t array action function params
+ * @param r object Response object
+ * @param m string Message
+ * @returns {string}
+ */
+function jrChat_action_delmsg(i, t, r, m)
+{
+    $('#m' + i).remove();
+    $('#m' + t[1]).remove();
+    return '';
 }
 
 /**
@@ -1456,12 +1483,12 @@ function jrChat_get_active_loop_timer()
     jrChat_set_local_item('loop_number', n);
     if (n > 5) {
         t = Number(jrChat_get_local_item('loop_timer', __jrchat_ls)) + 1000;
-        if (t > 30000) {
+        if (t > __jrchat_cc) {
             if (jrChat_get_tab_state() == 'open') {
-                t = 30000;
+                t = __jrchat_cc;
             }
-            else if (t > 60000) {
-                t = 60000;
+            else if (t > (__jrchat_cc * 2)) {
+                t = (__jrchat_cc * 2);
             }
         }
     }
@@ -1530,11 +1557,11 @@ function jrChat_set_new_indicator(n)
 
 /**
  * Get the current notification number
- * @returns {number}
+ * @returns {mixed}
  */
 function jrChat_get_notification_number()
 {
-    return Number($('#jrchat-new-bubble').text());
+    return jrChat_get_item('notification_number', 0);
 }
 
 /**
@@ -1545,14 +1572,16 @@ function jrChat_set_notification_number(n)
 {
     var c = $('#jrchat-open-close').children('span');
     n = Number(n);
-    if (n > 0 && jrChat_get_tab_state() == 'closed') {
+    if (jrChat_get_tab_state() == 'closed') {
         // Highlight that there are new chats
-        c.addClass('sprite_icon_hilighted');
-        // $('#jrchat-new-bubble').text(n).show();
+        if (n > 0) {
+            c.addClass('sprite_icon_hilighted');
+            jrChat_set_item('notification_number', n);
+        }
     }
     else {
         c.removeClass('sprite_icon_hilighted');
-        // $('#jrchat-new-bubble').hide().text(0);
+        jrChat_set_item('notification_number', 0);
     }
 }
 
@@ -1574,7 +1603,7 @@ function jrChat_is_admin()
 function jrChat_get_current_room_id()
 {
     var i = jrChat_get_local_item('room_id', 0);
-    if (i == 0) {
+    if (i === 0) {
         i = $('#display-room-id').val();
     }
     return i;
@@ -1693,8 +1722,8 @@ function jrChat_get_messages(bid, cb)
                             jrChat_init_pager();
                         }, 2000);
                     }
-                    
-                    if (n > 0 && jrChat_get_tab_state() == 'closed') {
+
+                    if (bid > 0 && n > 0 && jrChat_get_tab_state() == 'closed') {
                         var c = jrChat_get_notification_number() + n;
                         jrChat_set_notification_number(c);
                     }
@@ -1768,7 +1797,7 @@ function jrChat_get_message_html(uid, msg, old)
     if (uid == msg.u) {
         return '<div id="m' + msg.i + '" class="jrchat-msg jrchat-msg-from">' + msg.c + '<div class="jrchat-msg-byline">' + msg.n + ', ' + l + '</div></div>';
     }
-    return '<div id="m' + msg.i + '" class="jrchat-msg jrchat-msg-to"><div class="jrchat-msg-img"><a href="' + core_system_url + '/' + jrChat_url + '/profile/' + Number(msg.u) + '" target="_blank"><img src="' + jrChat_get_user_image_url(msg.u, 'small', msg.m) + '" height="24" width="24" title="' + msg.n + '"></a></div><div class="jrchat-msg-msg">' + msg.c + '<div class="jrchat-msg-byline">' + msg.n + ', ' + l + '</div></div></div>';
+    return '<div id="m' + msg.i + '" class="jrchat-msg jrchat-msg-to"><div class="jrchat-msg-img"><a onclick="jrChat_start_chat_with_user(' + msg.u + ')"><img src="' + jrChat_get_user_image_url(msg.u, 'small', msg.m) + '" height="24" width="24" title="' + msg.n + '"></a></div><div class="jrchat-msg-msg">' + msg.c + '<div class="jrchat-msg-byline"><a href="' + core_system_url + '/' + jrChat_url + '/profile/' + Number(msg.u) + '" target="_blank">' + msg.n + '</a>, ' + l + '</div></div></div>';
 }
 
 /**
@@ -1907,13 +1936,13 @@ function jrChat_create_room()
                     jrChat_load_room_id(r.rid);
                 }
                 else {
-                    alert(r.error);
+                    jrCore_alert(r.error);
                 }
             }
         });
     }
     else {
-        alert('please enter a title for the chat room');
+        jrCore_alert('please enter a title for the chat room');
     }
     return true;
 }
@@ -1922,7 +1951,7 @@ function jrChat_create_room()
  * delete a chat room
  * @returns {boolean}
  */
-function jrChat_delete_room_id(i, c)
+function jrChat_delete_room_id(i)
 {
     var url = core_system_url + '/' + jrChat_url + '/delete_room/id=' + Number(i) + '/__ajax=1';
     jrCore_set_csrf_cookie(url);
@@ -1935,15 +1964,9 @@ function jrChat_delete_room_id(i, c)
         {
             if (typeof r.error !== "undefined") {
                 jrChat_check_login(r.error);
-                alert(r.error);
+                jrCore_alert(r.error);
             }
             else {
-                if (typeof c !== "undefined" && c !== null) {
-                    var v = jrChat_get_notification_number();
-                    if (v > 0) {
-                        jrChat_set_new_indicator(v - c);
-                    }
-                }
                 $('.room-row' + i).remove();
                 if (jrChat_get_current_room_id() === i) {
                     // deleting our active room - switch rooms
@@ -1999,7 +2022,7 @@ function jrChat_load_room_id(id, n)
         {
             if (typeof r.error !== "undefined") {
                 jrChat_check_login(r.error);
-                alert(r.error);
+                jrCore_alert(r.error);
             }
             else {
                 // Reset everything and load new room
@@ -2088,7 +2111,7 @@ function jrChat_user_settings()
             {
                 jrChat_check_login(r);
                 if (typeof r.error !== "undefined") {
-                    alert(r.error);
+                    jrCore_alert(r.error);
                 }
                 else {
                     b.html(r).slideDown(s);
@@ -2125,9 +2148,10 @@ function jrChat_save_user_settings()
                     {
                         if (typeof r.error !== "undefined") {
                             jrChat_check_login(r.error);
-                            alert(r.error);
+                            jrCore_alert(r.error);
                         }
                         else {
+                            jrChat_set_notification_number(0);
                             jrChat_close_user_settings(function()
                             {
                                 $('#jrchat-messages').removeClass('jrchat-overlay');
@@ -2346,7 +2370,7 @@ function jrChat_room_browser()
             {
                 jrChat_check_login(r);
                 if (typeof r.error !== "undefined") {
-                    alert(r.error);
+                    jrCore_alert(r.error);
                 }
                 else {
                     b.html(r).slideDown(s, function()
@@ -2379,7 +2403,7 @@ function jrChat_add_user_to_chat()
             {
                 if (typeof r.error !== "undefined") {
                     jrChat_check_login(r.error);
-                    alert(r.error);
+                    jrCore_alert(r.error);
                 }
                 else {
 
@@ -2427,7 +2451,7 @@ function jrChat_remove_user_from_chat(uid, b)
         {
             if (typeof r.error !== "undefined") {
                 jrChat_check_login(r.error);
-                alert(r.error);
+                jrCore_alert(r.error);
             }
             else {
 
@@ -2468,9 +2492,11 @@ function jrChat_remove_user_from_chat(uid, b)
 /**
  * Start a private chat with a user
  */
-function jrChat_start_chat_with_user()
+function jrChat_start_chat_with_user(uid)
 {
-    var uid = $('#chat_user_id_livesearch_value').val();
+    if (typeof uid === "undefined" || typeof uid !== "number") {
+        uid = $('#chat_user_id_livesearch_value').val();
+    }
     if (typeof uid !== "undefined" && uid > 0) {
         var url = core_system_url + '/' + jrChat_url + '/create_private_room/__ajax=1';
         jrCore_set_csrf_cookie(url);
@@ -2484,7 +2510,7 @@ function jrChat_start_chat_with_user()
             {
                 if (typeof r.error !== "undefined") {
                     jrChat_check_login(r.error);
-                    alert(r.error);
+                    jrCore_alert(r.error);
                 }
                 else {
                     jrChat_load_room_id(r.rid);
@@ -2724,7 +2750,7 @@ $.extend($.expr[':'], {
  * Strip HTML tags from a message
  * @param input
  * @param allowed
- * @returns {string|XML}
+ * @returns {*}
  */
 function jrChat_strip_tags(input, allowed)
 {

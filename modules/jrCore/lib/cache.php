@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -42,6 +42,89 @@
 
 // make sure we are not being called directly
 defined('APP_DIR') or exit();
+
+//-------------------------------------------
+// Local Cache
+//-------------------------------------------
+
+/**
+ * Check if local caching is enabled
+ * @param bool $developer_check set to FALSE to not check for developer mode
+ * @return bool
+ */
+function jrCore_local_cache_is_enabled($developer_check = true)
+{
+    if ($developer_check && jrCore_is_developer_mode()) {
+        return false;
+    }
+    return function_exists('apcu_add');
+}
+
+/**
+ * Add a key and value to the local cache
+ * @param string $key
+ * @param mixed $value
+ * @param int $ttl
+ * @return array|bool
+ */
+function jrCore_set_local_cache_key($key, $value,  $ttl = 0)
+{
+    global $_conf;
+    if (jrCore_local_cache_is_enabled()) {
+        $pfx = substr($_conf['jrCore_unique_string'], 0, 5);
+        return apcu_add("{$pfx}:{$key}", $value, $ttl);
+    }
+    return false;
+}
+
+/**
+ * Get a locally cached key value
+ * @param string $key
+ * @return mixed
+ */
+function jrCore_get_local_cache_key($key)
+{
+    global $_conf;
+    if (jrCore_local_cache_is_enabled()) {
+        $pfx = substr($_conf['jrCore_unique_string'], 0, 5);
+        return apcu_fetch("{$pfx}:{$key}");
+    }
+    return false;
+}
+
+/**
+ * Delete a locally cached key value
+ * @param string $key
+ * @return mixed
+ */
+function jrCore_delete_local_cache_key($key)
+{
+    global $_conf;
+    if (jrCore_local_cache_is_enabled()) {
+        $pfx = substr($_conf['jrCore_unique_string'], 0, 5);
+        return apcu_delete("{$pfx}:{$key}");
+    }
+    return false;
+}
+
+/**
+ * Reset the local cache
+ * @return bool
+ */
+function jrCore_reset_local_cache()
+{
+    if (jrCore_local_cache_is_enabled()) {
+        if ($_tmp = apcu_cache_info()) {
+            if (isset($_tmp['cache_list']) && is_array($_tmp['cache_list'])) {
+                foreach ($_tmp['cache_list'] as $c) {
+                    apcu_delete($c['info']);
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
 //-------------------------------------------
 // Temp Value
@@ -89,8 +172,11 @@ function jrCore_set_temp_value($module, $key, $value)
  */
 function jrCore_update_temp_value($module, $key, $value)
 {
+    $mod = jrCore_db_escape($module);
+    $key = jrCore_db_escape($key);
+    $val = jrCore_db_escape(json_encode($value));
     $tbl = jrCore_db_table_name('jrCore', 'tempvalue');
-    $req = "UPDATE {$tbl} SET temp_updated = UNIX_TIMESTAMP(),temp_value = '" . jrCore_db_escape(json_encode($value)) . "' WHERE temp_module = '" . jrCore_db_escape($module) . "' AND temp_key = '" . jrCore_db_escape($key) . "' LIMIT 1";
+    $req = "UPDATE {$tbl} SET temp_updated = UNIX_TIMESTAMP(),temp_value = '{$val}' WHERE temp_module = '{$mod}' AND temp_key = '{$key}' LIMIT 1";
     $cnt = jrCore_db_query($req, 'COUNT', false, null, false);
     if ($cnt && $cnt === 1) {
         return true;
@@ -114,7 +200,7 @@ function jrCore_get_temp_value($module, $key)
     $tbl = jrCore_db_table_name('jrCore', 'tempvalue');
     $req = "SELECT temp_value FROM {$tbl} WHERE temp_module = '" . jrCore_db_escape($module) . "' AND temp_key = '" . jrCore_db_escape($key) . "' LIMIT 1";
     $_rt = jrCore_db_query($req, 'SINGLE', false, null, false);
-    if ($_rt && is_array($_rt) && isset($_rt['temp_value']{1})) {
+    if ($_rt && is_array($_rt) && !empty($_rt['temp_value'])) {
         return json_decode($_rt['temp_value'], true);
     }
     return false;
@@ -162,28 +248,46 @@ function jrCore_clean_temp($module, $safe_seconds)
 //-------------------------------------------
 
 /**
+ * Reset sprite caches
+ * @return bool
+ */
+function jrCore_reset_sprite_cache()
+{
+    global $_conf;
+    $dir = jrCore_get_module_cache_dir($_conf['jrCore_active_skin']);
+    $_fl = glob("{$dir}/*sprite*", GLOB_NOSORT);
+    if ($_fl && is_array($_fl)) {
+        foreach ($_fl as $file) {
+            unlink($file);  // OK
+        }
+    }
+    $dir = jrCore_get_media_directory(0, FORCE_LOCAL);
+    $_fl = glob("{$dir}/*sprite*", GLOB_NOSORT);
+    if ($_fl && is_array($_fl)) {
+        foreach ($_fl as $file) {
+            unlink($file);  // OK
+        }
+    }
+    return true;
+}
+
+/**
  * Reset template, CSS and JS cached files
  */
 function jrCore_reset_template_cache()
 {
-    global $_conf;
     // When resetting template caches we delete:
     // - ALL JS and CSS files
     // - ALL file and string templates
-    $_tmp = glob(APP_DIR . "/data/cache/*/{*.tpl*,*.js,*.css,*.string.php}", GLOB_BRACE | GLOB_NOSORT);
+    $_tmp = glob(APP_DIR . "/data/cache/*/{*.css,*.js,*.tpl*,*.string.php}", GLOB_BRACE | GLOB_NOSORT);
     if ($_tmp && is_array($_tmp)) {
         foreach ($_tmp as $file) {
             $file = realpath($file);
             if (strpos($file, APP_DIR . '/data/cache/') === 0) {
-                unlink($file);
+                unlink($file);  // OK
             }
         }
     }
-
-    // Rebuild master CSS and JS
-    jrCore_create_master_css($_conf['jrCore_active_skin']);
-    jrCore_create_master_javascript($_conf['jrCore_active_skin']);
-
     return true;
 }
 
@@ -240,6 +344,7 @@ function jrCore_delete_config_cache()
 {
     // NOTE: Core config and settings is always stored in MySQL
     $key = jrCore_get_flag('jrcore_config_and_modules_key');
+    jrCore_trigger_event('jrCore', 'delete_config_cache', array('jrcore_config_and_modules_key' => $key));
     return _jrCore_mysql_delete_cache('jrCore', $key);
 }
 
@@ -252,15 +357,16 @@ function jrCore_delete_config_cache()
 function jrCore_delete_all_cache_entries($module = null, $user_id = null)
 {
     // Settings are ALWAYS cached - regardless of cache setting
+    $temp = jrCore_get_active_cache_system();
     if (is_null($module) && is_null($user_id)) {
         jrCore_delete_config_cache();
     }
     if (!jrCore_caching_is_enabled()) {
         return true;
     }
-    $temp = jrCore_get_active_cache_system();
     $func = "_{$temp}_delete_all_cache_entries";
     if (function_exists($func)) {
+        jrCore_delete_all_cache_flags();
         return $func($module, $user_id);
     }
     jrCore_logger('CRI', "active cache system function: {$func} is not defined");
@@ -369,6 +475,7 @@ function jrCore_delete_cache($module, $key, $add_user = true, $add_skin = true)
     $func = "_{$temp}_delete_cache";
     if (function_exists($func)) {
         $key = jrCore_get_cache_key($module, $key, $add_user, $add_skin);
+        jrCore_delete_cache_flag($key);
         return $func($module, $key);
     }
     jrCore_logger('CRI', "active cache system function: {$func} is not defined");
@@ -401,6 +508,7 @@ function jrCore_delete_multiple_cache_entries($_items)
             }
             // 0 = module, 1 = key, 2 = $add_user, 3 = $add_skin
             $_items[$k][1] = jrCore_get_cache_key($i[0], $i[1], $i[2], $i[3]);
+            jrCore_delete_cache_flag($_items[$k][1]);
         }
         return $func($_items);
     }
@@ -425,8 +533,11 @@ function jrCore_is_cached($module, $key, $add_user = true, $add_skin = true)
     $func = "_{$temp}_is_cached";
     if (function_exists($func)) {
         $key = jrCore_get_cache_key($module, $key, $add_user, $add_skin);
-        $out = $func($module, $key, $add_user);
-        return jrCore_replace_emoji($out);
+        if (!$out = jrCore_get_cache_flag($key)) {
+            $out = $func($module, $key, $add_user);
+            jrCore_set_cache_flag($key, jrCore_replace_emoji($out));
+        }
+        return $out;
     }
     jrCore_logger('CRI', "active cache system function: {$func} is not defined");
     return false;
@@ -506,6 +617,24 @@ function jrCore_get_cache_key($module, $key, $add_user = true, $add_skin = true)
 }
 
 /**
+ * Get unique key for a FULL PAGE cache request
+ * @return string
+ */
+function jrCore_get_full_page_cache_key()
+{
+    global $_conf;
+    $key = $_conf['jrCore_active_skin'];
+    $key .= (isset($_REQUEST['_uri']{0})) ? $_REQUEST['_uri'] : '/';
+    if (jrCore_is_mobile_device()) {
+        $key .= 'm';
+    }
+    elseif (jrCore_is_tablet_device()) {
+        $key .= 't';
+    }
+    return "{$key}_full_page";
+}
+
+/**
  * Perform maintenance on the cache system
  * @return bool
  */
@@ -521,6 +650,52 @@ function jrCore_cache_maintenance()
     }
     jrCore_logger('CRI', "active cache system function: {$func} is not defined");
     return false;
+}
+
+/**
+ * Set a new temp global cache flag
+ * @param string $flag Unique flag string to set value for
+ * @param mixed $value Value to store
+ * @return bool
+ */
+function jrCore_set_cache_flag($flag, $value)
+{
+    $GLOBALS['__JR_CACHE'][$flag] = $value;
+    return true;
+}
+
+/**
+ * Retrieve a previously set temp global cache flag
+ * @param mixed $flag String or Array to save to flag
+ * @return mixed
+ */
+function jrCore_get_cache_flag($flag)
+{
+    return (isset($GLOBALS['__JR_CACHE'][$flag])) ? $GLOBALS['__JR_CACHE'][$flag] : false;
+}
+
+/**
+ * delete a previously set temp global cache flag
+ * @param mixed $flag String or Array to delete
+ * @return bool
+ */
+function jrCore_delete_cache_flag($flag)
+{
+    if (isset($GLOBALS['__JR_CACHE'][$flag])) {
+        unset($GLOBALS['__JR_CACHE'][$flag]);
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Delete all set global cache flags
+ * @return bool
+ */
+function jrCore_delete_all_cache_flags()
+{
+    unset($GLOBALS['__JR_CACHE']);
+    return true;
 }
 
 //-------------------------------------------
@@ -545,10 +720,6 @@ function _jrCore_mysql_delete_all_cache_entries($module = null, $user_id = null)
 
         // Make sure cache_key column is correct
         $req = "ALTER TABLE {$tbl} CHANGE `cache_key` `cache_key` CHAR(32) CHARACTER SET latin1 NOT NULL";
-        jrCore_db_query($req);
-
-        // Optimize - reclaim space
-        $req = "OPTIMIZE TABLE {$tbl}";
         jrCore_db_query($req);
 
     }
@@ -663,7 +834,10 @@ function _jrCore_mysql_is_cached($module, $key, $add_user = true)
     if ($_rt && isset($_rt['cache_value'])) {
         // See if we have expired...
         if ($_rt['cache_expires'] < $_rt['db_time']) {
-            // return false so we rebuild
+            // Update so we avoid a stampede
+            // and return false so we rebuild in this process
+            $req = "UPDATE {$tbl} SET cache_expires = (cache_expires + 30) WHERE cache_key = '{$key}'";
+            jrCore_db_query($req);
             return false;
         }
         switch ($_rt['cache_encoded']) {
@@ -687,6 +861,7 @@ function _jrCore_mysql_is_cached($module, $key, $add_user = true)
 function _jrCore_mysql_cache_maintenance()
 {
     // Delete expired cache entries
+    @ini_set('memory_limit', '256M');
     $tbl = jrCore_db_table_name('jrCore', 'cache');
 
     // On slower disk based systems this query can be a bit slower
@@ -698,7 +873,10 @@ function _jrCore_mysql_cache_maintenance()
     }
     // Delete all expired cache entries
     jrCore_db_query("SET SESSION long_query_time = 100");
-    jrCore_db_query("DELETE LOW_PRIORITY FROM {$tbl} WHERE cache_expires < UNIX_TIMESTAMP()");
+    $_dl = jrCore_db_query("SELECT cache_key AS k, '1' AS n FROM {$tbl} WHERE cache_expires < UNIX_TIMESTAMP()", 'k', false, 'n');
+    if ($_dl && is_array($_dl)) {
+        jrCore_db_query("DELETE LOW_PRIORITY FROM {$tbl} WHERE cache_key IN('" . implode("','", array_keys($_dl)) . "')");
+    }
     jrCore_db_query("SET SESSION long_query_time = {$val}");
     return true;
 }

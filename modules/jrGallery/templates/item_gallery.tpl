@@ -5,17 +5,7 @@
         <div class="title">
             <div class="block_config">
 
-                {if isset($_items[0].gallery_image_item_bundle)}
-                {jrCore_db_get_item module="jrFoxyCartBundle" item_id=$_items[0].gallery_image_item_bundle assign="bundle"}
-                {/if}
-                {if is_array($bundle)}
-                    {jrCore_module_function function="jrFoxyCart_add_to_cart" module="jrFoxyCartBundle" field="bundle" quantity_max="1" price=$bundle.bundle_item_price no_bundle="true" item=$bundle}
-                {/if}
-
-                {if !$show_all_galleries}
-                {jrCore_item_update_button module="jrGallery" profile_id=$_profile_id item_id=$_items[0]._item_id}
-                {jrCore_item_delete_button module="jrGallery" profile_id=$_profile_id action="`$murl`/delete_save/`$_items[0].profile_url`/`$_items[0].gallery_title_url`"}
-                {/if}
+                {jrCore_bundle_detail_buttons module="jrGallery" profile_id=$_items[0]._profile_id bundle_name=$_items[0].gallery_title create_action="`$murl`/create" update_action="`$murl`/update/id=`$_items[0]._item_id`" delete_action="`$murl`/delete_save/`$_items[0].profile_url`/`$_items[0].gallery_title_url`"}
 
             </div>
 
@@ -63,9 +53,10 @@
                         <div id="p{$item._item_id}" class="p5" style="position:relative">
 
                             {if $item@iteration > 1}
-                                <a href="{$jamroom_url}/{$murl}/image/gallery_image/{$item._item_id}/1280" data-lightbox="images" title="{$item.gallery_alt_text}"></a>
+                                {jrGallery_get_gallery_image_title item=$item assign="gtitle"}
+                                <a href="{$jamroom_url}/{$murl}/image/gallery_image/{$item._item_id}/1280" data-lightbox="images" title="{$gtitle|jrCore_entity_string}"></a>
                             {/if}
-                            <a href="{jrGallery_get_gallery_image_url item=$item}"  title="{$item.gallery_alt_text}">{jrCore_module_function function="jrImage_display" module="jrGallery" type="gallery_image" item_id=$item._item_id size="larger" crop="auto" class="gallery_img iloutline" alt=$item.gallery_alt_text width=false height=false}</a><br>
+                            <a href="{jrGallery_get_gallery_image_url item=$item}"  title="{$item.gallery_alt_text}">{jrCore_module_function function="jrImage_display" module="jrGallery" type="gallery_image" item_id=$item._item_id size="xxlarge" crop="auto" class="gallery_img iloutline" alt=$item.gallery_alt_text width=false height=false}</a><br>
 
                             <div class="gallery_rating">
                                 {jrCore_module_function function="jrRating_form" type="star" module="jrGallery" index="1" item_id=$item._item_id current=$item.gallery_rating_1_average_count|default:0 votes=$item.gallery_rating_1_count|default:0}
@@ -140,24 +131,17 @@
         ul.sortable a {
             cursor: move;
         }
-        .ui-sortable-placeholder {
+        li.sortable-placeholder {
+            width: 80px;
+            height: 80px;
             z-index: 100;
-            padding: 0;
-            margin: 0;
-        }
-        .ui-sortable-helper {
-            padding: 0;
+            border: 1px dashed #BBB;
             margin: 0;
         }
     </style>
     <script type="text/javascript">
-        $(function () {
-            $('.sortable').sortable().bind('sortstart', function (e, ui)
-            {
-                var h = $(ui.item).height() - 24;
-                $('.ui-sortable-placeholder').css('width', h + 'px').css('height', h + 'px');
-                $(ui.item).css('width', h + 'px').css('height', h + 'px');
-            }).bind('sortupdate', function (e, ui) {
+        $(function() {
+            $('.sortable').sortable().bind('sortupdate', function() {
                 var o = $('ul.sortable > li').map(function () {
                     return $(this).data("id");
                 }).get();
@@ -167,4 +151,5 @@
             });
         });
     </script>
+
 {/if}

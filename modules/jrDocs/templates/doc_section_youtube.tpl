@@ -31,7 +31,7 @@
                         </div>
                     </div>
                 {else}
-                    <iframe id="ytplayer" type="text/html" width="690" height="450" src="//www.youtube.com/embed/{$doc_youtube}?rel=0" frameborder="0"></iframe>
+                    <iframe id="ytplayer" type="text/html" width="690" height="450" src="//www.youtube.com/embed/{$doc_youtube}?rel=0" frameborder="0" allowFullScreen></iframe>
                 {/if}
 
                 <div class="section_caption">

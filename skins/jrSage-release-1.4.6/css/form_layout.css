@@ -1,0 +1,98 @@
+/* remove Firefox's dotted outlines... */
+:focus {
+    outline:none;
+}
+::-moz-focus-inner {
+    border:0;
+}
+form {
+    margin-bottom:0;
+}
+.element {
+}
+/* @title Element Left */
+/* @help This is the left side of pages and forms where the label and sub-label will appear */
+.element_left {
+    background-color:transparent;
+    text-align:right;
+    text-transform:capitalize;
+    padding:8px;
+    width:25%;
+}
+/* @title Element Right */
+/* @help This is the right side of pages and forms where the form elements appear */
+.element_right {
+    background-color:transparent;
+    padding:6px;
+    width:75%;
+}
+/* @title Element Right URLs */
+/* @help This is the color of URLs that might appear on the right side of the form */
+.element_right a {
+    color: #000;
+}
+
+.form_input_left {
+    height:30px;
+}
+.form_input_right {
+}
+.sublabel {
+    font-size:11px;
+    text-transform:none;
+}
+
+.form_help_button {
+    float:right;
+}
+.form_help {
+    background-color:transparent;
+    padding:9px;
+}
+.form_help_drop {
+    padding-top:8px;
+    background-color: #aebeae;
+    border:1px solid #575655;
+    width:100%;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.33) inset;
+}
+.form_help_drop_left {
+    width:95%;
+    padding:10px 20px 20px 20px;
+    font-size:14px;
+    text-align:left;
+    text-transform:none;
+}
+.form_help_drop_right {
+    width:5%;
+    padding:10px 20px 20px 20px;
+}
+.form_help_default {
+    display:inline-block;
+    margin-top:12px;
+}
+
+.form_help_small {
+    display:inline-block;
+    font-size:10px;
+    margin-top:12px;
+    color:#000;
+    font-style:italic;
+}
+
+.form_submit_box {
+    background-color:transparent;
+    padding-top:12px;
+}
+.form_submit_section {
+    background:transparent;
+	border:0;
+    padding:10px;
+    margin:6px 6px 8px 6px; /* @ignore */
+    text-align:center;
+}
+#form_submit_indicator {
+    display:none;
+    margin-right:10px;
+    vertical-align:middle;
+}

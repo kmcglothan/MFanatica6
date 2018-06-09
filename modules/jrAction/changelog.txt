@@ -1,5 +1,32 @@
 Timeline module changelog
 
+Version 2.0.18:
+ - Change: Action save function updated so it works correctly with attending action from Event module
+
+Version 2.0.17:
+ - Change: modified create_entry_form.tpl so mobile editor shows for mobile phones using "Quick Share"
+
+Version 2.0.16:
+ - Bug Fix: Sharing on timeline is not being shared with Twitter when using the OneAll module
+
+Version 2.0.15:
+ - Bug Fix: Possible recursive trigger error when viewing status update detail pages on specific skins
+
+Version 2.0.14:
+ - Bug Fix: Item List buttons could still show in "Share This With Your Followers" modal window
+
+Version 2.0.13:
+ - Change: Item action buttons no longer show in "Share This With Your Followers" modal window
+
+Version 2.0.12:
+ - Bug Fix: When the action is saved, sometimes the user id is not being set
+
+Version 2.0.11:
+ - Change: item_index_meta.tpl added to add social media tags for list page
+
+Version 2.0.10:
+ - Bug Fix: "action_data" field not being included for shares from some module create forms
+
 Version 2.0.9:
  - New: Updated to work with new version of RSS Feed reader module
 

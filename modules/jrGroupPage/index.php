@@ -75,23 +75,23 @@ function view_jrGroupPage_create($_post, $_user, $_conf)
 
     // Title
     $_tmp = array(
-        'name'      => 'npage_title',
-        'label'     => 3,
-        'help'      => 4,
-        'type'      => 'text',
-        'validate'  => 'printable',
-        'required'  => true
+        'name'     => 'npage_title',
+        'label'    => 3,
+        'help'     => 4,
+        'type'     => 'text',
+        'validate' => 'printable',
+        'required' => true
     );
     jrCore_form_field_create($_tmp);
 
     // Body
     $_tmp = array(
-        'name'      => 'npage_body',
-        'label'     => 15,
-        'help'      => 16,
-        'type'      => 'editor',
-        'validate'  => 'allowed_html',
-        'required'  => true
+        'name'     => 'npage_body',
+        'label'    => 15,
+        'help'     => 16,
+        'type'     => 'editor',
+        'validate' => 'allowed_html',
+        'required' => true
     );
     jrCore_form_field_create($_tmp);
     jrCore_page_display();
@@ -145,7 +145,7 @@ function view_jrGroupPage_create_save($_post, &$_user, &$_conf)
     // Add to Actions...
     if ($_gr['group_private'] != 'on') {
         $_rt['group_profile_url'] = $_gr['profile_url'];
-        jrCore_run_module_function('jrAction_save', 'create', 'jrGroupPage', $pid, $_rt);
+        jrCore_run_module_function('jrAction_save', 'create', 'jrGroupPage', $pid, $_rt, false, jrUser_get_profile_home_key('_profile_id'));
     }
     jrCore_form_delete_session();
     jrProfile_reset_cache();
@@ -196,23 +196,23 @@ function view_jrGroupPage_update($_post, $_user, $_conf)
 
     // Title
     $_tmp = array(
-        'name'      => 'npage_title',
-        'label'     => 3,
-        'help'      => 4,
-        'type'      => 'text',
-        'validate'  => 'printable',
-        'required'  => true
+        'name'     => 'npage_title',
+        'label'    => 3,
+        'help'     => 4,
+        'type'     => 'text',
+        'validate' => 'printable',
+        'required' => true
     );
     jrCore_form_field_create($_tmp);
 
     // Body
     $_tmp = array(
-        'name'      => 'npage_body',
-        'label'     => 15,
-        'help'      => 16,
-        'type'      => 'editor',
-        'validate'  => 'allowed_html',
-        'required'  => true
+        'name'     => 'npage_body',
+        'label'    => 15,
+        'help'     => 16,
+        'type'     => 'editor',
+        'validate' => 'allowed_html',
+        'required' => true
     );
     jrCore_form_field_create($_tmp);
     jrCore_page_display();
@@ -307,7 +307,7 @@ function view_jrGroupPage_group_config($_post, $_user, $_conf)
     jrUser_master_only();
 
     // Get all 'orphaned' group pages
-    $_s = array(
+    $_s  = array(
         'search'                       => array(
             'npage_group_id = 0'
         ),
@@ -349,7 +349,7 @@ function view_jrGroupPage_group_config($_post, $_user, $_conf)
         jrCore_form_field_create($_tmp);
 
         // Get all groups
-        $_s = array(
+        $_s  = array(
             'order_by'                     => array(
                 'group_title' => 'asc'
             ),
@@ -458,10 +458,10 @@ function view_jrGroupPage_group_config_save($_post, $_user, $_conf)
     else {
         // Copy Group Pages (and their comments) to jrPage
         foreach ($_post['page_id'] as $pid) {
-            $_gp  = jrCore_db_get_item('jrGroupPage', $pid);
+            $_gp = jrCore_db_get_item('jrGroupPage', $pid);
             if (!jrCore_db_get_item_by_key('jrPage', 'page_title', $_gp['npage_title'])) {
                 // Copy GroupPage item to a Page item
-                $_tmp = array(
+                $_tmp  = array(
                     'page_title'     => $_gp['npage_title'],
                     'page_title_url' => jrCore_url_string($_gp['npage_title']),
                     'page_location'  => 1,
@@ -475,11 +475,11 @@ function view_jrGroupPage_group_config_save($_post, $_user, $_conf)
                     '_profile_id' => $_gp['_profile_id'],
                     '_user_id'    => $_gp['_user_id'],
                 );
-                $id = jrCore_db_create_item('jrPage', $_tmp, $_core);
+                $id    = jrCore_db_create_item('jrPage', $_tmp, $_core);
                 if (jrCore_checktype($id, 'number_nz')) {
                     // Update any comments to the new Page item
-                    $_s = array(
-                        "search" => array(
+                    $_s  = array(
+                        "search"                       => array(
                             "comment_module = jrGroupPage",
                             "comment_item_id = {$pid}"
                         ),
@@ -489,7 +489,7 @@ function view_jrGroupPage_group_config_save($_post, $_user, $_conf)
                     );
                     $_rt = jrCore_db_search_items('jrComment', $_s);
                     if (is_array($_rt['_items'])) {
-                        $_up = array(
+                        $_up  = array(
                             'comment_module'  => 'jrPage',
                             'comment_item_id' => $id
                         );

@@ -50,13 +50,13 @@ function jrGoogleAnalytics_db_schema()
     $_tmp = array(
         "e_id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
         "e_created INT(11) UNSIGNED NOT NULL DEFAULT '0'",
-        "e_urlone VARCHAR(256) NOT NULL DEFAULT ''",
-        "e_urltwo VARCHAR(256) NOT NULL DEFAULT ''",
+        "e_urlone VARCHAR(255) NOT NULL DEFAULT ''",
+        "e_urltwo VARCHAR(255) NOT NULL DEFAULT ''",
         "e_active CHAR(3) NOT NULL DEFAULT 'off'",
         "e_key VARCHAR(32) NOT NULL DEFAULT ''",
         "UNIQUE e_urlone (e_urlone)",
         "INDEX e_active (e_active)"
     );
-    jrCore_db_verify_table('jrGoogleAnalytics', 'experiment', $_tmp);
+    jrCore_db_verify_table('jrGoogleAnalytics', 'experiment', $_tmp, 'InnoDB');
     return true;
 }

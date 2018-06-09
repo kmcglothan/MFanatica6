@@ -63,7 +63,8 @@ class Smarty_Internal_Compile_Private_Registered_Function extends Smarty_Interna
         // compile code
         if (!is_array($function)) {
             // Modified by brian@jamroom.net to check if function exists
-            $output = "<?php if (function_exists('{$function}')) { echo {$function}({$_params},\$_smarty_tpl); } ?>\n";
+            $output = "(function_exists('{$function}')) ? {$function}({$_params},\$_smarty_tpl); : ''";
+            // $output = "{$function}({$_params},\$_smarty_tpl)";
         } elseif (is_object($function[ 0 ])) {
             $output =
                 "\$_smarty_tpl->smarty->registered_plugins[Smarty::PLUGIN_FUNCTION]['{$tag}'][0][0]->{$function[1]}({$_params},\$_smarty_tpl)";
@@ -76,8 +77,8 @@ class Smarty_Internal_Compile_Private_Registered_Function extends Smarty_Interna
                                                   'value' => $output));
         }
         //Does tag create output
-        $compiler->has_output = isset($_attr[ 'assign' ]) ? false : true;
-        $output = "<?php " . ($compiler->has_output ? "echo " : '') . "{$output};?>\n";
+        $compiler->has_output = true;
+        $output = "<?php echo {$output};?>\n";
         return $output;
     }
 }

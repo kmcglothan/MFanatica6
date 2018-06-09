@@ -2,7 +2,7 @@
 /**
  * Jamroom Profiles module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -42,7 +42,7 @@
 defined('APP_DIR') or exit();
 
 /**
- * jrProfile_config
+ * config
  */
 function jrProfile_config()
 {
@@ -84,7 +84,21 @@ function jrProfile_config()
         'section'  => 'profile options',
         'order'    => 3
     );
-
     jrCore_register_setting('jrProfile', $_tmp);
+
+    // Show Help
+    $_tmp = array(
+        'name'     => 'show_help',
+        'type'     => 'checkbox',
+        'default'  => 'on',
+        'upgrade'  => 'off',
+        'validate' => 'onoff',
+        'label'    => 'show profile help',
+        'help'     => 'If this option is checked, and a profile owner views a section on their profile that has no items, a message will show to help them create an item',
+        'section'  => 'profile options',
+        'order'    => 4
+    );
+    jrCore_register_setting('jrProfile', $_tmp);
+
     return true;
 }

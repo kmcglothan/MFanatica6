@@ -2,7 +2,7 @@
 /**
  * Jamroom Item Ratings module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -42,23 +42,10 @@
 defined('APP_DIR') or exit();
 
 /**
- * jrRating_config
+ * config
  */
 function jrRating_config()
 {
-    // Rating default type
-    $_tmp = array(
-        'name'     => 'default_type',
-        'type'     => 'select',
-        'options'  => 'jrRating_get_types',
-        'default'  => 'star',
-        'validate' => 'printable',
-        'label'    => 'Default Format',
-        'help'     => 'Select the rating format type used if a type is specified by a template or module',
-        'order'    => 1
-    );
-    jrCore_register_setting('jrRating', $_tmp);
-
     // Require Login
     $_tmp = array(
         'name'     => 'require_login',
@@ -108,6 +95,7 @@ function jrRating_config()
 
     // We used to offer this by module - removed
     jrCore_delete_setting('jrRating', 're-rate_modules');
+    jrCore_delete_setting('jrRating', 'default_type');
 
     return true;
 }

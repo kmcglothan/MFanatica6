@@ -1,0 +1,19 @@
+Products Module Change Log
+
+Version 1.1.0:
+ - New: Tool added to import items from Merchandise module
+ - Bug Fix: Items could be created without a product category
+ - Bug Fix: When creating a new product the category fields may not be created correctly
+
+Version 1.0.1:
+ - Bug Fix: Possible "invalid location redirect token" error when viewing product categories
+ - BUg Fix: Category item count could show "0" (zero) for category with products in it
+
+Version 1.0.0:
+ - Bug Fix: Fixed variables using store instead of product in item_detail.tpl
+
+Version 1.0.0b2:
+ - Bug Fix: Possible "BIGINT" SQL error when deleting a product item
+
+Version 1.0.0b1:
+ - Initial Beta Release

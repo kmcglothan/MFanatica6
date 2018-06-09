@@ -1,9 +1,8 @@
 <?php
 /**
- * Jamroom 5 Support Center module
+ * Jamroom Support Center module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -50,7 +49,7 @@ function jrSupport_meta()
     $_tmp = array(
         'name'        => 'Support Center',
         'url'         => 'support',
-        'version'     => '1.1.2',
+        'version'     => '1.1.3',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Documentation, Support and Help for modules and skins in your system',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2867/support-center',
@@ -67,7 +66,7 @@ function jrSupport_init()
 {
     // Our CSS and JS
     jrCore_register_module_feature('jrCore', 'css', 'jrSupport', 'jrSupport.css');
-    jrCore_register_module_feature('jrCore', 'javascript', 'jrSupport', 'jrSupport.js');
+    jrCore_register_module_feature('jrCore', 'javascript', 'jrSupport', 'jrSupport.js', 'admin');
 
     // Custom Support Tab
     jrCore_register_module_feature('jrCore', 'admin_tab', 'jrSupport', 'index', 'Help');

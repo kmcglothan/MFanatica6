@@ -46,13 +46,14 @@ function jrGroupPage_meta()
     $_tmp = array(
         'name'        => 'Group Pages',
         'url'         => 'group_page',
-        'version'     => '1.2.2',
+        'version'     => '1.2.5',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Adds Page support to Profile Groups',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2904/group-pages',
         'license'     => 'jcl',
         'category'    => 'profiles',
-        'requires'    => 'jrGroup,jrCore:6.0.4'
+        'priority'    => 250,
+        'requires'    => 'jrGroup,jrCore:6.0.4,jrAction:2.0.8'
     );
     return $_tmp;
 }
@@ -70,8 +71,9 @@ function jrGroupPage_init()
     // Core support
     jrCore_register_module_feature('jrCore', 'pending_support', 'jrGroupPage', 'on');
     jrCore_register_module_feature('jrCore', 'max_item_support', 'jrGroupPage', 'on');
-    jrCore_register_module_feature('jrCore', 'action_support', 'jrGroupPage', 'create', 'item_action.tpl');
-    jrCore_register_module_feature('jrCore', 'action_support', 'jrGroupPage', 'update', 'item_action.tpl');
+
+    jrCore_register_module_feature('jrCore', 'action_support', 'jrGroupPage', 'create', array('template' => 'item_action.tpl', 'allowed_off_profile' => true));
+    jrCore_register_module_feature('jrCore', 'action_support', 'jrGroupPage', 'update', array('template' => 'item_action.tpl', 'allowed_off_profile' => true));
 
     // Exclude us from the Profile Menu
     jrCore_register_module_feature('jrProfile', 'profile_menu', 'jrGroupPage', 'active', 'jrGroup');

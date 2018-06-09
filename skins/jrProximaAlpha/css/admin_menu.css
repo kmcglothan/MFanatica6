@@ -1,0 +1,125 @@
+#dashboard_container {
+    margin: 0 0 12px 0;
+}
+
+#admin_container {
+    min-height: 600px;
+}
+
+#item-holder {
+    margin-right: 9px;
+}
+
+/* @title Menu List */
+/* @help The main list for the Menu */
+.item-list {
+}
+
+.item-cat-menu {
+    background-color: #C5D0DB;
+    margin-top: 10px;
+    margin-bottom: 12px;
+    padding: 5px;
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+.item-cat-search {
+    padding: 14px;
+}
+
+.item-cat-entry {
+    cursor: pointer;
+    padding: 1px 1px 1px 5px;
+}
+
+.item-cat-entry-active {
+    background-color: #8CA2B7;
+}
+
+.item-cat-entry:hover {
+    background-color: #8CA2B7;
+}
+
+/* @title Menu Row */
+/* @help The row for the menu list */
+.item-row {
+    background-color: #FFFFFF;
+    width: 100%;
+    display: table-row;
+    cursor: pointer;
+    height: 42px;
+}
+
+/* @title Menu Active Row */
+/* @help The active row for the menu list */
+.item-row-active {
+    background-color: #C5D0DB;
+}
+
+/* @title Menu Hover */
+/* @help The hover for the menu list */
+.item-row:hover {
+    background-color: #8CA2B7;
+}
+
+/* @title Menu Icon */
+/* @help The icon for the menu item */
+.item-icon {
+    display: table-cell;
+    padding: 3px;
+    border-bottom: 0 solid #AAAAAA;
+}
+
+/* @title Menu Entry */
+/* @help The text area for the menu item */
+.item-entry {
+    width: 100%;
+    display: table-cell;
+    padding: 6px;
+    font-size: 14px;
+    color: #000000;
+    vertical-align: middle;
+    border-bottom: 0;
+}
+
+.item-enabled {
+    display: table-cell;
+    padding-right: 6px;
+    border-bottom: 0;
+}
+
+.item-disabled {
+    display: table-cell;
+    color: #FFFFFF;
+    background: #18446E;
+    font-size: 11px;
+    padding: 6px;
+    border: 0;
+    border-radius: 2px;
+}
+
+/* @title Menu Item Active */
+/* @help The active state of a menu item */
+.item-active {
+    display: table-cell;
+    background: #336600;
+    font-size: 11px;
+    padding: 6px;
+    border: 0;
+    border-radius: 2px;
+}
+
+.admin_section_search {
+    background: #18446E;
+    padding: 12px;
+    border-radius: 0;
+    margin-top: 0;
+}
+
+.admin_section_search input {
+    width: 100% !important;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}

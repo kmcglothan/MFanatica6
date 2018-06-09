@@ -346,7 +346,7 @@ qq.FileUploaderBasic = function(o)
         },
         showMessage: function(message)
         {
-            alert(message);
+            jrCore_alert(message);
         },
         inputName: 'qqfile',
         extraDropzones: []

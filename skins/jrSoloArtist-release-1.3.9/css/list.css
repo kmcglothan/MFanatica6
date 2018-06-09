@@ -1,0 +1,62 @@
+.divider {
+    height:1px;
+    width:100%;
+    padding:0;
+    margin:15px auto;
+    border-bottom:1px solid #606060;
+}
+
+/* @title List Item */
+/* @help The List Item class is for the content in a  ranking list */
+.item {
+    background-color:#000;
+    padding:12px;
+    margin:12px;
+    border-style:solid;
+    border-color:#EEEEEE;
+    border-width:0;
+    font-size:16px;
+    color:#606060;
+}
+/* @title Blogpost Link Color */
+/* @help The color for links users include in their blog posts */
+.blogpost p a {
+    color:#D61D1E;
+    text-decoration: underline;
+}
+.add_to_cart_section {
+    display:inline-block;
+    background:#920B0C;
+    border:0;
+    border-radius:6px;
+    box-shadow:0 0 0 0;
+}
+.add_to_cart_price {
+    position:relative;
+    top:0;
+    left:2px;
+    padding:0 10px;
+    padding-top:4px;
+    color:#FFF;
+    font-size:12px;
+    line-height:18px;
+}
+.add_to_cart_icon {
+    margin:2px;
+    padding:0;
+    cursor:pointer;
+}
+
+.strikethrough{
+    color: #D61D1E;
+    text-decoration: line-through;
+}
+.border-1{
+    border:1px solid #D61D1E;
+}
+.p5{
+    padding:5px;
+}
+.body-1{
+    background-color: #FFFFEB;
+}

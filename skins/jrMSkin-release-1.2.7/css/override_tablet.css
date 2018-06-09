@@ -1,0 +1,117 @@
+/* Tablets */
+@media only screen and (max-width: 970px) {
+
+    input[type=submit], input[type=reset], input[type=button] {
+        -webkit-appearance: none;
+    }
+
+    #wrapper {
+        font-size: 10px;
+    }
+
+    .page_tab {
+        font-size: 14px;
+    }
+
+    .desk {
+        display: none;
+    }
+
+    .mobile {
+        display: block;
+    }
+    #menu > li.right {
+        display: block;
+    }
+    #menu > li {
+        display: none;
+    }
+    #menu > li.desk.right {
+        display: none;
+    }
+    #apps li {
+        width: 65px;
+    }
+
+    #wrapper > section {
+        font-size: 1.2em;
+    }
+
+    .row, #content {
+        max-width: 970px;
+    }
+
+    h1 {
+        margin: 10px auto;
+    }
+
+    .final .footer > a {
+        top: -74px;
+    }
+
+    .jrform .page_content {
+        margin-top: 20px;
+    }
+
+    .row .col12.slogan {
+        padding-right: 1em;
+        text-align: right;
+    }
+}
+
+@media only screen and (max-height: 900px) {
+
+
+    .index.list .middle {
+        position: relative;
+        top: 0;
+        transform: translateY(0px);
+    }
+
+    .index.list .full {
+        padding: 0 0 60px;
+    }
+
+    section.index.list {
+        padding: 90px 0 0;
+    }
+
+    section.index.final {
+        padding: 90px 0;
+    }
+
+    .index.final.list .full {
+        padding: 0 0 90px;
+    }
+
+    .index.top .middle {
+        top: 40%;
+    }
+
+    .index_item h2 {
+        font-size: 16px;
+        margin: 0 0 0.2em;
+    }
+
+    #slides > a, .prev, .next {
+        height: 50px;
+        width: 15px;
+    }
+    .tablet {
+        display: inline;
+    }
+
+    div.tap_block, div.tap {
+        display: block;
+    }
+}
+
+
+@media only screen and (max-width: 1200px) {
+    .hover {
+        font-size: 12px;
+    }
+    .more {
+        margin: 1em 0 0;
+    }
+}

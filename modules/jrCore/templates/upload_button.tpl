@@ -9,9 +9,13 @@
 <input type="hidden" name="upload_module" value="{$module}">
 
 {jrCore_module_url module="jrCore" assign="curl"}
+
+{*{$maxup = 3} *}{* PROFILE DAILY LIMITS injects this number *}
+
 <script type="text/javascript">
 $(document).ready(function() {
     var pm_{$field}_au = {ldelim}{rdelim};
+    var active_{$field}_ulcount = 0;
     new qq.FileUploader({
         element: document.getElementById('pm_{$field}'),
         action: '{$jamroom_url}/{$curl}/upload_file/',
@@ -24,6 +28,12 @@ $(document).ready(function() {
         uploadButtonText: '{$upload_text}',
         cancelButtonText: '{$cancel_text}',
         failUploadText: 'upload failed',
+        {if isset($maxup)}
+        onSubmit: function(id,name) {
+             active_{$field}_ulcount++;
+             if ({$maxup} > 0 && active_{$field}_ulcount > {$maxup}) { return false; }
+         },
+        {/if}
         onUpload: function (id, f) {
             pm_{$field}_au[f] = 1;
             $('.form_submit_section input').attr("disabled", "disabled").addClass('form_button_disabled');

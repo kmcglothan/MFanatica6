@@ -1,5 +1,24 @@
 Image Galleries module change log
 
+Version 1.9.2:
+ - Bug Fix: Deleted image view_count key was being created and incremented if viewed from direct image URL
+
+Version 1.9.1:
+ - Change: Updated to work with new Profile Limits module features
+
+Version 1.9.0:
+ - New: Gallery update form now shows the image title and file name
+ - New: Gallery update form contains a search box for filtering the display in large galleries
+ - New: Gallery update form now includes a "modify title" button to easily update the image title
+ - New: Link added to the image detail form to navigate to the gallery update form
+ - Change: Improvement in image forms when pressing "tab" to move between fields
+ - Change: Templates updated to use {jrGallery_get_gallery_image_title} to get proper image title
+ - Change: Language string changes in create and update forms to better describe the form fields
+ - Change: Sharing system adjusted to work with OneAll module changes
+ - Change: item_index_meta.tpl added to add social media tags for list page
+ - Change: Scrolling box added to the gallery update image section
+ - Bug Fix: Several hard coded language strings were added to the language file
+
 Version 1.8.8:
  - Change: item_detail.tpl updated to use core provided {jrCore_item_detail_button} function for buttons
  - Change: Item Detail URL no longer includes image extension to help with embedding in editor

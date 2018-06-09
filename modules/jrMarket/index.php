@@ -2,7 +2,7 @@
 /**
  * Jamroom Marketplace module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -365,6 +365,39 @@ function view_jrMarket_browse($_post, $_user, $_conf)
             else {
                 $_rs['_items'][$k]['market_already_installed'] = 0;
             }
+            // Does this require a module that is not installed?
+            if (!empty($_v['market_requires'])) {
+                // [market_requires] => jrCore:6.1.6b5
+                // [market_requires] => jrPayment,jrCore,jrUser
+                foreach (explode(',', $_v['market_requires']) as $mod) {
+                    $mod = trim($mod);
+                    if (strpos($mod, ':')) {
+                        list($mod, $ver) = explode(':', $mod);
+                        $mod = trim($mod);
+                        $ver = trim($ver);
+                        if (!isset($_mods[$mod])) {
+                            $_rs['_items'][$k]['market_missing_required_mod']   = $mod;
+                            $_rs['_items'][$k]['market_missing_required_title'] = $_v['market_require_titles'][$mod];
+                            break;
+                        }
+                        else {
+                            if (version_compare($ver, $_mods[$mod]['module_version']) == 1) {
+                                $_rs['_items'][$k]['market_missing_required_mod']   = $mod;
+                                $_rs['_items'][$k]['market_missing_required_title'] = $_v['market_require_titles'][$mod];
+                                break;
+                            }
+                        }
+                    }
+                    else {
+                        if (!isset($_mods[$mod])) {
+                            $_rs['_items'][$k]['market_missing_required_mod']   = $mod;
+                            $_rs['_items'][$k]['market_missing_required_title'] = $_v['market_require_titles'][$mod];
+                            break;
+                        }
+                    }
+                }
+
+            }
         }
     }
 
@@ -523,7 +556,7 @@ function view_jrMarket_system_archive($_post, $_user, $_conf)
                 $dat[3]['class'] = 'center';
                 $dat[4]['title'] = $ver;
                 $dat[4]['class'] = 'center';
-                $dat[5]['title'] = jrCore_page_button("r{$mod}{$ver}", 'restore', "if (confirm('WARNING! Are you sure you want to restore this old version? Doing so could cause your system to no longer function properly!')) { jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/restore_item/module/{$mod}/{$ver}') }");
+                $dat[5]['title'] = jrCore_page_button("r{$mod}{$ver}", 'restore', "jrCore_confirm('Restore older version?', 'WARNING! Restoring could cause your system to no longer function properly', function() { jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/restore_item/module/{$mod}/{$ver}') } )");
                 jrCore_page_table_row($dat);
             }
             jrCore_page_table_footer();
@@ -572,7 +605,7 @@ function view_jrMarket_system_archive($_post, $_user, $_conf)
                 $dat[3]['class'] = 'center';
                 $dat[4]['title'] = $ver;
                 $dat[4]['class'] = 'center';
-                $dat[5]['title'] = jrCore_page_button("r[$mod}{$ver}", 'restore', "if (confirm('WARNING! Are you sure you want to restore this old version? Doing so could cause your system to no longer function properly!')) { jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/restore_item/skin/{$mod}/{$ver}') }");
+                $dat[5]['title'] = jrCore_page_button("r[$mod}{$ver}", 'restore', "jrCore_confirm('Restore older version?', 'WARNING! Restoring could cause your system to no longer function properly', function() { jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/restore_item/skin/{$mod}/{$ver}') } )");
                 jrCore_page_table_row($dat);
             }
             jrCore_page_table_footer();
@@ -639,7 +672,7 @@ function view_jrMarket_restore_item_update_save($_post, $_user, $_conf)
     jrCore_verify_module($_post['_1'], $_post['_2']);
     $url = jrCore_get_temp_value('jrMarket', 'marketplace_restore_referrer');
     jrCore_delete_temp_value('jrMarket', 'marketplace_restore_referrer');
-    jrCore_set_form_notice('success', "The archive version of " . $_mods["{$_post['_1']}"] . " has been restored<br><br><b>IMPORTANT:</b> Run an integirity check and reset caches for the new version to take effect", false);
+    jrCore_set_form_notice('success', "The archive version of " . $_mods["{$_post['_1']}"]['module_name'] . " has been restored<br><br><b>IMPORTANT:</b> Run an integirity check and reset caches for the new version to take effect", false);
     jrCore_delete_all_cache_entries();
     jrCore_location($url);
 }
@@ -885,7 +918,7 @@ function view_jrMarket_system_update($_post, $_user, $_conf)
             jrCore_delete_temp_value('jrMarket', 'modal_update_key');
             jrCore_set_temp_value('jrMarket', 'modal_update_key', $mkey);
             if ($all && !isset($_up['module']['jrCore'])) {
-                $temp = jrCore_page_button("uall", 'update all items', "if (confirm('Install all available updates?')){ jrMarket_update_all_items('{$mkey}'); }");
+                $temp = jrCore_page_button("uall", 'update all items', "jrCore_confirm('Install all updates?', '', function() { jrMarket_update_all_items('{$mkey}'); } )");
             }
             else {
                 $temp = jrCore_page_button("uall", 'update all items', 'disabled');
@@ -942,14 +975,13 @@ function view_jrMarket_system_update($_post, $_user, $_conf)
             $dat[5]['class'] = 'center';
             $dat[6]['title'] = (isset($_rs['module']['jrCore']['c'])) ? ucwords($_rs['module']['jrCore']['c']) : 'stable';
             $dat[6]['class'] = 'center';
+            $dat[7]['title'] = $pass;
             if (isset($_rs['module']['jrCore']['v']) && version_compare($_mods['jrCore']['module_version'], $_rs['module']['jrCore']['v']) === -1) {
-                $dat[7]['title'] = $fail;
                 $dat[8]['title'] = $pi . jrCore_page_button("ujrCore", 'update', "jrMarket_update_item('module','jrCore','update'," . intval($_rs['module']['jrCore']['d']) . ");");
                 $blk             = true;
             }
             else {
-                $dat[7]['title'] = $pass;
-                $dat[8]['title'] = $pi . jrCore_page_button("ujrCore", 'reload', "if (confirm('Reload this module from the Marketplace?')) { jrMarket_update_item('module','jrCore','reload'," . intval($_rs['module']['jrCore']['d']) . "); }");
+                $dat[8]['title'] = $pi . jrCore_page_button("ujrCore", 'reload', "jrCore_confirm('Reload module from Marketplace?', '', function() { jrMarket_update_item('module','jrCore','reload'," . intval($_rs['module']['jrCore']['d']) . "); } )");
             }
             $dat[7]['class'] = 'center';
             $dat[8]['class'] = 'center';
@@ -996,7 +1028,7 @@ function view_jrMarket_system_update($_post, $_user, $_conf)
                     $dat[3]['class'] = 'center';
                     $dat[4]['title'] = (isset($_rs['module'][$mod]['v'])) ? $_rs['module'][$mod]['v'] : '-';
                     $dat[4]['class'] = 'center';
-                    $dat[5]['title'] = ($_rs['module'][$mod]['o'] == '1') ? "<a onclick=\"popwin('{$_conf['jrCore_base_url']}/{$_post['module_url']}/changelog/{$mod}/{$_rs['module'][$mod]['v']}','changelog',800,500,'yes');return false\"><span style=\"text-decoration:underline;\"> changes</span></a>" : '-';
+                    $dat[5]['title'] = (isset($_rs['module'][$mod]) && $_rs['module'][$mod]['o'] == '1') ? "<a onclick=\"popwin('{$_conf['jrCore_base_url']}/{$_post['module_url']}/changelog/{$mod}/{$_rs['module'][$mod]['v']}','changelog',800,500,'yes');return false\"><span style=\"text-decoration:underline;\"> changes</span></a>" : '-';
                     $dat[5]['class'] = 'center';
                     $dat[6]['title'] = (isset($_rs['module'][$mod]['c'])) ? ucwords($_rs['module'][$mod]['c']) : '?';
                     $dat[6]['class'] = 'center';
@@ -1015,7 +1047,7 @@ function view_jrMarket_system_update($_post, $_user, $_conf)
                         $dat[8]['class'] = 'error';
                     }
                     elseif (isset($_rs['module'][$mod]['v']) && version_compare($_inf['module_version'], $_rs['module'][$mod]['v']) === -1) {
-                        $dat[7]['title'] = $fail;
+                        $dat[7]['title'] = $pass;
                         $dat[7]['class'] = 'center';
                         $dat[8]['title'] = $pi . jrCore_page_button("u{$mod}", 'update', "jrMarket_update_item('module','{$mod}','update'," . intval($_rs['module'][$mod]['d']) . ");");
                         $dat[8]['class'] = 'center';
@@ -1023,7 +1055,7 @@ function view_jrMarket_system_update($_post, $_user, $_conf)
                     else {
                         $dat[7]['title'] = $pass;
                         $dat[7]['class'] = 'center';
-                        $dat[8]['title'] = $pi . jrCore_page_button("u{$mod}", 'reload', "if (confirm('Reload this module from the Marketplace?')) { jrMarket_update_item('module','{$mod}','reload'," . intval($_rs['module'][$mod]['d']) . "); }");
+                        $dat[8]['title'] = $pi . jrCore_page_button("u{$mod}", 'reload', "jrCore_confirm('Reload module from Marketplace?', '', function() { jrMarket_update_item('module','{$mod}','reload'," . intval($_rs['module'][$mod]['d']) . "); } )");
                         $dat[8]['class'] = 'center';
                     }
                     jrCore_page_table_row($dat);
@@ -1065,7 +1097,7 @@ function view_jrMarket_system_update($_post, $_user, $_conf)
                     else {
                         $dat[7]['title'] = $pass;
                         $dat[7]['class'] = 'center';
-                        $dat[8]['title'] = $pi . jrCore_page_button("u{$mod}", 'reload', "if (confirm('Reload this module from the Marketplace?')) { jrMarket_update_item('module','{$mod}','reload'," . intval($_rs['module'][$mod]['d']) . "); }");
+                        $dat[8]['title'] = $pi . jrCore_page_button("u{$mod}", 'reload', "jrCore_confirm('Reload module from Marketplace?', '', function() { jrMarket_update_item('module','{$mod}','reload'," . intval($_rs['module'][$mod]['d']) . "); } )");
                         $dat[8]['class'] = 'center';
                     }
                     jrCore_page_table_row($dat);
@@ -1139,7 +1171,7 @@ function view_jrMarket_system_update($_post, $_user, $_conf)
                         $dat[8]['class'] = 'error';
                     }
                     elseif (isset($_rs['skin'][$skin]['v']) && version_compare($_inf['version'], $_rs['skin'][$skin]['v']) === -1) {
-                        $dat[7]['title'] = $fail;
+                        $dat[7]['title'] = $pass;
                         $dat[7]['class'] = 'center';
                         $dat[8]['title'] = $pi . jrCore_page_button("u{$skin}", 'update', "jrMarket_update_item('skin','{$skin}','update'," . intval($_rs['skin'][$skin]['d']) . ");");
                         $dat[8]['class'] = 'center';
@@ -1147,7 +1179,7 @@ function view_jrMarket_system_update($_post, $_user, $_conf)
                     else {
                         $dat[7]['title'] = $pass;
                         $dat[7]['class'] = 'center';
-                        $dat[8]['title'] = $pi . jrCore_page_button("u{$skin}", 'reload', "if (confirm('Reload this skin from the Marketplace?')) { jrMarket_update_item('skin','{$skin}','reload'," . intval($_rs['skin'][$skin]['d']) . "); }");
+                        $dat[8]['title'] = $pi . jrCore_page_button("u{$skin}", 'reload', "jrCore_confirm('Reload skin from Marketplace?', '', function() { jrMarket_update_item('skin','{$skin}','reload'," . intval($_rs['skin'][$skin]['d']) . "); } )");
                         $dat[8]['class'] = 'center';
                     }
                     jrCore_page_table_row($dat);
@@ -1189,7 +1221,7 @@ function view_jrMarket_system_update($_post, $_user, $_conf)
                     else {
                         $dat[7]['title'] = $pass;
                         $dat[7]['class'] = 'center';
-                        $dat[8]['title'] = $pi . jrCore_page_button("u{$skin}", 'reload', "if (confirm('Reload this skin from the Marketplace?')) { jrMarket_update_item('skin','{$skin}','reload'," . intval($_rs['skin'][$skin]['d']) . "); }");
+                        $dat[8]['title'] = $pi . jrCore_page_button("u{$skin}", 'reload', "jrCore_confirm('Reload skin from Marketplace?', '', function() { jrMarket_update_item('skin','{$skin}','reload'," . intval($_rs['skin'][$skin]['d']) . "); } )");
                         $dat[8]['class'] = 'center';
                     }
                     jrCore_page_table_row($dat);
@@ -1290,12 +1322,18 @@ function view_jrMarket_update_all_items($_post, $_user, $_conf)
                         jrCore_form_modal_notice('update', "installed module update: " . $_mods[$item]['module_name']);
                         $_md[] = $item;
                     }
+                    else {
+                        jrCore_form_modal_notice('update', "error installing module update: " . $_mods[$item]['module_name']);
+                    }
                     break;
                 case 'skin':
                     $_skn = jrCore_skin_meta_data($item);
                     jrCore_form_modal_notice('update', "installing skin update for: " . $_skn['title']);
                     if (jrMarket_update_skin($item, $_up['skin'], false, true, $_info['d'])) {
                         jrCore_form_modal_notice('update', "installed skin update: " . $_skn['title']);
+                    }
+                    else {
+                        jrCore_form_modal_notice('update', "error installing skin update: " . $_skn['title']);
                     }
                     break;
                 default:
@@ -1307,11 +1345,15 @@ function view_jrMarket_update_all_items($_post, $_user, $_conf)
             sleep(1); // Gives time for update to show
         }
     }
+
+    // Rebuild JS and CSS
+    jrCore_create_master_css($_conf['jrCore_active_skin']);
+    jrCore_create_master_javascript($_conf['jrCore_active_skin']);
+
     jrCore_logger('INF', 'all marketplace updates successfully installed');
     $_post['jr_html_modal_token'] = jrCore_get_temp_value('jrMarket', 'modal_update_key');
     jrCore_form_modal_notice('complete', 'All items have been successfully updated - click close to validate the update');
     jrMarket_reset_opcode_caches();
-    sleep(1);
     jrCore_delete_temp_value('jrMarket', 'modal_update_key');
 
     // Validate modules
@@ -1347,7 +1389,7 @@ function view_jrMarket_update_item($_post, $_user, $_conf)
     $atype  = 'updated';
     if (isset($_post['_3']) && $_post['_3'] == 'reload') {
         // Our $_set could be empty on a reload
-        $_set = array(
+        $_set   = array(
             'module' => array(),
             'skin'   => array()
         );
@@ -1364,28 +1406,34 @@ function view_jrMarket_update_item($_post, $_user, $_conf)
     switch ($_post['_1']) {
         case 'module':
             if (jrMarket_update_module($_post['_2'], $_set['module'], true, false, $mid, $reload)) {
-                jrMarket_reset_opcode_caches();
+
+                // Bring in any new CSS or JS changes
+                if (is_dir(APP_DIR . "/modules/{$_post['_2']}/css")) {
+                    jrCore_create_master_css($_conf['jrCore_active_skin']);
+                }
+                if (is_dir(APP_DIR . "/modules/{$_post['_2']}/js")) {
+                    jrCore_create_master_javascript($_conf['jrCore_active_skin']);
+                }
+
                 jrCore_set_form_notice('success', "The {$_post['_1']} was successfully {$atype}");
                 $_rs = array(
                     'success' => "The {$_post['_1']} was successfully {$atype}",
                     'url'     => "{$_conf['jrCore_base_url']}/{$_post['module_url']}/validate_modules/{$_post['_2']}"
                 );
                 if (isset($_post['_3']) && $_post['_3'] == 'reload') {
+                    // NOTE: $_post['_3'] will be set to "reload" if the module is being reloaded
                     $_rs['url'] .= '/reload';
                 }
-                jrCore_delete_cache('jrCore', 'jrcore_config_and_modules', false, false);
                 jrCore_json_response($_rs);
             }
             break;
         case 'skin':
             if (jrMarket_update_skin($_post['_2'], $_set['skin'], true, false, $mid, $reload)) {
-                jrMarket_reset_opcode_caches();
                 jrCore_set_form_notice('success', "The {$_post['_1']} was successfully {$atype}");
                 $_rs = array(
                     'success' => "The {$_post['_1']} was successfully {$atype}",
                     'url'     => "{$_conf['jrCore_base_url']}/{$_post['module_url']}/system_update"
                 );
-                jrCore_delete_cache('jrCore', 'jrcore_config_and_modules', false, false);
                 jrCore_json_response($_rs);
             }
             break;
@@ -1399,82 +1447,61 @@ function view_jrMarket_update_item($_post, $_user, $_conf)
 }
 
 //------------------------------
+// verify_item
+//------------------------------
+function view_jrMarket_verify_item($_post, $_user, $_conf)
+{
+    global $_mods;
+    if (!isset($_post['_1']) || ($_post['_1'] != 'module' && $_post['_1'] != 'skin')) {
+        jrCore_logger('CRI', 'invalid type received in verify_item', $_post);
+        echo "error: invalid type received in verify_item";
+        exit;
+    }
+    if (empty($_post['_2'])) {
+        jrCore_logger('CRI', 'empty module or skin received in verify_item', $_post);
+        echo "error: empty module or skin received in verify_item";
+        exit;
+    }
+    $key = "{$_post['_1']}_{$_post['_2']}_verify";
+    if (!jrCore_get_temp_value('jrMarket', $key)) {
+        jrCore_logger('CRI', 'invalid verify_item request - temp key not found', $_post);
+        echo "error: invalid verify_item request - temp key not found";
+        exit;
+    }
+    jrCore_delete_temp_value('jrMarket', $key);
+    switch ($_post['_1']) {
+        case 'module':
+            $mod = $_post['_2'];
+            if (!isset($_mods[$mod])) {
+                jrCore_logger('CRI', "invalid module received in verify_item: {$mod}", $_post);
+                echo "error: invalid module received in verify_item";
+                exit;
+            }
+            jrMarket_reset_opcode_caches();
+            jrCore_verify_module($mod);
+            break;
+        case 'skin':
+            jrCore_verify_skin($_post['_2']);
+            break;
+    }
+    echo "success: 1";
+}
+
+//------------------------------
 // validate_modules
 //------------------------------
 function view_jrMarket_validate_modules($_post, $_user, $_conf)
 {
     jrUser_master_only();
     if (isset($_post['_1']) && $_post['_1'] == 'bundle') {
-        $_bn = jrCore_get_temp_value('jrMarket', 'bundle_update');
         jrCore_delete_temp_value('jrMarket', 'bundle_update');
-        if (!$_bn || !is_array($_bn)) {
-            jrCore_location("{$_conf['jrCore_base_url']}/{$_post['module_url']}/system_update");
-        }
-        jrMarket_reset_opcode_caches();
-        foreach ($_bn as $mod) {
-
-            if (is_file(APP_DIR . "/modules/{$mod}/include.php")) {
-
-                jrCore_verify_module($mod);
-
-                // We need to make sure and UPDATE the version number in the DB as well
-                $_mta = file(APP_DIR . "/modules/{$mod}/include.php");
-                if ($_mta && is_array($_mta)) {
-                    $meta = false;
-                    foreach ($_mta as $line) {
-                        if (strpos(' ' . $line, 'function') && strpos($line, '_meta()')) {
-                            $meta = true;
-                            continue;
-                        }
-                        if ($meta) {
-                            if (trim($line) == '}') {
-                                break;
-                            }
-                            elseif (strpos($line, '=>')) {
-                                $line = trim(trim(str_replace(array('"', "'"), '', $line)), ',');
-                                $mkey = jrCore_string_field($line, 1);
-                                switch ($mkey) {
-                                    case 'version':
-                                        list(, $ver) = explode('=>', $line);
-                                        $ver = trim($ver);
-                                        if (isset($ver) && strlen($ver) > 0) {
-                                            // Make sure we update the DB to our new version
-                                            $tbl = jrCore_db_table_name('jrCore', 'module');
-                                            $req = "UPDATE {$tbl} SET `module_version` = '" . jrCore_db_escape($ver) . "' WHERE `module_directory` = '{$mod}' LIMIT 1";
-                                            jrCore_db_query($req);
-                                            continue 2;
-                                        }
-                                        break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-            }
-        }
-    }
-    else {
-        $i = 1;
-        $d = false;
-        while (!$d) {
-            if (isset($_post["_{$i}"]) && strlen($_post["_{$i}"]) > 0) {
-                if (is_file(APP_DIR . '/modules/' . $_post["_{$i}"] . '/include.php')) {
-                    jrCore_verify_module($_post["_{$i}"]);
-                }
-                $i++;
-            }
-            else {
-                break;
-            }
-        }
     }
     // Force reload of new module on next load
-    jrCore_delete_all_cache_entries();
     if (isset($_post['_2']) && $_post['_2'] == 'reload') {
         $murl = jrCore_get_module_url($_post['_1']);
         jrCore_location("{$_conf['jrCore_base_url']}/{$murl}/admin/info");
     }
+    // Refresh on system update
     jrCore_location("{$_conf['jrCore_base_url']}/{$_post['module_url']}/system_update/r=" . mt_rand(1000, 9999));
 }
 
@@ -1857,7 +1884,7 @@ function view_jrMarket_install_result($_post, $_user, $_conf)
         foreach ($_rt['skins'] as $name => $_inf) {
             $_mta            = jrCore_skin_meta_data($name);
             $dat             = array();
-            $dat[1]['title'] = "<img src=\"{$_conf['jrCore_base_url']}/skins/{$name}/icon.png\" alt=\"{$name}\" width=\"32\">";
+            $dat[1]['title'] = jrCore_get_skin_icon_html($name, 32);
             $dat[1]['width'] = '2%';
             $dat[2]['title'] = $_mta['name'];
             $dat[3]['title'] = $_inf['old_version'];
@@ -1927,7 +1954,7 @@ function view_jrMarket_systems($_post, $_user, $_conf)
             $dat[3]['class'] = 'center';
             $dat[4]['title'] = jrCore_page_button("m{$k}", 'modify', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/release_system_update/id={$_sys['system_id']}')");
             if ($_sys['system_id'] > 1) {
-                $dat[5]['title'] = jrCore_page_button("d{$k}", 'delete', "if (confirm('Are you sure you delete this system?')) { jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/system_delete_save/id={$_sys['system_id']}') }");
+                $dat[5]['title'] = jrCore_page_button("d{$k}", 'delete', "jrCore_confirm('Delete this Marketplace System?', '', function() { jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/system_delete_save/id={$_sys['system_id']}') } )");
             }
             else {
                 $dat[5]['title'] = jrCore_page_button("d{$k}", 'delete', 'disabled');
@@ -2006,9 +2033,10 @@ function view_jrMarket_systems_save($_post, &$_user, &$_conf)
 {
     jrUser_master_only();
     // Make sure this does not already exist
+    $cod = jrCore_db_escape($_post['system_code']);
     $url = jrCore_db_escape(trim($_post['system_url']));
     $tbl = jrCore_db_table_name('jrMarket', 'system');
-    $req = "SELECT * FROM {$tbl} WHERE system_url = '{$url}' LIMIT 1";
+    $req = "SELECT * FROM {$tbl} WHERE system_url = '{$url}' OR system_code = '{$cod}' LIMIT 1";
     $_rt = jrCore_db_query($req, 'SINGLE');
     if (is_array($_rt)) {
         jrCore_set_form_notice('error', 'A system using that URL is already configured!');
@@ -2016,7 +2044,6 @@ function view_jrMarket_systems_save($_post, &$_user, &$_conf)
     }
     $nam = jrCore_db_escape($_post['system_name']);
     $eml = jrCore_db_escape($_post['system_email']);
-    $cod = jrCore_db_escape($_post['system_code']);
     $req = "INSERT INTO {$tbl} (system_name, system_url, system_email, system_code, system_active) VALUES ('{$nam}', '{$url}', '{$eml}', '{$cod}', 'on')";
     $sid = jrCore_db_query($req, 'INSERT_ID');
     if (isset($sid) && jrCore_checktype($sid, 'number_nz')) {
@@ -2302,7 +2329,7 @@ function view_jrMarket_release_channels($_post, $_user, $_conf)
                     $dat[4]['title'] = jrCore_page_button("channel-active-{$k}", 'disable', 'disabled');
                 }
                 else {
-                    $dat[4]['title'] = jrCore_page_button("channel-active-{$k}", 'disable', "if (confirm('Are you sure you no longer wish to subscribe to this channel?')) { jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/channel_active/id={$_chan['channel_id']}/status=0') }");
+                    $dat[4]['title'] = jrCore_page_button("channel-active-{$k}", 'disable', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/channel_active/id={$_chan['channel_id']}/status=0')");
                 }
             }
             else {

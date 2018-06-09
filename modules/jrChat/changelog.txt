@@ -1,5 +1,30 @@
 Simple Chat module changelog
 
+Version 1.2.4:
+ - New: Send message button added to mobile version to send message without pressing return
+
+Version 1.2.3:
+ - Bug Fix: Images shared in Chat may not be visible to non-admin users
+
+Version 1.2.2:
+ - Change: Lightbox grouping changed so chat images do not appear in site-wide lightboxes
+
+Version 1.2.1:
+ - Change: Total message count for room is now shown in drop down room selector
+ - Change: New messages in room will now highlight the total message count in room selector
+
+Version 1.2.0:
+ - New: "Users in this Chat" list updated to show active users at the top of the list
+ - New: Clicking a user's image in chat will start a private chat with that user
+ - New: User name in chat messages now links to the user's profile
+ - Change: Improved message delete so the message is removed from the list for all users
+ - Bug Fix: Inactive users not showing as "inactive" in the "Users in this Chat" list
+ - Bug Fix: Missing icon highlighting added to upload file button
+
+Version 1.1.2:
+ - Bug Fix: New message indicator could be hilighted when opening a new tab
+ - Bug Fix: New message hilighting would disappear when opening new tabs or windows
+
 Version 1.1.1:
  - Change: Lightbox from Jamroom site will no longer show images uploaded in Chat
  - Change: CSS updates to be better at wrapping text when chat pane is very narrow

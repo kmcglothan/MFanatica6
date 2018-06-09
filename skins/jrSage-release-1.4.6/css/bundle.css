@@ -1,0 +1,57 @@
+/* Jamroom 5 FoxyCart Bundle module CSS */
+.bundle_box {
+    position:inherit;
+    width:400px;
+    text-align:left;
+    background-color:#EFF5EF;
+    border:5px solid #CFDFCF;
+    border-radius:0;
+    padding:12px;
+    white-space:nowrap;
+    z-index:100;
+    overflow:visible;
+    box-shadow:none;
+}
+
+.bundle_item_section {
+    border-radius:0;
+    padding:9px;
+    background:#EFF5EF;
+}
+
+.bundle_item_table {
+}
+
+.bundle_section {
+    margin-top:12px;
+    padding:4px 0;
+    background-color:#EFF5EF;
+    border-radius:0;
+}
+
+.bundle_drop_section {
+    margin-top:12px;
+    padding:9px;
+    background-color:#BFD5BF;
+    border-radius:0;
+}
+
+.bundle_table {
+}
+
+.bundle_table th {
+    color:#000;
+    font-weight:bold;
+}
+
+.bundle_cart_image {
+    cursor:pointer;
+}
+
+@media handheld, only screen and (max-width: 767px) {
+    .bundle_box {
+        position:absolute;
+        width:80%;
+        right:0;
+    }
+}

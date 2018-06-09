@@ -7,7 +7,7 @@
             {jrCore_item_detail_buttons module="jrGallery" field="gallery_image" item=$item update_action="`$murl`/detail/id=`$item._item_id`" delete_action="`$murl`/delete_image/id=`$item._item_id`"}
 
         </div>
-        <h1>{$item.gallery_title}</h1>
+        <h1>{jrGallery_get_gallery_image_title item=$item}</h1>
 
         <div class="breadcrumbs">
             {if isset($quota_jrGallery_gallery_group) && $quota_jrGallery_gallery_group == 'off'}
@@ -15,7 +15,7 @@
             {else}
                 {jrCore_lang module="jrGallery" id=24 default="Image Galleries" assign="heading"}
             {/if}
-            <a href="{$jamroom_url}/{$item.profile_url}/">{$item.profile_name}</a> &raquo; <a href="{$jamroom_url}/{$item.profile_url}/{$murl}">{$heading}</a> &raquo; <a href="{$jamroom_url}/{$item.profile_url}/{$murl}/{$item.gallery_title_url}/all">{$item.gallery_title}</a>{if isset($item.gallery_image_title) && strlen($item.gallery_image_title) > 0} &raquo; {$item.gallery_image_title}{/if}
+            <a href="{$jamroom_url}/{$item.profile_url}/">{$item.profile_name}</a> &raquo; <a href="{$jamroom_url}/{$item.profile_url}/{$murl}">{$heading}</a> &raquo; <a href="{$jamroom_url}/{$item.profile_url}/{$murl}/{$item.gallery_title_url}/all">{$item.gallery_title}</a> &raquo; {jrGallery_get_gallery_image_title item=$item}
         </div>
     </div>
 
@@ -77,12 +77,6 @@
                 <div style="clear:both"></div>
             </div>
         </div>
-
-        {if !empty($item.gallery_image_title)}
-            <div class="item center">
-                <h2>{$item.gallery_image_title}</h2>
-            </div>
-        {/if}
 
         {* Gallery Image *}
         <div class="item center">

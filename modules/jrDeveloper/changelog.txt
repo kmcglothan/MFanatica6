@@ -1,5 +1,27 @@
 Developer Tools module changelog
 
+Version 1.5.2:
+ - Bug Fix: PHP files with comment headers not using Javadoc style tags not being packaged correctly
+
+Version 1.5.1:
+ - Bug Fix: Updated Adminer table filter plugin to work with new version of Adminer
+
+Version 1.5.0:
+ - New: Memory Cache Admin tool added to support new local memory cache functions in Core 6.1.6+
+ - Change: Updated bundled Adminer MySQL admin script to version 4.6.1
+
+Version 1.4.7:
+ - Change: Updated bundled Adminer MySQL admin script to version 4.3.1
+
+Version 1.4.6:
+ - Change: Removed "URL detail in Queries" global config - now automatically enabled in the Core
+ - Change: "Template Name in Source" no longer requires that Developer Mode is enabled to work
+ - Bug Fix: System Reset tool not removing "count" keys from master admin user and profile DS entries
+
+Version 1.4.5:
+ - Change: "System Reset" Tool wording clarified
+ - Bug Fix: "System Reset" Tool not working if run twice in succession
+
 Version 1.4.4:
  - New: "URL detail in Queries" setting to add information to logged SQL queries
  - Change: Template name no longer added to RSS templates even if "Template Name in Source" is enabled

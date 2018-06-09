@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -47,7 +47,6 @@ defined('APP_DIR') or exit();
  */
 function jrCore_db_schema()
 {
-    global $_conf;
     // Logs
     $_tmp = array(
         "log_id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
@@ -55,19 +54,22 @@ function jrCore_db_schema()
         "log_priority CHAR(3) CHARACTER SET latin1 NOT NULL DEFAULT 'inf'",
         "log_ip VARCHAR(45) CHARACTER SET latin1 NOT NULL DEFAULT ''",
         "log_text VARCHAR(4096) NOT NULL DEFAULT ''",
-        "INDEX log_priority (log_priority)"
+        "INDEX log_created (log_created)",
+        "INDEX log_priority (log_priority)",
+        "INDEX log_ip (log_ip)"
     );
-    jrCore_db_verify_table('jrCore', 'log', $_tmp, 'MyISAM');
+    jrCore_db_verify_table('jrCore', 'log', $_tmp, 'InnoDB');
 
     // Log Debug
     $_tmp = array(
         "log_log_id INT(11) UNSIGNED NOT NULL DEFAULT '0'",
-        "log_url VARCHAR(256) NOT NULL DEFAULT ''",
+        "log_url VARCHAR(255) NOT NULL DEFAULT ''",
         "log_memory BIGINT(20) UNSIGNED NOT NULL DEFAULT '0'",
         "log_data MEDIUMTEXT NOT NULL",
         "UNIQUE log_log_id (log_log_id)"
     );
     jrCore_db_verify_table('jrCore', 'log_debug', $_tmp, 'InnoDB');
+    jrCore_db_change_table_engine('jrCore', 'log_debug', 'InnoDB');
 
     // Settings
     $_tmp = array(
@@ -85,7 +87,7 @@ function jrCore_db_schema()
         "`options` MEDIUMTEXT NOT NULL",
         "`user` VARCHAR(128) NOT NULL DEFAULT ''",
         "`label` VARCHAR(64) NOT NULL DEFAULT ''",
-        "`sublabel` VARCHAR(128) NOT NULL DEFAULT ''",
+        "`sublabel` VARCHAR(256) NOT NULL DEFAULT ''",
         "`help` VARCHAR(4096) NOT NULL DEFAULT ''",
         "`section` VARCHAR(64) NOT NULL DEFAULT ''",
         "`order` TINYINT(3) UNSIGNED NOT NULL DEFAULT '1'",
@@ -93,7 +95,7 @@ function jrCore_db_schema()
         "INDEX `type` (`type`)",
         "INDEX `order` (`order`)"
     );
-    jrCore_db_verify_table('jrCore', 'setting', $_tmp);
+    jrCore_db_verify_table('jrCore', 'setting', $_tmp, 'InnoDB');
 
     // Modules
     $_tmp = array(
@@ -104,7 +106,7 @@ function jrCore_db_schema()
         "module_directory VARCHAR(64) NOT NULL DEFAULT ''",
         "module_url VARCHAR(64) NOT NULL DEFAULT ''",
         "module_version VARCHAR(12) NOT NULL DEFAULT ''",
-        "module_name VARCHAR(256) NOT NULL DEFAULT ''",
+        "module_name VARCHAR(255) NOT NULL DEFAULT ''",
         "module_prefix VARCHAR(32) NOT NULL DEFAULT ''",
         "module_description VARCHAR(1024) NOT NULL DEFAULT ''",
         "module_category VARCHAR(64) NOT NULL DEFAULT ''",
@@ -120,19 +122,20 @@ function jrCore_db_schema()
         "INDEX module_category (module_category)",
         "INDEX module_active (module_active)"
     );
-    jrCore_db_verify_table('jrCore', 'module', $_tmp);
+    jrCore_db_verify_table('jrCore', 'module', $_tmp, 'InnoDB');
 
     // Skins
     $_tmp = array(
-        "skin_directory VARCHAR(64) NOT NULL DEFAULT ''",
+        "skin_directory VARCHAR(128) NOT NULL DEFAULT ''",
         "skin_updated INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "skin_custom_css MEDIUMTEXT NOT NULL",
         "skin_custom_image MEDIUMTEXT NOT NULL",
         "skin_system_id TINYINT(3) UNSIGNED NOT NULL DEFAULT '0'",
         "skin_license VARCHAR(32) NOT NULL DEFAULT ''",
+        "skin_cloned_from VARCHAR(128) NOT NULL DEFAULT ''",
         "PRIMARY KEY (skin_directory)"
     );
-    jrCore_db_verify_table('jrCore', 'skin', $_tmp);
+    jrCore_db_verify_table('jrCore', 'skin', $_tmp, 'InnoDB');
 
     // Forms
     $_tmp = array(
@@ -160,7 +163,7 @@ function jrCore_db_schema()
         "PRIMARY KEY (`module`,`view`,`name`)",
         "INDEX `order` (`order`)"
     );
-    jrCore_db_verify_table('jrCore', 'form', $_tmp);
+    jrCore_db_verify_table('jrCore', 'form', $_tmp, 'InnoDB');
 
     // Menu
     $_tmp = array(
@@ -181,7 +184,7 @@ function jrCore_db_schema()
         "INDEX menu_active (menu_active)",
         "INDEX menu_order (menu_order)"
     );
-    jrCore_db_verify_table('jrCore', 'menu', $_tmp);
+    jrCore_db_verify_table('jrCore', 'menu', $_tmp, 'InnoDB');
 
     // Cache
     $_tmp = array(
@@ -200,6 +203,7 @@ function jrCore_db_schema()
         "INDEX cache_item_id (cache_item_id(64))"
     );
     jrCore_db_verify_table('jrCore', 'cache', $_tmp, 'InnoDB');
+    jrCore_db_change_table_engine('jrCore', 'cache', 'InnoDB');
 
     // TempValue
     $_tmp = array(
@@ -211,7 +215,8 @@ function jrCore_db_schema()
         "INDEX temp_key (temp_key)",
         "INDEX temp_updated (temp_updated)"
     );
-    jrCore_db_verify_table('jrCore', 'tempvalue', $_tmp);
+    jrCore_db_verify_table('jrCore', 'tempvalue', $_tmp, 'InnoDB');
+    jrCore_db_change_table_engine('jrCore', 'tempvalue', 'InnoDB');
 
     // Template
     $_tmp = array(
@@ -227,7 +232,7 @@ function jrCore_db_schema()
         "UNIQUE template_unique (template_module, template_name)",
         "INDEX template_active (template_active)"
     );
-    jrCore_db_verify_table('jrCore', 'template', $_tmp);
+    jrCore_db_verify_table('jrCore', 'template', $_tmp, 'InnoDB');
 
     // Form Sessions
     $_tmp = array(
@@ -246,17 +251,7 @@ function jrCore_db_schema()
         "INDEX form_user_id (form_user_id)"
     );
     jrCore_db_verify_table('jrCore', 'form_session', $_tmp, 'InnoDB');
-
-    // Counter
-    $_tmp = array(
-        "count_ip VARCHAR(45) NOT NULL DEFAULT ''",
-        "count_uid INT(11) UNSIGNED NOT NULL DEFAULT '0'",
-        "count_user_id INT(11) UNSIGNED NOT NULL DEFAULT '0'",
-        "count_name VARCHAR(128) NOT NULL DEFAULT ''",
-        "count_time INT(11) UNSIGNED NOT NULL DEFAULT '0'",
-        "UNIQUE count_hit (count_ip, count_uid, count_user_id, count_name)"
-    );
-    jrCore_db_verify_table('jrCore', 'count_ip', $_tmp);
+    jrCore_db_change_table_engine('jrCore', 'form_session', 'InnoDB');
 
     // We need to drop the OLD Primary key if it exists
     if (jrCore_db_table_exists('jrCore', 'count_ip')) {
@@ -272,31 +267,49 @@ function jrCore_db_schema()
                 }
             }
         }
+        // Update counter IP addresses to be integers
+        $req = "UPDATE {$tbl} SET count_ip = INET_ATON(count_ip) WHERE count_ip LIKE '%.%'";
+        $cnt = jrCore_db_query($req, 'COUNT', false, null, false);
+        if ($cnt > 0) {
+            jrCore_logger('INF', "converted " . jrCore_number_format($cnt) . " counter entries to correct IP address format");
+        }
     }
+
+    // Counter
+    $_tmp = array(
+        "count_ip INT(11) UNSIGNED NOT NULL DEFAULT '0'",
+        "count_uid INT(11) UNSIGNED NOT NULL DEFAULT '0'",
+        "count_user_id INT(11) UNSIGNED NOT NULL DEFAULT '0'",
+        "count_name VARCHAR(128) NOT NULL DEFAULT ''",
+        "count_time INT(11) UNSIGNED NOT NULL DEFAULT '0'",
+        "UNIQUE count_hit (count_ip, count_uid, count_user_id, count_name)"
+    );
+    jrCore_db_verify_table('jrCore', 'count_ip', $_tmp, 'InnoDB');
 
     // Modal
     $_tmp = array(
-        "modal_id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
-        "modal_updated INT(10) UNSIGNED NOT NULL DEFAULT '0'",
+        "modal_id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
+        "modal_updated INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "modal_key VARCHAR(32) NOT NULL DEFAULT ''",
         "modal_value VARCHAR(512) NOT NULL DEFAULT ''",
         "INDEX modal_key (modal_key)"
     );
-    jrCore_db_verify_table('jrCore', 'modal', $_tmp);
+    jrCore_db_verify_table('jrCore', 'modal', $_tmp, 'InnoDB');
 
     // Play Keys
     $_tmp = array(
         "key_id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
-        "key_time INT(10) UNSIGNED NOT NULL DEFAULT '0'",
+        "key_time INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "key_code VARCHAR(16) NOT NULL DEFAULT ''",
         "UNIQUE key_code (key_code)"
     );
     jrCore_db_verify_table('jrCore', 'play_key', $_tmp, 'InnoDB');
+    jrCore_db_change_table_engine('jrCore', 'play_key', 'InnoDB');
 
     // Pending Item
     $_tmp = array(
-        "pending_id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
-        "pending_created INT(10) UNSIGNED NOT NULL DEFAULT '0'",
+        "pending_id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
+        "pending_created INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "pending_module VARCHAR(64) NOT NULL DEFAULT ''",
         "pending_item_id INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "pending_linked_item_module VARCHAR(64) NOT NULL DEFAULT ''",
@@ -307,16 +320,48 @@ function jrCore_db_schema()
         "INDEX pending_linked_item_module (pending_linked_item_module)",
         "INDEX pending_linked_item_id (pending_linked_item_id)"
     );
-    jrCore_db_verify_table('jrCore', 'pending', $_tmp);
+    jrCore_db_verify_table('jrCore', 'pending', $_tmp, 'InnoDB');
 
     // Pending Reason
     $_tmp = array(
-        "reason_id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
+        "reason_id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
         "reason_key VARCHAR(32) NOT NULL DEFAULT ''",
         "reason_text VARCHAR(1024) NOT NULL DEFAULT ''",
         "UNIQUE reason_key (reason_key)"
     );
-    jrCore_db_verify_table('jrCore', 'pending_reason', $_tmp);
+    jrCore_db_verify_table('jrCore', 'pending_reason', $_tmp, 'InnoDB');
+
+    // Have we migrated to the new queue structure yet?
+    $_sv = false;
+    $_tm = jrCore_db_table_columns('jrCore', 'queue');
+    if ($_tm && isset($_tm['queue_data'])) {
+
+        // Turn off queues while we work
+        if (function_exists('jrCore_set_system_queue_state')) {
+            jrCore_set_system_queue_state('off');
+        }
+
+        // We are still on the "old" version of the queue table - migrate queue entries
+        $tbl = jrCore_db_table_name('jrCore', 'queue');
+        $req = "SELECT queue_id, queue_module, queue_name, queue_data, queue_sleep, queue_system_id FROM {$tbl} WHERE queue_started = 0";
+        $_sv = jrCore_db_query($req, 'queue_id');
+        if ($_sv && is_array($_sv) && count($_sv) > 0) {
+            // We have them - remove them
+            $req = "DELETE FROM {$tbl} WHERE queue_id IN(" . implode(',', array_keys($_sv)) . ')';
+            jrCore_db_query($req);
+        }
+    }
+
+    // Queue Data
+    $_tmp = array(
+        "queue_id BIGINT(20) UNSIGNED NOT NULL PRIMARY KEY",
+        "queue_item_id BIGINT(20) UNSIGNED NOT NULL DEFAULT '0'",
+        "queue_data LONGTEXT NOT NULL",
+        "queue_status VARCHAR(255) NOT NULL DEFAULT ''",
+        "queue_note VARCHAR(255) NOT NULL DEFAULT ''",
+        "INDEX queue_item_id (queue_item_id)",
+    );
+    jrCore_db_verify_table('jrCore', 'queue_data', $_tmp, 'InnoDB');
 
     // Queue
     $_tmp = array(
@@ -325,15 +370,11 @@ function jrCore_db_schema()
         "queue_system_id VARCHAR(32) NOT NULL DEFAULT ''",
         "queue_created INT(10) UNSIGNED NOT NULL DEFAULT '0'",
         "queue_module VARCHAR(64) NOT NULL DEFAULT ''",
-        "queue_item_id INT(11) UNSIGNED NOT NULL DEFAULT '0'",
-        "queue_data LONGTEXT NOT NULL",
         "queue_worker VARCHAR(64) NOT NULL DEFAULT ''",
         "queue_started INT(10) UNSIGNED NOT NULL DEFAULT '0'",
         "queue_expires INT(10) UNSIGNED NOT NULL DEFAULT '0'",
         "queue_sleep INT(10) UNSIGNED NOT NULL DEFAULT '0'",
         "queue_count INT(10) UNSIGNED NOT NULL DEFAULT '0'",
-        "queue_status VARCHAR(256) NOT NULL DEFAULT ''",
-        "queue_note VARCHAR(256) NOT NULL DEFAULT ''",
         "INDEX queue_name (queue_name)",
         "INDEX queue_system_id (queue_system_id)",
         "INDEX queue_created (queue_created)",
@@ -343,16 +384,47 @@ function jrCore_db_schema()
         "INDEX queue_expires (queue_expires)",
         "INDEX queue_sleep (queue_sleep)"
     );
-    jrCore_db_verify_table('jrCore', 'queue', $_tmp, 'MyISAM');  // Note: Needs to be MyISAM
+    jrCore_db_verify_table('jrCore', 'queue', $_tmp, 'InnoDB');
+    jrCore_db_change_table_engine('jrCore', 'queue', 'InnoDB');
 
-    // Queue Worker
+    // Old columns we no longer need
+    if (function_exists('jrCore_db_delete_table_column')) {
+        jrCore_db_delete_table_column('jrCore', 'queue', 'queue_item_id');
+        jrCore_db_delete_table_column('jrCore', 'queue', 'queue_data');
+        jrCore_db_delete_table_column('jrCore', 'queue', 'queue_status');
+        jrCore_db_delete_table_column('jrCore', 'queue', 'queue_note');
+    }
+
+    // Queue Info
     $_tmp = array(
         "queue_name VARCHAR(128) NOT NULL DEFAULT ''",
         "queue_workers TINYINT(1) UNSIGNED NOT NULL DEFAULT '0'",
         "queue_depth INT(11) UNSIGNED NOT NULL DEFAULT '0'",
-        "UNIQUE queue_name (queue_name)"
+        "UNIQUE queue_name (queue_name)",
+        "INDEX queue_workers (queue_workers)",
+        "INDEX queue_depth (queue_depth)"
     );
-    jrCore_db_verify_table('jrCore', 'queue_info', $_tmp, 'MyISAM');  // Note: Needs to be MyISAM
+    jrCore_db_verify_table('jrCore', 'queue_info', $_tmp, 'InnoDB');
+    jrCore_db_change_table_engine('jrCore', 'queue_info', 'InnoDB');
+
+    // migrate existing queues to new queue entries
+    if ($_sv && count($_sv) > 0) {
+        foreach ($_sv as $q) {
+            $_dt = json_decode($q['queue_data'], true);
+            $slp = 0;
+            if ($q['queue_sleep'] > time()) {
+                $slp = ($q['queue_sleep'] - time());
+            }
+            jrCore_queue_create($q['queue_module'], $q['queue_name'], $_dt, $slp, $q['queue_system_id']);
+        }
+        jrCore_logger('INF', "successfully migrated " . jrCore_number_format(count($_sv)) . " queue entries to new format");
+        unset($_sv);
+
+        // Turn queues back on
+        if (function_exists('jrCore_set_system_queue_state')) {
+            jrCore_set_system_queue_state('on');
+        }
+    }
 
     // Performance
     $_tmp = array(
@@ -366,7 +438,7 @@ function jrCore_db_schema()
         "p_type VARCHAR(32) NOT NULL DEFAULT ''",
         "INDEX p_time (p_time)"
     );
-    jrCore_db_verify_table('jrCore', 'performance', $_tmp);
+    jrCore_db_verify_table('jrCore', 'performance', $_tmp, 'InnoDB');
 
     // Recycle Bin
     $_tmp = array(
@@ -384,7 +456,7 @@ function jrCore_db_schema()
         "INDEX r_title (r_title)",
         "INDEX r_time (r_time)"
     );
-    jrCore_db_verify_table('jrCore', 'recycle', $_tmp);
+    jrCore_db_verify_table('jrCore', 'recycle', $_tmp, 'InnoDB');
 
     // Emoji
     $_tmp = array(
@@ -392,7 +464,7 @@ function jrCore_db_schema()
         "emoji_value VARBINARY(16) NOT NULL",
         "UNIQUE emoji_value (emoji_value)"
     );
-    jrCore_db_verify_table('jrCore', 'emoji', $_tmp);
+    jrCore_db_verify_table('jrCore', 'emoji', $_tmp, 'InnoDB');
 
     // Stat Count
     $_tmp = array(
@@ -417,19 +489,22 @@ function jrCore_db_schema()
     );
     jrCore_db_verify_table('jrCore', 'stat_unique', $_tmp, 'InnoDB');
 
+    // Locks
+    $_tmp = array(
+        "lock_id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
+        "lock_unique VARCHAR(128) NOT NULL",
+        "lock_expires INT(11) UNSIGNED NOT NULL DEFAULT '0'",
+        "UNIQUE lock_unique (lock_unique)",
+        "INDEX lock_expires (lock_expires)"
+    );
+    jrCore_db_verify_table('jrCore', 'global_lock', $_tmp, 'InnoDB');
+
     // Used for performance testing
     jrCore_db_create_datastore('jrCore', 'core');
 
     // Validate queue depth in queue info table
     if (function_exists('jrCore_validate_queue_info')) {
         jrCore_validate_queue_info();
-    }
-
-    // Ensure minute maintenance is correct
-    $now = gmstrftime('%y%m%d%H%M');
-    if (isset($_conf['jrCore_last_minute_maint_run']) && $_conf['jrCore_last_minute_maint_run'] > $now) {
-        jrCore_set_setting_value('jrCore', 'last_minute_maint_run', $now);
-        jrCore_delete_config_cache();
     }
 
     return true;

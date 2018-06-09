@@ -1,9 +1,8 @@
 <?php
 /**
- * Jamroom 5 Chained Select module
+ * Jamroom Chained Select module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -43,13 +42,13 @@
 defined('APP_DIR') or exit();
 
 /**
- * jrChainedSelect_db_schema
+ * db_schema
  */
 function jrChainedSelect_db_schema()
 {
     // Sets
     $_tmp = array(
-        "set_id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
+        "set_id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
         "set_name VARCHAR(64) NOT NULL DEFAULT ''",
         "set_levels TINYINT(1) UNSIGNED NOT NULL DEFAULT '2'",
         "set_options_0 MEDIUMTEXT NOT NULL",
@@ -59,7 +58,6 @@ function jrChainedSelect_db_schema()
         "set_options_2_title VARCHAR(128) NOT NULL DEFAULT ''",
         "UNIQUE set_name (set_name)"
     );
-    jrCore_db_verify_table('jrChainedSelect', 'sets', $_tmp);
-
+    jrCore_db_verify_table('jrChainedSelect', 'sets', $_tmp, 'InnoDB');
     return true;
 }

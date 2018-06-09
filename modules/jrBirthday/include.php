@@ -1,9 +1,8 @@
 <?php
 /**
- * Jamroom 5 User Birthday module
+ * Jamroom User Birthday module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -50,7 +49,7 @@ function jrBirthday_meta()
     $_tmp = array(
         'name'        => 'User Birthday',
         'url'         => 'birthday',
-        'version'     => '1.0.0',
+        'version'     => '1.1.0',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Creates Timeline entries for User Birthdays',
         'requires'    => 'jrCore:6.0.0',
@@ -80,6 +79,9 @@ function jrBirthday_init()
 
     // Site Builder widget
     jrCore_register_module_feature('jrSiteBuilder', 'widget', 'jrBirthday', 'widget_birthdays', 'User Birthdays');
+
+    // Action support
+    jrCore_register_module_feature('jrCore', 'action_support', 'jrBirthday', 'create', 'item_action.tpl');
 
     return true;
 }
@@ -219,8 +221,31 @@ function jrBirthday_check_for_birthdays_worker($_queue)
         );
         $_ut = jrCore_db_search_items('jrUser', $_ut);
         if ($_ut && is_array($_ut) && isset($_ut['_items'])) {
+            $_pids = array();
+            $_uids = array();
             foreach ($_ut['_items'] as $_usr) {
-                jrCore_run_module_function('jrAction_save', 'create', 'jrBirthday', $_usr['_user_id'], $_usr, false, $_usr['_profile_id']);
+                $_pids["{$_usr['_user_id']}"] = $_usr['_profile_id'];
+                $_uids["{$_usr['_user_id']}"] = $_usr;
+            }
+            if (count($_pids) > 0) {
+                $pids = implode(',', $_pids);
+                $_pt = array(
+                    "search" => array("_profile_id IN {$pids}"),
+                    'privacy_check' => false,
+                    'limit'         => 10000
+                );
+                $_pt = jrCore_db_search_items('jrProfile', $_pt);
+                if ($_pt && is_array($_pt) && isset($_pt['_items'])) {
+                    foreach ($_pt['_items'] as $_prf) {
+                        if (!isset($_prf['quota_jrAction_allowed']) || $_prf['quota_jrAction_allowed'] != 'on') {
+                            unset($_uids["{$_prf['_user_id']}"]);
+                        }
+                    }
+                    foreach ($_uids as $_usr) {
+                        $_usr['quota_jrAction_allowed'] = 'on';
+                        jrCore_run_module_function('jrAction_save', 'create', 'jrBirthday', $_usr['_user_id'], $_usr, false, $_usr['_profile_id']);
+                    }
+                }
             }
         }
     }

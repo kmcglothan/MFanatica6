@@ -344,15 +344,15 @@ function view_jrPage_create_save($_post, &$_user, &$_conf)
 
     // Save any uploaded media files added in by our Page Designer
     jrCore_save_all_media_files('jrPage', 'create', $_user['user_active_profile_id'], $aid);
-
-    // Add to Actions...
-    jrCore_run_module_function('jrAction_save', 'create', 'jrPage', $aid);
-
     jrCore_form_delete_session();
 
     // See where we redirect here...
     if (!isset($_rt['page_location']) || $_rt['page_location'] === '1') {
-        jrProfile_reset_cache();
+        // Add to Actions...
+        jrCore_run_module_function('jrAction_save', 'create', 'jrPage', $aid);
+
+        jrProfile_reset_cache($_user['user_active_profile_id'], 'jrPage');
+        jrUser_reset_cache($_user['_user_id'], 'jrPage');
         jrCore_form_result("{$_conf['jrCore_base_url']}/{$_user['profile_url']}/{$_post['module_url']}/{$aid}/{$_rt['page_title_url']}");
     }
     else {
@@ -546,7 +546,8 @@ function view_jrPage_update_save($_post, &$_user, &$_conf)
     jrCore_form_delete_session();
     // See where we redirect here...
     if (!isset($_sv['page_location']) || $_sv['page_location'] === '1') {
-        jrProfile_reset_cache();
+        jrProfile_reset_cache($_user['user_active_profile_id'], 'jrPage');
+        jrUser_reset_cache($_user['_user_id'], 'jrPage');
         jrCore_form_result("{$_conf['jrCore_base_url']}/{$_rt['profile_url']}/{$_post['module_url']}/{$_post['id']}/{$_sv['page_title_url']}");
     }
     else {
@@ -616,7 +617,8 @@ function view_jrPage_delete($_post, $_user, $_conf)
             }
         }
 
-        jrProfile_reset_cache();
+        jrProfile_reset_cache($_user['user_active_profile_id'], 'jrPage');
+        jrUser_reset_cache($_user['_user_id'], 'jrPage');
     }
     else {
         jrCore_delete_all_cache_entries('jrPage');

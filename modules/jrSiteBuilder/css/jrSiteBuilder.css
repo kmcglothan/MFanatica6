@@ -1,7 +1,7 @@
 .sb-button {
     width: 120px;
     text-align: center;
-    display: block;
+    display: block; /* @ignore */
     padding: 6px 12px;
     position: fixed;
     border: 1px solid #000000;
@@ -51,7 +51,7 @@
 #sb-edit-cp {
     background: #FFFFFF;
     margin: 0 auto;
-    display: none;
+    display: none; /* @ignore */
     padding: 12px;
     width: 1140px;
     height: 600px;
@@ -70,11 +70,11 @@
 }
 
 #sb-widget-settings {
-    display: none;
+    display: none; /* @ignore */
 }
 
 #sb-layout-section {
-    display: none;
+    display: none; /* @ignore */
     margin-bottom: 12px;
 }
 
@@ -107,7 +107,7 @@
 }
 
 .sb-widget-new {
-    display: none;
+    display: none; /* @ignore */
 }
 
 .sb-widget-block {
@@ -135,7 +135,7 @@
 }
 
 .sb-widget-controls small {
-    display: inline-block;
+    display: inline-block; /* @ignore */
     margin-top: 2px;
     font-size: 11px;
     color: #333333;
@@ -150,7 +150,7 @@
 
 .sb-item-row {
     width: 100%;
-    display: table-row;
+    display: table-row; /* @ignore */
     cursor: pointer;
     height: 34px;
     background: #EEEEEE;
@@ -170,13 +170,13 @@
 }
 
 .sb-item-icon {
-    display: table-cell;
+    display: table-cell; /* @ignore */
     padding: 5px;
 }
 
 .sb-item-entry {
     width: 100%;
-    display: table-cell;
+    display: table-cell; /* @ignore */
     padding: 3px;
     font-size: 14px;
     color: #000000;
@@ -240,7 +240,7 @@
 }
 
 .col0 {
-    display: none;
+    display: none; /* @ignore */
 }
 
 .sb-menu-entry {
@@ -269,7 +269,7 @@
     position: absolute;
     top: 0;
     right: 3px;
-    display: inline-block;
+    display: inline-block; /* @ignore */
 }
 
 .sb-menu-indent-0 {
@@ -339,11 +339,11 @@
 
 #sb-new-entry {
     width: 85%;
+    margin: 0;
 }
 
 .sb-menu-entry button {
     float: right;
-    height: 23px;
     margin: 0;
 }
 
@@ -352,12 +352,12 @@
 }
 
 .sb-menu-expand-icon {
-    display: inline;
+    display: inline; /* @ignore */
     margin-right: 4px;
 }
 
 .sb-menu-noexpand {
-    display: inline;
+    display: inline; /* @ignore */
     width: 20px;
 }
 
@@ -381,7 +381,6 @@
     background-color: #FFFFFF;
     padding: 3px 6px;
     color: #000000;
-    font-size: 15px;
 }
 
 #menu-entry-holder {
@@ -466,8 +465,9 @@ ul.sb-widget-sortable .widget-item .button_player li
 {
     list-style: none;
 }
+
 /* html content in a widget with a list, show disk */
-ul.sb-widget-sortable .widget-item li {
+ul.sb-widget-sortable .widget-item ul li {
     list-style: disc;
 }
 

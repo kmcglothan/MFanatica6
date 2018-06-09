@@ -1,5 +1,11 @@
 User Birthday module changelog
 
+Version 1.1.0:
+ - Bug Fix: User birthdays not being posted to the timeline
+
+Version 1.0.0:
+ - Stable release
+
 Version 1.0.0b4:
  - New: "Add To Timeline" Global Config option to enable/disable birthday messages in Timelines
 

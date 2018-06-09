@@ -2,7 +2,7 @@
 /**
  * Jamroom Users module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -42,7 +42,7 @@
 defined('APP_DIR') or exit();
 
 /**
- * jrUser_db_schema
+ * db_schema
  */
 function jrUser_db_schema()
 {
@@ -60,15 +60,16 @@ function jrUser_db_schema()
         "session_profile_id INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "session_quota_id INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "session_user_ip VARCHAR(45) NOT NULL DEFAULT ''",
-        "session_user_action VARCHAR(256) NOT NULL DEFAULT ''",
+        "session_user_action VARCHAR(255) NOT NULL DEFAULT ''",
         "session_sync INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "session_data MEDIUMTEXT NOT NULL",
         "INDEX session_updated (session_updated)",
         "INDEX session_user_id (session_user_id)",
+        "INDEX session_user_name (session_user_name(8))",
         "INDEX session_profile_id (session_profile_id)",
         "INDEX session_user_ip (session_user_ip)"
     );
-    jrCore_db_verify_table('jrUser', 'session', $_tmp);
+    jrCore_db_verify_table('jrUser', 'session', $_tmp, 'InnoDB');
 
     // User Cookies
     $_tmp = array(
@@ -96,7 +97,7 @@ function jrUser_db_schema()
         "INDEX lang_code (lang_code)",
         "INDEX lang_key (lang_key)"
     );
-    jrCore_db_verify_table('jrUser', 'language', $_tmp, 'MyISAM');
+    jrCore_db_verify_table('jrUser', 'language', $_tmp, 'InnoDB');
 
     // User Forgot
     $_tmp = array(
@@ -108,14 +109,6 @@ function jrUser_db_schema()
         "INDEX forgot_time (forgot_time)"
     );
     jrCore_db_verify_table('jrUser', 'forgot', $_tmp, 'InnoDB');
-
-    // User URL
-    $_tmp = array(
-        "user_id INT(10) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
-        "user_url VARCHAR(4096) NOT NULL DEFAULT ''",
-        "UNIQUE user_id (user_id)"
-    );
-    jrCore_db_verify_table('jrUser', 'url', $_tmp, 'InnoDB');
 
     // User Password Attempts
     $_tmp = array(
@@ -153,6 +146,13 @@ function jrUser_db_schema()
         "UNIQUE email_address (email_address)"
     );
     jrCore_db_verify_table('jrUser', 'suppressed', $_tmp, 'InnoDB');
+
+    // Tables no longer needed
+    if (jrCore_db_table_exists('jrUser', 'url')) {
+        $tbl = jrCore_db_table_name('jrUser', 'url');
+        $req = "DROP TABLE IF EXISTS {$tbl}";
+        jrCore_db_query($req);
+    }
 
     return true;
 }

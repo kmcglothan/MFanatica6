@@ -1,5 +1,21 @@
 Like It module Change Log:
 
+Version 1.5.1:
+ - Bug Fix: Dislike timeline posts now working
+
+Version 1.5.0:
+ - Change: Updated database schema to make like queries faster on large systems
+
+Version 1.4.16:
+ - Change: Module name for item being liked added to "item_liked" event data
+
+Version 1.4.15:
+ - Bug Fix: Like actions not being added to the users timeline
+
+Version 1.4.14:
+ - Change: item_action.tpl updated to work better when translating actions to different languages
+ - Bug Fix: Possible "table does not exist" SQL error when saving a like
+
 Version 1.4.13:
  - Bug Fix: Quota settings may not be applied to admin users when viewing items on other profiles
 

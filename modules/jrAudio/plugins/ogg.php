@@ -2,7 +2,7 @@
 /**
  * Jamroom Audio module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -61,7 +61,7 @@ function jrAudio_ogg_decode($input_file, $_options, $error_file)
 function jrAudio_ogg_encode($input_file, $_options, $error_file)
 {
     // Get ffmpeg location
-    $ffmpeg = jrCore_check_ffmpeg_install();
+    $ffmpeg = jrCore_get_tool_path('ffmpeg', 'jrCore');
 
     // Extra decode options
     $d_options = '';
@@ -75,7 +75,7 @@ function jrAudio_ogg_encode($input_file, $_options, $error_file)
     }
 
     ob_start();
-    system("nice -n 9 {$ffmpeg} -analyzeduration 30000000 -probesize 30000000 -y {$d_options} -i \"{$input_file}\" -map 0:a -threads 1 -strict -2 {$e_options} -acodec vorbis -aq 2 \"{$input_file}.ogg\" >/dev/null 2>{$error_file}", $ret);
+    system("nice -n 9 {$ffmpeg} -analyzeduration 30000000 -probesize 30000000 -y {$d_options} -i \"{$input_file}\" -map 0:a -threads 1 -strict -2 {$e_options} -acodec vorbis -ac 2 -aq 2 \"{$input_file}.ogg\" >/dev/null 2>{$error_file}", $ret);
     ob_end_clean();
     return "{$input_file}.ogg";
 }

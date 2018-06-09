@@ -1,0 +1,94 @@
+#main-bg {
+    background-image: url('{$jrProximaAlpha_img_url}/main-bg.jpg');
+    background-size: 100% 50%;
+    background-repeat: no-repeat;
+    padding: 48px 0 16px 0;
+    background-attachment: fixed;
+    overflow: auto;
+}
+
+#main-box {
+    position: relative;
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 20px 0;
+}
+
+#main-box a {
+    color: #FFCC00;
+    text-decoration: none;
+}
+
+#main-box a:hover {
+    text-decoration: none;
+}
+
+#mb-headline {
+    display: block;
+    font-size: 56px;
+    margin: 20px 0;
+    margin-left: 20px;
+    color: #FFFFFF;
+}
+
+#mb-text {
+    padding: 0 20px;
+    width: 65%;
+    font-size: 18px;
+    line-height: 24px;
+    color: #FFFFFF;
+}
+
+#main-app-stores {
+    position: absolute;
+    right: 40px;
+    bottom: 30px;
+    float: right;
+}
+
+#index-container {
+    border-top: 1px solid #000000;
+    background-color: #FFFFFF;
+}
+
+.feature-box {
+    padding: 50px;
+}
+
+.feature-headline {
+    display: block;
+    font-size: 30px;
+    line-height: 28px;
+    margin: 20px 0;
+}
+
+.feature-text {
+    font-size: 16px;
+}
+
+.feature-divider {
+    display: block;
+    width: 50%;
+    margin-left: 25%;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    height: 2px;
+    border: 0;
+    border-top: 2px solid #468;
+}
+
+.feature-img {
+    padding: 50px 20px;
+}
+
+.feature-img img {
+    height: 250px
+}
+
+h2.feature-headline {
+    color: #446688;
+}
+
+img.app-store-img {
+    border-radius: 12px;
+}

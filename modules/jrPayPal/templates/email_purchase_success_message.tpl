@@ -1,7 +1,6 @@
 Thank you for your purchase!
 
-You should recieve a receipt for your purchase shortly from
-PayPal - you can download your item here:
+You should recieve a receipt for your purchase shortly from PayPal - you can download your item here:
 
 {$paypal_downloads_url}
 

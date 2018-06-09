@@ -1,0 +1,59 @@
+/* @title Header */
+/* @help This is the main header section for the site */
+
+#header {
+    background: #333333 none scroll repeat 0 0;
+    border-bottom: 1px solid #222222;
+    color: #ffffff;
+    height: 50px;
+    position: fixed;
+    z-index: 200;
+    width: 100%;
+}
+
+/* @title Header Links */
+/* @help Header text URL */
+#header a {
+    text-transform: capitalize;
+    text-decoration: none;
+    color: #FFFFFF;
+}
+
+/* @title Header Link Hover */
+/* @help Header text URL hover */
+#header a:hover {
+
+}
+
+#header_content {
+    height: 100%;
+    max-width: 1440px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.jlogo {
+    position: relative;
+    top: 0;
+    width:auto;
+    max-height:42px;
+}
+
+#main_logo {
+    float: left;
+    vertical-align: middle;
+
+    cursor: pointer;
+}
+
+
+#add_to_cart_success {
+    float: left;
+    position: absolute;
+    margin: 0 auto;
+    background-color: #FFCC00;
+    border: 1px solid #999999;
+    padding: 7px;
+    font-size: 14px;
+    border-radius: 3px;
+}

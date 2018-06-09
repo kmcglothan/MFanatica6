@@ -1,5 +1,8 @@
 Combined Audio changelog
 
+Version 1.0.14:
+ - New: item_index_meta.tpl file added to allow the Meta Tag module to show social media meta data
+
 Version 1.0.13:
  - Bug Fix: Create Audio modal may not show properly on some skins with custom button layouts
 

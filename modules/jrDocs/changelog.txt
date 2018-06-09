@@ -1,5 +1,24 @@
 Documentation module changelog
 
+
+Version 1.5.5:
+ - Change: Reverted previous caching fix
+
+Version 1.5.4:
+ - Change: Modified doc_section_screenshot.tpl so screenshot image resizes as page size is adjusted
+ - Bug Fix: Some screenshot images for document items may load incorrectly
+ - Bug Fix: Caching could stop the {jrProfile_disable_sidebar} template function from working
+
+Version 1.5.3:
+ - Change: Fullscreen button for YouTube player now works
+
+Version 1.5.2:
+ - New: Added a next chapter link to go to the next chapter when at the end of the current chapter
+
+Version 1.5.1:
+ - Change: pressing tab to move between fields in forms has been improved
+ - Bug Fix: documentation chapters not being reset during a Developer Tools -> System Reset
+
 Version 1.5.0:
  - New: "Image URL" option added to Text and Image and Screenshot sections for alternate URL
  - New: Updated so images look better on High DPI screens (text and Image sections)

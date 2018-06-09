@@ -1,0 +1,255 @@
+/* Mobile */
+@media handheld, only screen and (max-width: 767px) {
+
+    body {
+        width: 100%;
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        -webkit-text-size-adjust: none;
+    }
+
+    h1 {
+        font-size: 22px;
+        font-weight: bold;
+    }
+
+    h2 {
+        font-size: 13px;
+    }
+
+    h3 {
+        font-size: 12px;
+    }
+
+    h4 {
+        font-size: 11px;
+    }
+
+    input[type=submit], input[type=reset], input[type=button] {
+        -webkit-appearance: none;
+    }
+
+    #mmt {
+        background-color: transparent;
+        position: relative;
+        float: left;
+        width: 28px;
+        height: 28px;
+        top: 5px;
+        left: 6px;
+        z-index: 50;
+    }
+
+    #main_menu {
+        padding: 6px;
+        text-align: center;
+        font-size: 14px;
+    }
+
+    .row .col1, .row .col2, .row .col3, .row .col4, .row .col5, .row .col6, .row .col7, .row .col8, .row .col9, .row .col10, .row .col11, .row .col12 {
+        width: auto;
+        float: none;
+        margin-left: 0;
+        margin-right: 0;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .block {
+        font-size: 12px;
+    }
+
+    #item-holder {
+        margin-right: 0;
+    }
+
+    .page_content {
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    .page_table_header {
+        font-size: 8px;
+    }
+
+    .page_table_cell {
+        padding: 2px;
+        font-size: 8px;
+    }
+
+    .nowrap {
+        white-space: normal;
+    }
+
+    .element_left {
+        padding: 3px;
+        font-size: 11px;
+    }
+
+    .element_right {
+        font-size: 10px;
+        padding: 3px;
+    }
+
+    .profile_image_element_right img {
+        width: 190px;
+        text-align: center;
+    }
+
+    .profile_menu_entry {
+        padding: 8px;
+        margin-bottom: 3px;
+    }
+
+    .profile_menu {
+        padding: 0 0 0 5px;
+        margin: 0;
+    }
+
+    .block {
+        padding: 6px;
+        margin: 0;
+    }
+
+    .form_select_item_jumper {
+        width: 50%;
+    }
+
+    .upload_button {
+        font: bold 10px Verdana, sans-serif;
+        height: 20px;
+        padding: 6px 6px 0 6px;
+        margin: 0;
+    }
+
+    .create_img {
+        height: 20px;
+        width: 20px;
+    }
+
+    .update_img {
+        height: 20px;
+        width: 20px;
+    }
+
+    .delete_img {
+        height: 20px;
+        width: 20px;
+    }
+
+    .download_img {
+        height: 20px;
+        width: 20px;
+    }
+
+    /* Tab Bar */
+    .page_tab_bar_holder {
+        width: 100%;
+        border-bottom: 0;
+        padding: 0 12px 9px 0;
+    }
+
+    .page_tab_bar_spacer {
+        height: 0;
+    }
+
+    .page_tab {
+        float: left;
+        list-style: none;
+        margin: 3px 6px 3px 0;
+        color: #000000;
+        text-transform: capitalize;
+        font-size: 12px;
+        padding: 3px;
+        text-align: center;
+        border-radius: 0;
+    }
+
+    .page_tab a {
+        text-decoration: none;
+    }
+
+    .page_tab_first {
+        margin-left: 0;
+    }
+
+    .page_tab_last {
+        color: #000000;
+    }
+
+    .page_tab_active {
+        border: 0;
+    }
+
+    .info_img {
+        display: none;
+    }
+
+    .gallery_img {
+        width: 100%;
+    }
+
+    .item {
+        padding: 6px;
+        font-size: 12px;
+    }
+
+    .index_item {
+        float: none;
+        margin: 0 0 2em;
+        padding: 0 4px 2em;
+        width: auto;
+    }
+
+    .table-cell.large.buttons {
+        width: auto;
+    }
+
+    .slide_info .large {
+        font-size: 18px;
+    }
+
+    .slide_info span {
+        font-size: 11px;
+    }
+
+    .social.clearfix {
+        display: none;
+    }
+
+    #menu > li.right {
+        margin: 0;
+    }
+
+    #menu .right img {
+        width: 26px;
+    }
+
+    .table-cell.profile-image {
+        width: 25%;
+        padding: 0 5px 0 0;
+    }
+
+    #profile_header .profile_name {
+        font-size: 20px;
+    }
+
+    #profile_header .profile_name span {
+        font-size: 12px;
+    }
+
+    #horizontal a {
+        font-size: 12px;
+        padding: 3px 14px;
+    }
+
+    #profile_header .table-cell.profile-image {
+        width: 56px;
+    }
+
+    #chartLoader > img {
+        margin: 0 3px;
+        max-width: 20px;
+    }
+}

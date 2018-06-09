@@ -1,0 +1,17 @@
+Proxima Stats changelog
+
+Version 1.2.0:
+ - Change: Statistics collector updated to work with System Core 6.0.0 minute maintenance event
+
+Version 1.1.0:
+ - New: "Process Method" Global Config option to define how statistics should be processed
+
+Version 1.0.2:
+ - Bug Fix: Active module showing twice in module drop down selection
+
+Version 1.0.1:
+ - Bug Fix: Non-Proxima graphs showing in stat browser resulting in a page error
+ - Bug Fix: default view of 1 day for graphs now shows hourly stats
+
+Version 1.0.0:
+ - Initial Release

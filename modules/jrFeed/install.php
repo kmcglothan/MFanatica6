@@ -41,15 +41,16 @@
 // make sure we are not being called directly
 defined('APP_DIR') or exit();
 
+
 /**
  * Run once on install
  */
 function jrFeed_install()
 {
-    // default - Jamroom's Facebook Wall
+    // default - MTV Feed
     $_f  = array(
-        'feed_name' => 'Jamroom Facebook page',
-        'feed_url'  => 'https://www.facebook.com/feeds/notifications.php?id=517826381564644&viewer=100000020224923&key=AWiZjr--HA_AUSKV&format=rss20'
+        'feed_name' => 'MTV Feed',
+        'feed_url'  => 'http://www.mtv.com/news/feed/'
     );
     $_s  = array(
         "search"        => array(

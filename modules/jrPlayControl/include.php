@@ -1,9 +1,8 @@
 <?php
 /**
- * Jamroom 5 Play Control module
+ * Jamroom Play Control module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2017 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -43,14 +42,14 @@
 defined('APP_DIR') or exit();
 
 /**
- * jrPlayControl_meta
+ * meta
  */
 function jrPlayControl_meta()
 {
     $_tmp = array(
         'name'        => 'Play Control',
         'url'         => 'playcontrol',
-        'version'     => '1.0.2',
+        'version'     => '1.0.3',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Set limits on the number of streams and downloads an IP address can do in a month',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2965/user-play-control',
@@ -61,22 +60,41 @@ function jrPlayControl_meta()
 }
 
 /**
- * jrPlayControl_init
+ * init
  */
 function jrPlayControl_init()
 {
     // listen for streams and downloads
     jrCore_register_event_listener('jrCore', 'stream_file', 'jrPlayControl_media_listener');
     jrCore_register_event_listener('jrCore', 'download_file', 'jrPlayControl_media_listener');
-
-    // Once a day we cleanup old entries
     jrCore_register_event_listener('jrCore', 'daily_maintenance', 'jrPlayControl_daily_maintenance_listener');
+
+    // System reset listener
+    jrCore_register_event_listener('jrDeveloper', 'reset_system', 'jrPlayControl_reset_system_listener');
+
     return true;
 }
 
-//---------------------------------------------------------
+//----------------------
 // EVENT LISTENERS
-//---------------------------------------------------------
+//----------------------
+
+/**
+ * System Reset listener
+ * @param $_data array incoming data array
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return array
+ */
+function jrPlayControl_reset_system_listener($_data, $_user, $_conf, $_args, $event)
+{
+    $tbl = jrCore_db_table_name('jrPlayControl', 'play');
+    jrCore_db_query("TRUNCATE TABLE {$tbl}");
+    jrCore_db_query("OPTIMIZE TABLE {$tbl}");
+    return $_data;
+}
 
 /**
  * Adds width/height keys to saved media info

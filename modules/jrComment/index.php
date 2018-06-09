@@ -2,20 +2,17 @@
 /**
  * Jamroom Comments module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0.  Please see the included "license.html" file.
+ * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
+ *
+ * This Source Code is subject to the terms of the Jamroom Network
+ * Commercial License -  please see the included "license.html" file.
  *
  * This module may include works that are not developed by
  * The Jamroom Network
  * and are used under license - any licenses are included and
  * can be found in the "contrib" directory within this module.
- *
- * Jamroom may use modules and skins that are licensed by third party
- * developers, and licensed under a different license  - please
- * reference the individual module or skin license that is included
- * with your installation.
  *
  * This software is provided "as is" and any express or implied
  * warranties, including, but not limited to, the implied warranties
@@ -122,8 +119,7 @@ function view_jrComment_view_comments($_post, $_user, $_conf)
     }
     $_sp = array(
         'search'   => array(
-            "comment_item_id = " . intval($_post['item_id']),
-            "comment_module = {$_post['item_module']}"
+            "comment_item_ckey = {$_post['item_id']}:{$_post['item_module']}:i"
         ),
         'order_by' => array(
             '_item_id' => (isset($_conf['jrComment_direction'])) ? $_conf['jrComment_direction'] : 'desc'
@@ -219,9 +215,11 @@ function view_jrComment_comment_save($_post, $_user, $_conf)
     $_SESSION['jrComment_last_post_timer'] = time();
 
     $_tmp = array(
-        'comment_module'     => $_post['comment_module'],
-        'comment_item_id'    => $_post['comment_item_id'],
-        'comment_profile_id' => $_post['comment_profile_id']
+        'comment_module'       => $_post['comment_module'],
+        'comment_item_id'      => $_post['comment_item_id'],
+        'comment_profile_id'   => $_post['comment_profile_id'],
+        'comment_item_ckey'    => "{$_post['comment_item_id']}:{$_post['comment_module']}:i",
+        'comment_profile_ckey' => "{$_post['comment_profile_id']}:{$_post['comment_module']}:p"
     );
     if (isset($_conf['jrComment_editor']) && $_conf['jrComment_editor'] == 'on' || stripos(' ' . $_post['comment_text'], '[code]')) {
         $_tmp['comment_text'] = trim($_post['comment_text']);
@@ -316,26 +314,22 @@ function view_jrComment_comment_save($_post, $_user, $_conf)
 
     }
 
-    // Next, check on user notifications - we're going to notify users
-    // if this is a new comment on an item they have created - but only
-    // if the comment is not BY us on our own profile
-    if (jrUser_get_profile_home_key('_profile_id') != $_post['comment_profile_id'] && !(isset($_rt) && is_array($_rt) && $_rt['_profile_id'] == $_post['comment_profile_id'])) {
-        $_owners = jrProfile_get_owner_info($_post['comment_profile_id']);
-        if (isset($_owners) && is_array($_owners)) {
-            $_rp = array(
-                'system_name'        => $_conf['jrCore_system_name'],
-                'comment_user_name'  => $_user['user_name'],
-                'comment_text'       => $_tmp['comment_text'],
-                'comment_item_url'   => $curl,
-                'comment_item_title' => str_replace('@', '', $_tmp['comment_item_title']),
-                'comment_item_id'    => $id
-            );
-            list($sub, $msg) = jrCore_parse_email_templates('jrComment', 'new_comment', $_rp);
-            foreach ($_owners as $_o) {
-                // "0" is from_user_id - 0 is the "system user"
-                if ($_o['_user_id'] != $_user['_user_id']) {
-                    jrUser_notify($_o['_user_id'], 0, 'jrComment', 'new_comment', $sub, $msg);
-                }
+    // Send user notifications
+    $_owners = jrProfile_get_owner_info($_post['comment_profile_id']);
+    if ($_owners && is_array($_owners)) {
+        $_rp = array(
+            'system_name'        => $_conf['jrCore_system_name'],
+            'comment_user_name'  => $_user['user_name'],
+            'comment_text'       => $_tmp['comment_text'],
+            'comment_item_url'   => $curl,
+            'comment_item_title' => str_replace('@', '', $_tmp['comment_item_title']),
+            'comment_item_id'    => $id
+        );
+        list($sub, $msg) = jrCore_parse_email_templates('jrComment', 'new_comment', $_rp);
+        foreach ($_owners as $_o) {
+            // "0" is from_user_id - 0 is the "system user"
+            if ($_o['_user_id'] != $_user['_user_id']) {
+                jrUser_notify($_o['_user_id'], 0, 'jrComment', 'new_comment', $sub, $msg);
             }
         }
     }
@@ -460,13 +454,18 @@ function view_jrComment_delete($_post, $_user, $_conf)
         }
         if ($_dn && count($_dn) > 0) {
             jrCore_db_delete_multiple_items('jrComment', array_keys($_dn));
+            if ($pfx = jrCore_db_get_prefix($_rt['comment_module'])) {
+                jrCore_db_decrement_key($_rt['comment_module'], $_rt['comment_item_id'], "{$pfx}_comment_count", count($_dn));
+            }
         }
     }
 
     // Reset Cache
-    jrProfile_reset_cache($_rt['comment_profile_id']);
-
-    // return to referrer
+    jrProfile_reset_cache($_rt['comment_profile_id'], 'jrComment');
+    if ($_rt['comment_module'] != 'jrComment') {
+        jrProfile_reset_cache($_rt['comment_profile_id'], $_rt['comment_module']);
+    }
+    jrUser_reset_cache($_user['_user_id']);
     jrCore_form_result('referrer');
 }
 
@@ -544,6 +543,25 @@ function view_jrComment_update($_post, $_user, $_conf)
         }
         jrCore_form_field_create($_tmp);
     }
+
+    if (jrUser_is_admin() || jrUser_get_profile_home_key('quota_jrComment_attachments') == 'on') {
+
+        // File Attachment
+        $_tmp = array(
+            'name'          => 'comment_file',
+            'label'         => 31,
+            'help'          => 32,
+            'text'          => 33,
+            'type'          => 'file',
+            'extensions'    => jrUser_get_profile_home_key('quota_jrComment_allowed_file_types'),
+            'value'         => $_rt,
+            'order'         => 4,
+            'max'           => (isset($_user['quota_jrCore_max_upload_size'])) ? (int) $_user['quota_jrCore_max_upload_size'] : 2097152,
+            'multiple'      => true,
+            'form_designer' => false
+        );
+        jrCore_form_field_create($_tmp);
+    }
     jrCore_page_display();
 }
 
@@ -567,7 +585,7 @@ function view_jrComment_update_save($_post, $_user, $_conf)
 
     // Get data
     $_rt = jrCore_db_get_item('jrComment', $_post['id']);
-    if (!isset($_rt) || !is_array($_rt)) {
+    if (!$_rt || !is_array($_rt)) {
         // Item does not exist....
         jrCore_set_form_notice('error', 20);
         jrCore_form_result();
@@ -585,11 +603,25 @@ function view_jrComment_update_save($_post, $_user, $_conf)
     // Save all updated fields to the Data Store
     jrCore_db_update_item('jrComment', $_post['id'], $_sv);
 
+    // Save any uploaded media file
+    // If this is an ADMIN user modifying a post by another user, we need to make
+    // sure the profile_id is set to the proper profile_id
+    if (jrUser_is_admin() || jrUser_get_profile_home_key('quota_jrComment_attachments') == 'on') {
+        if (jrUser_is_admin() && $_rt['_profile_id'] != jrUser_get_profile_home_key('_profile_id')) {
+            jrCore_save_all_media_files('jrComment', 'update', $_rt['_profile_id'], $_post['id'], $_rt);
+        }
+        else {
+            jrCore_save_all_media_files('jrComment', 'update', jrUser_get_profile_home_key('_profile_id'), $_post['id'], $_rt);
+        }
+    }
+
     // Get URL we came from
     $url = jrCore_get_memory_url("comment_edit_{$_post['id']}");
     jrCore_delete_memory_url("comment_edit_{$_post['id']}");
 
     jrCore_form_delete_session();
-    jrProfile_reset_cache();
+    jrProfile_reset_cache($_rt['comment_profile_id'], 'jrComment');
+    jrProfile_reset_cache($_rt['comment_profile_id'], $_rt['comment_module']);
+    jrUser_reset_cache($_user['_user_id']);
     jrCore_form_result("{$url}#c{$_post['id']}");
 }

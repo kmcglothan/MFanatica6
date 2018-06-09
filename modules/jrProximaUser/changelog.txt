@@ -1,0 +1,44 @@
+Proxima User changelog
+
+Version 1.2.3:
+ - Bug Fix: "user_last_login" key was not being updated in "login" API call
+
+Version 1.2.2:
+ - New: "user_created" event is triggered when a new user account is created
+
+Version 1.2.1:
+ - Bug Fix: User ID being used as the value of profile_name and profile_url in some cases
+
+Version 1.2.0:
+ - New: "Include Profile Info" global config option to return profiel info along with user info
+ - Bug Fix: "Single User Accounts" setting may not be seen as enabled when it is
+
+Version 1.1.0:
+- New: "Single User Accounts" Global Config setting providing single-sign-on option for all apps
+- New: Value Functions now work on user keys in a PUT request
+- New: POST user/forgot to initiate password reset if the user account has a valid email address
+- Change: Updates and performance improvements to work with new Proxima Core 2.0
+- Bug Fix: user_name variable may not be saved on account creation
+- Bug Fix: Some GET requests not returning user_name or user_email if configured
+
+Version 1.0.6:
+ - New: login now supports using "user_name" and "user_email" in addition to "id"
+ - New: Successful login now returns an "_id" key that is the value of the user_id logging in
+
+Version 1.0.5:
+ - Change: invalid session key for GET user now returns 401 not authorized instead of 404
+
+Version 1.0.4:
+ - Bug Fix: Cached User object not being reset after PUT request to update user data
+
+Version 1.0.3:
+ - Change: If an account already exists for a user on create, _id of account is returned
+
+Version 1.0.2:
+- Bug Fix: PUT /logout not properly deleting user session
+
+Version 1.0.1:
+ - Bug Fix: "invalid password or id" error when logging in using id
+
+Version 1.0.0:
+ - Initial Release

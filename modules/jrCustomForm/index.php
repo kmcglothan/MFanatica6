@@ -2,7 +2,7 @@
 /**
  * Jamroom Simple Custom Forms module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -45,10 +45,13 @@ defined('APP_DIR') or exit();
 function view_jrCustomForm_default($_post, $_user, $_conf)
 {
     if (empty($_post['option'])) {
-        jrCore_notice_page('error', 'You must specific the form');
+        jrCore_notice_page('error', 'no form was specified - please specify the form to display');
     }
 
     // See if we are SAVING or DISPLAYING a form
+    //------------------------------
+    // FORM SAVE
+    //------------------------------
     if (isset($_post['jr_html_form_token']{31}) && strpos($_post['option'], '_save')) {
 
         // We're handling a form submission.
@@ -111,6 +114,22 @@ function view_jrCustomForm_default($_post, $_user, $_conf)
 
         $_sv['form_name']    = $nam;
         $_sv['form_user_ip'] = jrCore_get_ip();
+
+        // Check for banned items
+        if (jrCore_run_module_function('jrBanned_is_banned', 'ip', $_sv['form_user_ip'])) {
+            // This is a banned IP address
+            jrCore_set_form_notice('error', 3);
+            jrCore_form_result();
+        }
+        foreach ($_sv as $k => $v) {
+            if (strpos($k, '_email')) {
+                if (jrCore_run_module_function('jrBanned_is_banned', 'email', $v)) {
+                    // This is a banned Email address
+                    jrCore_set_form_notice('error', 3);
+                    jrCore_form_result();
+                }
+            }
+        }
 
         if (jrUser_is_logged_in()) {
 
@@ -219,6 +238,10 @@ function view_jrCustomForm_default($_post, $_user, $_conf)
             }
         }
     }
+
+    //------------------------------
+    // FORM DISPLAY
+    //------------------------------
     else {
 
         // Check for form

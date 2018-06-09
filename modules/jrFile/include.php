@@ -46,7 +46,7 @@ function jrFile_meta()
     $_tmp = array(
         'name'        => 'Files',
         'url'         => 'file',
-        'version'     => '1.0.13',
+        'version'     => '1.0.14',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Add File upload and download support to Profiles',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/278/files',

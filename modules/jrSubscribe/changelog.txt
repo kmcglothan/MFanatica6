@@ -1,0 +1,98 @@
+Subscriptions module change log
+
+Version 1.0.4:
+ - New: Stripe subscription plan API support updated to properly support Stripe API version 2018-02-05 and newer
+ - Change: Improved support for Subscription Grace Period to prevent premature subscription cancelation
+ - Change: Default value for Grace Period on subscription plans changed from 0 to 1 day
+ - Change: Subscription Browser updated to allow viewing and modifying inactive subscriptions
+ - Bug Fix: Existing FoxyCart subscriptions with different price could show wrong price on subscription page
+
+Version 1.0.3:
+ - New: "Notify of Card Expiration" global config option to enable emails for card expiration
+ - New: Support added to Stripe for credit card expiration notification
+ - New: A custom image can be added to a Subscription Plan which shows in the Active Subscription form
+
+Version 1.0.2:
+ - Bug Fix: Canceled subscriptions were being given a grace period if configured in plan
+
+Version 1.0.1:
+ - Bug Fix: Free subscriptions were only being extended by 1 day instead of 30 days
+
+Version 1.0.0:
+ - New: Ability to search by user name and/or user email address from Subscriptions browser
+ - New: Subscription Meta Data specific to payment processor is now show on Subscription modify screen
+ - New: FoxyCart subscription cancelation updated to check sub_token before canceling subscription
+ - New: "Notify of Cancelation" Global Config option to notify subscribers their subscription is ending soon
+
+Version 1.0.0b17:
+ - New: Events added for when a subscription is created, extended, canceled and deleted
+ - Bug Fix: Some imported FoxyCart subscriptions could be missing the required plan_id
+
+Version 1.0.0b16:
+ - New: "Notify of Subscription Payment" Global Config option to notify subscribers of upcoming payment
+ - New: "Grace Period" setting for subscription plans to allow a payment grace period beyond subscription end
+ - New: New Dashboard panels and graphs for subscriber counts, daily average value, and length
+
+Version 1.0.0b15:
+ - New: Support for variable priced subscriptions - subscribers can pay what they want
+ - New: New calendar icon added for use in Stripe checkout modal window
+
+Version 1.0.0b14:
+ - New: Individual Created, Extended and Canceled notification options added to user notifications
+ - Change: "Update Credit Card" button disabled if user is on a manually managed free subscription
+ - Bug Fix: Changing subscriptions in the middle of an active subscription may not set expiration date correctly
+ - Bug Fix: Subscription profile at FoxyCart may not be deactivated when a subscription is canceled
+
+Version 1.0.0b13:
+ - New: Ability to "hide" specific Subscription Plans from the subscription browser
+ - Bug Fix: "Return to Current Quota" option not saving on Subscription Plan modify
+
+Version 1.0.0b12:
+ - New: 5 new Dashboard panels have been added for use in the Dashboard
+ - Bug Fix: Daily FoxyCart subscription data feed may not get processed correctly
+ - Bug Fix: Some expired subscriptions in FoxyCart data feed may not be removed correctly
+ - Bug Fix: Inactive subscriptions still included in button count in subscription browser
+
+Version 1.0.0b11:
+ - Bug Fix: Gateway fee not being recorded for Foxycart subscriptions using Stripe as the Foxycart gateway
+ - Bug Fix: Subscription Start Date being reset on subscription payment applied
+
+Version 1.0.0b10:
+ - New: {jrSubscribe_get_subscription_url} function for getting just URL to start subscription
+ - Change: FoxyCart subscriber import no longer requires FoxyCart module be installed and configured
+ - Change: With Stripe as active plugin changes to subscription amount and duration are locked
+ - Bug Fix: Changing name of subscription now changes it correctly via Stripe API
+
+Version 1.0.0b9:
+ - New: User notification of soon-to-expire subscriptions when using FoxyCart plugin
+ - Change: Improvements to past-due detection when importing existing subscribers from FoxyCart
+ - Change: Subscription Browser now orders subscriptions by those expiring the earliest
+ - Bug Fix: Importing subscriptions from FoxyCart may not set subscription end date correctly
+
+Version 1.0.0b8:
+ - New: "Return to Current Quota" added as an End of Term quota option
+ - New: "Payment History" button on active subscription page to view previous subscription payments
+ - Bug Fix: Subscription may show as being in Trial even though plan is not configured for trial
+ - Bug Fix: White screen when trying to delete a subscription not created under the active payment plugin
+
+Version 1.0.0b7:
+ - Bug Fix: Subscription button Javascript error in subscribe.tpl if Stripe is active plugin
+
+Version 1.0.0b6:
+ - Change: Updated local subscription plans page subscribe.tpl with new look and CSS
+
+Version 1.0.0b5:
+ - Bug Fix: Quota Counts not being updated when a profile successfully subscribes to a new quota
+
+Version 1.0.0b4:
+ - Bug Fix: Plan browser may not show all active plans to viewing user
+ - Bug Fix: "Display Quota" setting when creating or modifying a Plan was not being saved correctly
+
+Version 1.0.0b3:
+ - Bug Fix: User subscription data not being removed when Developer Tools "Reset System" tool is run
+
+Version 1.0.0b2:
+ - Bug Fix: Clicking "active" when creating new plan is not saving the plan as active
+
+Version 1.0.0b1:
+ - Initial Release

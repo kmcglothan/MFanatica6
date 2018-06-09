@@ -2,7 +2,7 @@
 /**
  * Jamroom Seamless module
  *
- * copyright 2016 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *

@@ -12,7 +12,7 @@ function jrDeveloper_get_license(type, dir)
     $.get(url, function(res) {
         if (typeof res.error != "undefined") {
             $('#zip_license_error').hide();
-            alert(res.error);
+            jrCore_alert(res.error);
         }
         else if (typeof res.empty != "undefined") {
             $('#zip_license_error').show();

@@ -1,0 +1,481 @@
+
+.video_container {
+    position: relative;
+}
+
+.kmSuperFans_player .jp-gui.start {
+    display: block !important;
+    opacity: 1 !important;
+}
+
+.kmSuperFans_player .jp-gui {
+    bottom: 0;
+    height: 100% !important;
+    left: 0;
+    position: absolute;
+    width: 100%;
+}
+
+.kmSuperFans_player li {
+    float: left;
+    list-style: outside none none;
+}
+
+.kmSuperFans_player .jp-video-play {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+}
+
+.kmSuperFans_player .jp-video-play-icon {
+    display: block;
+    height: 40px;
+    margin: auto;
+    width: 40px;
+    text-indent: -9999px;
+}
+
+.kmSuperFans_player .jp-interface {
+    background: #555555 none repeat scroll 0 0;
+    bottom: 0;
+    height: 35px;
+    position: absolute;
+    width: 100%;
+}
+
+.kmSuperFans_player .jp-video-play {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.kmSuperFans_player .jp-pause {
+    background: rgba(0, 0, 0, 0) url("{$kmSuperFans_img_url}/pause.png") no-repeat scroll 0 0 / contain;
+    opacity: 0.8;
+}
+
+.kmSuperFans_player .jp-play,
+.kmSuperFans_player .jp-pause,
+.kmSuperFans_player .jp-mute,
+.kmSuperFans_player .jp-unmute,
+.kmSuperFans_player .jp-settings,
+.kmSuperFans_player .jp-restore-screen,
+.kmSuperFans_player .jp-full-screen {
+    display: block;
+    height: 18px;
+    margin: 0 20px;
+    width: 18px;
+    position: absolute;
+}
+
+.kmSuperFans_player .jp-play {
+    background: rgba(0, 0, 0, 0) url("{$kmSuperFans_img_url}/play.png") no-repeat scroll 0 0 / contain;
+    opacity: 0.8;
+}
+
+.kmSuperFans_player .jp-controls-holder {
+    padding: 8px 0;
+}
+
+.kmSuperFans_player .jp-progress-holder {
+    height: 8px;
+    left: 46px;
+    padding: 6px 0 0;
+    position: absolute;
+    right: 284px;
+}
+
+.kmSuperFans_player .jp-duration {
+    color: #CCCCCC;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1.6;
+    position: absolute;
+    right: 240px;
+}
+
+.kmSuperFans_player .jp-full-screen, .jp-restore-screen {
+    right: 0;
+}
+
+.kmSuperFans_player .jp-full-screen {
+    background: rgba(0, 0, 0, 0) url("{$kmSuperFans_img_url}/fullscreen.png") no-repeat scroll 0 0 / contain;
+    opacity: 0.8;
+}
+
+.kmSuperFans_player .jp-unmute {
+    background: rgba(0, 0, 0, 0) url("{$kmSuperFans_img_url}/unmute.png") no-repeat scroll 0 0 / contain;
+    opacity: 0.8;
+    right: 190px;
+}
+
+.kmSuperFans_player .jp-mute {
+    background: rgba(0, 0, 0, 0) url("{$kmSuperFans_img_url}/mute.png") no-repeat scroll 0 0 / contain;
+    opacity: 0.8;
+    right: 190px;
+}
+
+.kmSuperFans_player .jp-settings {
+    background: rgba(0, 0, 0, 0) url("{$kmSuperFans_img_url}/settings.png") no-repeat scroll 0 0 / contain;
+    opacity: 0.8;
+    right: 35px;
+}
+
+.kmSuperFans_player .jp-seek-bar, .kmSuperFans_player .jp-play-bar, .kmSuperFans_player .jp-progress {
+    background: rgba(0, 0, 0, 0.5) none repeat scroll 0 0;
+    border-radius: 0;
+    height: 7px;
+}
+
+.kmSuperFans_player .jp-play-bar {
+    background: #FF5500 none repeat scroll 0 0;
+}
+
+.kmSuperFans_player div.jp-video-full div.jp-jplayer {
+    top: 0;
+    left: 0;
+    position: fixed !important;
+    position: relative; /* Rules for IE6 (full-screen) */
+    overflow: hidden;
+}
+
+.kmSuperFans_player div.jp-video-full div.jp-gui,
+.kmSuperFans_player .jp-audio.jp-state-full-screen div.jp-gui {
+    position: fixed !important;
+    position: static; /* Rules for IE6 (full-screen) */
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 1001; /* 1 layer above the others. */
+}
+
+.kmSuperFans_player .jp-restore-screen {
+    background: rgba(0, 0, 0, 0) url("{$kmSuperFans_img_url}/fullscreen.png") no-repeat scroll 0 0 / contain;
+    opacity: 0.8;
+}
+
+.kmSuperFans_player .jp-video-full .jp-controls-holder,
+.kmSuperFans_player .jp-audio.jp-state-full-screen .jp-controls-holder {
+    margin: auto;
+    max-width: 1180px;
+    position: relative;
+}
+
+.kmSuperFans_player .jp-audio .jp-title {
+    background: rgba(0, 0, 0, 0.5) none repeat scroll 0 0;
+    color: #FFFFFF;
+    display: inline !important;
+    font-weight: bold;
+    left: 20px;
+    max-width: 80%;
+    padding: 10px;
+    position: absolute;
+    top: 0;
+}
+
+.kmSuperFans_player .jp-playlist {
+    bottom: 50px;
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    width: 100%;
+}
+
+.kmSuperFans_player .jp-playlist li {
+    background: rgba(0, 0, 0, 0.5) none repeat scroll 0 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    display: block;
+    width: 100%;
+}
+
+.kmSuperFans_player .jp-playlist-current a {
+    color: rgba(248, 197, 116, 1);
+}
+
+.kmSuperFans_player .jp-playlist div {
+    padding: 7px;
+}
+
+.kmSuperFans_player .jp-control-settings {
+    background: rgba(0, 0, 0, 0.5) none repeat scroll 0 0;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+    bottom: 34px;
+    padding: 6px;
+    position: absolute;
+    right: 10px;
+    z-index: 500;
+}
+
+.kmSuperFans_player .jp-volume-bar {
+    background: #111111 none repeat scroll 0 0;
+    cursor: pointer;
+    height: 8px;
+    margin: 5px 0;
+    overflow: hidden;
+    position: absolute;
+    right: 87px;
+    width: 116px;
+}
+
+.kmSuperFans_player .jp-volume-bar-value {
+    background: #0E8DFF none repeat scroll 0 0;
+    border-radius: 0;
+    height: 8px;
+}
+
+.kmSuperFans_player.audio .jp-settings {
+    right: 0;
+}
+
+.kmSuperFans_player.audio .jp-mute, .kmSuperFans_player.audio .jp-unmute {
+    right: 35px;
+}
+
+.kmSuperFans_player.audio .jp-duration {
+    right: 95px;
+}
+
+.kmSuperFans_player.audio .jp-volume-bar {
+    right: 25px;
+}
+
+.kmSuperFans_player.audio .jp-progress-holder {
+    right: 158px;
+}
+
+.kmSuperFans_player .jp-video-play-icon.replay {
+    background-position: 0 -41px;
+}
+
+.kmSuperFans_player .jp-play.replay {
+    background: rgba(0, 0, 0, 0) url("{$kmSuperFans_img_url}/replay.png") no-repeat scroll 0 0 / contain;
+    opacity: 0.8;
+}
+
+.kmSuperFans_player .jp-title {
+    margin: 2em;
+}
+
+.kmSuperFans_player .jp-control-settings span {
+    color: white;
+}
+
+.button_player div.jp-interface ul.jp-controls a.jp-play,
+.button_player div.jp-interface ul.jp-controls a.jp-pause {
+    display: none;
+}
+
+li.jp-playlist-current {
+    background: rgba(255, 255, 255, 0.1) none repeat scroll 0 0;
+}
+
+.kmSuperFans_player {
+    border-radius: 5px 5px 0 0;
+    overflow: hidden;
+}
+
+.kmSuperFans_audio {
+    background: #555555 none repeat scroll 0 0;
+    border-radius: 5px;
+}
+
+.kmSuperFans_audio .jp-play {
+    background: rgba(0, 0, 0, 0) url("{$kmSuperFans_img_url}/play.png") no-repeat scroll 0 0 / contain;
+    bottom: 50%;
+    opacity: 0.8;
+    position: absolute;
+    transform: translateY(50%);
+}
+
+.kmSuperFans_audio .jp-unmute {
+    background: rgba(0, 0, 0, 0) url("{$kmSuperFans_img_url}/unmute.png") no-repeat scroll 0 0 / contain;
+    bottom: 50%;
+    opacity: 0.8;
+    position: absolute;
+    right: 110px;
+    transform: translateY(50%);
+}
+
+.kmSuperFans_audio .jp-mute {
+    background: rgba(0, 0, 0, 0) url("{$kmSuperFans_img_url}/mute.png") no-repeat scroll 0 0 / contain;
+    bottom: 50%;
+    opacity: 0.8;
+    position: absolute;
+    right: 110px;
+    transform: translateY(50%);
+}
+
+.kmSuperFans_audio .jp-pause {
+    background: rgba(0, 0, 0, 0) url("{$kmSuperFans_img_url}/pause.png") no-repeat scroll 0 0 / contain;
+    bottom: 50%;
+    opacity: 0.8;
+    position: absolute;
+    transform: translateY(50%);
+}
+
+.kmSuperFans_audio .jp-controls {
+    display: inline-block;
+    padding: 10px 0;
+}
+
+.kmSuperFans_audio .jp-unmute, .kmSuperFans_audio .jp-play, .kmSuperFans_audio .jp-mute, .kmSuperFans_audio .jp-pause {
+    display: block;
+    height: 20px;
+    width: 20px;
+}
+
+.kmSuperFans_audio .jp-controls {
+    display: inline-block;
+}
+
+.kmSuperFans_audio .jp-unmute, .kmSuperFans_audio .jp-play, .kmSuperFans_audio .jp-mute, .kmSuperFans_audio .jp-pause {
+    display: block;
+    height: 24px;
+    width: 24px;
+}
+
+.kmSuperFans_audio .jp-audio {
+    padding: 10px 20px;
+}
+
+.kmSuperFans_audio .jp-gui {
+    height: auto !important;
+    width: 100%;
+}
+
+.kmSuperFans_audio .jp-duration {
+    bottom: 50%;
+    color: #CCCCCC;
+    cursor: pointer;
+    display: block;
+    position: absolute;
+    right: 150px;
+    transform: translateY(50%);
+}
+
+.kmSuperFans_audio .jp-controls-holder {
+    height: 30px;
+    position: relative;
+}
+
+.kmSuperFans_audio .jp-progress-holder {
+    background: #111111 none repeat scroll 0 0;
+    bottom: 50%;
+    height: 10px;
+    left: 35px;
+    position: absolute;
+    right: 208px;
+    transform: translateY(50%);
+}
+
+.kmSuperFans_audio .jp-play-bar {
+    background: #FF5500 none repeat scroll 0 0;
+    height: 10px;
+}
+
+.kmSuperFans_audio .jp-seek-bar {
+    background: #111111 none repeat scroll 0 0;
+}
+
+.kmSuperFans_audio .jp-volume-bar {
+    background: #111111 none repeat scroll 0 0;
+    bottom: 50%;
+    height: 10px;
+    position: absolute;
+    right: 0;
+    transform: translateY(50%);
+    width: 100px;
+}
+
+.kmSuperFans_audio .jp-progress {
+    background: #333333 none repeat scroll 0 0;
+}
+
+.kmSuperFans_audio .jp-volume-bar-value {
+    background: #0E8DFF none repeat scroll 0 0;
+    height: 10px;
+}
+
+.kmSuperFans_audio .jp-pause, .kmSuperFans_audio .jp-play {
+    width: 20px;
+}
+
+.kmSuperFans_audio .jp-artist {
+    color: #999999;
+}
+
+.kmSuperFans_audio .jp-playlist li {
+    border-bottom: 1px solid #666666;
+    padding: 10px;
+}
+
+.kmSuperFans_audio.playlist .jp-title {
+    display: block !important;
+    font-size: 24px;
+    left: 113px;
+    position: absolute;
+    top: 20px;
+}
+
+.kmSuperFans_audio.playlist .jp-playlist {
+    display: block !important;
+    max-height: 230px;
+    overflow: auto;
+    padding: 16px 0 0;
+}
+
+.kmSuperFans_audio.playlist .jp-gui {
+    padding: 20px 0 0;
+}
+
+.kmSuperFans_audio .jp-playlist li:last-child {
+    border: medium none;
+}
+
+.kmSuperFans_audio.playlist .jp-audio {
+    padding: 20px;
+}
+
+.kmSuperFans_audio .jp-playlist-item, .kmSuperFans_audio .jp-title {
+    color: #FFFFFF;
+}
+
+.kmSuperFans_audio li {
+    list-style: outside none none;
+}
+
+.kmSuperFans_audio ul {
+    margin: 0;
+    padding: 0;
+}
+
+/* Mobile */
+@media handheld, only screen and (max-width: 767px) {
+    .kmSuperFans_player .jp-duration {
+        right: 87px;
+    }
+
+    .kmSuperFans_player .jp-progress-holder {
+        right: 130px;
+    }
+
+    .kmSuperFans_player .jp-volume-bar.desk, .kmSuperFans_player #mute-unmute,
+    .kmSuperFans_audio .jp-volume-bar.desk, .kmSuperFans_audio #mute-unmute {
+        display: none !important;
+    }
+
+    .kmSuperFans_audio.playlist .jp-title {
+        font-size: 16px;
+    }
+
+    .kmSuperFans_audio .jp-progress-holder {
+        right: 50px;
+    }
+
+    .kmSuperFans_audio .jp-duration {
+        right: 0;
+    }
+}

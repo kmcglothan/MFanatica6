@@ -1,0 +1,103 @@
+/* @title Config Block */
+/* @help The set of buttons that float to the right, ie. create, delete and modify. */
+.block_config {
+    float: right;
+    margin-left: 6px;
+    white-space: nowrap;
+}
+
+/* @title Image Block */
+/* @help The DIV that holds a list image. */
+.block_image {
+    margin: 0 auto;
+    padding-right: 6px;
+}
+
+/* @title Content Block */
+/* @help The DIV that holds a lists content. */
+.block_content {
+    padding: 0;
+    margin: 0 auto;
+}
+
+/* @title Title */
+/* @help This is the Title text */
+.title {
+    background-color: #EEEEEE;
+    vertical-align: middle;
+    text-transform: capitalize;
+    color: #333333;
+    padding: 12px;
+}
+
+.title h1 {
+    font-weight: bold;
+}
+
+.title-more {
+    display: inline-block;
+    float: right;
+    font-size: 12px;
+    text-transform: uppercase;
+    margin-top: 6px;
+    color: #AAAAAA;
+}
+
+.title-more a {
+    color: #AAAAAA;
+}
+
+.title-more a:hover {
+    color: #000000;
+    text-decoration: none;
+}
+
+/* @title Info Text */
+/* @help Styling for info labels. ie. Albums, Genre, Plays etc. */
+
+.info {
+    color: #666666;
+    display: inline;
+    font-weight: bold;
+    margin: 0;
+    padding: 0;
+    text-transform: capitalize;
+}
+
+/* @title Info Text Link */
+/* @help This is the Info link text */
+.info a {
+    text-decoration: none;
+    color: #58c;
+}
+
+/* @title Info Link Hover */
+/* @help This is the Info link hover text */
+.info a:hover {
+    color: #888888;
+    text-decoration: underline;
+}
+
+/* @title Date Text */
+/* @help Any date text in your lists. ie. blogs, events etc. */
+.info_c {
+    color: #333333;
+}
+
+/* @title Date Link Text */
+/* @help Any date text in your lists. ie. blogs, events etc. */
+.info_c a {
+    color: #58c;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+/* @title Date Text */
+/* @help Any date text in your lists. ie. blogs, events etc. */
+.info_c a:hover {
+    text-decoration: underline;
+}
+.p5 h3 {
+    margin: 0;
+}
+

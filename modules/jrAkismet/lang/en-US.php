@@ -2,7 +2,7 @@
 /**
  * Jamroom Spam Blocker module
  *
- * copyright 2016 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -47,3 +47,4 @@ defined('APP_DIR') or exit();
 
 // Keys
 $lang[1] = '(Offsite URL Removed)';
+$lang[2] = 'An internal error was encountered saving your data - please try again shortly';

@@ -2,7 +2,7 @@
 /**
  * Jamroom Documentation module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -88,7 +88,7 @@ function profile_view_jrDocs_default($_profile, $_post, $_user, $_conf)
                 'order_by'            => array(
                     'doc_section_order' => 'numerical_asc'
                 ),
-                'limit'               => 100,
+                'limit'               => 200,
                 'exclude_jrUser_keys' => true
             );
             $_rt = jrCore_db_search_items('jrDocs', $_sp);
@@ -273,9 +273,13 @@ function profile_view_jrDocs_default($_profile, $_post, $_user, $_conf)
                         $hl = new Highlight\Highlighter();
                         $_l = array('php', 'javascript', 'css', 'xml');
                         $hl->setAutodetectLanguages($_l);
-                        $code             = $hl->highlight($_doc['doc_syntax_code'], $_doc['doc_code']);
-                        $_doc['doc_code'] = $code->value;
-                        $_cs[]            = $_doc['doc_code_language'];
+                        try {
+                            $code             = $hl->highlight($_doc['doc_syntax_code'], $_doc['doc_code']);
+                            $_doc['doc_code'] = $code->value;
+                            $_cs[]            = $_doc['doc_code_language'];
+                        }
+                        catch (Exception $e) {
+                        }
                         break;
 
                     case 'text_and_image':
@@ -306,9 +310,9 @@ function profile_view_jrDocs_default($_profile, $_post, $_user, $_conf)
                 }
                 $_profile['doc_content'] .= jrCore_parse_template("doc_section_{$_doc['doc_section_type']}.tpl", $_doc, 'jrDocs');
             }
-            $_profile['item'] = $_rt['_items'][0];
+            $_profile['item']        = $_rt['_items'][0];
             $_profile['doc_content'] .= jrCore_parse_template("doc_section_footer.tpl", $_profile, 'jrDocs');
-            $out = jrCore_parse_template('item_doc_detail.tpl', $_profile, 'jrDocs');
+            $out                     = jrCore_parse_template('item_doc_detail.tpl', $_profile, 'jrDocs');
             // meta for detail page
             $_rep = array(
                 '_items' => $_rt['_items'],

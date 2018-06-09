@@ -2,7 +2,7 @@
 /**
  * Jamroom Image Support module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -145,4 +145,15 @@ function jrImage_quota_config()
     jrProfile_register_quota_setting('jrImage',$_tmp);
 
     return true;
+}
+
+/**
+ * quota_config_validate
+ * @param array $_post
+ * @return array
+ */
+function jrImage_quota_config_validate($_post)
+{
+    jrCore_set_form_notice('notice', "<b>NOTE:</b> Changes to Watermark settings will not be visible until the Image Cache is reset", false);
+    return $_post;
 }

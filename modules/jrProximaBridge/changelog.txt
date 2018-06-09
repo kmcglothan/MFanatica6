@@ -1,0 +1,27 @@
+Proxima Bridge module changelog
+
+Version 1.1.5:
+ - Change: Support added for "OR" option in searches when doing a GET search
+
+Version 1.1.4:
+ - Change: Updated to work with new "Max Search Results" setting in Proxima Core
+
+Version 1.1.3:
+ - New: Support for "simplepagebreak" GET search parameter
+ - Bug Fix: "page" parameter for GET search was not working properly if greater than 1
+
+Version 1.1.2:
+ - New: order_by and order_dir parameter support added for ordering result set
+ - Bug Fix: group_by parameter not working correctly when doing a GET search
+
+Version 1.1.1:
+ - Bug Fix: Some modules marked active in the Global Config may not work properly
+
+Version 1.1.0:
+ - New: "Active Modules" Global Config setting to restrict API access to specific modules
+
+Version 1.0.1:
+ - Change: Internal update to key check only modules that have form designer setup
+
+Version 1.0.0:
+ - Initial Release

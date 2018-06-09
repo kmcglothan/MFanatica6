@@ -32,7 +32,7 @@
 
                     {if strlen($item.action_original_html) > 0}
                     <div class="action_item_shared">
-                        {$item.action_original_html}
+                        {$item.action_original_html|jrCore_format_string_clickable_urls}
                     </div>
                     {/if}
 

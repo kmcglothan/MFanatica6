@@ -2,7 +2,7 @@
 /**
  * Jamroom Profiles module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -49,7 +49,7 @@ function jrProfile_meta()
     $_tmp = array(
         'name'        => 'Profiles',
         'url'         => 'profile',
-        'version'     => '1.6.1',
+        'version'     => '1.7.2',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Core support for Profiles and Profile Quotas',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/955/profiles',
@@ -84,7 +84,7 @@ function jrProfile_init()
     jrCore_register_event_trigger('jrProfile', 'delete_profile', 'Fired after a profile and its data are deleted');
     jrCore_register_event_trigger('jrProfile', 'profile_menu_params', 'Fired when a profile menu is viewed');
     jrCore_register_event_trigger('jrProfile', 'change_active_profile', 'Fired when a users active profile is changed');
-    jrCore_register_event_trigger('jrProfile', 'user_linked_profile_ids', 'Fired when gatering linked profile_ids for a user_id');
+    jrCore_register_event_trigger('jrProfile', 'user_linked_profile_ids', 'Fired when gathering linked profile_ids for a user_id');
 
     // Listen for user sign ups so we can create associated profile
     jrCore_register_event_listener('jrUser', 'signup_created', 'jrProfile_signup_created_listener');
@@ -94,6 +94,7 @@ function jrProfile_init()
     jrCore_register_event_listener('jrCore', 'db_increment_key', 'jrProfile_db_increment_key_listener');
     jrCore_register_event_listener('jrCore', 'db_search_params', 'jrProfile_db_search_params_listener');
     jrCore_register_event_listener('jrCore', 'db_search_items', 'jrProfile_db_search_items_listener');
+    jrCore_register_event_listener('jrCore', 'db_search_count_query', 'jrProfile_db_search_count_query_listener');
     jrCore_register_event_listener('jrCore', 'db_delete_item', 'jrProfile_db_delete_item_listener');
     jrCore_register_event_listener('jrCore', 'verify_module', 'jrProfile_verify_module_listener');
     jrCore_register_event_listener('jrCore', 'repair_module', 'jrProfile_repair_module_listener');
@@ -105,6 +106,9 @@ function jrProfile_init()
 
     // Tell the comment module our private profiles
     jrCore_register_event_listener('jrComment', 'private_item_ids', 'jrProfile_private_item_ids_listener');
+
+    // System reset listener
+    jrCore_register_event_listener('jrDeveloper', 'reset_system', 'jrProfile_reset_system_listener');
 
     // Register our tools
     jrCore_register_module_feature('jrCore', 'tool_view', 'jrProfile', 'quota_browser', array('Quota Browser', 'Browse the existing Profile Quotas in your system'));
@@ -153,8 +157,11 @@ function jrProfile_init()
     );
     jrCore_register_module_feature('jrGraph', 'graph_config', 'jrProfile', 'signups_by_day', $_tmp);
 
+    // Akismet Anti Spam support
+    jrCore_register_module_feature('jrAkismet', 'spam_check', 'jrProfile', 'comment', 'reject');
+
     // Keep track of disk usage
-    jrCore_register_queue_worker('jrProfile', 'update_profile_disk_usage', 'jrProfile_update_profile_disk_usage_worker', 0, 3, 300, LOW_PRIORITY_QUEUE);
+    jrCore_register_queue_worker('jrProfile', 'update_profile_disk_usage', 'jrProfile_update_profile_disk_usage_worker', 0, 2, 300, LOW_PRIORITY_QUEUE);
 
     return true;
 }
@@ -250,8 +257,14 @@ function jrProfile_graph_profiles_by_day($module, $name, $_args)
     // Get our data
     $old = (time() - (60 * 86400));
     $off = date_offset_get(new DateTime);
-    $tbl = jrCore_db_table_name('jrProfile', 'item_key');
-    $req = "SELECT FROM_UNIXTIME((`value` + {$off}), '%Y%m%d') AS c, COUNT(`_item_id`) AS n FROM {$tbl} WHERE (`key` = '_created' AND `value` > {$old}) GROUP BY c ORDER BY c ASC LIMIT 60";
+    if (jrCore_db_key_has_index_table('jrProfile', '_created')) {
+        $tbl = jrCore_db_get_index_table_name('jrProfile', '_created');
+        $req = "SELECT FROM_UNIXTIME((`value` + {$off}), '%Y%m%d') AS c, COUNT(`_item_id`) AS n FROM {$tbl} WHERE `value` > {$old} GROUP BY c ORDER BY c ASC LIMIT 60";
+    }
+    else {
+        $tbl = jrCore_db_table_name('jrProfile', 'item_key');
+        $req = "SELECT FROM_UNIXTIME((`value` + {$off}), '%Y%m%d') AS c, COUNT(`_item_id`) AS n FROM {$tbl} WHERE (`key` = '_created' AND `value` > {$old}) GROUP BY c ORDER BY c ASC LIMIT 60";
+    }
     $_rt = jrCore_db_query($req, 'NUMERIC');
     if ($_rt && is_array($_rt)) {
         foreach ($_rt as $v) {
@@ -316,6 +329,23 @@ function jrProfile_graph_signups_by_day($module, $name, $_args)
 //-------------------------
 
 /**
+ * System Reset listener
+ * @param $_data array incoming data array
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return array
+ */
+function jrProfile_reset_system_listener($_data, $_user, $_conf, $_args, $event)
+{
+    $tbl = jrCore_db_table_name('jrProfile', 'pulse');
+    jrCore_db_query("TRUNCATE TABLE {$tbl}");
+    jrCore_db_query("OPTIMIZE TABLE {$tbl}");
+    return $_data;
+}
+
+/**
  * Watch for media file changes and update profile disk usage
  * @param $_data array Array of information from trigger
  * @param $_user array Current user
@@ -347,9 +377,9 @@ function jrProfile_save_media_file_listener($_data, $_user, $_conf, $_args, $eve
 function jrProfile_hourly_maintenance_listener($_data, $_user, $_conf, $_args, $event)
 {
     // Have we had any media changes?
-    $_pr = jrCore_db_get_items_missing_key('jrProfile', 'profile_disk_usage');
+    $_pr = jrCore_db_get_items_missing_key('jrProfile', 'profile_disk_usage', 100000);
     if ($_pr && is_array($_pr)) {
-        foreach (array_chunk($_pr, 25) as $k => $_ch) {
+        foreach (array_chunk($_pr, 50) as $k => $_ch) {
             jrCore_queue_create('jrProfile', 'update_profile_disk_usage', array('profile_ids' => $_ch), $k);
         }
     }
@@ -367,7 +397,7 @@ function jrProfile_hourly_maintenance_listener($_data, $_user, $_conf, $_args, $
  */
 function jrProfile_item_index_view_listener($_data, $_user, $_conf, $_args, $event)
 {
-    if (!jrUser_is_admin() && isset($_args['module']) && isset($_it['quota_jrProfile_cap_type']) && $_it['quota_jrProfile_cap_type'] == 'hard' && isset($_data["quota_{$_args['module']}_max_items"]) && $_data["quota_{$_args['module']}_max_items"] > 0) {
+    if (!jrProfile_is_profile_owner($_data['_profile_id']) && isset($_args['module']) && isset($_data['quota_jrProfile_cap_type']) && $_data['quota_jrProfile_cap_type'] == 'hard' && isset($_data["quota_{$_args['module']}_max_items"]) && $_data["quota_{$_args['module']}_max_items"] > 0) {
         jrCore_set_flag('profile_limit_item_count', $_data["quota_{$_args['module']}_max_items"]);
     }
     return $_data;
@@ -448,6 +478,14 @@ function jrProfile_verify_module_listener($_data, $_user, $_conf, $_args, $event
     // Make sure some fields are removed from the designer form table
     jrCore_delete_designer_form_field('jrProfile', 'create', 'profile_quota_id');
     jrCore_delete_designer_form_field('jrProfile', 'create', 'profile_user_id');
+
+    $_pr = jrCore_db_get_items_missing_key('jrProfile', 'profile_disk_usage');
+    if ($_pr && is_array($_pr)) {
+        foreach (array_chunk($_pr, 25) as $k => $_ch) {
+            jrCore_queue_create('jrProfile', 'update_profile_disk_usage', array('profile_ids' => $_ch), $k);
+        }
+    }
+
     return $_data;
 }
 
@@ -495,7 +533,7 @@ function jrProfile_repair_module_listener($_data, $_user, $_conf, $_args, $event
             }
         }
         if ($cnt > 0) {
-            jrCore_logger('INF', "corrected " . jrCore_number_format($cnt) ." profile_link entries");
+            jrCore_logger('INF', "corrected " . jrCore_number_format($cnt) . " profile_link entries");
         }
     }
 
@@ -576,19 +614,17 @@ function jrProfile_db_search_params_listener($_data, $_user, $_conf, $_args, $ev
     // profile_id=(id)[,id][,id][,..]
     if (isset($_data['profile_id'])) {
         if (jrCore_checktype($_data['profile_id'], 'number_nz')) {
-            if ($admin || $_ip == 'no_results' || !isset($_ip["{$_data['profile_id']}"])) {
-                if (!isset($_data['search']) || !is_array($_data['search'])) {
-                    $_data['search'] = array();
-                }
-                $_data['search'][] = "_profile_id = " . intval($_data['profile_id']);
+            if (!isset($_data['search']) || !is_array($_data['search'])) {
+                $_data['search'] = array();
             }
+            $_data['search'][] = "_profile_id = " . intval($_data['profile_id']);
         }
         elseif (strpos($_data['profile_id'], ',')) {
             $_tmp = explode(',', $_data['profile_id']);
             if ($_tmp && is_array($_tmp)) {
                 $_pi = array();
                 foreach ($_tmp as $pid) {
-                    if (is_numeric($pid) && ($admin || $_ip == 'no_results' || !isset($_ip[$pid]))) {
+                    if (is_numeric($pid)) {
                         $_pi[] = (int) $pid;
                     }
                 }
@@ -602,17 +638,15 @@ function jrProfile_db_search_params_listener($_data, $_user, $_conf, $_args, $ev
             }
         }
     }
-    elseif (!$admin && (!isset($_data['privacy_check']) || $_data['privacy_check'] == true)) {
+    elseif (!$admin && (is_array($_ip) && count($_ip) > 0) && (!isset($_data['privacy_check']) || $_data['privacy_check'] == true)) {
         // We have not been given specific profile_id's - we just need
         // to make sure that no inactive profiles are in our listings
-        if (is_array($_ip) && count($_ip) > 0) {
-            $key = '_profile_id';
-            if ($_args['module'] == 'jrProfile') {
-                $key = '_item_id';
-            }
-            $_data['search'][]       = "{$key} not_in " . implode(',', $_ip);
+        $key = '_profile_id';
+        if ($_args['module'] == 'jrProfile') {
+            $key                     = '_item_id';
             $_data['ignore_missing'] = true;  // Tell the DS it can ignore_missing since we KNOW all items in the DS have this key
         }
+        $_data['search'][] = "{$key} not_in " . implode(',', $_ip);
     }
 
     // quota_id=(id)[,id][,id][,..]
@@ -707,6 +741,44 @@ function jrProfile_db_search_params_listener($_data, $_user, $_conf, $_args, $ev
     }
     if ($cnt = jrCore_get_flag('profile_limit_item_count')) {
         $_data['limit'] = $cnt;
+    }
+    return $_data;
+}
+
+/**
+ * Watch for empty jrCore_list calls on module profile indexes
+ * @param $_data array Array of information from trigger
+ * @param $_user array Current user
+ * @param $_conf array Global Config
+ * @param $_args array additional parameters passed in by trigger caller
+ * @param $event string Triggered Event name
+ * @return array
+ */
+function jrProfile_db_search_count_query_listener($_data, $_user, $_conf, $_args, $event)
+{
+    global $_urls, $_post;
+    if (isset($_conf['jrProfile_show_help']) && $_conf['jrProfile_show_help'] === 'on' && !jrCore_get_flag('jrprofile_item_index_help_html')) {
+        if ($_profile = jrCore_get_flag('jrprofile_item_index_view_data')) {
+            if (jrProfile_is_profile_owner($_profile['_profile_id'])) {
+                // We're in a profile module index view - do we have results?
+                if ($_args['count'] === 0) {
+
+                    $mod                      = $_urls["{$_post['option']}"];
+                    $_ln                      = jrUser_load_lang_strings();
+                    $_profile['module_title'] = (isset($_ln[$mod]['menu'])) ? $_ln[$mod]['menu'] : $_urls[$mod];
+                    $_profile['create_icon']  = jrCore_get_icon_html('plus', jrCore_get_skin_icon_size());
+
+                    // No results - show help message if we have one
+                    if (is_file(APP_DIR . "/modules/{$mod}/templates/item_index_help.tpl")) {
+                        $html = jrCore_parse_template('item_index_help.tpl', $_profile, $mod);
+                    }
+                    else {
+                        $html = jrCore_parse_template('item_index_default_help.tpl', $_profile, 'jrProfile');
+                    }
+                    jrCore_set_flag('jrprofile_item_index_help_html', $html);
+                }
+            }
+        }
     }
     return $_data;
 }
@@ -983,7 +1055,7 @@ function jrProfile_signup_created_listener($_data, $_user, $_conf, $_args, $even
     // We need to check and see if a quota_id came in via $_post ($_data).  If
     // it did, then we are going to check to be sure that quota_id allows sign ups -
     // if it does, then we use that quota_id - else we use the default.
-    $qid = (isset($_conf['jrProfile_default_quota_id']) && jrCore_checktype($_conf['jrProfile_default_quota_id'], 'number_nz')) ? intval($_conf['jrProfile_default_quota_id']) : '1';
+    $qid = (isset($_conf['jrProfile_default_quota_id']) && jrCore_checktype($_conf['jrProfile_default_quota_id'], 'number_nz')) ? intval($_conf['jrProfile_default_quota_id']) : jrProfile_get_default_signup_quota();
     if (isset($_data['quota_id']) && jrCore_checktype($_data['quota_id'], 'number_nz')) {
         // Looks like a different quota_id is being requested - validate
         $_qt = jrProfile_get_quota($_data['quota_id']);
@@ -1022,7 +1094,7 @@ function jrProfile_signup_created_listener($_data, $_user, $_conf, $_args, $even
         'profile_url'      => jrCore_url_string($_args['user_name']),
         'profile_quota_id' => $qid,
         'profile_active'   => (isset($_data['user_active']) && intval($_data['user_active']) === 1) ? 1 : 0,
-        'profile_private'  => (isset($_qt['quota_jrProfile_default_privacy']) && jrCore_checktype($_qt['quota_jrProfile_default_privacy'], 'number_nz')) ? $_qt['quota_jrProfile_default_privacy'] : 1
+        'profile_private'  => (isset($_qt['quota_jrProfile_default_privacy']) && jrCore_checktype($_qt['quota_jrProfile_default_privacy'], 'number_nn')) ? $_qt['quota_jrProfile_default_privacy'] : 1
     );
     $pid   = jrCore_db_create_item('jrProfile', $_prof);
     if (!$pid || !jrCore_checktype($pid, 'number_nz')) {
@@ -1084,37 +1156,15 @@ function jrProfile_signup_activated_listener($_data, $_user, $_conf, $_args, $ev
     if (isset($_data['_profile_id']) && jrCore_checktype($_data['_profile_id'], 'number_nz')) {
 
         // Make sure profile is active
-        $_prof = array('profile_active' => '1');
-        jrCore_db_update_item('jrProfile', $_data['_profile_id'], $_prof);
+        jrCore_db_update_item('jrProfile', $_data['_profile_id'], array('profile_active' => '1'));
+        $_data['profile_active'] = 1;
 
-        // Now get our profile and quota data and merge it with the user data...
-        $_rt = jrCore_db_get_item('jrProfile', $_data['_profile_id']);
-        if ($_rt && is_array($_rt)) {
-
-            // Get all the profiles this user has access to
-            $_pn = jrProfile_get_user_linked_profiles($_data['_user_id']);
-            if ($_pn && is_array($_pn)) {
-                $_rt['user_linked_profile_ids'] = implode(',', array_keys($_pn));
-            }
-
-            // Setup profile updated/created so we don't overwrite user info
-            $_rt['profile_created'] = $_rt['_created'];
-            $_rt['profile_updated'] = $_rt['_updated'];
-            unset($_rt['_created'], $_rt['_updated'], $_rt['_item_id']);
-
-            // Next - grab info about this profile's quota
-            $_temp = jrProfile_get_quota($_rt['profile_quota_id']);
-            if ($_temp && is_array($_temp)) {
-                $_rt = $_rt + $_temp;
-            }
-            return $_data + $_rt;
-        }
     }
     return $_data;
 }
 
 //-------------------------
-// PROFILE FUNCTIONS
+// FUNCTIONS
 //-------------------------
 
 /**
@@ -1164,6 +1214,7 @@ function jrProfile_get_master_profile_ids()
  */
 function jrProfile_delete_profile($profile_id, $user_check = true, $log_message = true)
 {
+    global $_conf;
     if (!jrCore_checktype($profile_id, 'number_nz')) {
         return false;
     }
@@ -1287,6 +1338,8 @@ function jrProfile_data_browser($_post, $_user, $_conf)
             case 'profile_disk_usage';
                 $order_dir = 'numerical_' . $order_dir;
                 $order_opp = 'numerical_' . $order_opp;
+                $order_by  = $_post['order_by'];
+                break;
             case 'profile_name':
                 $order_by = $_post['order_by'];
                 break;
@@ -1327,7 +1380,7 @@ function jrProfile_data_browser($_post, $_user, $_conf)
             }
         }
         else {
-            $_pr['search'][] = "profile_name like %{$_post['search_string']}%";
+            $_pr['search'][] = "profile_name like %{$_post['search_string']}% || profile_url like %{$_post['search_string']}%";
         }
     }
     $_us = jrCore_db_search_items('jrProfile', $_pr);
@@ -1438,14 +1491,14 @@ function jrProfile_data_browser($_post, $_user, $_conf)
             $dat[3]['class'] = 'word-break';
             $dat[4]['title'] = (isset($_pr["{$_prf['_profile_id']}"])) ? implode('<br>', $_pr["{$_prf['_profile_id']}"]) : '-';
             $dat[4]['class'] = 'center word-break';
-            $dat[5]['title'] = (isset($_em["{$_prf['_profile_id']}"])) ? implode('<br>', $_em["{$_prf['_profile_id']}"]) : '-';
+            $dat[5]['title'] = (isset($_em) && isset($_em["{$_prf['_profile_id']}"])) ? implode('<br>', $_em["{$_prf['_profile_id']}"]) : '-';
             $dat[5]['class'] = 'center word-break';
             $cls             = '';
             if (!isset($_prf['profile_active']) || $_prf['profile_active'] != '1') {
                 // Is this profile pending?
                 $cls = ' error';
                 $txt = 'INACTIVE';
-                if (isset($_pm["{$_prf['_profile_id']}"]) && is_array($_pm["{$_prf['_profile_id']}"])) {
+                if (isset($_pm) && isset($_pm["{$_prf['_profile_id']}"]) && is_array($_pm["{$_prf['_profile_id']}"])) {
                     foreach ($_pm["{$_prf['_profile_id']}"] as $_uinf) {
                         if (isset($_uinf['user_blocked']) && $_uinf['user_blocked'] == '1') {
                             $txt = 'BLOCKED';
@@ -1477,7 +1530,7 @@ function jrProfile_data_browser($_post, $_user, $_conf)
             $dat[8]['title'] = jrCore_page_button("profile-modify-{$_prf['_profile_id']}", 'modify', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/settings/profile_id={$_prf['_profile_id']}')");
             // If this profile belongs to a Master User, it can only be deleted by a Master Admin
             $master = false;
-            if (isset($_pm["{$_prf['_profile_id']}"]) && is_array($_pm["{$_prf['_profile_id']}"])) {
+            if (isset($_pm) && isset($_pm["{$_prf['_profile_id']}"]) && is_array($_pm["{$_prf['_profile_id']}"])) {
                 foreach ($_pm["{$_prf['_profile_id']}"] as $_uinf) {
                     if (isset($_uinf['user_group']) && $_uinf['user_group'] == 'master') {
                         $master = true;
@@ -1593,7 +1646,7 @@ function jrProfile_privacy_check($module, $profile_id, $privacy_setting)
 }
 
 /**
- * Return number of profiles a user manages if more than 1
+ * Return TRUE if user is linked to more than 1 profile
  */
 function jrProfile_more_than_one_linked_profile()
 {
@@ -1794,8 +1847,10 @@ function jrProfile_get_user_linked_profiles($user_id)
             if (!$_rt || !is_array($_rt)) {
                 $_rt = array();
             }
-            if (isset($_SESSION['user_temp_linked_profile_ids'])) {
-                $_rt = $_rt + $_SESSION['user_temp_linked_profile_ids'];
+            if (jrUser_is_logged_in() && $_SESSION['_user_id'] == $user_id) {
+                if (isset($_SESSION['user_temp_linked_profile_ids'])) {
+                    $_rt = $_rt + $_SESSION['user_temp_linked_profile_ids'];
+                }
             }
             $_rt = jrCore_trigger_event('jrProfile', 'user_linked_profile_ids', $_rt);
             jrCore_set_flag("jrprofile_linked_profiles_{$uid}", $_rt);
@@ -2037,6 +2092,7 @@ function jrProfile_register_quota_setting($module, $_field)
 
 /**
  * Create a new entry in the Quota Settings for other modules
+ * @deprecated
  * @param $module string Module to create Quota setting for
  * @param $_field array Array of field information for new setting
  * @return bool
@@ -2156,7 +2212,9 @@ function jrProfile_set_quota_value($module, $quota_id, $name, $value)
     $mod = jrCore_db_escape($module);
     $nam = jrCore_db_escape($name);
     $val = jrCore_db_escape($value);
-    $req = "INSERT INTO {$tbl} (`quota_id`,`module`,`name`,`updated`,`value`,`user`) VALUES ('{$qid}','{$mod}','{$nam}',UNIX_TIMESTAMP(),'{$val}','{$uid}') ON DUPLICATE KEY UPDATE `updated` = UNIX_TIMESTAMP(), `value` = '{$val}', `user` = '{$uid}'";
+    $req = "INSERT INTO {$tbl} (`quota_id`,`module`,`name`,`updated`,`value`,`user`)
+            VALUES ('{$qid}','{$mod}','{$nam}',UNIX_TIMESTAMP(),'{$val}','{$uid}')
+            ON DUPLICATE KEY UPDATE `updated` = UNIX_TIMESTAMP(), `value` = '{$val}', `user` = '{$uid}'";
     $cnt = jrCore_db_query($req, 'COUNT');
     if ($cnt && $cnt > 0) {
         // We successfully changed or updated a Quota Value - this means we are going to need
@@ -2371,6 +2429,9 @@ function jrProfile_show_profile($_post, $_user, $_conf)
     if (!isset($_post['module_url']) || mb_strlen($_post['module_url']) === 0) {
         jrCore_page_not_found();
     }
+    if (strpos(' ' . $_post['module_url'], 'ltscriptgt')) {
+        jrCore_page_not_found();
+    }
     if (strpos($_post['module_url'], '_')) {
         $_post['module_url'] = str_replace('_', '-', $_post['module_url']); // JR4 -> JR5 URL change for profiles
     }
@@ -2385,7 +2446,7 @@ function jrProfile_show_profile($_post, $_user, $_conf)
         // will now get a page not found - check here for this and do a 301 if needed
         if (isset($_post['_1']) && jrCore_checktype($_post['_1'], 'number_nz')) {
             $mod = $_urls["{$_post['option']}"];
-            if (!jrCore_module_is_active($mod)) {
+            if (!jrCore_module_is_active($mod) || !jrCore_is_datastore_module($mod)) {
                 jrCore_page_not_found();
             }
             $_it = jrCore_db_get_item($mod, $_post['_1'], false, true);
@@ -2402,6 +2463,7 @@ function jrProfile_show_profile($_post, $_user, $_conf)
 
     // Set flag indicating we are in a profile view
     jrCore_set_flag('jrprofile_view_is_active', $_rt['_profile_id']);
+    jrCore_set_flag('jrprofile_active_profile_data', $_rt);
 
     $_lang = jrUser_load_lang_strings();
 
@@ -2507,18 +2569,30 @@ function jrProfile_show_profile($_post, $_user, $_conf)
                 $tmp = $fnc($_rt, $_post, $_user, $_conf);
                 if ($tmp) {
 
-                    foreach (array('profile_disable_header', 'profile_disable_sidebar', 'profile_disable_footer', 'profile_disable_module_tabs') as $opt) {
-                        if (jrCore_get_flag("jr{$opt}")) {
-                            $_rt[$opt] = 1;
-                        }
+                    // Check for disabled options
+                    // 0 = disable_header
+                    // 1 = disable_sidebar
+                    // 2 = disable_footer
+                    // 3 = disable_module_tabs
+                    if (jrCore_get_flag('jrprofile_disable_option_enabled')) {
+                        // The parsed template is disabling one of our options - save so we can access these on later requests
+                        jrProfile_save_template_disabled_options($mod, $fnc);
                     }
+                    else {
+                        jrProfile_set_template_disabled_options($mod, $fnc);
+                    }
+                    $_rt['profile_disable_header']      = (jrCore_get_flag('jrprofile_disable_header')) ? 1 : 0;
+                    $_rt['profile_disable_sidebar']     = (jrCore_get_flag('jrprofile_disable_sidebar')) ? 1 : 0;
+                    $_rt['profile_disable_footer']      = (jrCore_get_flag('jrprofile_disable_footer')) ? 1 : 0;
+                    $_rt['profile_disable_module_tabs'] = (jrCore_get_flag('jrprofile_disable_module_tabs')) ? 1 : 0;
+
                     if ($active_tab != 'default') {
                         $_rt['profile_option_content'] = $tmp;
                         $tmp                           = jrCore_parse_template('profile_option.tpl', $_rt, 'jrProfile');
                     }
 
                     // Add in Profile Tabs if any have been registered for this module
-                    if (!isset($_rt['profile_disable_module_tabs'])) {
+                    if ($_rt['profile_disable_module_tabs'] === 0) {
                         $_tab = jrCore_get_registered_module_features('jrProfile', 'profile_tab');
                         if ($_tab && isset($_tab[$mod])) {
                             $tmp = jrProfile_show_profile_tabs($_rt['_profile_id'], $active_tab, $mod, $_rt['profile_url'], $_tab[$mod]) . $tmp;
@@ -2589,8 +2663,8 @@ function jrProfile_show_profile($_post, $_user, $_conf)
                 if (isset($_it['quota_jrProfile_cap_type']) && $_it['quota_jrProfile_cap_type'] == 'hard' && isset($_it["quota_{$mod}_max_items"]) && $_it["quota_{$mod}_max_items"] > 0) {
                     // Max items is enforced on this quota - are we over?
                     if (isset($_it["{$pfx}_display_order"]) && $_it["{$pfx}_display_order"] >= $_it["quota_{$mod}_max_items"]) {
-                        // This item is OVER the limit - show message
-                        jrCore_notice_page('error', $_lang['jrProfile'][46], null, null, false);
+                        // This item is OVER the limit - not found
+                        jrCore_page_not_found();
                     }
                 }
             }
@@ -2611,16 +2685,30 @@ function jrProfile_show_profile($_post, $_user, $_conf)
             elseif (isset($_lang[$dir]['menu'])) {
                 $title = "{$_lang[$dir]['menu']} - {$_rt['profile_name']}";
             }
-            jrCore_page_title(jrCore_str_to_lower($title));
+            jrCore_page_title(jrCore_str_to_lower($title), false);
 
             $tmp                                = jrCore_parse_template('item_detail.tpl', array('item' => $_it), $dir);
             $_rt['profile_item_detail_content'] = $tmp;
+
+            // Check for disabled options
+            // 0 = disable_header
+            // 1 = disable_sidebar
+            // 2 = disable_footer
+            // 3 = disable_module_tabs
+            if (jrCore_get_flag('jrprofile_disable_option_enabled')) {
+                // The parsed template is disabling one of our options - save so we can access these on later requests
+                jrProfile_save_template_disabled_options($dir, 'item_detail.tpl');
+            }
+            else {
+                jrProfile_set_template_disabled_options($dir, 'item_detail.tpl');
+            }
             $_rt['profile_disable_header']      = (jrCore_get_flag('jrprofile_disable_header')) ? 1 : 0;
             $_rt['profile_disable_sidebar']     = (jrCore_get_flag('jrprofile_disable_sidebar')) ? 1 : 0;
             $_rt['profile_disable_footer']      = (jrCore_get_flag('jrprofile_disable_footer')) ? 1 : 0;
             $_rt['profile_disable_module_tabs'] = (jrCore_get_flag('jrprofile_disable_module_tabs')) ? 1 : 0;
-            $_rt['profile_template_module']     = $mod;
-            $tmp                                = jrCore_parse_template('profile_item_detail.tpl', $_rt);
+
+            $_rt['profile_template_module'] = $mod;
+            $tmp                            = jrCore_parse_template('profile_item_detail.tpl', $_rt);
         }
 
         // Module Item Index
@@ -2652,20 +2740,44 @@ function jrProfile_show_profile($_post, $_user, $_conf)
             }
 
             // It's a call to a module index - run our index template
+            jrCore_set_flag('jrprofile_item_index_view_data', $_rt);
             $dir = $_urls["{$_post['option']}"];
             $tmp .= jrCore_parse_template('item_index.tpl', $_rt, $dir);
+            jrCore_delete_flag('jrprofile_item_index_view_data');
+            if ($help = jrCore_get_flag('jrprofile_item_index_help_html')) {
+                $tmp .= $help;
+                jrCore_delete_flag('jrprofile_item_index_help_html');
+            }
+
+            // The item_index template usually has a call to jrCore_list
+            // If we get NO ITEMS and the viewing user is the profile owner
+            // or a site admin, see if we have instructions for this module
 
             $_rt['profile_item_index_content'] = $tmp;
             // Set title to module menu entry
             if (isset($_lang[$dir]['menu'])) {
                 jrCore_page_title(jrCore_str_to_lower("{$_lang[$dir]['menu']} - {$_rt['profile_name']}"));
             }
+
+            // Check for disabled options
+            // 0 = disable_header
+            // 1 = disable_sidebar
+            // 2 = disable_footer
+            // 3 = disable_module_tabs
+            if (jrCore_get_flag('jrprofile_disable_option_enabled')) {
+                // The parsed template is disabling one of our options - save so we can access these on later requests
+                jrProfile_save_template_disabled_options($dir, 'item_index.tpl');
+            }
+            else {
+                jrProfile_set_template_disabled_options($dir, 'item_index.tpl');
+            }
             $_rt['profile_disable_header']      = (jrCore_get_flag('jrprofile_disable_header')) ? 1 : 0;
             $_rt['profile_disable_sidebar']     = (jrCore_get_flag('jrprofile_disable_sidebar')) ? 1 : 0;
             $_rt['profile_disable_footer']      = (jrCore_get_flag('jrprofile_disable_footer')) ? 1 : 0;
             $_rt['profile_disable_module_tabs'] = (jrCore_get_flag('jrprofile_disable_module_tabs')) ? 1 : 0;
-            $_rt['profile_template_module']     = $mod;
-            $tmp                                = jrCore_parse_template('profile_item_index.tpl', $_rt);
+
+            $_rt['profile_template_module'] = $mod;
+            $tmp                            = jrCore_parse_template('profile_item_index.tpl', $_rt);
         }
 
         // Module Profile View - check templates
@@ -2701,14 +2813,28 @@ function jrProfile_show_profile($_post, $_user, $_conf)
                 $t = jrCore_strip_html($_post['_1']);
                 jrCore_page_title(jrCore_str_to_lower("{$_rt['profile_name']} - $t"));
 
-                $tmp                                = jrCore_parse_template($tpl, $_rt, $dir);
-                $_rt['profile_item_list_content']   = $tmp;
+                $tmp                              = jrCore_parse_template($tpl, $_rt, $dir);
+                $_rt['profile_item_list_content'] = $tmp;
+
+                // Check for disabled options
+                // 0 = disable_header
+                // 1 = disable_sidebar
+                // 2 = disable_footer
+                // 3 = disable_module_tabs
+                if (jrCore_get_flag('jrprofile_disable_option_enabled')) {
+                    // The parsed template is disabling one of our options - save so we can access these on later requests
+                    jrProfile_save_template_disabled_options($dir, $tpl);
+                }
+                else {
+                    jrProfile_set_template_disabled_options($dir, $tpl);
+                }
                 $_rt['profile_disable_header']      = (jrCore_get_flag('jrprofile_disable_header')) ? 1 : 0;
                 $_rt['profile_disable_sidebar']     = (jrCore_get_flag('jrprofile_disable_sidebar')) ? 1 : 0;
                 $_rt['profile_disable_footer']      = (jrCore_get_flag('jrprofile_disable_footer')) ? 1 : 0;
                 $_rt['profile_disable_module_tabs'] = (jrCore_get_flag('jrprofile_disable_module_tabs')) ? 1 : 0;
-                $_rt['profile_template_module']     = $mod;
-                $tmp                                = jrCore_parse_template('profile_item_list.tpl', $_rt);
+
+                $_rt['profile_template_module'] = $mod;
+                $tmp                            = jrCore_parse_template('profile_item_list.tpl', $_rt);
             }
         }
     }
@@ -2807,6 +2933,21 @@ function jrProfile_get_quotas()
     }
     jrCore_set_flag('jrprofile_get_quotas', $_rt);
     return $_rt;
+}
+
+/**
+ * Get the "default" signup quota - used when unable to determine quota_id
+ * @return int
+ */
+function jrProfile_get_default_signup_quota()
+{
+    $tbl = jrCore_db_table_name('jrProfile', 'quota_value');
+    $req = "SELECT `quota_id` FROM {$tbl} WHERE `name` IN('allow_signups','name') ORDER BY `quota_id` ASC LIMIT 1";
+    $_rt = jrCore_db_query($req, 'NUMERIC');
+    if ($_rt && is_array($_rt)) {
+        return (int) $_rt['quota_id'];
+    }
+    return 1;
 }
 
 /**
@@ -2915,8 +3056,10 @@ function jrProfile_show_module_quota_settings($module, $_post, $_user, $_conf)
 
     // Bring in quota config
     if (is_file(APP_DIR . "/modules/{$module}/quota.php")) {
-        require_once APP_DIR . "/modules/{$module}/quota.php";
         $func = "{$module}_quota_config";
+        if (!function_exists($func)) {
+            require_once APP_DIR . "/modules/{$module}/quota.php";
+        }
         if (function_exists($func)) {
             $func();
         }
@@ -3101,6 +3244,46 @@ function jrProfile_reset_pulse_key($profile_id, $module, $key)
     return false;
 }
 
+/**
+ * Save the disabled options for a module/template
+ * @param string $module
+ * @param string $template
+ * @return mixed
+ */
+function jrProfile_save_template_disabled_options($module, $template)
+{
+    $h = (jrCore_get_flag('jrprofile_disable_header')) ? 1 : 0;
+    $s = (jrCore_get_flag('jrprofile_disable_sidebar')) ? 1 : 0;
+    $f = (jrCore_get_flag('jrprofile_disable_footer')) ? 1 : 0;
+    $t = (jrCore_get_flag('jrprofile_disable_module_tabs')) ? 1 : 0;
+    return jrCore_add_to_cache('jrProfile', "{$module}:{$template}", "{$h},{$s},{$f},{$t}", 0, 0, false, false);
+
+}
+
+/**
+ * Get the global flags for profile template disabled options
+ * @param string $module
+ * @param string $template
+ * @return array|bool
+ */
+function jrProfile_set_template_disabled_options($module, $template)
+{
+    if ($values = jrCore_is_cached('jrProfile', "{$module}:{$template}", false, false)) {
+        if ($_tmp = explode(',', $values)) {
+            jrCore_set_flag('jrprofile_disable_header', $_tmp[0]);
+            jrCore_set_flag('jrprofile_disable_sidebar', $_tmp[1]);
+            jrCore_set_flag('jrprofile_disable_footer', $_tmp[2]);
+            jrCore_set_flag('jrprofile_disable_module_tabs', $_tmp[3]);
+            return true;
+        }
+    }
+    jrCore_set_flag('jrprofile_disable_header', 0);
+    jrCore_set_flag('jrprofile_disable_sidebar', 0);
+    jrCore_set_flag('jrprofile_disable_footer', 0);
+    jrCore_set_flag('jrprofile_disable_module_tabs', 0);
+    return true;
+}
+
 //-------------------------
 // SMARTY FUNCTIONS
 //-------------------------
@@ -3160,6 +3343,7 @@ function smarty_function_jrProfile_delete_button($params, $smarty)
  */
 function smarty_function_jrProfile_disable_header($params, $smarty)
 {
+    jrCore_set_flag('jrprofile_disable_option_enabled', 1);
     jrCore_set_flag('jrprofile_disable_header', 1);
     return '';
 }
@@ -3172,6 +3356,7 @@ function smarty_function_jrProfile_disable_header($params, $smarty)
  */
 function smarty_function_jrProfile_disable_sidebar($params, $smarty)
 {
+    jrCore_set_flag('jrprofile_disable_option_enabled', 1);
     jrCore_set_flag('jrprofile_disable_sidebar', 1);
     return '';
 }
@@ -3184,6 +3369,7 @@ function smarty_function_jrProfile_disable_sidebar($params, $smarty)
  */
 function smarty_function_jrProfile_disable_footer($params, $smarty)
 {
+    jrCore_set_flag('jrprofile_disable_option_enabled', 1);
     jrCore_set_flag('jrprofile_disable_footer', 1);
     return '';
 }
@@ -3196,6 +3382,7 @@ function smarty_function_jrProfile_disable_footer($params, $smarty)
  */
 function smarty_function_jrProfile_disable_module_tabs($params, $smarty)
 {
+    jrCore_set_flag('jrprofile_disable_option_enabled', 1);
     jrCore_set_flag('jrprofile_disable_module_tabs', 1);
     return '';
 }
@@ -3346,7 +3533,7 @@ function smarty_function_jrProfile_menu($params, $smarty)
     // Check for alternate module targets
     if (isset($params['targets']{0}) && strpos($params['targets'], ':')) {
         $_tgt = explode(',', $params['targets']);
-        if (isset($_tgt) && is_array($_tgt)) {
+        if (is_array($_tgt)) {
             foreach ($_tgt as $k => $target) {
                 list($mod, $tgt) = explode(':', $target, 2);
                 $mod = trim($mod);
@@ -3362,7 +3549,7 @@ function smarty_function_jrProfile_menu($params, $smarty)
     // See if we are ordering our output
     if (isset($params['order']) && strlen($params['order']) > 0) {
         $_ord = explode(',', $params['order']);
-        if (isset($_ord) && is_array($_ord)) {
+        if (is_array($_ord)) {
             $_new = array();
             foreach ($_ord as $mod) {
                 $_new[$mod] = $mod;
@@ -3454,7 +3641,7 @@ function smarty_function_jrProfile_menu($params, $smarty)
                 // If this module REQUIRES another module, and the other module is excluded, we don't show
                 if (isset($_mods[$module]['module_requires']{1})) {
                     $_req = explode(',', $_mods[$module]['module_requires']);
-                    if (isset($_req) && is_array($_req)) {
+                    if (is_array($_req)) {
                         foreach ($_req as $rmod) {
                             if (strpos($rmod, ':')) {
                                 list($rmod,) = explode(':', $rmod);
@@ -3478,7 +3665,7 @@ function smarty_function_jrProfile_menu($params, $smarty)
 
                 // See if we have been given an alternate target
                 $target = $mod_url;
-                if (isset($_tgt[$module])) {
+                if (isset($_tgt) && isset($_tgt[$module])) {
                     $target .= '/' . $_tgt[$module];
                 }
                 // If there are NO ITEMS of this type, we only show the menu option to profile owners so they can create a new one.

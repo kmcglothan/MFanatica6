@@ -2,8 +2,7 @@
 /**
  * Jamroom FoxyCart eCommerce module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2017 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -71,7 +70,7 @@ function jrFoxyCart_db_schema()
         "INDEX purchase_module (purchase_module)",
         "INDEX purchase_txn_id (purchase_txn_id)"
     );
-    jrCore_db_verify_table('jrFoxyCart', 'purchase', $_tmp);
+    jrCore_db_verify_table('jrFoxyCart', 'purchase', $_tmp, 'InnoDB');
 
     // SALES (of individual items)
     $_tmp = array(
@@ -95,7 +94,7 @@ function jrFoxyCart_db_schema()
         "INDEX sale_txn_id (sale_txn_id)",
         "INDEX sale_payed_out (sale_payed_out)"
     );
-    jrCore_db_verify_table('jrFoxyCart', 'sale', $_tmp);
+    jrCore_db_verify_table('jrFoxyCart', 'sale', $_tmp, 'InnoDB');
 
     // PAYOUT (past payouts to profiles)
     $_tmp = array(
@@ -106,7 +105,7 @@ function jrFoxyCart_db_schema()
         "payout_amount VARCHAR(12) NOT NULL DEFAULT ''",
         "payout_email VARCHAR(255) NOT NULL DEFAULT ''"
     );
-    jrCore_db_verify_table('jrFoxyCart', 'payout', $_tmp);
+    jrCore_db_verify_table('jrFoxyCart', 'payout', $_tmp, 'InnoDB');
 
     // Ledger
     $_tmp = array(
@@ -122,7 +121,7 @@ function jrFoxyCart_db_schema()
         "INDEX record_profile_id (record_profile_id)",
         "INDEX record_category (record_category)"
     );
-    jrCore_db_verify_table('jrFoxyCart', 'ledger', $_tmp);
+    jrCore_db_verify_table('jrFoxyCart', 'ledger', $_tmp, 'InnoDB');
 
     // Payout History
     $_tmp = array(
@@ -133,7 +132,7 @@ function jrFoxyCart_db_schema()
         "p_done TINYINT(1) UNSIGNED NOT NULL DEFAULT '0'",
         "UNIQUE p_code (p_code)"
     );
-    jrCore_db_verify_table('jrFoxyCart', 'payout_history', $_tmp);
+    jrCore_db_verify_table('jrFoxyCart', 'payout_history', $_tmp, 'InnoDB');
 
     // Subscription Expire
     $_tmp = array(
@@ -143,7 +142,6 @@ function jrFoxyCart_db_schema()
         "INDEX sub_expire_date (sub_expire_date)",
         "INDEX sub_profile_id (sub_profile_id)"
     );
-    jrCore_db_verify_table('jrFoxyCart', 'sub_expire', $_tmp);
-
+    jrCore_db_verify_table('jrFoxyCart', 'sub_expire', $_tmp, 'InnoDB');
     return true;
 }

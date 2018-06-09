@@ -1,10 +1,12 @@
 <div class="block_content">
-    <div class="item" style="display:table">
-        <div style="display:table-row">
-            <div style="display:table-cell;width:10%;">
-                <img src="{$jamroom_url}/modules/jrSupport/img/modules.png" width="128" alt="Help with Modules">
+    <div class="item">
+        <div class="row">
+            <div class="col2">
+                <div class="p10">
+                    <img src="{$jamroom_url}/modules/jrSupport/img/modules.png" width="128" alt="Help with Modules">
+                </div>
             </div>
-            <div style="display:table-cell;padding:0 18px;vertical-align:middle;width:90%">
+            <div class="col10 last">
                 <h2>Module Questions</h2>
                 <ul>
                     <li>Have a question about how a module works?</li>
@@ -27,14 +29,14 @@
 <div id="module_info" style="display:none">{* help results load here *}</div>
 
 <div class="block_content">
-    <div class="item" style="display:table">
-        <div style="display:table-row">
-            <div style="display:table-cell;width:10%;">
+    <div class="item">
+        <div class="row">
+            <div class="col2">
                 <div class="p10">
                     <img src="{$jamroom_url}/modules/jrSupport/img/skins.png" width="128" alt="Help with Skins">
                 </div>
             </div>
-            <div style="display:table-cell;padding:0 18px;vertical-align:middle;width:90%">
+            <div class="col10 last">
                 <h2>Skin Questions and Customization</h2>
                 <ul>
                     <li>Need help designing or customizing the skin templates?</li>

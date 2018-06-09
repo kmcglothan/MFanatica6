@@ -1,5 +1,22 @@
 Profile Groups module changelog
 
+Version 1.5.21:
+ - New: Form Designer image fields are checked to see if the user has Group access before displaying image
+ - Bug Fix: Depending on skin design, some calls to a group discussion or page could fail
+
+Version 1.5.20:
+ - Change: Updated module queue worker to limit number of queue entries to 1 at a time
+
+Version 1.5.19:
+ - Change: All users associated with the group's profile now notified upon members leaving
+
+Version 1.5.18:
+ - Change: Sharing system adjusted to work with OneAll module changes
+ - Change: Upon new group creation, all users linked to the profile are added as members
+
+Version 1.5.17:
+ - New: Added item_detail_meta.tpl for social media meta tags
+
 Version 1.5.16:
  - New: Search box added to group members list page
  - Bug Fix: RSS feed listener fix

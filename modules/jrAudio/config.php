@@ -2,7 +2,7 @@
 /**
  * Jamroom Audio module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -52,7 +52,7 @@ function jrAudio_config()
         'validate' => 'onoff',
         'required' => 'on',
         'label'    => 'block file downloads',
-        'help'     => 'By default audio files are blocked from being downloaded via the &quot;download&quot; URL, and are only playable in the site audio players. Uncheck this option to allow download of audio files.<br><br><strong>NOTE:</strong> If you are using the FoxyCart or PayPal eCommerce module, any audio files that have a price greater than 0, or are part of a paid bundle, cannot be downloaded.',
+        'help'     => 'By default audio files are blocked from being downloaded via the &quot;download&quot; URL, and are only playable in the site audio players. Uncheck this option to allow download of audio files.<br><br><strong>NOTE:</strong> If you are using the Payments or PayPal eCommerce module, any audio files that have a price greater than 0, or are part of a paid bundle, cannot be downloaded.',
         'order'    => 1
     );
     jrCore_register_setting('jrAudio', $_tmp);
@@ -75,7 +75,10 @@ function jrAudio_config()
         2 => 2,
         3 => 3,
         4 => 4,
-        5 => 5
+        5 => 5,
+        6 => 6,
+        7 => 7,
+        8 => 8
     );
     $_tmp = array(
         'name'     => 'conversion_worker_count',
@@ -84,10 +87,10 @@ function jrAudio_config()
         'options'  => $_cnt,
         'required' => 'on',
         'label'    => 'max conversion workers',
-        'help'     => 'What is the maximum number of audio conversions that can be going on simultaneously? It is recommended to leave this value at 1 (one) unless you are on a dedicated server.',
+        'help'     => 'What is the maximum number of audio conversion workers that can be converting audio files simultaneously? It is recommended to leave this value at 1 (one) unless you are on a dedicated server.',
         'validate' => 'number_nz',
         'min'      => 1,
-        'max'      => 5,
+        'max'      => 8,
         'section'  => 'audio conversion',
         'order'    => 10
     );
@@ -108,7 +111,7 @@ function jrAudio_config()
         'options'  => $_cnt,
         'required' => 'on',
         'label'    => 'audio sample length',
-        'help'     => 'If you have the eCommerce package installed and are selling audio downloads, the Audio Module will create an &quot;audio sample&quot; of items that are for sale - how long should the audio sample be?',
+        'help'     => 'If you have the eCommerce package installed and are selling audio downloads, the Audio Module will create an &quot;audio sample&quot; of audio files that are for sale - how long should the audio sample be?',
         'validate' => 'number_nn',
         'min'      => 0,
         'max'      => 120,
@@ -128,7 +131,7 @@ function jrAudio_config()
         'options'  => $_cnt,
         'required' => 'on',
         'label'    => 'conversion format',
-        'help'     => 'Select the audio format(s) you would like to convert uploaded audio to. MP3 + OGG will have compatibility with some older mobile devices, but will <strong>use more disk space</strong>, while MP3 Only (recommended) will use less disk space.',
+        'help'     => 'Select the audio format(s) you would like to convert uploaded audio to. MP3 + OGG will have better compatibility with some older mobile devices, but will <strong>use more disk space</strong>, while MP3 Only (recommended) will use less disk space.',
         'section'  => 'audio conversion',
         'order'    => 12
     );

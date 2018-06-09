@@ -49,7 +49,7 @@ function jrBlog_meta()
     $_tmp = array(
         'name'        => 'Blog',
         'url'         => 'blog',
-        'version'     => '1.1.15',
+        'version'     => '1.1.18',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Add blogging capabilities to profiles',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2856/profile-blog',
@@ -105,6 +105,9 @@ function jrBlog_init()
     jrCore_register_module_feature('jrCore', 'css', 'jrBlog', 'jrBlog.css');
 
     jrCore_register_module_feature('jrTips', 'tip', 'jrBlog', 'tip');
+
+    // Listen for admin user signups so we can increment the blog count created on install
+    jrCore_register_event_listener('jrUser', 'signup_created', 'jrBlog_signup_created_listener');
 
     return true;
 }
@@ -313,12 +316,12 @@ function jrBlog_db_get_item_listener($_data, $_user, $_conf, $_args, $event)
 
 /**
  * Setup pagination on view results
- * @param $_data array Array of information from trigger
+ * @param $_data string HTML for view
  * @param $_user array Current user
  * @param $_conf array Global Config
  * @param $_args array additional parameters passed in by trigger caller
  * @param $event string Triggered Event name
- * @return array
+ * @return string
  */
 function jrBlog_view_results_listener($_data, $_user, $_conf, $_args, $event)
 {
@@ -421,6 +424,27 @@ function jrBlog_db_search_params_listener($_data, $_user, $_conf, $_args, $event
             if (!isset($_post['_profile_id']) || !jrProfile_is_profile_owner($_post['_profile_id'])) {
                 $_data['search'][] = 'blog_publish_date < ' . time();
             }
+        }
+    }
+    return $_data;
+}
+
+/**
+ * On install a blog post was added, but no profile existed to add the count to, adding it on admin creation.
+ * @param $_data
+ * @param $_user
+ * @param $_conf
+ * @param $_args
+ * @param $event
+ * @return mixed
+ */
+function jrBlog_signup_created_listener($_data, $_user, $_conf, $_args, $event){
+
+    if (isset($_args['_user_id']) && $_args['_user_id'] == "1") {
+        if (jrCore_db_number_rows('jrBlog', 'item') === 1) {
+            // increment the blog count.
+            jrCore_db_increment_key('jrProfile', 1, "profile_jrBlog_item_count", 1);
+            jrCore_db_increment_key('jrUser', 1, "user_jrBlog_item_count", 1);
         }
     }
     return $_data;

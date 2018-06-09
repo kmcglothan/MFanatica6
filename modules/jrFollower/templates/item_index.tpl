@@ -1,3 +1,8 @@
+{* only for logged in users? *}
+{if isset($_conf.jrFollower_logged_in_only) && $_conf.jrFollower_logged_in_only == 'on'}
+    {jrUser_session_require_login()}
+{/if}
+
 {jrCore_module_url module="jrFollower" assign="murl"}
 {if jrUser_is_logged_in()}
 <script type="text/javascript">
@@ -72,9 +77,9 @@
         {/capture}
 
         {if jrProfile_is_profile_owner($_profile_id)}
-            {jrCore_list module="jrFollower" search1="follow_profile_id = `$_profile_id`" order_by="_item_id desc" pagebreak=16 page=$_post.p template=$ftpl pager=true}
+            {jrCore_list module="jrFollower" search1="follow_profile_id = `$_profile_id`" order_by="_item_id desc" pagebreak=$_conf.jrFollower_pagebreak page=$_post.p template=$ftpl pager=true}
         {else}
-            {jrCore_list module="jrFollower" search1="follow_profile_id = `$_profile_id`" search2="follow_active = 1" order_by="_item_id desc" pagebreak=16 page=$_post.p template=$ftpl pager=true}
+            {jrCore_list module="jrFollower" search1="follow_profile_id = `$_profile_id`" search2="follow_active = 1" order_by="_item_id desc" pagebreak=$_conf.jrFollower_pagebreak page=$_post.p template=$ftpl pager=true}
         {/if}
 
     </div>

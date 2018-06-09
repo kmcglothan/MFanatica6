@@ -135,7 +135,7 @@ function jrAction_submit()
                     a.hide(300, function()
                     {
                         $('#action_submit').removeAttr('disabled').removeClass('form_button_disabled');
-                        alert(r.error);
+                        jrCore_alert(r.error);
                     });
                 }
                 else {

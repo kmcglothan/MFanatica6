@@ -2,7 +2,7 @@
 /**
  * Jamroom Site Builder module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -52,31 +52,32 @@ function jrSiteBuilder_db_schema()
         "menu_updated INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "menu_parent_id INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "menu_order TINYINT(1) UNSIGNED NOT NULL DEFAULT '0'",
-        "menu_title VARCHAR(256) NOT NULL DEFAULT ''",
-        "menu_url VARCHAR(256) NOT NULL DEFAULT ''",
-        "menu_group VARCHAR(256) NOT NULL DEFAULT ''",
+        "menu_title VARCHAR(255) NOT NULL DEFAULT ''",
+        "menu_url VARCHAR(255) NOT NULL DEFAULT ''",
+        "menu_group VARCHAR(255) NOT NULL DEFAULT ''",
         "menu_onclick VARCHAR(2048) NOT NULL DEFAULT ''",
         "INDEX menu_parent_id (menu_parent_id)",
         "INDEX menu_order (menu_order)"
     );
-    jrCore_db_verify_table('jrSiteBuilder', 'menu', $_tmp, 'MyISAM');
+    jrCore_db_verify_table('jrSiteBuilder', 'menu', $_tmp, 'InnoDB');
 
     // Page
     $_tmp = array(
         "page_id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
         "page_updated INT(11) UNSIGNED NOT NULL DEFAULT '0'",
-        "page_enabled TINYINT(1) UNSIGNED NOT NULL DEFAULT '1'",
-        "page_uri VARCHAR(256) NOT NULL DEFAULT ''",
-        "page_title VARCHAR(256) NOT NULL DEFAULT ''",
-        "page_groups VARCHAR(256) NOT NULL DEFAULT ''",
-        "page_active VARCHAR(256) NOT NULL DEFAULT ''",
-        "page_layout VARCHAR(256) NOT NULL DEFAULT ''",
+        "page_uri VARCHAR(255) NOT NULL DEFAULT ''",
+        "page_title VARCHAR(255) NOT NULL DEFAULT ''",
+        "page_groups VARCHAR(255) NOT NULL DEFAULT ''",
+        "page_active VARCHAR(255) NOT NULL DEFAULT ''",
+        "page_layout VARCHAR(255) NOT NULL DEFAULT ''",
         "page_settings TEXT NOT NULL",
         "page_head TEXT NOT NULL",
         "UNIQUE page_uri (page_uri)",
-        "INDEX page_enabled (page_enabled)"
+        "INDEX page_title (page_title)",
+        "INDEX page_active (page_active)"
     );
-    jrCore_db_verify_table('jrSiteBuilder', 'page', $_tmp, 'MyISAM');
+    jrCore_db_verify_table('jrSiteBuilder', 'page', $_tmp, 'InnoDB');
+    jrCore_db_delete_table_column('jrSiteBuilder', 'page', 'page_enabled');
 
     // Widget
     $_tmp = array(
@@ -85,7 +86,7 @@ function jrSiteBuilder_db_schema()
         "widget_page_id INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "widget_location INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "widget_weight INT(11) UNSIGNED NOT NULL DEFAULT '0'",
-        "widget_groups VARCHAR(256) NOT NULL DEFAULT ''",
+        "widget_groups VARCHAR(255) NOT NULL DEFAULT ''",
         "widget_title VARCHAR(512) NOT NULL DEFAULT ''",
         "widget_module VARCHAR(128) NOT NULL DEFAULT ''",
         "widget_name VARCHAR(128) NOT NULL DEFAULT ''",
@@ -94,7 +95,7 @@ function jrSiteBuilder_db_schema()
         "INDEX widget_page_id (widget_page_id)",
         "INDEX widget_name (widget_name)"
     );
-    jrCore_db_verify_table('jrSiteBuilder', 'widget', $_tmp, 'MyISAM');
+    jrCore_db_verify_table('jrSiteBuilder', 'widget', $_tmp, 'InnoDB');
 
     // Template
     $_tmp = array(
@@ -106,7 +107,7 @@ function jrSiteBuilder_db_schema()
         "template_body TEXT NOT NULL",
         "UNIQUE template_unique (template_module, template_name)"
     );
-    jrCore_db_verify_table('jrSiteBuilder', 'template', $_tmp);
+    jrCore_db_verify_table('jrSiteBuilder', 'template', $_tmp, 'InnoDB');
 
     return true;
 }

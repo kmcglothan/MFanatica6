@@ -1,5 +1,15 @@
 Profile Groups Page module changelog
 
+Version 1.2.5:
+ - Bug Fix: Module load order changed to ensure group data exists in timeline event listener
+
+Version 1.2.4:
+ - New: item_index_meta.tpl added to add social media tags for list page
+ - Bug Fix: Social media meta description not showing up
+
+Version 1.2.3:
+ - New: Added item_detail_meta.tpl for social media meta tags
+
 Version 1.2.2:
  - Change: Group Config tool updated
 

@@ -1,5 +1,58 @@
 Audio Support module changelog:
 
+Version 2.0.2:
+ - Bug Fix: Profiles created during audio import were not being set to "active"
+
+Version 2.0.1:
+ - Bug Fix: Embedded ID3 image may not be extracted from audio file if using Amazon S3 as media system
+ - Bug Fix: ID3 images embedded as .mjpeg images are now converted to .jpg and supported
+
+Version 2.0.0:
+ - Change: Facebook flash player removed - Facebook no longer allows audio embedding
+
+Version 1.9.6:
+ - Change: Modified audio list title so it doesn't go behind detail buttons
+ - Bug Fix: Download button could show on audio items that were part of a paid bundle
+
+Version 1.9.5:
+ - Bug Fix: Possible OGG Vorbis encoding error when converting mono audio files
+
+Version 1.9.4:
+ - Change: Reconvert tool now shows which profile quotas have conversions disabled
+ - Bug Fix: Previously unconverted audio items not having "original" audio item saved in forced reconversion
+
+Version 1.9.3:
+ - Bug Fix: Uploaded MP3 files with same bit rate as configured Quota bit rate may not convert
+
+Version 1.9.2:
+ - Bug Fix: Audio Conversion tool could convert original file to MP3
+ - Bug Fix: Audio Conversion tool showing quotas that have audio conversions disabled
+ - Bug Fix: Additional copy of original audio file could be left in media directory
+
+Version 1.9.1:
+ - Change: Updated to work with new Profile Limits module features
+ - Bug Fix: Removed jplayer.blue.monday.video.play.png from CSS files - not being used
+ - Bug Fix: Profile owners can now download their own audio items
+
+Version 1.9.0:
+ - New: "Tag Audio Files" tool added to re-tag existing MP3 files with new ID3 Tags
+ - New: Updated to add ID3 tags to audio files for custom ID3 tag form designer fields
+ - Bug Fix: Some MP3 files were not getting ID3 tags updated when profile info changed
+
+Version 1.8.2:
+ - Bug Fix: Possible "error updating ID3" activity log error during audio conversions
+
+Version 1.8.1:
+ - Bug Fix: Redirect to Queue viewer when forcing audio reconversions is not loading the right queue
+ - Bug Fix: "original" uploaded audio file not being used in some cases when reconverting
+
+Version 1.8.0:
+ - New: Updated to work with new version of RSS Feed reader module
+ - Change: Updated to support new System Tools module
+ - Change: pressing tab to move between fields in forms and in the audio player has been improved
+ - Change: item_index_meta.tpl added to add social media tags for list page
+ - Bug Fix: Some album URLs could result in a failure to be able to download the album ZIP file
+
 Version 1.7.10
  - New: Twitter card player added to item_detail_meta.tpl so player shows when shared to Twitter
 

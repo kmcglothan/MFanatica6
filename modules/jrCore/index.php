@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -63,41 +63,32 @@ function view_jrCore_queue_entry_delete($_post, $_user, $_conf)
     if (!isset($_post['id'])) {
         jrCore_json_response(array('msg' => 'queue id required'));
     }
-    if (jrCore_checktype($_post['id'], 'number_nz')) {
-        jrCore_queue_delete($_post['id']);
-    }
-    elseif (strpos($_post['id'], ',')) {
-        $_id = explode(',', $_post['id']);
-        if ($_id && is_array($_id)) {
+    $_id = explode(',', $_post['id']);
+    if ($_id && is_array($_id)) {
+        foreach ($_id as $v) {
+            // First get the queue info
+            $qid = (int) $v;
             $tbl = jrCore_db_table_name('jrCore', 'queue');
-            foreach ($_id as $v) {
+            $req = "SELECT queue_id, queue_worker, CONCAT_WS('_', queue_module, queue_name) AS qname FROM {$tbl} WHERE queue_id = {$qid}";
+            $_rt = jrCore_db_query($req, 'SINGLE');
+            if ($_rt && is_array($_rt)) {
 
-                // First get the queue info
-                $qid = (int) $v;
-                $req = "SELECT queue_id, queue_worker, CONCAT_WS('_', queue_module, queue_name) AS qname FROM {$tbl} WHERE queue_id = '{$v}'";
-                $_rt = jrCore_db_query($req, 'SINGLE');
-                if ($_rt && is_array($_rt)) {
+                // Delete the queue entry
+                jrCore_queue_delete($qid);
 
-                    // Delete the queue entry
-                    jrCore_queue_delete($qid);
-
-                    // Decrement in queue_info
-                    $tbl = jrCore_db_table_name('jrCore', 'queue_info');
-                    // Was it being worked?
-                    if (strlen($_rt['queue_worker']) > 0) {
-                        $req = "UPDATE {$tbl} SET queue_depth = (queue_depth - 1), queue_workers = (queue_workers - 1) WHERE queue_name = '{$_rt['qname']}' AND queue_depth > 0";
-                    }
-                    else {
-                        $req = "UPDATE {$tbl} SET queue_depth = (queue_depth - 1) WHERE queue_name = '{$_rt['qname']}' AND queue_depth > 0";
-                    }
-                    jrCore_db_query($req);
-
+                // Decrement in queue_info
+                $tbl = jrCore_db_table_name('jrCore', 'queue_info');
+                // Was it being worked?
+                if (strlen($_rt['queue_worker']) > 0) {
+                    $req = "UPDATE {$tbl} SET queue_depth = (queue_depth - 1), queue_workers = (queue_workers - 1) WHERE queue_name = '{$_rt['qname']}' AND queue_depth > 0";
                 }
+                else {
+                    $req = "UPDATE {$tbl} SET queue_depth = (queue_depth - 1) WHERE queue_name = '{$_rt['qname']}' AND queue_depth > 0";
+                }
+                jrCore_db_query($req);
+
             }
         }
-    }
-    else {
-        jrCore_json_response(array('msg' => 'invalid queue id'));
     }
     jrCore_json_response(array('msg' => 'ok'));
 }
@@ -117,8 +108,10 @@ function view_jrCore_queue_empty_save($_post, $_user, $_conf)
     }
     $mod = jrCore_db_escape($_post['queue_module']);
     $nam = jrCore_db_escape($_post['queue_name']);
-    $tbl = jrCore_db_table_name('jrCore', 'queue');
-    $req = "DELETE FROM {$tbl} WHERE queue_module = '{$mod}' AND queue_name = '{$nam}'";
+
+    $tb1 = jrCore_db_table_name('jrCore', 'queue');
+    $tb2 = jrCore_db_table_name('jrCore', 'queue_data');
+    $req = "DELETE {$tb1}, {$tb2} FROM {$tb1} LEFT JOIN {$tb2} ON ({$tb2}.queue_id = {$tb1}.queue_id) WHERE {$tb1}.queue_module = '{$mod}' AND {$tb1}.queue_name = '{$nam}'";
     jrCore_db_query($req);
     jrCore_validate_queue_info();
     jrCore_location('referrer');
@@ -205,6 +198,7 @@ function view_jrCore_empty_recycle_bin($_post, $_user, $_conf)
         }
     }
 
+    jrCore_logger('INF', 'the recycle bin has been emptied');
     jrCore_set_form_notice('success', 'The Recycle Bin has been emptied');
     jrCore_location('referrer');
 }
@@ -420,16 +414,14 @@ function view_jrCore_delete($_post, $_user, $_conf)
     switch ($_post['_1']) {
 
         case 'jrUser':
-            jrUser_session_sync($_user['_user_id']);
             jrUser_reset_cache($_user['_user_id'], $_post['_1']);
+            jrProfile_reset_cache($_rt['_profile_id']);
             break;
 
         case 'jrProfile':
-            jrUser_session_sync($_user['_user_id']);
             jrProfile_reset_cache($_rt['_profile_id'], $_post['_1']);
             break;
     }
-    jrProfile_reset_cache($_rt['_profile_id']);
     jrCore_set_form_notice('success', 'The file was successfully deleted');
     jrCore_location('referrer');
 }
@@ -463,10 +455,8 @@ function view_jrCore_queue_pause($_post, $_user, $_conf)
         jrCore_set_form_notice('error', 'invalid queue state received - please try again');
         jrCore_location('referrer');
     }
-    jrCore_set_setting_value('jrCore', 'queues_active', $_post['_1']);
-    jrCore_delete_config_cache();
+    jrCore_set_system_queue_state($_post['_1']);
     jrCore_check_for_dead_queue_workers();
-
     jrCore_location('referrer', false);
 }
 
@@ -518,10 +508,10 @@ function view_jrCore_css($_post, $_user, $_conf)
         }
         jrCore_add_to_cache('jrCore', $key, $css, 0, 0, false);
     }
-    jrCore_db_close();
-    header('Content-Length: ' . strlen($css));
-    header('Content-Type: text/css');
-    echo $css;
+    jrCore_set_custom_header('Content-Disposition: inline; filename="' . $_post['_2'] . '"');
+    jrCore_set_custom_header('Content-Type: text/css');
+    jrCore_set_custom_header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + 86400000));
+    jrCore_send_response_and_detach($css, true);
     exit;
 }
 
@@ -547,15 +537,36 @@ function view_jrCore_icon_css($_post, $_user, $_conf)
             $color = reset($color);
         }
     }
-    $dir = jrCore_get_media_directory(0, FORCE_LOCAL);
-    if (!is_file("{$dir}/{$_conf['jrCore_active_skin']}_sprite_{$color}_{$width}.css") || !is_file("{$dir}/{$_conf['jrCore_active_skin']}_sprite_{$color}_{$width}.png")) {
+    $exp = (time() + 86400000);
+    $dir = jrCore_get_module_cache_dir($_conf['jrCore_active_skin']);
+    if (!is_file("{$dir}/sprite_{$color}_{$width}.css") || !is_file("{$dir}/sprite_{$color}_{$width}.png")) {
         jrCore_create_css_sprite($_conf['jrCore_active_skin'], $color, $width);
     }
-    jrCore_db_close();
-    header("Content-type: text/css");
-    header('Content-Disposition: inline; filename="sprite_' . $color . '_' . $width . '.css"');
-    header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + 8640000));
-    echo file_get_contents("{$dir}/{$_conf['jrCore_active_skin']}_sprite_{$color}_{$width}.css");
+    else {
+        $tim = filectime("{$dir}/sprite_{$color}_{$width}.css");
+        $ifs = false;
+        if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']{1})) {
+            $ifs = $_SERVER['HTTP_IF_MODIFIED_SINCE'];
+        }
+        elseif (function_exists('getenv')) {
+            $ifs = getenv('HTTP_IF_MODIFIED_SINCE');
+        }
+        if ($ifs && strtotime($ifs) == $tim) {
+            jrCore_set_custom_header('Content-Disposition: inline; filename="sprite_' . $color . '_' . $width . '.css"');
+            jrCore_set_custom_header('Content-Type: text/css');
+            jrCore_set_custom_header("Last-Modified: " . gmdate('D, d M Y H:i:s \G\M\T', $tim));
+            jrCore_set_custom_header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', $exp));
+            jrCore_set_custom_header('HTTP/1.1 304 Not Modified');
+            jrCore_send_response_and_detach(null, true);
+            exit;
+        }
+    }
+    $tmp = file_get_contents("{$dir}/sprite_{$color}_{$width}.css");
+    jrCore_set_custom_header('Content-Disposition: inline; filename="sprite_' . $color . '_' . $width . '.css"');
+    jrCore_set_custom_header('Content-Type: text/css');
+    jrCore_set_custom_header("Last-Modified: " . gmdate('D, d M Y H:i:s \G\M\T', $exp));
+    jrCore_set_custom_header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', $exp));
+    jrCore_send_response_and_detach($tmp, true);
     exit;
 }
 
@@ -582,15 +593,16 @@ function view_jrCore_icon_sprite($_post, $_user, $_conf)
             $color = reset($color);
         }
     }
-    $dir = jrCore_get_media_directory(0, FORCE_LOCAL);
-    if (!is_file("{$dir}/{$_conf['jrCore_active_skin']}_sprite_{$color}_{$width}.png") || !is_file("{$dir}/{$_conf['jrCore_active_skin']}_sprite_{$color}_{$width}.css")) {
+    $dir = jrCore_get_module_cache_dir($_conf['jrCore_active_skin']);
+    if (!is_file("{$dir}/sprite_{$color}_{$width}.png") || !is_file("{$dir}/sprite_{$color}_{$width}.css")) {
         jrCore_create_css_sprite($_conf['jrCore_active_skin'], $color, $width);
     }
-    jrCore_db_close();
-    header("Content-type: image/png");
-    header('Content-Disposition: inline; filename="sprite_' . $color . '_' . $width . '.png"');
-    header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + 8640000));
-    echo file_get_contents("{$dir}/{$_conf['jrCore_active_skin']}_sprite_{$color}_{$width}.png");
+    $dat = gmdate('D, d M Y H:i:s \G\M\T', time() + 8640000);
+    $tmp = file_get_contents("{$dir}/{$_conf['jrCore_active_skin']}_sprite_{$color}_{$width}.png");
+    jrCore_set_custom_header('Content-Disposition: inline; filename="sprite_' . $color . '_' . $width . '.png"');
+    jrCore_set_custom_header('Content-Type: image/png');
+    jrCore_set_custom_header("Expires: {$dat}");
+    jrCore_send_response_and_detach($tmp, true);
     exit;
 }
 
@@ -919,7 +931,7 @@ function view_jrCore_performance_check($_post, $_user, $_conf)
     jrCore_set_form_notice('notice', "The Performance Check will run a series of performance tests to assess how well Jamroom is likely to<br>perform on your server - it is recommended to run this test at a low traffic time on your server.", false);
     jrCore_get_form_notice();
 
-    $note = '<div id="performance_notice" class="notice" style="padding: 10px 20px;display:none"><div class="item rounded p20">The Performance Check tests 3 separate components of your server to try and give you an idea of how well Jamroom will run on your server:<br><br><strong>Processor Test</strong> &nbsp;&bull;&nbsp; The Processor Test runs a series of calculations on your server processor (CPU) to see how quickly it can finish.  Processor speed is important as it determines how quickly the Jamroom PHP code can be executed.<br><br><strong>Database Test</strong> &nbsp;&bull;&nbsp; The Database Test executes 12,000 separate queries on the database server using the DataStore format.  This test is an important indicator of how fast Jamroom will run on your server.<br><br><strong>Filesystem Test</strong> &nbsp;&bull;&nbsp; The Filesystem Test tests how quickly files can be created and deleted on the Filesystem (the server hard drive).  Having a high speed SSD disk for your server filesystem can really boost your Jamroom performance.</div></div>';
+    $note = '<div id="performance_notice" class="notice" style="padding: 10px 20px;display:none"><div class="item rounded p20">The Performance Check tests 3 separate components of your server to try and give you an idea of how well Jamroom will run on your server:<br><br><strong>Processor Test</strong> &nbsp;&bull;&nbsp; The Processor Test runs a series of calculations on your server processor (CPU) to see how quickly it can finish.  Processor speed is important as it determines how quickly the Jamroom PHP code can be executed.<br><br><strong>Database Test</strong> &nbsp;&bull;&nbsp; The Database Test executes 10,000 separate queries on the database server using the DataStore format.  This test is an important indicator of how fast Jamroom will run on your server.<br><br><strong>Filesystem Test</strong> &nbsp;&bull;&nbsp; The Filesystem Test tests how quickly files can be created and deleted on the Filesystem (the server hard drive).  Having a high speed SSD disk for your server filesystem can really boost Jamroom performance.</div></div>';
     jrCore_page_custom($note);
 
     if ($_tm && is_array($_tm)) {
@@ -928,14 +940,21 @@ function view_jrCore_performance_check($_post, $_user, $_conf)
 
         $_inf = jrCore_get_proc_info();
         $pnum = count($_inf);
-        $mysi = jrCore_db_connect();
-        $mver = mysqli_get_server_info($mysi);
-        if (strpos($mver, '-')) {
-            list($mver,) = explode('-', $mver);
-        }
+
         $type = 'MySQL';
-        if (stripos($mver, 'maria')) {
-            $type = 'MariaDB';
+        $_db = jrCore_db_query("SHOW VARIABLES WHERE Variable_name = 'version'", 'SINGLE');
+        if ($_db && is_array($_db) && isset($_db) && isset($_db['Value'])) {
+            $ver = $_db['Value'];
+            if (stripos($ver, 'maria')) {
+                $type = 'MariaDB';
+            }
+        }
+        else {
+            $msi = jrCore_db_connect();
+            $ver = mysqli_get_server_info($msi);
+        }
+        if (strpos($ver, '-')) {
+            list($ver,) = explode('-', $ver);
         }
         $_dsk = jrCore_get_disk_usage();
 
@@ -1002,11 +1021,11 @@ function view_jrCore_performance_check($_post, $_user, $_conf)
         $htm = '<div style="padding:12px;">
         <table class="page_table bigtable" style="width:100%">
         <tr><th class="page_table_header" style="width:20%">Test</th>
-            <th class="page_table_header" style="width:35%">Score<br><small style="font-weight:normal">Lower is Better</small></th>
+            <th class="page_table_header" style="width:35%">Test Time in Seconds<br><small style="font-weight:normal">Lower is Better</small></th>
             <th class="page_table_header" style="width:45%">Overall Score<br><small style="font-weight:normal">Higher is Better</small></th></tr>
         <tr><td class="page_table_header">Processor<br><span style="color:#888;font-weight:normal">' . $pnum . ' @' . $_inf[1]['mhz'] . '</span></td><td class="page_table_cell bignum bignum2' . $cpu_class . '">' . $cpu . '<br><span>Baseline: ' . $_bs['cpu'] . ' seconds</td>
         <td class="page_table_cell bignum bignum1" rowspan="3"><big>' . jrCore_number_format($total) . '</big><span>' . $bonus . '<br>' . $btn . '</span></td></tr>
-        <tr><td class="page_table_header">Database<br><span style="color:#888;font-weight:normal">' . $type . ' ' . $mver . '</span></td><td class="page_table_cell bignum bignum3' . $db_class . '">' . $db . '<br><span>Baseline: ' . $_bs['db'] . ' seconds</span></td></tr>
+        <tr><td class="page_table_header">Database<br><span style="color:#888;font-weight:normal">' . $type . ' ' . $ver . '</span></td><td class="page_table_cell bignum bignum3' . $db_class . '">' . $db . '<br><span>Baseline: ' . $_bs['db'] . ' seconds</span></td></tr>
         <tr><td class="page_table_header">Filesystem<br><span style="color:#888;font-weight:normal">In Use: ' . $_dsk['percent_used'] . '%</span></td><td class="page_table_cell bignum bignum4' . $fs_class . '">' . $fs . '<br><span>Baseline: ' . $_bs['fs'] . ' seconds</span></td></tr>
         </table>' . $txt . '<br><small>Baseline is a <a href="http://www.jamroom.net/hosting"><u>Jamroom Hosted</u></a> Server with 1 XEON CPU @ 2.5GHz, 1 GB RAM and Fast SSD Disk</small></div>';
         jrCore_set_form_notice($msg, $htm, false);
@@ -1150,7 +1169,7 @@ function view_jrCore_performance_share($_post, $_user, $_conf)
     );
     jrCore_form_field_create($_tmp);
 
-    jrCore_page_custom("<div class=\"success p20 fixed-width rounded\" style=\"margin-left:4px\">{$titl}{$cadd}{$madd}{$line}&nbsp;&nbsp;<b>Processor:</b> {$_pr['cpu']}<br>&nbsp;&nbsp;&nbsp;<b>Database:</b> {$_pr['db']}<br>&nbsp;<b>Filesystem:</b> {$_pr['fs']}<br><b>Total Score:</b> {$tot}</div>", 'Results To Share');
+    jrCore_page_custom("<div class=\"success p10 fixed-width rounded\" style=\"margin-left:4px\">{$titl}{$cadd}{$madd}{$line}&nbsp;&nbsp;<b>Processor:</b> {$_pr['cpu']}<br>&nbsp;&nbsp;&nbsp;<b>Database:</b> {$_pr['db']}<br>&nbsp;<b>Filesystem:</b> {$_pr['fs']}<br><b>Total Score:</b> {$tot}</div>", 'Results To Share');
 
     // Comment
     $_tmp = array(
@@ -1401,7 +1420,7 @@ function view_jrCore_system_check($_post, $_user, $_conf)
     $dat[2]['class'] = 'center word-break';
     $dat[3]['title'] = $pass;
     $dat[3]['class'] = 'center';
-    $dat[4]['title'] = 'Apache Web Server required';
+    $dat[4]['title'] = 'Apache or Nginx Web Server required';
     jrCore_page_table_row($dat);
 
     // PHP Version
@@ -1424,7 +1443,7 @@ function view_jrCore_system_check($_post, $_user, $_conf)
 
     // DB Version
     $_db = jrCore_db_query("SHOW VARIABLES WHERE Variable_name = 'version'", 'SINGLE');
-    if ($_db && is_array($_db) && isset($_db) && isset($_db['Value'])) {
+    if ($_db && is_array($_db) && isset($_db['Value'])) {
         $ver = $_db['Value'];
     }
     else {
@@ -1435,7 +1454,7 @@ function view_jrCore_system_check($_post, $_user, $_conf)
         list($ver,) = explode('-', $ver);
     }
     $result = $pass;
-    if (strpos($ver, '3.') === 0 || strpos($ver, '4.') === 0 || strpos($ver, '5.0') === 0) {
+    if (strpos($ver, '3.') === 0 || strpos($ver, '4.') === 0 || strpos($ver, '5.0') === 0 || strpos($ver, '5.1') === 0) {
         $result = $fail;
     }
 
@@ -1446,7 +1465,7 @@ function view_jrCore_system_check($_post, $_user, $_conf)
     $dat[2]['class'] = 'center';
     $dat[3]['title'] = $result;
     $dat[3]['class'] = 'center';
-    $dat[4]['title'] = 'MySQL 5.1.51 minimum, MariaDB 10.1+ recommended';
+    $dat[4]['title'] = 'MySQL 5.5.0 minimum, MariaDB 10.1+ recommended';
     jrCore_page_table_row($dat);
 
     // Disabled Functions
@@ -1496,49 +1515,24 @@ function view_jrCore_system_check($_post, $_user, $_conf)
             $dat[2]['title'] = $map . 'mb';
             $dat[2]['class'] = 'center';
             $dat[3]['title'] = $fail;
-            $dat[4]['title'] = 'Increase max_allowed_packet setting to 32mb:<br><a href="http://dev.mysql.com/doc/refman/5.1/en/packet-too-large.html"><u>Increasing Max Allowed Packet</u></a>';
+            $dat[4]['title'] = 'Increase max_allowed_packet setting to 32mb:<br><a href="http://dev.mysql.com/doc/refman/5.1/en/packet-too-large.html" target="_blank"><u>Increasing Max Allowed Packet</u></a>';
             $dat[3]['class'] = 'center';
             jrCore_page_table_row($dat);
         }
     }
 
-    // FFMPeg install
-    $dat             = array();
-    $dat[1]['title'] = 'FFMpeg binary';
-    $dat[1]['class'] = 'center';
-    $dat[2]['title'] = 'executable';
-    $dat[2]['class'] = 'center';
-    if ($ffmpeg = jrCore_check_ffmpeg_install(false)) {
-
-        $err = true;
-        $dir = jrCore_get_module_cache_dir('jrCore');
-        $tmp = tempnam($dir, 'system_check_');
-        ob_start();
-        system("nice -n 9 {$ffmpeg} >{$tmp} 2>&1", $ret);
-        ob_end_clean();
-        if (is_file($tmp)) {
-            $tmp = file_get_contents($tmp);
-            if (strpos(' ' .$tmp, 'usage: ffmpeg')) {
-                $dat[3]['title'] = $pass;
-                $dat[4]['title'] = 'Media conversions and meta data are supported';
-                $err = false;
-            }
-            else {
-                jrCore_logger('CRI', "Unable to execute FFMpeg binary - see attached debug output", $tmp);
-            }
-        }
-        if ($err) {
-            $dat[3]['title'] = $fail;
-            $dat[4]['title'] = str_replace(APP_DIR . '/', '', $ffmpeg) . ' is not functioning properly<br>See Activity Log for details';
-        }
-        @unlink($tmp);
-    }
-    else {
+    // Local Cache
+    if (!jrCore_local_cache_is_enabled(false)) {
+        $dat             = array();
+        $dat[1]['title'] = 'Memory Cache';
+        $dat[1]['class'] = 'center';
+        $dat[2]['title'] = 'functions are missing';
+        $dat[2]['class'] = 'center';
         $dat[3]['title'] = $fail;
-        $dat[4]['title'] = str_replace(APP_DIR . '/', '', $ffmpeg) . ' is not executable';
+        $dat[4]['title'] = 'Ensure <a href="http://us2.php.net/apcu" target="_blank"><u>APCu functions</u></a> have been enabled in your PHP install';
+        $dat[3]['class'] = 'center';
+        jrCore_page_table_row($dat);
     }
-    $dat[3]['class'] = 'center';
-    jrCore_page_table_row($dat);
 
     // Directories
     $_to_check = array('cache', 'logs', 'media');
@@ -1546,7 +1540,7 @@ function view_jrCore_system_check($_post, $_user, $_conf)
     foreach ($_to_check as $dir) {
         if (!is_dir(APP_DIR . "/data/{$dir}")) {
             // See if we can create it
-            if (!mkdir(APP_DIR . "/data/{$dir}", $_conf['jrCore_dir_perms'], true)) {
+            if (!jrCore_create_directory(APP_DIR . "/data/{$dir}")) {
                 $_bad[] = "data/{$dir} does not exist";
             }
         }
@@ -1586,9 +1580,31 @@ function view_jrCore_system_check($_post, $_user, $_conf)
     $dat[3]['title'] = ($upl <= 2097152) ? $fail : $pass;
     $dat[3]['class'] = 'center';
     $dat[4]['title'] = ($upl <= 2097152) ? 'increase post_max_size and upload_max_filesize in your php.ini to allow larger uploads<br>' : '';
-    $dat[4]['title'] .= 'View the <a href="https://www.jamroom.net/the-jamroom-network/documentation/problems/748/how-do-i-increase-phps-upload-limit" target="_blank"><u>FAQ on increasing your upload size</u></a>';
-
+    $dat[4]['title'] .= 'View the <a href="https://www.jamroom.net/the-jamroom-network/documentation/problems/748/how-do-i-increase-phps-upload-limit" target="_blank"><u>FAQ on increasing the allowed upload size</u></a>';
     jrCore_page_table_row($dat);
+
+    // Check installed locale's
+    if (isset($_conf['jrUser_default_language']) && $_conf['jrUser_default_language'] != 'en-US') {
+        if ($_lc = jrCore_get_installed_locales()) {
+            $dat             = array();
+            $dat[1]['title'] = 'Supported Languages';
+            $dat[1]['class'] = 'center';
+            $dat[2]['title'] = count($_lc);
+            $dat[2]['class'] = 'center';
+
+            // Is the default language supported?
+            if (!isset($_lc["{$_conf['jrUser_default_language']}"])) {
+                $dat[3]['title'] = $fail;
+                $dat[4]['title'] = "Language support (locale) for {$_conf['jrUser_default_language']} is not installed on this server";
+            }
+            else {
+                $dat[3]['title'] = $pass;
+                $dat[4]['title'] = "Language support (locale) for {$_conf['jrUser_default_language']} is installed and active";
+            }
+            $dat[3]['class'] = 'center';
+            jrCore_page_table_row($dat);
+        }
+    }
 
     // Apache rlimits
     if (function_exists('posix_getrlimit')) {
@@ -1661,7 +1677,7 @@ function view_jrCore_system_check($_post, $_user, $_conf)
 
     // Go through installed modules
     foreach ($_mods as $mod => $_inf) {
-        if ($mod == 'jrCore' || !jrCore_module_is_active($mod)) {
+        if ($mod == 'jrCore' || $mod == 'jrSystemTools' || !jrCore_module_is_active($mod)) {
             continue;
         }
         // Check if this module requires other modules to function - make sure they exist and are activated
@@ -1728,6 +1744,21 @@ function view_jrCore_system_check($_post, $_user, $_conf)
         $_inf['warning'] = jrCore_get_option_image('warning');
         jrCore_trigger_event('jrCore', 'system_check', array(), $_inf, $mod);
     }
+
+    // System Tools
+    if (jrCore_module_is_active('jrSystemTools')) {
+        $dat             = array();
+        $dat[1]['title'] = 'system tools';
+        $dat[2]['title'] = 'value';
+        $dat[3]['title'] = 'result';
+        $dat[4]['title'] = 'note';
+        jrCore_page_table_header($dat, null, true);
+        $_inf['pass']    = $pass;
+        $_inf['fail']    = $fail;
+        $_inf['warning'] = jrCore_get_option_image('warning');
+        jrCore_trigger_event('jrCore', 'system_check', array(), $_inf, 'jrSystemTools');
+    }
+
     jrCore_page_table_footer();
     jrCore_page_cancel_button("{$_conf['jrCore_base_url']}/{$_post['module_url']}/admin/tools");
     jrCore_page_display();
@@ -1875,7 +1906,7 @@ function view_jrCore_skin_menu($_post, $_user, $_conf)
                 $dat[8]['title'] = jrCore_page_button("smd-{$k}", 'delete', 'disabled');
             }
             else {
-                $dat[8]['title'] = jrCore_page_button("smd-{$k}", 'delete', "if(confirm('Are you sure you want to delete this entry?')){ jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/skin_menu_delete_save/id={$_v['menu_id']}') }");
+                $dat[8]['title'] = jrCore_page_button("smd-{$k}", 'delete', "jrCore_confirm('Delete this menu entry?', '', function(){ jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/skin_menu_delete_save/id={$_v['menu_id']}')} )");
             }
             $dat[8]['class'] = 'center';
             jrCore_page_table_row($dat);
@@ -2011,8 +2042,9 @@ function view_jrCore_skin_menu_delete_save($_post, $_user, $_conf)
         jrCore_set_form_notice('error', 'invalid menu_id - please try again');
         jrCore_location('referrer');
     }
+    $mid = (int) $_post['id'];
     $tbl = jrCore_db_table_name('jrCore', 'menu');
-    $req = "DELETE FROM {$tbl} WHERE menu_id = '{$_post['id']}' AND menu_module = 'CustomEntry' LIMIT 1";
+    $req = "DELETE FROM {$tbl} WHERE menu_id = {$mid}";
     $cnt = jrCore_db_query($req, 'COUNT');
     if ($cnt && $cnt === 1) {
         jrCore_set_form_notice('success', 'The menu item was successfully deleted');
@@ -2394,68 +2426,32 @@ function view_jrCore_search($_post, $_user, $_conf)
 
         if ($_cf && is_array($_cf)) {
 
-            $dat = array();
-            if (isset($_post['sa']) && $_post['sa'] == 'skin') {
-                $dat[1]['title'] = 'skin';
-            }
-            else {
-                $dat[1]['title'] = 'module';
-            }
-            $dat[1]['width'] = '5%;';
-            $dat[2]['title'] = 'config option';
-            $dat[2]['width'] = '35%;';
-            $dat[3]['title'] = 'help';
-            $dat[3]['width'] = '50%;';
-            $dat[4]['title'] = 'modify';
-            $dat[4]['width'] = '10%;';
-            jrCore_page_table_header($dat);
-
-            foreach ($_cf as $_fld) {
-
-                if (!isset($_fld['section']) || strlen($_fld['section']) === 0) {
-                    $_fld['section'] = 'general settings';
-                }
-                $dat = array();
+            // Prune out ones we are not going to show
+            foreach ($_cf as $k => $_fld) {
                 if (isset($_post['sa']) && $_post['sa'] == 'skin') {
                     if (!is_dir(APP_DIR . "/skins/{$_fld['module']}")) {
+                        unset($_cf[$k]);
                         continue;
                     }
-                    $dat[1]['title'] = '<img src="' . $_conf['jrCore_base_url'] . '/skins/' . $_fld['module'] . '/icon.png" alt="' . $_fld['module'] . '" title="' . $_fld['module'] . '" width="48" height="48">';
-                    $dat[4]['title'] = jrCore_page_button("m{$_fld['name']}", 'modify', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/skin_admin/global/skin={$_fld['module']}/section=" . urlencode($_fld['section']) . "/hl={$_fld['name']}')");
                 }
                 else {
-                    if (!is_dir(APP_DIR . "/modules/{$_fld['module']}")) {
+                    if (!is_dir(APP_DIR . "/modules/{$_fld['module']}") || !jrCore_module_is_active($_fld['module'])) {
+                        unset($_cf[$k]);
                         continue;
                     }
-                    $murl            = jrCore_get_module_url($_fld['module']);
-                    $dat[1]['title'] = jrCore_get_module_icon_html($_fld['module'], 48);
-                    $dat[4]['title'] = jrCore_page_button("m{$_fld['name']}", 'modify', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$murl}/admin/global/section=" . urlencode($_fld['section']) . "/hl={$_fld['name']}')");
                 }
-                $dat[1]['class'] = 'center';
-                if (isset($_fld['section'])) {
-                    $dat[2]['title'] = '<h3>' . ucwords($_fld['section']) . ' &raquo; ' . ucwords($_fld['label']) . '</h3>';
-                }
-                else {
-                    $dat[2]['title'] = '<h3>' . ucwords($_fld['label']) . '</h3>';
-                }
-                $dat[3]['title'] = $_fld['help'];
-                $dat[4]['class'] = 'center';
-                jrCore_page_table_row($dat);
             }
-            jrCore_page_table_footer();
-        }
+            if (count($_cf) > 0) {
 
-        if (!isset($_post['sa']) || $_post['sa'] != 'skin') {
-            $tbl = jrCore_db_table_name('jrProfile', 'quota_setting');
-            $req = "SELECT * FROM {$tbl} WHERE (`module` LIKE '%{$src}%' OR `name` LIKE '%{$src}%' OR `label` LIKE '%{$src}%' OR `help` LIKE '%{$src}%') AND `type` != 'hidden' AND module IN('" . implode("','", array_keys($_mods)) . "') ORDER BY `module` ASC, `label` ASC";
-            $_cf = jrCore_db_query($req, 'NUMERIC');
-
-            if ($_cf && is_array($_cf)) {
-
-                $dat             = array();
-                $dat[1]['title'] = 'module';
+                $dat = array();
+                if (isset($_post['sa']) && $_post['sa'] == 'skin') {
+                    $dat[1]['title'] = 'skin';
+                }
+                else {
+                    $dat[1]['title'] = 'module';
+                }
                 $dat[1]['width'] = '5%;';
-                $dat[2]['title'] = 'quota option';
+                $dat[2]['title'] = 'config option';
                 $dat[2]['width'] = '35%;';
                 $dat[3]['title'] = 'help';
                 $dat[3]['width'] = '50%;';
@@ -2464,28 +2460,99 @@ function view_jrCore_search($_post, $_user, $_conf)
                 jrCore_page_table_header($dat);
 
                 foreach ($_cf as $_fld) {
-                    if (!is_dir(APP_DIR . "/modules/{$_fld['module']}")) {
-                        continue;
+
+                    if (!isset($_fld['section']) || strlen($_fld['section']) === 0) {
+                        $_fld['section'] = 'general settings';
                     }
-                    $fnd             = true;
-                    $dat             = array();
-                    $dat[1]['title'] = jrCore_get_module_icon_html($_fld['module'], 48);
+                    $dat = array();
+                    if (isset($_post['sa']) && $_post['sa'] == 'skin') {
+                        if (!is_dir(APP_DIR . "/skins/{$_fld['module']}")) {
+                            continue;
+                        }
+                        $dat[1]['title'] = '<img src="' . $_conf['jrCore_base_url'] . '/skins/' . $_fld['module'] . '/icon.png" alt="' . $_fld['module'] . '" title="' . $_fld['module'] . '" width="48" height="48">';
+                        $dat[4]['title'] = jrCore_page_button("m{$_fld['name']}", 'modify', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/skin_admin/global/skin={$_fld['module']}/section=" . urlencode($_fld['section']) . "/hl={$_fld['name']}')");
+                    }
+                    else {
+                        if (!is_dir(APP_DIR . "/modules/{$_fld['module']}") || !jrCore_module_is_active($_fld['module'])) {
+                            continue;
+                        }
+                        $murl            = jrCore_get_module_url($_fld['module']);
+                        $dat[1]['title'] = jrCore_get_module_icon_html($_fld['module'], 48);
+                        $dat[4]['title'] = jrCore_page_button("m{$_fld['name']}", 'modify', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$murl}/admin/global/section=" . urlencode($_fld['section']) . "/hl={$_fld['name']}')");
+                    }
                     $dat[1]['class'] = 'center';
-                    $dat[2]['title'] = '<h3>' . ucwords($_fld['label']) . '</h3>';
+                    if (isset($_fld['section'])) {
+                        $dat[2]['title'] = '<h3>' . ucwords($_fld['section']) . ' &raquo; ' . ucwords($_fld['label']) . '</h3>';
+                    }
+                    else {
+                        $dat[2]['title'] = '<h3>' . ucwords($_fld['label']) . '</h3>';
+                    }
                     $dat[3]['title'] = $_fld['help'];
-                    $murl            = jrCore_get_module_url($_fld['module']);
-                    $dat[4]['title'] = jrCore_page_button("m{$_fld['name']}", 'modify', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$murl}/admin/quota/hl={$_fld['name']}#ff-{$_fld['name']}')");
                     $dat[4]['class'] = 'center';
                     jrCore_page_table_row($dat);
                 }
                 jrCore_page_table_footer();
+            }
+        }
+
+        if (!isset($_post['sa']) || $_post['sa'] != 'skin') {
+            $tbl = jrCore_db_table_name('jrProfile', 'quota_setting');
+            $req = "SELECT * FROM {$tbl} WHERE (`module` LIKE '%{$src}%' OR `name` LIKE '%{$src}%' OR `label` LIKE '%{$src}%' OR `help` LIKE '%{$src}%') AND `type` != 'hidden' AND module IN('" . implode("','", array_keys($_mods)) . "') ORDER BY `module` ASC, `label` ASC";
+            $_cf = jrCore_db_query($req, 'NUMERIC');
+
+            if ($_cf && is_array($_cf) && count($_cf) > 0) {
+
+                // Prune out ones we are not going to show
+                foreach ($_cf as $k => $_fld) {
+                    if (isset($_post['sa']) && $_post['sa'] == 'skin') {
+                        if (!is_dir(APP_DIR . "/skins/{$_fld['module']}")) {
+                            unset($_cf[$k]);
+                            continue;
+                        }
+                    }
+                    else {
+                        if (!is_dir(APP_DIR . "/modules/{$_fld['module']}") || !jrCore_module_is_active($_fld['module'])) {
+                            unset($_cf[$k]);
+                            continue;
+                        }
+                    }
+                }
+                if (count($_cf) > 0) {
+                    $dat             = array();
+                    $dat[1]['title'] = 'module';
+                    $dat[1]['width'] = '5%;';
+                    $dat[2]['title'] = 'quota option';
+                    $dat[2]['width'] = '35%;';
+                    $dat[3]['title'] = 'help';
+                    $dat[3]['width'] = '50%;';
+                    $dat[4]['title'] = 'modify';
+                    $dat[4]['width'] = '10%;';
+                    jrCore_page_table_header($dat);
+
+                    foreach ($_cf as $_fld) {
+                        if (!is_dir(APP_DIR . "/modules/{$_fld['module']}") || !jrCore_module_is_active($_fld['module'])) {
+                            continue;
+                        }
+                        $fnd             = true;
+                        $dat             = array();
+                        $dat[1]['title'] = jrCore_get_module_icon_html($_fld['module'], 48);
+                        $dat[1]['class'] = 'center';
+                        $dat[2]['title'] = '<h3>' . ucwords($_fld['label']) . '</h3>';
+                        $dat[3]['title'] = $_fld['help'];
+                        $murl            = jrCore_get_module_url($_fld['module']);
+                        $dat[4]['title'] = jrCore_page_button("m{$_fld['name']}", 'modify', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$murl}/admin/quota/hl={$_fld['name']}#ff-{$_fld['name']}')");
+                        $dat[4]['class'] = 'center';
+                        jrCore_page_table_row($dat);
+                    }
+                    jrCore_page_table_footer();
+                }
             }
 
             // Tools
             if (!isset($_post['sa']) || $_post['sa'] != 'skin') {
                 $_tool = jrCore_get_registered_module_features('jrCore', 'tool_view');
                 $_show = array();
-                if (isset($_tool) && is_array($_tool)) {
+                if ($_tool && is_array($_tool)) {
                     foreach ($_tool as $tool_mod => $_tools) {
                         foreach ($_tools as $view => $_inf) {
                             if (stristr($_inf[0], $_post['ss']) || stristr($_inf[1], $_post['ss'])) {
@@ -2513,13 +2580,16 @@ function view_jrCore_search($_post, $_user, $_conf)
                         jrCore_page_table_header($dat);
 
                         foreach ($_show as $k => $_fld) {
+                            if (!is_dir(APP_DIR . "/modules/{$_fld['module']}") || !jrCore_module_is_active($_fld['module'])) {
+                                continue;
+                            }
                             $dat             = array();
                             $dat[1]['title'] = jrCore_get_module_icon_html($_fld['module'], 48);
                             $dat[1]['class'] = 'center';
                             $dat[2]['title'] = '<h3>' . ucwords($_fld['label']) . '</h3>';
                             $dat[3]['title'] = $_fld['help'];
                             $murl            = jrCore_get_module_url($_fld['module']);
-                            if (!strpos($_fld['view'], 'http')) {
+                            if (strpos($_fld['view'], 'http') !== 0) {
                                 $dat[4]['title'] = jrCore_page_button("m{$k}", 'view', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$murl}/{$_fld['view']}')");
                             }
                             else {
@@ -2818,13 +2888,15 @@ function view_jrCore_dashboard($_post, $_user, $_conf)
         // USERS ONLINE
         //------------------------------
         case 'online':
-            $title = 'Users Online';
-            $url = jrCore_strip_url_params(jrCore_get_current_url(), array('show_bots'));
-            if (isset($_post['show_bots'])) {
-                $btn = jrCore_page_button('sb', 'Hide Bots', "jrCore_window_location('{$url}')");
-            }
-            else {
-                $btn = jrCore_page_button('sb', 'Show Bots', "jrCore_window_location('{$url}/show_bots=1')");
+            $btn = null;
+            if (!isset($_conf['jrUser_bot_sessions']) || $_conf['jrUser_bot_sessions'] == 'on') {
+                $url = jrCore_strip_url_params(jrCore_get_current_url(), array('show_bots'));
+                if (isset($_post['show_bots'])) {
+                    $btn = jrCore_page_button('sb', 'Hide Bots', "jrCore_window_location('{$url}')");
+                }
+                else {
+                    $btn = jrCore_page_button('sb', 'Show Bots', "jrCore_window_location('{$url}/show_bots=1')");
+                }
             }
             $url  = jrCore_get_module_url('jrUser');
             $btn .= jrCore_page_button('newuser', 'new user account', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$url}/create')");
@@ -2832,6 +2904,7 @@ function view_jrCore_dashboard($_post, $_user, $_conf)
             jrCore_page_banner('users online', $btn);
             jrCore_get_form_notice();
             jrUser_online_users($_post, $_user, $_conf);
+            $title = 'Users Online';
             break;
 
         //------------------------------
@@ -2989,7 +3062,7 @@ function view_jrCore_form_designer($_post, $_user, $_conf)
     $req = "SELECT `view` FROM {$tbl} WHERE `module` = '" . jrCore_db_escape($mod) . "' GROUP BY `view` ORDER by `view` ASC";
     $_rt = jrCore_db_query($req, 'view', false, 'view');
     if ($_rt && is_array($_rt)) {
-        $btn = jrCore_page_button('reset', 'Reset This Form', "if(confirm('Reset the form fields on this form to their default values?\\n\\nAfter resetting you will be redirected to the form so it is re-initialized.')) { jrCore_window_location('{$_conf['jrCore_base_url']}/{$url}/form_designer_reset/m={$_post['m']}/v={$_post['v']}') }");
+        $btn = jrCore_page_button('reset', 'Reset This Form', "jrCore_confirm('Reset this form?', 'After resetting you will be redirected to the form so it is re-initialized.', function(){ jrCore_window_location('{$_conf['jrCore_base_url']}/{$url}/form_designer_reset/m={$_post['m']}/v={$_post['v']}') })");
         if (count($_rt) > 1) {
             $jump_url = "{$_conf['jrCore_base_url']}/{$_post['module_url']}/form_designer/m={$_post['module']}/v=";
             // Create a Quick Jump list for custom forms for this module
@@ -3080,11 +3153,11 @@ function view_jrCore_form_designer($_post, $_user, $_conf)
             $dat[6]['title'] = (isset($_fld['required']) && $_fld['required'] == '1') ? 'yes' : 'no';
             $dat[6]['class'] = 'center';
             $dat[7]['title'] = jrCore_page_button("m{$_fld['name']}", 'modify', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/form_field_update/m={$mod}/v={$opt}/n={$_fld['name']}')");
-            if (isset($_fld['locked']) && $_fld['locked'] == '1') {
+            if ((isset($_fld['locked']) && $_fld['locked'] == '1') || count($_fields) === 1) {
                 $dat[8]['title'] = jrCore_page_button("d{$_fld['name']}", 'delete', 'disabled');
             }
             else {
-                $dat[8]['title'] = jrCore_page_button("d{$_fld['name']}", 'delete', "if (confirm('Are you sure you want to delete this form field?')){ jrCore_window_location('{$_conf['jrCore_base_url']}/{$url}/form_field_delete/m={$mod}/v={$opt}/n={$_fld['name']}')}");
+                $dat[8]['title'] = jrCore_page_button("d{$_fld['name']}", 'delete', "jrCore_confirm('Delete this form field?', '', function(){ jrCore_window_location('{$_conf['jrCore_base_url']}/{$url}/form_field_delete/m={$mod}/v={$opt}/n={$_fld['name']}')} )");
             }
             jrCore_page_table_row($dat);
         }
@@ -3098,8 +3171,9 @@ function view_jrCore_form_designer($_post, $_user, $_conf)
     jrCore_page_table_footer();
 
     $_tmp = array(
-        'submit_value' => 'create new field',
-        'cancel'       => (isset($_SESSION['form_designer_cancel'])) ? $_SESSION['form_designer_cancel'] : $rurl
+        'submit_value'  => 'create new field',
+        'cancel'        => (isset($_SESSION['form_designer_cancel'])) ? $_SESSION['form_designer_cancel'] : $rurl,
+        'cancel_detect' => false
     );
     jrCore_form_create($_tmp);
 
@@ -3125,7 +3199,7 @@ function view_jrCore_form_designer($_post, $_user, $_conf)
     $_tmp = array(
         'name'       => 'new_name',
         'label'      => 'new field name',
-        'help'       => "If you would like to create a new field in this form, enter the field name here.<br><br>Note that the new field name must begin with <strong>{$pfx}_</strong>",
+        'help'       => "If you would like to create a new field in this form, enter the field name here.<br><br>Note that the new field name must begin with <strong>{$pfx}_</strong> and be all lowercase",
         'type'       => 'text',
         'value'      => "{$pfx}_",
         'validate'   => 'core_string',
@@ -3171,6 +3245,10 @@ function view_jrCore_form_designer_save($_post, $_user, $_conf)
         jrCore_set_form_notice('error', 'Invalid view');
         jrCore_form_result();
     }
+    if (isset($_post['new_name']) && $_post['new_name'] !== strtolower($_post['new_name'])) {
+        jrCore_set_form_notice('error', 'New Field Name must be all lowercase');
+        jrCore_form_result();
+    }
     $mod     = $_post['field_module'];
     $opt     = $_post['field_view'];
     $_fields = jrCore_get_designer_form_fields($mod, $opt);
@@ -3199,8 +3277,8 @@ function view_jrCore_form_designer_save($_post, $_user, $_conf)
         }
     }
     $prfx = jrCore_db_get_prefix($mod);
-    if (strpos($_post['new_name'], $prfx) !== 0) {
-        jrCore_set_form_notice('error', "The new field name must begin with &quot;{$prfx}&quot;");
+    if (strpos($_post['new_name'], "{$prfx}_") !== 0) {
+        jrCore_set_form_notice('error', "The new field name must begin with &quot;{$prfx}_&quot;");
         jrCore_form_field_hilight('new_name');
         jrCore_form_result();
     }
@@ -4133,7 +4211,7 @@ function view_jrCore_skin_admin_save($_post, $_user, $_conf)
             if ($_up && is_array($_up)) {
                 foreach ($_up as $_info) {
                     jrCore_write_media_file(0, "{$_post['skin']}_{$_info['name']}", $_info['tmp_name'], 'public-read');
-                    unlink($_info['tmp_name']);
+                    unlink($_info['tmp_name']);  // OK
                     $_im["{$_info['name']}"] = array($_info['size'], 'on');
                 }
             }
@@ -4157,7 +4235,7 @@ function view_jrCore_skin_admin_save($_post, $_user, $_conf)
                         if (isset($_post["name_{$num}"]{0})) {
                             $nam = $_post["name_{$num}"];
                             jrCore_write_media_file(0, "{$_post['skin']}_{$nam}", $_info['tmp_name'], 'public-read');
-                            unlink($_info['tmp_name']);
+                            unlink($_info['tmp_name']);  // OK
                             $_im[$nam] = array($_info['size']);
                             $_post["name_{$num}_active"] = 'on';
                         }
@@ -4186,6 +4264,7 @@ function view_jrCore_skin_admin_save($_post, $_user, $_conf)
         case 'style':
 
             // We need to save our updates to the database so they "override" the defaults...
+            $_pcc = false;
             $_out = array();
             $_com = array();
 
@@ -4201,10 +4280,25 @@ function view_jrCore_skin_admin_save($_post, $_user, $_conf)
                 jrCore_delete_temp_value('jrCore', $_post['search_key']);
             }
             elseif (isset($_post['file']) && strlen($_post['file']) > 0) {
-                $_pcc = jrCore_parse_css_file(APP_DIR . "/skins/{$_post['skin']}/css/{$_post['file']}", $_post['section']);
+                if (is_file(APP_DIR . "/skins/{$_post['skin']}/css/{$_post['file']}")) {
+                    $_pcc = jrCore_parse_css_file(APP_DIR . "/skins/{$_post['skin']}/css/{$_post['file']}", $_post['section']);
+                }
+                else {
+                    // Is this a module file?
+                    if ($_tm = jrCore_get_registered_module_features('jrCore', 'css')) {
+                        foreach ($_tm as $mod => $_css_files) {
+                            if (in_array($_post['file'], $_css_files)) {
+                                if (is_file(APP_DIR . "/modules/{$mod}/css/{$_post['file']}")) {
+                                    $_pcc = jrCore_parse_css_file(APP_DIR . "/modules/{$mod}/css/{$_post['file']}", $_post['section']);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
             }
-            else {
-                jrCore_set_form_notice('error', 'missing file or search_key - please try again');
+            if (!$_pcc || count($_pcc) === 0) {
+                jrCore_set_form_notice('error', 'unable to load existing CSS rules - please try again');
                 jrCore_location('referrer');
             }
 
@@ -4228,7 +4322,7 @@ function view_jrCore_skin_admin_save($_post, $_user, $_conf)
                         if (isset($_post["jrse{$key}_hex"])) {
                             $val                    = trim($_post["jrse{$key}_hex"]);
                             $_out[$selector][$rule] = $val;
-                            $tst                    = str_replace('#', '', $val);
+                            $tst                    = str_replace('#', '', jrCore_str_to_lower($val));
                         }
                         else {
                             $val = trim($_post["jrse{$key}"]);
@@ -4248,13 +4342,18 @@ function view_jrCore_skin_admin_save($_post, $_user, $_conf)
                                     break;
                             }
                             $_out[$selector][$rule] = $val;
-                            $tst                    = $val;
+                            $tst                    = str_replace('"', '', jrCore_str_to_lower($val));
                         }
-                        // See if we really changed...
-                        if (isset($_pcc[$selector]['rules'][$rule]) && $_pcc[$selector]['rules'][$rule] == $tst) {
-                            unset($_out[$selector][$rule]);
-                            continue;
+
+                        // See if we have a match
+                        if (isset($_pcc[$selector]['rules'][$rule])) {
+                            $compare = str_replace('"', '', jrCore_str_to_lower($_pcc[$selector]['rules'][$rule]));
+                            if ($compare == $tst) {
+                                unset($_out[$selector][$rule]);
+                                continue;
+                            }
                         }
+
                         // See if we are !important
                         if (isset($_post["jrse{$key}_add_important"]) && $_post["jrse{$key}_add_important"] == 'on') {
                             $_out[$selector][$rule] .= ' !important';
@@ -4310,8 +4409,10 @@ function view_jrCore_skin_admin_save($_post, $_user, $_conf)
                 $req = "UPDATE {$tbl} SET skin_custom_css = '' WHERE skin_directory = '" . jrCore_db_escape($_post['skin']) . "'";
                 jrCore_db_query($req);
             }
+
             // Recreate our site CSS
             jrCore_create_master_css($_post['skin']);
+
             jrCore_form_delete_session();
             switch ($_post['section']) {
                 case 'simple':
@@ -4356,11 +4457,11 @@ function view_jrCore_skin_admin_save($_post, $_user, $_conf)
                 $tbl = jrCore_db_table_name('jrCore', 'template');
                 $mod = jrCore_db_escape($_post['skin']);
                 if (isset($_act) && is_array($_act) && count($_act) > 0) {
-                    $req = "UPDATE {$tbl} SET template_active = '1', template_updated = UNIX_TIMESTAMP() WHERE template_module = '{$mod}' AND template_name IN('" . implode("','", $_act) . "')";
+                    $req = "UPDATE {$tbl} SET template_active = '1' WHERE template_module = '{$mod}' AND template_name IN('" . implode("','", $_act) . "')";
                     jrCore_db_query($req);
                 }
                 if (isset($_off) && is_array($_off) && count($_off) > 0) {
-                    $req = "UPDATE {$tbl} SET template_active = '0', template_updated = UNIX_TIMESTAMP() WHERE template_module = '{$mod}' AND template_name IN('" . implode("','", $_off) . "')";
+                    $req = "UPDATE {$tbl} SET template_active = '0' WHERE template_module = '{$mod}' AND template_name IN('" . implode("','", $_off) . "')";
                     jrCore_db_query($req);
                 }
                 // Reset cache for any that changed
@@ -4398,58 +4499,18 @@ function view_jrCore_skin_admin_save($_post, $_user, $_conf)
             }
             elseif (isset($_post['skin_delete']) && $_post['skin_delete'] === 'on') {
 
-                // Make sure we are NOT the active skin
-                if ($_post['skin'] != $_conf['jrCore_active_skin']) {
-
-                    // Remove from skins
-                    $tbl = jrCore_db_table_name('jrCore', 'skin');
-                    $skn = jrCore_db_escape($_post['skin']);
-                    $req = "DELETE FROM {$tbl} WHERE skin_directory = '{$skn}' LIMIT 1";
-                    jrCore_db_query($req);
-
-                    // Cleanup cache dir
-                    $cdr = jrCore_get_module_cache_dir($_post['skin']);
-                    jrCore_delete_dir_contents($cdr);
-                    rmdir($cdr);
-
-                    // Cleanup all directories
-                    $_dirs = glob(APP_DIR . "/skins/{$_post['skin']}*");
-                    if ($_dirs && is_array($_dirs) && count($_dirs) > 0) {
-                        foreach ($_dirs as $dir) {
-                            $nam = basename($dir);
-                            if ($nam == $_post['skin'] || strpos($nam, "{$_post['skin']}-release-") === 0) {
-                                if (is_link($dir)) {
-                                    unlink($dir);
-                                }
-                                elseif (is_dir($dir)) {
-                                    if (jrCore_delete_dir_contents($dir, false)) {
-                                        rmdir($dir);
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Remove custom lang entries
-                    $tbl = jrCore_db_table_name('jrUser', 'language');
-                    $req = "DELETE FROM {$tbl} WHERE `lang_module` = '{$skn}'";
-                    jrCore_db_query($req);
-
-                    // Remove custom templates
-                    $tbl = jrCore_db_table_name('jrCore', 'template');
-                    $req = "DELETE FROM {$tbl} WHERE `template_module` = '{$skn}'";
-                    jrCore_db_query($req);
-
-                    // Remove settings
-                    $tbl = jrCore_db_table_name('jrCore', 'setting');
-                    $req = "DELETE FROM {$tbl} WHERE `module` = '{$skn}'";
-                    jrCore_db_query($req);
-
-                    jrCore_set_form_notice('success', 'The skin was successfully deleted');
-                    jrCore_form_delete_session();
+                $res = jrCore_delete_skin($_post['skin']);
+                if ($res && strpos($res, 'error:') === 0) {
+                    jrCore_set_form_notice('error', substr($res, 7));
                     jrCore_form_result("{$_conf['jrCore_base_url']}/{$_post['module_url']}/skin_admin/info/skin={$_conf['jrCore_active_skin']}");
-
                 }
+
+                jrCore_trigger_event('jrCore', 'skin_deleted', $_post);
+                jrCore_logger('INF', "the {$_post['skin']} skin was successfully deleted");
+                jrCore_set_form_notice('success', 'The skin was successfully deleted');
+                jrCore_form_delete_session();
+                jrCore_form_result("{$_conf['jrCore_base_url']}/{$_post['module_url']}/skin_admin/info/skin={$_conf['jrCore_active_skin']}");
+
             }
             jrCore_set_form_notice('success', 'The settings have been successfully saved');
             break;
@@ -4644,7 +4705,7 @@ function view_jrCore_admin_save($_post, $_user, $_conf)
             }
             // Update
             foreach ($_post as $k => $v) {
-                if (isset($_conf["{$_post['module']}_{$k}"]) && $v != $_conf["{$_post['module']}_{$k}"]) {
+                if (isset($_conf["{$_post['module']}_{$k}"])) {
                     jrCore_set_setting_value($_post['module'], $k, $v);
                 }
             }
@@ -4654,8 +4715,8 @@ function view_jrCore_admin_save($_post, $_user, $_conf)
                 // We are not using MySQL caching - make sure core cache table is empty
                 _jrCore_mysql_delete_all_cache_entries();
             }
-
             jrCore_delete_config_cache();
+            jrCore_trigger_event('jrCore', 'global_config_updated', $_post);
             jrCore_set_form_notice('success', 'The settings have been successfully saved');
             $ref = jrCore_get_local_referrer();
             if (strpos($ref, '/section=')) {
@@ -4736,55 +4797,17 @@ function view_jrCore_admin_save($_post, $_user, $_conf)
 
         case 'info':
 
-            // Update
-            $tbl = jrCore_db_table_name('jrCore', 'module');
-
+            // Are we deleting this module?
             if (isset($_post['module_delete']) && $_post['module_delete'] === 'on') {
 
-                // There are some modules we cannot delete
-                switch ($_post['module']) {
-                    case 'jrCore':
-                    case 'jrUser':
-                    case 'jrProfile':
-                    case 'jrImage':
-                    case 'jrMailer':
-                        jrCore_set_form_notice('error', "The {$_post['module']} module cannot be deleted - it is a required core module");
-                        jrCore_form_result("{$_conf['jrCore_base_url']}/{$_post['module_url']}/admin/info");
-                        break;
-                }
-
-                // Remove cache directory
-                $cdr = jrCore_get_module_cache_dir($_post['module']);
-                jrCore_delete_dir_contents($cdr);
-                rmdir($cdr);
-
-                // Delete from modules table
-                $mod = jrCore_db_escape($_post['module']);
-                $req = "DELETE FROM {$tbl} WHERE module_directory = '{$mod}' LIMIT 1";
-                $cnt = jrCore_db_query($req, 'COUNT');
-                if (!$cnt || $cnt !== 1) {
-                    jrCore_set_form_notice('error', 'An error was encountered deleting the module from the database - please try again');
+                $res = jrCore_delete_module($_post['module']);
+                if ($res && strpos($res, 'error:') === 0) {
+                    jrCore_set_form_notice('error', substr($res, 7));
                     jrCore_form_result("{$_conf['jrCore_base_url']}/{$_post['module_url']}/admin/info");
                 }
 
-                // Cleanup all directories
-                $_dirs = glob(APP_DIR . "/modules/{$_post['module']}*");
-                if ($_dirs && is_array($_dirs) && count($_dirs) > 0) {
-                    foreach ($_dirs as $dir) {
-                        $nam = basename($dir);
-                        if ($nam == $_post['module'] || strpos($nam, "{$_post['module']}-release-") === 0) {
-                            if (is_link($dir)) {
-                                unlink($dir);
-                            }
-                            elseif (is_dir($dir)) {
-                                if (jrCore_delete_dir_contents($dir, false)) {
-                                    rmdir($dir);
-                                }
-                            }
-                        }
-                    }
-                }
-
+                jrCore_logger('INF', "the " . $_mods["{$_post['module']}"]['module_name'] . " module was successfully deleted");
+                jrCore_trigger_event('jrCore', 'module_deleted', $_post);
                 jrCore_set_form_notice('success', 'The module was successfully deleted');
                 jrCore_form_delete_session();
 
@@ -4799,8 +4822,11 @@ function view_jrCore_admin_save($_post, $_user, $_conf)
                 jrCore_delete_config_cache();
                 $url = jrCore_get_module_url('jrCore');
                 jrCore_form_result("{$_conf['jrCore_base_url']}/{$url}/admin/global");
+
             }
             else {
+
+                $tbl = jrCore_db_table_name('jrCore', 'module');
                 $url = jrCore_db_escape($_post['module_url']);
                 $mod = jrCore_db_escape($_post['module']);
                 if (isset($_post['new_module_url']) && jrCore_checktype($_post['new_module_url'], 'url_name')) {
@@ -4816,33 +4842,46 @@ function view_jrCore_admin_save($_post, $_user, $_conf)
                     }
                     $url = jrCore_db_escape($_post['new_module_url']);
                     $_post['module_url'] = $_post['new_module_url'];
+
                 }
                 $cat = jrCore_db_escape($_post['new_module_category']);
-                $act = (isset($_post['module_active']) && $_post['module_active'] == 'off') ? '0' : '1';
-                $req = "UPDATE {$tbl} SET module_updated = UNIX_TIMESTAMP(), module_url = '{$url}', module_active = '{$act}', module_category = '{$cat}' WHERE module_directory = '{$mod}' LIMIT 1";
+                $act = (isset($_post['module_active']) && $_post['module_active'] == 'off') ? 0 : 1;
+
+                // If we are turning a module OFF let's give the module a chance to do any clean up if needed
+                if ($act === 0) {
+                    jrCore_trigger_event('jrCore', 'module_deactivated', array('module' => $mod));
+                }
+
+                $req = "UPDATE {$tbl} SET module_updated = UNIX_TIMESTAMP(), module_url = '{$url}', module_active = {$act}, module_category = '{$cat}' WHERE module_directory = '{$mod}' LIMIT 1";
                 $cnt = jrCore_db_query($req, 'COUNT');
                 if (!$cnt || $cnt !== 1) {
                     jrCore_set_form_notice('error', 'An error was encountered saving the module settings - please try again');
                     jrCore_form_result("{$_conf['jrCore_base_url']}/{$_post['module_url']}/admin/info");
                 }
+
                 // Verify the module if we are turning it on
-                if ((!isset($_mods[$mod]['module_active']) || $_mods[$mod]['module_active'] != '1') && $act == '1') {
+                if ((!isset($_mods[$mod]['module_active']) || $_mods[$mod]['module_active'] != '1') && $act == 1) {
+                    define('IN_JAMROOM_INSTALLER', 1);  // This ensures init() is run
                     jrCore_verify_module($mod);
+                    $_mods[$mod]['module_active'] = 1;
+
+                    // Rebuild JS and CSS
+                    jrCore_create_master_css($_conf['jrCore_active_skin']);
+                    jrCore_create_master_javascript($_conf['jrCore_active_skin']);
+
+                    jrCore_load_config_file_and_defaults(true);
+                    jrCore_trigger_event('jrCore', 'module_activated', array('module' => $mod));
                 }
 
                 jrCore_delete_config_cache();
                 jrCore_delete_all_cache_entries();
-                $_mods["{$_post['module']}"]['module_active'] = $act;
-
-                // Rebuild JS and CSS
-                jrCore_create_master_css($_conf['jrCore_active_skin']);
-                jrCore_create_master_javascript($_conf['jrCore_active_skin']);
+                $_mods[$mod]['module_active'] = $act;
 
                 jrCore_form_delete_session();
-
                 if ($act == 1) {
                     jrCore_set_form_notice('success', 'The settings have been successfully saved'); // Module is currently disabled will show if its been deactivated.
                 }
+
             }
             break;
 
@@ -4875,7 +4914,7 @@ function view_jrCore_admin_save($_post, $_user, $_conf)
 
         case 'images':
 
-            jrCore_create_media_directory(0);
+            jrCore_create_media_directory(0, FORCE_LOCAL);
             // Get existing module info to see what images we have customized
             $_im = array();
             if (isset($_conf["jrCore_{$_post['module']}_custom_images"]{2})) {
@@ -4909,7 +4948,7 @@ function view_jrCore_admin_save($_post, $_user, $_conf)
                         if (isset($_post["name_{$num}"]{0})) {
                             $nam = $_post["name_{$num}"];
                             jrCore_write_media_file(0, "mod_{$_post['module']}_{$nam}", $_info['tmp_name'], 'public-read');
-                            unlink($_info['tmp_name']);
+                            unlink($_info['tmp_name']);  // OK
                             $_im[$nam] = array($_info['size']);
                             $_post["name_{$num}_active"] = 'on';
                         }
@@ -4932,7 +4971,7 @@ function view_jrCore_admin_save($_post, $_user, $_conf)
                 }
             }
             jrCore_set_setting_value('jrCore', "{$_post['module']}_custom_images", json_encode($_im));
-            jrCore_delete_all_cache_entries('jrCore', 0);
+            jrCore_delete_all_cache_entries();
             break;
 
         case 'templates':
@@ -4961,11 +5000,11 @@ function view_jrCore_admin_save($_post, $_user, $_conf)
                 $mod = jrCore_db_escape($_post['module']);
                 $tbl = jrCore_db_table_name('jrCore', 'template');
                 if (isset($_act) && is_array($_act) && count($_act) > 0) {
-                    $req = "UPDATE {$tbl} SET template_active = '1', template_updated = UNIX_TIMESTAMP() WHERE template_module = '{$mod}' AND template_name IN('" . implode("','", $_act) . "')";
+                    $req = "UPDATE {$tbl} SET template_active = '1' WHERE template_module = '{$mod}' AND template_name IN('" . implode("','", $_act) . "')";
                     jrCore_db_query($req);
                 }
                 if (isset($_off) && is_array($_off) && count($_off) > 0) {
-                    $req = "UPDATE {$tbl} SET template_active = '0', template_updated = UNIX_TIMESTAMP() WHERE template_module = '{$mod}' AND template_name IN('" . implode("','", $_off) . "')";
+                    $req = "UPDATE {$tbl} SET template_active = '0' WHERE template_module = '{$mod}' AND template_name IN('" . implode("','", $_off) . "')";
                     jrCore_db_query($req);
                 }
 
@@ -4980,88 +5019,6 @@ function view_jrCore_admin_save($_post, $_user, $_conf)
     jrCore_form_delete_session();
     jrCore_form_result("{$_conf['jrCore_base_url']}/{$_post['module_url']}/admin/{$_post['_1']}");
     return true;
-}
-
-//------------------------------
-// template_replace
-//------------------------------
-function view_jrCore_template_replace($_post, $_user, $_conf)
-{
-    global $_mods;
-    jrUser_master_only();
-    jrCore_validate_location_url();
-    if (!isset($_post['_1']) || ($_post['_1'] != 'skin' && $_post['_1'] != 'module')) {
-        jrCore_notice_page('error', 'invalid replace type - please try again');
-    }
-    if (!isset($_post['_2']) || !jrCore_checktype($_post['_2'], 'md5')) {
-        jrCore_notice_page('error', 'invalid replace information - please try again');
-    }
-    $nfile   = false;
-    $version = jrCore_get_temp_value('jrCore', $_post['_2']);
-    if (!$version || strlen($version) === 0) {
-        jrCore_notice_page('error', 'invalid replace information - please try again');
-    }
-    jrCore_delete_temp_value('jrCore', $_post['_2']);
-    list($new, $mod, $tpl, $ver, $cid) = explode('/', $version);
-    // Make sure file exists
-    if ($_post['_1'] == 'skin') {
-        $_mta = jrCore_skin_meta_data($mod);
-        if (!$_mta) {
-            jrCore_notice_page('error', 'invalid skin received - please try again');
-        }
-        if ($ver == $_mta['version']) {
-            $file = APP_DIR . "/skins/{$mod}/{$tpl}";
-        }
-        else {
-            $file = APP_DIR . "/skins/{$mod}-release-{$ver}/{$tpl}";
-        }
-        $nfile = APP_DIR . "/skins/{$new}/{$tpl}";
-    }
-    else {
-        if (!isset($_mods[$mod])) {
-            jrCore_notice_page('error', 'invalid module received - please try again');
-        }
-        if ($ver == $_mods[$mod]['module_version']) {
-            $file = APP_DIR . "/modules/{$mod}/templates/{$tpl}";
-        }
-        else {
-            $file = APP_DIR . "/modules/{$mod}-release-{$ver}/templates/{$tpl}";
-        }
-    }
-    if (!is_file($file)) {
-        jrCore_notice_page('error', 'invalid replace information - file does not exist');
-    }
-
-    if (jrCore_checktype($cid, 'number_nz')) {
-        // Get our custom template
-        $tbl = jrCore_db_table_name('jrCore', 'template');
-        $req = "SELECT * FROM {$tbl} WHERE template_id = '{$cid}'";
-        $_tp = jrCore_db_query($req, 'SINGLE');
-        if (!$_tp || !is_array($_tp)) {
-            jrCore_notice_page('error', 'invalid custom template_id - please try again (2)');
-        }
-        // Get contents and update
-        $upd = file_get_contents($file);
-        $req = "UPDATE {$tbl} SET template_updated = UNIX_TIMESTAMP(), template_user = '" . jrCore_db_escape($_user['user_name']) . "', template_body = '" . jrCore_db_escape($upd) . "' WHERE template_id = '{$cid}' LIMIT 1";
-        $cnt = jrCore_db_query($req, 'COUNT');
-        if ($cnt && $cnt === 1) {
-            jrCore_set_form_notice('success', 'The template has been successfully updated');
-            jrCore_location('referrer');
-        }
-    }
-    elseif ($nfile) {
-        // Template to Template
-        $tmp = file_get_contents($file);
-        $tmp = str_replace($mod, $new, $tmp);
-        if (jrCore_write_to_file($nfile, $tmp, 'overwrite')) {
-            jrCore_set_form_notice('success', 'The template has been successfully updated');
-        }
-        else {
-            jrCore_set_form_notice('error', 'Unable to copy template file to custom skin directory - check permissions');
-        }
-        jrCore_location('referrer');
-    }
-    jrCore_notice_page('error', 'error updating template in the database - please try again');
 }
 
 //------------------------------
@@ -5095,6 +5052,7 @@ function view_jrCore_template_modify($_post, $_user, $_conf)
     // our page banner
     $_tp = array();
     $tpl = '';
+    $btn = null;
     if (isset($_post['template']{1}) && jrCore_checktype($_post['template'], 'printable')) {
         if (isset($_post['skin']{0})) {
             $tpl_file = APP_DIR . "/skins/{$_post['skin']}/{$_post['template']}";
@@ -5113,10 +5071,12 @@ function view_jrCore_template_modify($_post, $_user, $_conf)
             jrCore_set_form_notice('error', 'Invalid template_id - please try again');
             jrCore_location($cancel_url);
         }
-        $tpl = $_tp['template_name'] . ' (custom)';
+        $tpl = $_tp['template_name'];
+        $url = jrCore_get_module_url('jrCore');
+        $btn = jrCore_page_button("r{$_tp['template_name']}", 'reset', "jrCore_confirm('Reset Template?', 'Reset this template to the default provided by the {$t_type}?', function() { jrCore_window_location('{$_conf['jrCore_base_url']}/{$url}/template_reset_save/{$t_type}={$_tp['template_module']}/id=" . $_tp['template_id'] . "')})");
     }
 
-    jrCore_page_banner('Template Editor', $tpl);
+    jrCore_page_banner('Template Editor: <span style="text-transform:none">'. $tpl . '</span>', $btn);
 
     $_tmp = array(
         'submit_value'     => 'save changes',
@@ -5202,21 +5162,32 @@ function view_jrCore_template_modify($_post, $_user, $_conf)
 function view_jrCore_test_template($_post, $_user, $_conf)
 {
     global $_mods;
-    if (!isset($_post['_1']) || strlen($_post['_1']) === 0) {
+    if (!isset($_post['_1']) || strlen($_post['_1']) !== 8) {
         echo "error: invalid template";
         jrCore_db_close();
         exit;
     }
-    $cdr = jrCore_get_module_cache_dir('jrCore');
-    $nam = $_post['_1'];
-    if (!is_file("{$cdr}/{$nam}")) {
-        echo "error : unable to open template file for testing";
+    $key = $_post['_1'];
+    $tpl = jrCore_get_temp_value('jrCore', "{$key}_template");
+    if (!$tpl) {
+        echo "error: invalid template";
         jrCore_db_close();
         exit;
     }
+
+    $cdr = jrCore_get_module_cache_dir('jrCore');
+    $nam = 'test_template_' . $_post['_1'] . '.tpl';
+    jrCore_write_to_file("{$cdr}/{$nam}", $tpl);
+    if (!is_file("{$cdr}/{$nam}")) {
+        echo "error : unable to create template file for testing - check directory permissions";
+        jrCore_db_close();
+        exit;
+    }
+
     ini_set('display_errors', 1);
     ini_set('html_errors', 0);
     ini_set('log_errors', 0);
+    jrCore_set_flag('jrCore_suppress_activity_log', 1);
 
     if (!class_exists('Smarty')) {
         require_once APP_DIR . '/modules/jrCore/contrib/smarty/libs/Smarty.class.php';
@@ -5225,7 +5196,7 @@ function view_jrCore_test_template($_post, $_user, $_conf)
     // Set our compile dir
     $temp             = new Smarty;
     $temp->compile_id = md5(APP_DIR);
-    $temp->setCompileDir(APP_DIR . '/data/cache/' . $_conf['jrCore_active_skin']);
+    $temp->setCompileDir(jrCore_get_module_cache_dir($_conf['jrCore_active_skin']));
 
     // Get plugin directories
     $_dir = array(APP_DIR . '/modules/jrCore/contrib/smarty/libs/plugins');
@@ -5245,6 +5216,11 @@ function view_jrCore_test_template($_post, $_user, $_conf)
     unset($_data['_user']['user_password'], $_data['_user']['user_old_password'], $_data['_user']['user_forgot_key']);
     unset($_data['_conf']['jrCore_db_host'], $_data['_conf']['jrCore_db_user'], $_data['_conf']['jrCore_db_pass'], $_data['_conf']['jrCore_db_name'], $_data['_conf']['jrCore_db_port']);
 
+    // We also need to load the include.php for the skin this template file belongs to
+    if (isset($_post['_2']) && is_file(APP_DIR . "/skins/{$_post['_2']}/include.php")) {
+        require_once APP_DIR . "/skins/{$_post['_2']}/include.php";
+    }
+
     $temp->assign($_data);
     ob_start();
     $temp->display("{$cdr}/{$nam}");
@@ -5252,6 +5228,7 @@ function view_jrCore_test_template($_post, $_user, $_conf)
     ob_end_clean();
     jrCore_db_close();
     echo $html;
+    unlink("{$cdr}/{$nam}");  // OK
     exit;
 }
 
@@ -5267,41 +5244,12 @@ function view_jrCore_template_modify_save($_post, $_user, $_conf)
     $crt = false;
     $mod = (isset($_post['skin'])) ? $_post['skin'] : $_post['module'];
 
-    // We need to test this template and make sure it does not cause any Smarty errors
-    $cdr = jrCore_get_module_cache_dir('jrCore');
-    $nam = time() . ".tpl";
-    jrCore_write_to_file("{$cdr}/{$nam}", $_post['template_body']);
-    $url = jrCore_get_module_url('jrCore');
-    $out = jrCore_load_url("{$_conf['jrCore_base_url']}/{$url}/test_template/{$nam}");
-    if ($out && strlen($out) > 1 && (strpos($out, 'error:') === 0 || stristr($out, 'fatal error'))) {
-        // SmartyCompilerException: Syntax error in template "file:/.../1480710660.tpl"  on line 181 "" unclosed {if} tag in /modules/jrCore/contrib/smarty/libs/sysplugins/smarty_internal_templatecompilerbase.php on line 181
-        $_ad = array();
-        $_tm = explode("\n", $out);
-        if ($_tm && is_array($_tm)) {
-            foreach ($_tm as $line) {
-                if (strpos($line, $nam)) {
-                    $_rp = array(
-                        'SmartyCompilerException:',
-                        'file:' . APP_DIR . '/',
-                        '""'
-                    );
-                    $line = str_replace($_rp, '', $line);
-                    list($line, ) = explode(APP_DIR, $line);
-                    $_ad[] = rtrim(trim($line), 'in');
-                }
-            }
-        }
+    $err = jrCore_test_template_for_errors($mod, $_post['template_body']);
+    if ($err && strpos($err, 'error') === 0) {
         $_SESSION['template_body_save'] = $_post['template_body'];
-        unlink("{$cdr}/{$nam}");
-        if (count($_ad) > 0) {
-            jrCore_set_form_notice('error', 'There are syntax error(s) in your template - please fix and try again:<br>' . implode('<br>', $_ad), false);
-        }
-        else {
-            jrCore_set_form_notice('error', 'There is a syntax error in your template - please fix and try again');
-        }
+        jrCore_set_form_notice('error', substr($err, 7), false);
         jrCore_form_result();
     }
-    unlink("{$cdr}/{$nam}");
 
     $tbl = jrCore_db_table_name('jrCore', 'template');
     // See if we are updating a DB template or first time file
@@ -5309,7 +5257,7 @@ function view_jrCore_template_modify_save($_post, $_user, $_conf)
         // Make sure we have a valid template
         $req = "SELECT * FROM {$tbl} WHERE template_id = '{$_post['template_id']}'";
         $_rt = jrCore_db_query($req, 'SINGLE');
-        if (!isset($_rt) || !is_array($_rt)) {
+        if (!$_rt || !is_array($_rt)) {
             $_SESSION['template_body_save'] = $_post['template_body'];
             jrCore_set_form_notice('error', 'Invalid template_id - please try again');
             jrCore_form_result();
@@ -5344,7 +5292,7 @@ function view_jrCore_template_modify_save($_post, $_user, $_conf)
         $crt = true;
     }
     if (isset($cnt) && $cnt === 1) {
-        jrCore_set_form_notice('success', 'The template has been successfully updated');
+        jrCore_set_form_notice('success', 'The template has been successfully updated<br><b>NOTE:</b> Changes to template do not take effect until caches are reset', false);
     }
     else {
         jrCore_set_form_notice('error', 'An error was encountered saving the template update - please try again');
@@ -5401,6 +5349,21 @@ function view_jrCore_cache_reset($_post, $_user, $_conf)
     );
     jrCore_form_field_create($_tmp);
 
+    // Reset APCu cache
+    $_tmp = array(
+        'name'     => 'reset_local_cache',
+        'label'    => 'Reset Memory Cache',
+        'help'     => 'Check this box to reset the memory based local cache',
+        'type'     => 'checkbox',
+        'value'    => 'on',
+        'validate' => 'onoff'
+    );
+    if (!jrCore_local_cache_is_enabled()) {
+        $_tmp['disabled'] = 'disabled';
+        $_tmp['help']    .= '<br><br><b>NOTE:</b> Memory Cache is disabled when running in Developer Mode';
+    }
+    jrCore_form_field_create($_tmp);
+
     // Reset Sprite Cache
     $_tmp = array(
         'name'     => 'reset_sprite_cache',
@@ -5415,7 +5378,7 @@ function view_jrCore_cache_reset($_post, $_user, $_conf)
     // Reset Sprite Cache
     $_tmp = array(
         'name'     => 'reset_form_cache',
-        'label'    => 'Reset Form Sessions',
+        'label'    => 'Reset Form Session Cache',
         'help'     => 'Check this box to delete all active and cached form sessions - any in-progress form submissions will need to be redone.',
         'type'     => 'checkbox',
         'value'    => 'off',
@@ -5436,7 +5399,14 @@ function view_jrCore_cache_reset_save($_post, $_user, $_conf)
 
     // Reset cache directories
     if (isset($_post['reset_template_cache']) && $_post['reset_template_cache'] == 'on') {
+
+        // Reset other caches
         jrCore_reset_template_cache();
+
+        // Rebuild master CSS and JS
+        jrCore_create_master_css($_conf['jrCore_active_skin']);
+        jrCore_create_master_javascript($_conf['jrCore_active_skin']);
+
     }
 
     // Reset database cache
@@ -5444,26 +5414,22 @@ function view_jrCore_cache_reset_save($_post, $_user, $_conf)
         jrCore_delete_all_cache_entries();
     }
 
+    if (isset($_post['reset_local_cache']) && $_post['reset_local_cache'] == 'on') {
+        jrCore_reset_local_cache();
+    }
+
     // Remove any generated Sprite images and Spire CSS files
     if (isset($_post['reset_sprite_cache']) && $_post['reset_sprite_cache'] == 'on') {
-        $dir = jrCore_get_media_directory(0, FORCE_LOCAL);
-        $_fl = glob("{$dir}/*sprite*");
-        if (isset($_fl) && is_array($_fl)) {
-            foreach ($_fl as $file) {
-                unlink($file);
-            }
-        }
+        jrCore_reset_sprite_cache();
     }
 
     // Reset form sessions
     if (isset($_post['reset_form_cache']) && $_post['reset_form_cache'] == 'on') {
-        $tbl = jrCore_db_table_name('jrCore', 'form_session');
-        $req = "TRUNCATE TABLE {$tbl}";
-        jrCore_db_query($req);
+        jrCore_form_delete_all_form_sessions();
     }
 
     jrCore_set_form_notice('success', 'The selected caches were successfully reset');
-    jrCore_form_result();
+    jrCore_location('referrer');
 }
 
 //------------------------------
@@ -5511,11 +5477,11 @@ function view_jrCore_template_reset_save($_post, $_user, $_conf)
     jrUser_master_only();
     jrCore_validate_location_url();
 
-    // Reset smarty cache
     if (!isset($_post['id']) || !jrCore_checktype($_post['id'], 'number_nz')) {
         jrCore_set_form_notice('error', 'Invalid template_id - please try again');
         jrCore_form_result('referrer');
     }
+
     // Get info about this template first so we can reset
     $tbl = jrCore_db_table_name('jrCore', 'template');
     $req = "SELECT template_name, template_module FROM {$tbl} WHERE template_id = '{$_post['id']}'";
@@ -5538,7 +5504,83 @@ function view_jrCore_template_reset_save($_post, $_user, $_conf)
         $url = jrCore_strip_url_params($url, array('hl'));
         jrCore_location($url);
     }
-    jrCore_form_result();
+    if (strpos($url, '/id=')) {
+        $url = jrCore_strip_url_params($url, array('id'));
+        jrCore_location($url . "/template={$_rt['template_name']}");
+    }
+    jrCore_location($url);
+}
+
+//------------------------------
+// template_import_save
+//------------------------------
+function view_jrCore_template_import_save($_post, $_user, $_conf)
+{
+    jrUser_master_only();
+    jrCore_validate_location_url();
+    if (!isset($_post['skin']) || strlen($_post['skin']) === 0) {
+        jrCore_set_form_notice('error', 'invalid skin');
+        jrCore_location('referrer');
+    }
+    $_skn = jrCore_get_skin_db_info($_post['skin']);
+    if (!$_skn || !is_array($_skn)) {
+        jrCore_set_form_notice('error', 'invalid skin - not data found');
+        jrCore_location('referrer');
+    }
+    if (!isset($_skn['skin_cloned_from'])) {
+        jrCore_set_form_notice('error', 'unable to determine the cloned from skin');
+        jrCore_location('referrer');
+    }
+    if (!isset($_post['tpl']) || strlen($_post['tpl']) === 0) {
+        jrCore_set_form_notice('error', 'invalid template');
+        jrCore_location('referrer');
+    }
+    $tpl = APP_DIR . "/skins/{$_skn['skin_cloned_from']}/{$_post['tpl']}";
+    if (!is_file($tpl)) {
+        jrCore_set_form_notice('error', 'invalid template - file not found');
+        jrCore_location('referrer');
+    }
+    if (!copy($tpl, APP_DIR . "/skins/{$_post['skin']}/{$_post['tpl']}")) {
+        jrCore_set_form_notice('error', 'unable to copy template to skin directory - check permissions');
+    }
+    jrCore_location('referrer');
+}
+
+//------------------------------
+// template_create_save
+//------------------------------
+function view_jrCore_template_create_save($_post, $_user, $_conf)
+{
+    jrUser_master_only();
+    jrCore_validate_location_url();
+    if (!isset($_post['skin']) || strlen($_post['skin']) === 0) {
+        jrCore_set_form_notice('error', 'invalid skin');
+        jrCore_location('referrer');
+    }
+    $_skn = jrCore_get_skin_db_info($_post['skin']);
+    if (!$_skn || !is_array($_skn)) {
+        jrCore_set_form_notice('error', 'invalid skin - not data found');
+        jrCore_location('referrer');
+    }
+    if (!isset($_skn['skin_cloned_from'])) {
+        jrCore_set_form_notice('error', 'unable to determine the cloned from skin');
+        jrCore_location('referrer');
+    }
+    if (!isset($_post['tpl']) || strlen($_post['tpl']) === 0) {
+        jrCore_set_form_notice('error', 'invalid template');
+        jrCore_location('referrer');
+    }
+    $tpl = APP_DIR . "/skins/{$_post['skin']}/{$_post['tpl']}";
+    if (is_file($tpl)) {
+        jrCore_set_form_notice('error', 'The template name entered already exists - please enter a different name');
+        jrCore_location('referrer');
+    }
+    if (!jrCore_write_to_file($tpl, "{* {$_post['tpl']} *}\n\n")) {
+        jrCore_set_form_notice('error', 'unable to create template to skin directory - check permissions');
+        jrCore_location('referrer');
+    }
+    jrCore_set_form_notice('success', "The new template was successfully created");
+    jrCore_location("{$_conf['jrCore_base_url']}/{$_post['module_url']}/template_modify/skin={$_post['skin']}/template={$_post['tpl']}");
 }
 
 //------------------------------
@@ -5559,13 +5601,14 @@ function view_jrCore_css_reset_save($_post, $_user, $_conf)
         jrCore_form_result('referrer');
     }
     $_post['tag'] = urldecode($_post['tag']);
+
     // Remove info about this element from the custom css
     $tbl = jrCore_db_table_name('jrCore', 'skin');
     $req = "SELECT skin_custom_css FROM {$tbl} WHERE skin_directory = '" . jrCore_db_escape($_post['skin']) . "'";
     $_rt = jrCore_db_query($req, 'SINGLE');
     if ($_rt && is_array($_rt) && strlen($_rt['skin_custom_css']) > 3) {
         $_new = json_decode($_rt['skin_custom_css'], true);
-        if (isset($_new) && is_array($_new)) {
+        if ($_new && is_array($_new)) {
             if (isset($_new["{$_post['tag']}"])) {
                 unset($_new["{$_post['tag']}"]);
                 $_new = json_encode($_new);
@@ -5579,15 +5622,111 @@ function view_jrCore_css_reset_save($_post, $_user, $_conf)
         }
     }
     jrCore_form_delete_session();
-    // Cleanup any cached CSS files so it is rebuilt
-    $cdir = jrCore_get_module_cache_dir($_post['skin']);
-    $_tmp = glob("{$cdir}/*.css");
-    if (isset($_tmp) && is_array($_tmp)) {
-        foreach ($_tmp as $tmp_file) {
-            unlink($tmp_file);
+
+    // Rebuild CSS
+    if ($_post['skin'] == $_conf['jrCore_active_skin']) {
+        jrCore_create_master_css($_post['skin']);
+    }
+
+    jrCore_form_result('referrer');
+}
+
+//------------------------------
+// advanced_config
+//------------------------------
+function view_jrCore_advanced_config($_post, $_user, $_conf)
+{
+    jrUser_master_only();
+    jrCore_page_include_admin_menu();
+    jrCore_page_admin_tabs('jrCore');
+    jrCore_page_banner('Advanced Config Keys');
+
+    jrCore_set_form_notice('error', '<b>WARNING!</b> Advanced Config Keys should only be used if you are sure you need them!<br>You can render your site unusable by entering an invalid value here, so be careful!', false);
+    jrCore_get_form_notice();
+
+        // Form init
+    $_tmp = array(
+        'submit_value'     => 'update config',
+        'cancel'           => "{$_conf['jrCore_base_url']}/{$_post['module_url']}/admin/tools",
+        'form_ajax_submit' => false
+    );
+    jrCore_form_create($_tmp);
+
+    $_opt = array(
+        'create' => 'Create a new Config Key',
+        'delete' => 'Delete an existing Config Key'
+    );
+    $_tmp = array(
+        'name'     => 'action',
+        'label'    => 'action',
+        'help'     => 'Select the action you would like to perform',
+        'type'     => 'select',
+        'options'  => $_opt,
+        'validate' => 'not_empty',
+        'default'  => 'create',
+        'required' => true
+    );
+    jrCore_form_field_create($_tmp);
+
+    // Config key
+    $_tmp = array(
+        'name'     => 'config_key',
+        'label'    => 'config key',
+        'help'     => 'Enter the Config key that will be added or removed from the config.php file - i.e. &quot;jrCore_max_system_queue_workers&quot;',
+        'type'     => 'text',
+        'validate' => 'printable',
+        'required' => true
+    );
+    jrCore_form_field_create($_tmp);
+
+    // Config value
+    $_tmp = array(
+        'name'     => 'config_value',
+        'label'    => 'config value',
+        'help'     => 'Enter the value that will be used for this config key (optional if removing an existing Config Key)',
+        'type'     => 'text',
+        'validate' => 'printable',
+        'required' => false
+    );
+    jrCore_form_field_create($_tmp);
+    jrCore_page_display();
+}
+
+//------------------------------
+// advanced_config_save
+//------------------------------
+function view_jrCore_advanced_config_save($_post, $_user, $_conf)
+{
+    jrUser_master_only();
+    jrCore_form_validate($_post);
+
+    if (strpos($_post['config_key'], 'jrCore_db_') === 0 && $_post['config_key'] != 'jrCore_db_persistent') {
+        jrCore_set_form_notice('error', 'Invalid config key - cannot start with jrCore_db_');
+        jrCore_form_result();
+    }
+    if ($_post['action'] == 'create') {
+        if (jrCore_add_key_to_config($_post['config_key'], $_post['config_value'])) {
+            $_conf["{$_post['config_key']}"] = $_post['config_value'];
+            jrCore_delete_config_cache();
+            jrCore_form_delete_session();
+            jrCore_set_form_notice('success', 'The new config key was successfully added');
+        }
+        else {
+            jrCore_set_form_notice('error', 'An error was encountered adding the config key');
         }
     }
-    jrCore_form_result('referrer');
+    else {
+        if (jrCore_delete_key_from_config($_post['config_key'])) {
+            unset($_conf["{$_post['config_key']}"]);
+            jrCore_delete_config_cache();
+            jrCore_form_delete_session();
+            jrCore_set_form_notice('success', 'The config key was successfully removed');
+        }
+        else {
+            jrCore_set_form_notice('error', 'An error was encountered removing the config key');
+        }
+    }
+    jrCore_form_result();
 }
 
 //------------------------------
@@ -5604,7 +5743,8 @@ function view_jrCore_integrity_check($_post, $_user, $_conf)
     $_tmp = array(
         'submit_value'  => 'run integrity check',
         'cancel'        => 'referrer',
-        'submit_prompt' => 'Are you sure you want to run the Integrity Check? Please be patient - on large systems this could take some time.',
+        'submit_title'  => 'Run an Integrity Check?',
+        'submit_prompt' => 'Please be patient - on a large system this could take a bit to complete depending on the options',
         'submit_modal'  => 'update',
         'modal_width'   => 600,
         'modal_height'  => 400,
@@ -5717,7 +5857,9 @@ function view_jrCore_integrity_check_save($_post, $_user, $_conf)
 
         // Make sure our Core schema is updated first
         jrCore_validate_module_schema('jrCore');
+        jrCore_check_for_dead_queue_workers();
         jrCore_validate_queue_info();
+        jrCore_validate_queue_data();
 
         //----------------------
         // MODULES
@@ -5811,8 +5953,14 @@ function view_jrCore_integrity_check_save($_post, $_user, $_conf)
 
     // Reset Caches
     if (isset($_post['reset_caches']) && $_post['reset_caches'] == 'on') {
+
+        // Rebuild master CSS and JS
+        jrCore_create_master_css($_conf['jrCore_active_skin']);
+        jrCore_create_master_javascript($_conf['jrCore_active_skin']);
+
         jrCore_delete_all_cache_entries();
         jrCore_reset_template_cache();
+
         jrCore_form_modal_notice('update', "cache reset: database and template caches reset");
     }
 
@@ -6235,10 +6383,11 @@ function view_jrCore_stream_file($_post, $_user, $_conf)
         jrCore_notice('Error', 'invalid media id - item not found');
     }
     $_rt = $_rt['_items'][0];
-    if (!isset($_rt["{$_post['_1']}_size"]) || $_rt["{$_post['_1']}_size"] < 1) {
-        header('HTTP/1.0 404 Not Found');
-        jrCore_notice('Error', 'invalid media id - media file not found');
+    $fld = $_post['_1'];
+    if (strpos($fld, '_mobile')) {
+        $fld = str_replace('_mobile', '', $fld);
     }
+
     // Privacy Checking for this profile
     if (!jrUser_is_admin() && isset($_rt['profile_private']) && $_rt['profile_private'] != '1') {
         // Privacy Check (Sub Select) - non admin users
@@ -6277,22 +6426,37 @@ function view_jrCore_stream_file($_post, $_user, $_conf)
     }
 
     // Check that file exists
-    $nam = "{$_post['module']}_{$_post['_2']}_{$_post['_1']}." . $_rt["{$_post['_1']}_extension"];
+    $ext = $_rt["{$fld}_extension"];
+    if (isset($_post['_3']) && strpos($_post['_3'], '.')) {
+        $ext = jrCore_file_extension($_post['_3']);
+    }
+    $nam = "{$_post['module']}_{$_post['_2']}_{$fld}.{$ext}";
     // See if we have a SAMPLE for streaming - always overrides full stream
-    if (isset($_rt["{$_post['_1']}_item_price"]) && $_rt["{$_post['_1']}_item_price"] > 0 && jrCore_media_file_exists($_rt['_profile_id'], "{$nam}.sample." . $_rt["{$_post['_1']}_extension"])) {
-        $nam = "{$nam}.sample." . $_rt["{$_post['_1']}_extension"];
+    if (isset($_rt["{$fld}_item_price"]) && $_rt["{$fld}_item_price"] > 0 && jrCore_media_file_exists($_rt['_profile_id'], "{$nam}.sample." . $_rt["{$fld}_extension"])) {
+        $nam = "{$nam}.sample." . $_rt["{$fld}_extension"];
+    }
+
+    $fname = $nam;
+    if (isset($_rt["{$fld}_original_name"]) && strlen($_rt["{$fld}_original_name"]) > 0) {
+        $fname = $_rt["{$fld}_original_name"];
+    }
+    elseif (isset($_rt["{$fld}_name"]) && strlen($_rt["{$fld}_name"]) > 0) {
+        $fname = $_rt["{$fld}_name"];
     }
 
     // "stream_file" event trigger
     $_args = array(
         'module'      => $_post['module'],
         'stream_file' => $nam,
-        'file_name'   => $_post['_1'],
+        'file_name'   => $fld,
         'item_id'     => $_post['_2']
     );
     $_rt   = jrCore_trigger_event('jrCore', 'stream_file', $_rt, $_args);
-    if (isset($_rt['stream_file']) && $_rt['stream_file'] != $nam) {
+    if (!empty($_rt['stream_file']) && $_rt['stream_file'] != $nam) {
         $nam = $_rt['stream_file'];
+    }
+    if (!empty($_rt['stream_file_name'])) {
+        $fname = $_rt['stream_file_name'];
     }
 
     if (!jrCore_media_file_exists($_rt['_profile_id'], $nam)) {
@@ -6301,20 +6465,16 @@ function view_jrCore_stream_file($_post, $_user, $_conf)
     }
 
     // Watch for browser scans
-    jrCore_counter($_post['module'], $_post['_2'], "{$_post['_1']}_stream");
-
-    $fname = $nam;
-    if (isset($_rt["{$_post['_1']}_original_name"]) && strlen($_rt["{$_post['_1']}_original_name"]) > 0) {
-        $fname = $_rt["{$_post['_1']}_original_name"];
-    }
-    elseif (isset($_rt["{$_post['_1']}_name"]) && strlen($_rt["{$_post['_1']}_name"]) > 0) {
-        $fname = $_rt["{$_post['_1']}_name"];
+    if (!isset($_rt['skip_stream_count'])) {
+        jrCore_counter($_post['module'], $_post['_2'], "{$fld}_stream");
     }
 
     // Stream the file to the client
     jrCore_media_file_stream($_rt['_profile_id'], $nam, $fname);
-    session_write_close();
-    jrCore_db_close();
+    if (isset($_SESSION)) {
+        session_write_close();
+    }
+    jrCore_trigger_event('jrCore', 'process_done', $_post);
     exit;
 }
 
@@ -6331,7 +6491,7 @@ function view_jrCore_download_file($_post, $_user, $_conf)
         jrCore_notice('Error', 'invalid media id');
     }
     // Make sure this is a DataStore module
-    if (!jrCore_db_get_prefix($_post['module'])) {
+    if (!$pfx = jrCore_db_get_prefix($_post['module'])) {
         header('HTTP/1.0 404 Not Found');
         jrCore_notice('Error', 'invalid module - no datastore');
     }
@@ -6417,6 +6577,17 @@ function view_jrCore_download_file($_post, $_user, $_conf)
         jrCore_notice('Error', 'invalid media id - no file found');
     }
 
+    $fname = $nam;
+    if (isset($_rt["{$pfx}_title_url"]) && strlen($_rt["{$pfx}_title_url"]) > 0 && isset($_rt["{$_post['_1']}_extension"]{1})) {
+        $fname = str_replace('.' . $_rt["{$_post['_1']}_extension"], '', $_rt["{$pfx}_title_url"]) . '.' . $_rt["{$_post['_1']}_extension"];
+    }
+    elseif (isset($_rt["{$_post['_1']}_name"]) && strlen($_rt["{$_post['_1']}_name"]) > 0) {
+        $fname = $_rt["{$_post['_1']}_name"];
+    }
+    elseif (isset($_rt["{$_post['_1']}_original_name"]) && strlen($_rt["{$_post['_1']}_original_name"]) > 0) {
+        $fname = $_rt["{$_post['_1']}_original_name"];
+    }
+
     // "download_file" event trigger
     $_args = array(
         'module'    => $_post['module'],
@@ -6424,22 +6595,22 @@ function view_jrCore_download_file($_post, $_user, $_conf)
         'item_id'   => $_post['_2']
     );
     $_rt   = jrCore_trigger_event('jrCore', 'download_file', $_rt, $_args);
+    if (!empty($_rt['download_file_name'])) {
+        // Our listener changed the download file name
+        $fname = $_rt['download_file_name'];
+    }
 
     // Increment our counter
-    jrCore_counter($_post['module'], $_post['_2'], "{$_post['_1']}_download");
-
-    $fname = $nam;
-    if (isset($_rt["{$_post['_1']}_original_name"]) && strlen($_rt["{$_post['_1']}_original_name"]) > 0) {
-        $fname = $_rt["{$_post['_1']}_original_name"];
-    }
-    elseif (isset($_rt["{$_post['_1']}_name"]) && strlen($_rt["{$_post['_1']}_name"]) > 0) {
-        $fname = $_rt["{$_post['_1']}_name"];
+    if (!isset($_rt['skip_download_count'])) {
+        jrCore_counter($_post['module'], $_post['_2'], "{$_post['_1']}_download");
     }
 
     // Download the file to the client
     jrCore_media_file_download($_rt['_profile_id'], $nam, $fname);
-    session_write_close();
-    jrCore_db_close();
+    if (isset($_SESSION)) {
+        session_write_close();
+    }
+    jrCore_trigger_event('jrCore', 'process_done', $_post);
     exit;
 }
 
@@ -6468,7 +6639,7 @@ function view_jrCore_upload_file($_post, $_user, $_conf)
 
     $dir = jrCore_get_upload_temp_directory($_post['upload_token']);
     if (!is_dir($dir)) {
-        @mkdir($dir, $_conf['jrCore_dir_perms'], true);
+        jrCore_create_directory($dir);
     }
     $res = $mtr->handleUpload($dir . '/');
     jrCore_json_response($res, true, true, false);
@@ -6512,7 +6683,7 @@ function view_jrCore_php_error_log($_post, $_user, $_conf)
             }
             $out .= '</div>';
             if (jrUser_is_master()) {
-                $clear = jrCore_page_button('clear', 'Delete Error Log', "if(confirm('really delete the error log?')){ jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/php_error_log_delete')}");
+                $clear = jrCore_page_button('clear', 'Delete Error Log', "jrCore_confirm('Delete the Error Log?', '', function(){ jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/php_error_log_delete') } );");
             }
         }
     }
@@ -6529,8 +6700,9 @@ function view_jrCore_php_error_log_delete($_post, $_user, $_conf)
 {
     jrUser_master_only();
     jrCore_validate_location_url();
-
-    unlink(APP_DIR . "/data/logs/error_log");
+    if (is_file(APP_DIR . "/data/logs/error_log")) {
+        unlink(APP_DIR . "/data/logs/error_log");  // OK
+    }
     jrCore_location('referrer');
 }
 
@@ -6543,12 +6715,26 @@ function view_jrCore_debug_log($_post, $_user, $_conf)
     jrCore_page_dashboard_tabs('activity');
     jrCore_master_log_tabs('debug');
 
-    $clear = null;
-    $out   = "<div class=\"center\"><p>No Debug Log entries at this time</p></div>";
+    $max_size = 1;  // in megabytes
+    $clear    = null;
+    $out      = "<div class=\"center\"><p>No Debug Log entries at this time</p></div>";
     if (is_file(APP_DIR . "/data/logs/debug_log")) {
-        $out   = '<div id="debug_log">' . jrCore_entity_string(file_get_contents(APP_DIR . "/data/logs/debug_log")) . '</div>';
+        // How big is our debug log?
+        $out = '<div id="debug_log">';
+        if (filesize(APP_DIR . "/data/logs/debug_log") > ($max_size * 1048576)) {
+            // we're only going to grab the first 2mb
+            if ($f = fopen(APP_DIR . "/data/logs/debug_log", 'rb')) {
+                $out .= jrCore_entity_string(fread($f, ($max_size * 1048576)));
+                fclose($f);
+                $out .= "\n\n(file has been truncated to fit here - to see full file download it via FTP)";
+            }
+        }
+        else {
+            $out .= jrCore_entity_string(file_get_contents(APP_DIR . "/data/logs/debug_log"));
+        }
+        $out .= '</div>';
         if (jrUser_is_master()) {
-            $clear = jrCore_page_button('clear', 'Delete Debug Log', "if(confirm('really delete the debug log?')){ jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/debug_log_delete')}");
+            $clear = jrCore_page_button('clear', 'Delete Debug Log', "jrCore_confirm('Delete the Debug Log?', '', function(){ jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/debug_log_delete') } );");
         }
     }
     jrCore_page_banner('Debug Log', $clear);
@@ -6564,7 +6750,9 @@ function view_jrCore_debug_log_delete($_post, $_user, $_conf)
 {
     jrUser_master_only();
     jrCore_validate_location_url();
-    unlink(APP_DIR . "/data/logs/debug_log");
+    if (is_file(APP_DIR . "/data/logs/debug_log")) {
+        unlink(APP_DIR . "/data/logs/debug_log");  // OK
+    }
     jrCore_location('referrer');
 }
 
@@ -6769,7 +6957,7 @@ function view_jrCore_pending_item_reject($_post, $_user, $_conf)
         // Add in our delete button
         $_att = array('class' => 'rejected_reason_delete');
         foreach ($_pr as $k => $v) {
-            $_pr[$k] = jrCore_page_button("d{$k}", 'X', "if(confirm('delete this reason?')){ jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/pending_reason_delete/key={$k}')}", $_att) . '&nbsp' . $v;
+            $_pr[$k] = jrCore_page_button("d{$k}", 'X', "jrCore_confirm('delete this reason?', '', function(){ jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/pending_reason_delete/key={$k}')} )", $_att) . '&nbsp' . $v;
         }
         $_tmp = array(
             'name'     => 'reject_reason',
@@ -7223,6 +7411,9 @@ function view_jrCore_item_action_buttons($_post, $_user, $_conf)
         case 'index':
         case 'list':
         case 'detail':
+        case 'bundle_index':
+        case 'bundle_list':
+        case 'bundle_detail':
             $type = $_post['_1'];
             $key  = "{$_post['m']}_item_{$type}_buttons";
             break;
@@ -7233,7 +7424,7 @@ function view_jrCore_item_action_buttons($_post, $_user, $_conf)
 
     jrCore_page_include_admin_menu();
     jrCore_page_admin_tabs('jrCore', 'tools');
-    jrCore_page_banner($_mods["{$_post['m']}"]['module_name'] . " - {$type} buttons");
+    jrCore_page_banner($_mods["{$_post['m']}"]['module_name'] . " - " . str_replace('_', ' ', $type) . " buttons");
     jrCore_get_form_notice();
 
     // Get all registered features
@@ -7259,7 +7450,7 @@ function view_jrCore_item_action_buttons($_post, $_user, $_conf)
         $_ord = json_decode($_conf[$key], true);
         // "new" modules may not be present in the order until the admin actually
         // re-orders things, so let's add any extra in at the end.
-        if (isset($_ord) && is_array($_ord)) {
+        if ($_ord && is_array($_ord)) {
             foreach ($_rs as $_dat) {
                 $found = false;
                 foreach ($_ord as $_inf) {
@@ -7281,12 +7472,16 @@ function view_jrCore_item_action_buttons($_post, $_user, $_conf)
         $_ord = $_rs;
     }
 
+    // Let modules exclude buttons by trigger
+    $_ex = array();
+    $_ex = jrCore_trigger_event('jrCore', "exclude_item_{$type}_buttons", $_ex, $_ord, $_post['m']);
+
     // See if they are active for this view
     foreach ($_ord as $k => $_inf) {
         if (isset($_inf['function'])) {
             $func = $_inf['function'];
             if (function_exists($func)) {
-                if (!$func($_post['m'], false, false, false, true)) {
+                if (isset($_ex[$func]) || $func($_post['m'], false, false, false, true) === false) {
                     unset($_ord[$k]);
                 }
             }
@@ -7314,6 +7509,8 @@ function view_jrCore_item_action_buttons($_post, $_user, $_conf)
     jrCore_page_table_header($dat);
 
     if (count($_ord) > 0) {
+        $enabled  = jrCore_get_option_image('pass');
+        $disabled = jrCore_get_option_image('fail');
         foreach ($_ord as $cnt => $_inf) {
             if (!jrCore_module_is_active($_inf['module'])) {
                 continue;
@@ -7330,7 +7527,7 @@ function view_jrCore_item_action_buttons($_post, $_user, $_conf)
             $dat[2]['title'] = (isset($_inf['icon'])) ? jrCore_get_icon_html($_inf['icon']) : '';
             $dat[3]['title'] = $_mods["{$_inf['module']}"]['module_name'];
             $dat[3]['class'] = 'center';
-            $dat[4]['title'] = $_inf['title'];
+            $dat[4]['title'] = ucwords($_inf['title']);
             $dat[4]['class'] = 'center';
             $dat[5]['title'] = (isset($_inf['group'])) ? $_inf['group'] : '';
             $dat[5]['class'] = 'center';
@@ -7350,7 +7547,7 @@ function view_jrCore_item_action_buttons($_post, $_user, $_conf)
                 $dat[6]['title'] = '-';
             }
             $dat[6]['class'] = 'center';
-            $dat[7]['title'] = (isset($_inf['active']) && $_inf['active'] == 'off') ? '<strong>off</strong>' : 'on';
+            $dat[7]['title'] = (isset($_inf['active']) && $_inf['active'] == 'off') ? $disabled : $enabled;
             $dat[7]['class'] = 'center';
             $dat[8]['title'] = jrCore_page_button("m{$cnt}", 'modify', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/item_action_button_modify/t={$type}/m={$_post['m']}/o={$cnt}')");
             jrCore_page_table_row($dat);
@@ -7570,7 +7767,7 @@ function view_jrCore_item_action_button_modify_save($_post, $_user, $_conf)
     jrCore_form_validate($_post);
 
     if (!isset($_post['t']) || strlen($_post['t']) === 0) {
-        jrCore_set_form_notice('error', 'Invalid button type');
+        jrCore_set_form_notice('error', 'Error - missing button type');
         jrCore_location('referrer');
     }
     $type = '';
@@ -7578,6 +7775,9 @@ function view_jrCore_item_action_button_modify_save($_post, $_user, $_conf)
         case 'index':
         case 'list':
         case 'detail':
+        case 'bundle_index':
+        case 'bundle_list':
+        case 'bundle_detail':
             $type = $_post['t'];
             break;
         default:
@@ -7692,13 +7892,16 @@ function view_jrCore_item_action_button_order($_post, $_user, $_conf)
     jrCore_validate_location_url();
 
     if (!isset($_post['t']) || strlen($_post['t']) === 0) {
-        jrCore_notice_page('error', 'Invalid button type');
+        jrCore_notice_page('error', 'Error - missing button type');
     }
     $type = '';
     switch ($_post['t']) {
         case 'index':
         case 'list':
         case 'detail':
+        case 'bundle_index':
+        case 'bundle_list':
+        case 'bundle_detail':
             $type = $_post['t'];
             break;
         default:
@@ -7833,7 +8036,7 @@ function view_jrCore_template_compare($_post, $_user, $_conf)
             jrCore_set_form_notice('error', 'Invalid template_id - please try again');
             jrCore_location($cancel_url);
         }
-        $tp1 = trim($_tp['template_body']);
+        $tp1 = $_tp['template_body'];
         $mod = $_tp['template_module'];
         $nam = $_tp['template_name'];
         $tag = 'custom';
@@ -7866,7 +8069,7 @@ function view_jrCore_template_compare($_post, $_user, $_conf)
     // ModDir:Version:Custom-[id]
     $cst = false;
     if (isset($_post['version']) && strlen($_post['version']) > 0) {
-        list($dir, $ver, $cst) = @explode(':', $_post['version']);
+        @list($dir, $ver, $cst) = explode(':', $_post['version']);
         $_post['version'] = $ver;
         $mod              = $dir;
     }
@@ -7941,7 +8144,7 @@ function view_jrCore_template_compare($_post, $_user, $_conf)
     }
 
     $tp2 = false;
-    if ($cst) {
+    if ($cst && isset($dir)) {
         list($ver, $tid) = explode('-', $cst, 2);
         $_post['version'] = $ver;
         // get the db version
@@ -7949,11 +8152,34 @@ function view_jrCore_template_compare($_post, $_user, $_conf)
         $req = "SELECT * FROM {$tbl} WHERE template_id = '{$tid}'";
         $_tp = jrCore_db_query($req, 'SINGLE');
         if ($_tp && is_array($_tp)) {
-            $tp2 = trim($_tp['template_body']);
+            $_rp = array(
+                $dir                        => $omod,
+                substr($dir, 2)             => substr($omod, 2),
+                strtolower($dir)            => strtolower($omod),
+                strtoupper($dir)            => strtoupper($omod),
+                strtolower(substr($dir, 2)) => strtolower(substr($omod, 2)),
+                strtoupper(substr($dir, 2)) => strtoupper(substr($omod, 2)),
+            );
+            $_tp['template_body'] = trim($_tp['template_body']);
+            $tp2 = strtr($_tp['template_body'], $_rp);
         }
     }
     elseif (is_file($tpl_file)) {
-        $tp2 = trim(file_get_contents($tpl_file));
+
+        if (isset($dir)) {
+            $_rp = array(
+                $dir                        => $_post['skin'],
+                substr($dir, 2)             => substr($_post['skin'], 2),
+                strtolower($dir)            => strtolower($_post['skin']),
+                strtoupper($dir)            => strtoupper($_post['skin']),
+                strtolower(substr($dir, 2)) => strtolower(substr($_post['skin'], 2)),
+                strtoupper(substr($dir, 2)) => strtoupper(substr($_post['skin'], 2)),
+            );
+            $tp2 = strtr(file_get_contents($tpl_file), $_rp);
+        }
+        else {
+            $tp2 = trim(file_get_contents($tpl_file));
+        }
     }
     if (!$tp2) {
         jrCore_set_form_notice('error', "{$t_type} template file not found - please try again (2)");
@@ -8093,15 +8319,15 @@ function view_jrCore_template_compare($_post, $_user, $_conf)
     }
 
     jrCore_page_banner("template compare", $sub);
-    jrCore_get_form_notice();
 
     if (isset($dir)) {
         if (isset($_mods[$dir])) {
-            $ttl = "{$dir}/templates/" . str_replace("{$dir}_", '', $nam);
+            $ttl = "Compared To: {$dir}/templates/" . str_replace("{$dir}_", '', $nam);
         }
         else {
-            $ttl = "{$dir}/{$nam}";
+            $ttl = "Compared To: {$dir}/{$nam}";
         }
+        jrCore_set_form_notice('success', "To help highlight changes all instances of <b>{$dir}</b> in the compare file have been changed to <b>{$_post['skin']}</b>", false);
     }
     elseif (!isset($_post['version'])) {
         $ttl = "{$omod}/{$nam}";
@@ -8109,6 +8335,7 @@ function view_jrCore_template_compare($_post, $_user, $_conf)
     else {
         $ttl = $nam;
     }
+    jrCore_get_form_notice();
 
     $ver = $_mods['jrCore']['module_version'];
 
@@ -8179,18 +8406,11 @@ function view_jrCore_template_compare_save($_post, $_user, $_conf)
     $mod = (isset($_post['skin'])) ? $_post['skin'] : $_post['module'];
 
     // We need to test this template and make sure it does not cause any Smarty errors
-    $cdr = jrCore_get_module_cache_dir('jrCore');
-    $nam = time() . ".tpl";
-    jrCore_write_to_file("{$cdr}/{$nam}", $_post['template_body']);
-    $url = jrCore_get_module_url('jrCore');
-    $out = jrCore_load_url("{$_conf['jrCore_base_url']}/{$url}/test_template/{$nam}");
-    if ($out{1} && (strpos($out, 'error:') === 0 || stristr($out, 'fatal error'))) {
+    $err = jrCore_test_template_for_errors($mod, $_post['template_body']);
+    if ($err && strpos($err, 'error') === 0) {
         $_SESSION['template_body_save'] = $_post['template_body'];
-        unlink("{$cdr}/{$nam}");
-        jrCore_set_form_notice('error', 'There is a syntax error in your template - please fix and try again');
-        jrCore_form_result();
+        jrCore_set_form_notice('error', substr($err, 7), false);
     }
-    unlink("{$cdr}/{$nam}");
 
     $tbl = jrCore_db_table_name('jrCore', 'template');
     // See if we are updating a DB template or first time file
@@ -8285,13 +8505,8 @@ function view_jrCore_export_datastore_csv($_post, $_user, $_conf)
         $_fl = array_merge($out, $_fl);
         $cdr = jrCore_get_module_cache_dir('jrCore');
 
-        // Delete any previous CSV files for this module
-        $_ex = glob("{$cdr}/{$_post['m']}_datastore_*.csv");
-        if ($_ex && is_array($_ex)) {
-            foreach ($_ex as $old) {
-                unlink($old);
-            }
-        }
+        // Delete old CSV files
+        jrCore_delete_old_datastore_csv_files();
 
         $fil = "{$cdr}/{$_post['m']}_datastore_" . strftime('%Y%m%d%H%M') . ".csv";
         jrCore_write_to_file($fil, implode(',', $_fl) . "\n");
@@ -8346,6 +8561,8 @@ function view_jrCore_export_datastore_csv($_post, $_user, $_conf)
             }
         }
         jrCore_send_download_file($fil);
+        session_write_close();
+        jrCore_trigger_event('jrCore', 'process_done', $_post);
         exit;
     }
     jrCore_page_notice('error', 'There are no DataStore entries for this module');
@@ -8372,7 +8589,7 @@ function view_jrCore_attachment_delete($_post, $_user, $_conf)
         jrCore_json_response(array('error' => 'upload_field did not have the prefix of the upload_module'));
     }
 
-    $_rt = jrCore_db_get_item('jrCore', $_post['id']);
+    $_rt = jrCore_db_get_item($_post['upload_module'], $_post['id']);
 
     // Make sure the calling user has permission to delete this item
     if (!jrUser_is_admin() && !jrProfile_is_profile_owner($_rt[$pfx . '_profile_id']) && $_rt['_user_id'] != $_user['_user_id']) {

@@ -1,4 +1,4 @@
-// Jamroom 5 Support Module Javascript
+// Jamroom Support Module Javascript
 // @copyright 2003-2013 by Talldude Networks LLC
 // @author Brian Johnson - brian@jamroom.net
 

@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -125,6 +125,75 @@ function jrCore_db_get_prefix($module)
 }
 
 /**
+ * Get all index tables for a module
+ * @param string $module
+ * @return array|bool
+ */
+function jrCore_db_get_all_index_tables_for_module($module)
+{
+    global $_conf;
+    if (isset($_conf['jrCore_index_keys']) && strlen($_conf['jrCore_index_keys']) > 0) {
+        if ($_tm = explode(',', trim(trim($_conf['jrCore_index_keys'], ',')))) {
+            $_tb = array();
+            foreach ($_tm as $v) {
+                if (strpos($v, "{$module}:") === 0) {
+                    list(, $k) = explode(':', $v);
+                    $k       = trim($k);
+                    $_tb[$k] = $k;
+                }
+            }
+            return $_tb;
+        }
+    }
+    return false;
+}
+
+/**
+ * Returns true if a key has an index table
+ * @param string $module
+ * @param string $key
+ * @return bool
+ */
+function jrCore_db_key_has_index_table($module, $key)
+{
+    global $_conf;
+    if ($key == '_item_id') {
+        return false;
+    }
+    if (isset($_conf['jrCore_index_keys']) && strlen($_conf['jrCore_index_keys']) > 0 && strpos(' ' . $_conf['jrCore_index_keys'], ",{$module}:{$key},")) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Get a table name for an index table
+ * @param string $module
+ * @param string $key
+ * @param bool $key_name_only
+ * @return bool|string
+ */
+function jrCore_db_get_index_table_name($module, $key, $key_name_only = false)
+{
+    // Name of table will be: jr_<module>_item_key_<key_name_without_prefix>
+    // NOTE: Max length of table name is 64 characters
+    if (!$pfx = jrCore_db_get_prefix($module)) {
+        return false;
+    }
+    $name = $key;
+    if (strpos($key, $pfx) === 0) {
+        $name = substr($key, strlen($pfx) + 1);
+    }
+    if (strlen($name) > 54) {
+        $name = substr($name, 0, 55);
+    }
+    if ($key_name_only) {
+        return "item_key_{$name}";
+    }
+    return jrCore_db_table_name($module, "item_key_{$name}");
+}
+
+/**
  * Creates a new module DataStore
  * @param string $module Module to create DataStore for
  * @param string $prefix Key Prefix in DataStore
@@ -155,7 +224,7 @@ function _jrCore_db_create_datastore($module, $prefix)
     $_tmp = array(
         "`_item_id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY"
     );
-    jrCore_db_verify_table($module, 'item', $_tmp, 'MyISAM');
+    jrCore_db_verify_table($module, 'item', $_tmp, 'InnoDB');
 
     // Item
     $_tmp = array(
@@ -164,7 +233,7 @@ function _jrCore_db_create_datastore($module, $prefix)
         "`key` VARCHAR(128) NOT NULL DEFAULT ''",
         "`index` SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0'",
         "`value` VARCHAR(512) NOT NULL DEFAULT ''",
-        "PRIMARY KEY (`key`,`_item_id`,`index`)",
+        "PRIMARY KEY (`key`, `_item_id`, `index`)",
         "INDEX `_item_id` (`_item_id`)",
         "INDEX `_profile_id` (`_profile_id`)",
         "INDEX `value` (`value`(128))",
@@ -212,7 +281,10 @@ function jrCore_db_delete_datastore($module)
 {
     $func = jrCore_get_active_datastore_function($module, 'db_delete_datastore');
     if (function_exists($func)) {
-        return $func($module);
+        if ($func($module)) {
+            jrCore_trigger_event('jrCore', 'db_delete_datastore', array('module' => $module));
+            return true;
+        }
     }
     return true;
 }
@@ -385,7 +457,11 @@ function _jrCore_db_repair_datastore($module)
 function jrCore_db_truncate_datastore($module)
 {
     $func = jrCore_get_active_datastore_function($module, 'db_truncate_datastore');
-    return $func($module);
+    if ($func($module)) {
+        jrCore_trigger_event('jrCore', 'db_truncate_datastore', array('module' => $module));
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -468,20 +544,60 @@ function _jrCore_db_run_key_function($module, $key, $match, $function, $group_by
     }
     $tbl = jrCore_db_table_name($module, 'item_key');
     if ($match == '*') {
-        $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "'";
+        if (jrCore_db_key_has_index_table($module, $key)) {
+            $tbl = jrCore_db_get_index_table_name($module, $key);
+            $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl}";
+        }
+        else {
+            $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "'";
+        }
     }
     elseif (strpos(' ' . $match, '%')) {
-        $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "' AND `value` LIKE '" . jrCore_db_escape($match) . "'";
+        if (jrCore_db_key_has_index_table($module, $key)) {
+            $tbl = jrCore_db_get_index_table_name($module, $key);
+            $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl} WHERE `value` LIKE '" . jrCore_db_escape($match) . "'";
+        }
+        else {
+            $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "' AND `value` LIKE '" . jrCore_db_escape($match) . "'";
+        }
     }
     elseif (strpos($match, '<') === 0) {
-        $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "' AND `value` " . jrCore_db_escape($match);
+        if (jrCore_db_key_has_index_table($module, $key)) {
+            $tbl = jrCore_db_get_index_table_name($module, $key);
+            $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl} WHERE `value` " . jrCore_db_escape($match);
+        }
+        else {
+            $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "' AND `value` " . jrCore_db_escape($match);
+        }
     }
     elseif (strpos($match, '>') === 0) {
-        $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "' AND `value` " . jrCore_db_escape($match);
+        if (jrCore_db_key_has_index_table($module, $key)) {
+            $tbl = jrCore_db_get_index_table_name($module, $key);
+            $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl} WHERE `value` " . jrCore_db_escape($match);
+        }
+        else {
+            $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "' AND `value` " . jrCore_db_escape($match);
+        }
+    }
+    elseif (stripos($match, 'IN') === 0) {
+        if (jrCore_db_key_has_index_table($module, $key)) {
+            $tbl = jrCore_db_get_index_table_name($module, $key);
+            $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl} WHERE `value` " . jrCore_db_escape($match);
+        }
+        else {
+            $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "' AND `value` " . jrCore_db_escape($match);
+        }
     }
     else {
-        $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "' AND `value` = '" . jrCore_db_escape($match) . "'";
+        if (jrCore_db_key_has_index_table($module, $key)) {
+            $tbl = jrCore_db_get_index_table_name($module, $key);
+            $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl} WHERE `value` = '" . jrCore_db_escape($match) . "'";
+        }
+        else {
+            $req = "SELECT {$fnc} AS tc, `_item_id`, `value` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "' AND `value` = '" . jrCore_db_escape($match) . "'";
+        }
     }
+
     if (!$group_by_value) {
         $_rt = jrCore_db_query($req, 'SINGLE');
         if ($_rt && is_array($_rt)) {
@@ -505,6 +621,9 @@ function _jrCore_db_run_key_function($module, $key, $match, $function, $group_by
  */
 function jrCore_db_set_display_order($module, $_ids)
 {
+    if (!is_array($_ids)) {
+        return false;
+    }
     $func = jrCore_get_active_datastore_function($module, 'db_set_display_order');
     return $func($module, $_ids);
 }
@@ -536,6 +655,20 @@ function _jrCore_db_set_display_order($module, $_ids)
     }
     $req = substr($req, 0, strlen($req) - 1) . " ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
     jrCore_db_query($req, null, false, null, false);
+
+    // If display_order is setup as a key index - rebuild
+    if (jrCore_db_key_has_index_table($module, "{$pfx}_display_order")) {
+        $tbl = jrCore_db_get_index_table_name($module, "{$pfx}_display_order");
+        $req = "INSERT INTO {$tbl} (`_item_id`,`value`) VALUES ";
+        foreach ($_ids as $iid => $ord) {
+            $ord = (int) $ord;
+            $iid = (int) $iid;
+            $req .= "({$iid},{$ord}),";
+        }
+        $req = substr($req, 0, strlen($req) - 1) . " ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
+        jrCore_db_query($req, null, false, null, false);
+    }
+
     return true;
 }
 
@@ -607,9 +740,10 @@ function _jrCore_db_update_default_key($module, $key, $value, $default)
  * @param $key string Key to increment
  * @param $value number Integer/Float to increment by
  * @param $update bool set to TRUE to update updated timed
+ * @param $cache_reset bool set to FALSE to prevent cache reset
  * @return mixed
  */
-function jrCore_db_increment_key($module, $id, $key, $value, $update = false)
+function jrCore_db_increment_key($module, $id, $key, $value, $update = false, $cache_reset = true)
 {
     if (!is_numeric($value)) {
         return false;
@@ -622,25 +756,29 @@ function jrCore_db_increment_key($module, $id, $key, $value, $update = false)
             $id[$k] = (int) $iid;
         }
     }
+    $_arg = array(
+        'module'      => $module,
+        'id'          => $id,
+        'key'         => $key,
+        'value'       => $value,
+        'update'      => $update,
+        'cache_reset' => $cache_reset
+    );
+    $_arg = jrCore_trigger_event('jrCore', 'db_increment_key', $_arg);
     $func = jrCore_get_active_datastore_function($module, 'db_increment_key');
-    if ($func($module, $id, $key, $value, $update)) {
-        // Reset cache for these items
-        $_ch = array();
-        foreach ($id as $uid) {
-            $_ch[] = array($module, "{$module}-{$uid}-0", true);
-            $_ch[] = array($module, "{$module}-{$uid}-1", true);
-            $_ch[] = array($module, "{$module}-{$uid}-0", false);
-            $_ch[] = array($module, "{$module}-{$uid}-1", false);
+    if ($func($_arg['module'], $_arg['id'], $_arg['key'], $_arg['value'], $_arg['update'])) {
+        if ($cache_reset) {
+            // Reset cache for these items
+            $_ch = array();
+            foreach ($id as $uid) {
+                $_ch[] = array($module, "{$module}-{$uid}-0", true);
+                $_ch[] = array($module, "{$module}-{$uid}-1", true);
+                $_ch[] = array($module, "{$module}-{$uid}-0", false);
+                $_ch[] = array($module, "{$module}-{$uid}-1", false);
+            }
+            jrCore_delete_multiple_cache_entries($_ch);
         }
-        jrCore_delete_multiple_cache_entries($_ch);
-        $_ky = array(
-            'module' => $module,
-            'id'     => $id,
-            'key'    => $key,
-            'value'  => $value,
-            'update' => $update
-        );
-        return jrCore_trigger_event('jrCore', 'db_increment_key', $_ky);
+        return true;
     }
     return false;
 }
@@ -679,11 +817,28 @@ function _jrCore_db_increment_key($module, $id, $key, $value, $update = false)
         }
     }
     $tbl = jrCore_db_table_name($module, 'item_key');
-    $req = "INSERT INTO {$tbl} (`_item_id`,`_profile_id`,`key`,`index`,`value`) VALUES " . implode(',', $_in) . " ON DUPLICATE KEY UPDATE `value` = IF(`key` = '{$key}',`value` + {$value}, VALUES(`value`))";
+    if ($update) {
+        $req = "INSERT INTO {$tbl} (`_item_id`,`_profile_id`,`key`,`index`,`value`) VALUES " . implode(',', $_in) . " ON DUPLICATE KEY UPDATE `value` = IF(`key` = '{$key}',`value` + {$value}, VALUES(`value`))";
+    }
+    else {
+        $req = "INSERT INTO {$tbl} (`_item_id`,`_profile_id`,`key`,`index`,`value`) VALUES " . implode(',', $_in) . " ON DUPLICATE KEY UPDATE `value` = `value` + {$value}";
+    }
     $cnt = jrCore_db_query($req, 'COUNT', false, null, false);
     if (!$cnt || $cnt < 1) {
         return false;
     }
+
+    // Do we have a dedicated key index?
+    if (jrCore_db_key_has_index_table($module, $key)) {
+        $_in = array();
+        foreach ($id as $uid) {
+            $_in[] = "({$uid},'{$value}')";
+        }
+        $tbl = jrCore_db_get_index_table_name($module, $key);
+        $req = "INSERT INTO {$tbl} (`_item_id`,`value`) VALUES " . implode(',', $_in) . " ON DUPLICATE KEY UPDATE `value` = `value` + {$value}";
+        jrCore_db_query($req, 'COUNT', false, null, false);
+    }
+
     return true;
 }
 
@@ -695,9 +850,10 @@ function _jrCore_db_increment_key($module, $id, $key, $value, $update = false)
  * @param $value number Integer/Float to decrement by
  * @param $min_value number Lowest Value allowed for Key (default 0)
  * @param $update bool set to TRUE to update updated timed
+ * @param $cache_reset bool set to FALSE to prevent cache reset
  * @return mixed
  */
-function jrCore_db_decrement_key($module, $id, $key, $value, $min_value = null, $update = false)
+function jrCore_db_decrement_key($module, $id, $key, $value, $min_value = null, $update = false, $cache_reset = true)
 {
     if (!is_numeric($value)) {
         return false;
@@ -713,25 +869,30 @@ function jrCore_db_decrement_key($module, $id, $key, $value, $min_value = null, 
             $id[$k] = (int) $iid;
         }
     }
+    $_arg = array(
+        'module'      => $module,
+        'id'          => $id,
+        'key'         => $key,
+        'value'       => $value,
+        'min_value'   => $min_value,
+        'update'      => $update,
+        'cache_reset' => $cache_reset
+    );
+    $_arg = jrCore_trigger_event('jrCore', 'db_decrement_key', $_arg);
     $func = jrCore_get_active_datastore_function($module, 'db_decrement_key');
-    if ($temp = $func($module, $id, $key, $value, $min_value, $update)) {
-        // Reset cache for these items
-        $_ch = array();
-        foreach ($id as $uid) {
-            $_ch[] = array($module, "{$module}-{$uid}-0", true);
-            $_ch[] = array($module, "{$module}-{$uid}-1", true);
-            $_ch[] = array($module, "{$module}-{$uid}-0", false);
-            $_ch[] = array($module, "{$module}-{$uid}-1", false);
+    if ($func($_arg['module'], $_arg['id'], $_arg['key'], $_arg['value'], $_arg['min_value'], $_arg['update'])) {
+        if ($cache_reset) {
+            // Reset cache for these items
+            $_ch = array();
+            foreach ($id as $uid) {
+                $_ch[] = array($module, "{$module}-{$uid}-0", true);
+                $_ch[] = array($module, "{$module}-{$uid}-1", true);
+                $_ch[] = array($module, "{$module}-{$uid}-0", false);
+                $_ch[] = array($module, "{$module}-{$uid}-1", false);
+            }
+            jrCore_delete_multiple_cache_entries($_ch);
         }
-        jrCore_delete_multiple_cache_entries($_ch);
-        $_ky = array(
-            'module' => $module,
-            'id'     => $id,
-            'key'    => $key,
-            'value'  => $value,
-            'update' => $update
-        );
-        return jrCore_trigger_event('jrCore', 'db_decrement_key', $_ky);
+        return true;
     }
     return false;
 }
@@ -772,11 +933,28 @@ function _jrCore_db_decrement_key($module, $id, $key, $value, $min_value = null,
     }
     $val = ($min_value + $value);
     $tbl = jrCore_db_table_name($module, 'item_key');
-    $req = "INSERT INTO {$tbl} (`_item_id`,`_profile_id`,`key`,`index`,`value`) VALUES " . implode(',', $_in) . " ON DUPLICATE KEY UPDATE `value` = IF(`key` = '_updated', VALUES(`value`), IF(`value` >= {$val},`value` - {$value}, `value`))";
+    if ($update) {
+        $req = "INSERT INTO {$tbl} (`_item_id`,`_profile_id`,`key`,`index`,`value`) VALUES " . implode(',', $_in) . " ON DUPLICATE KEY UPDATE `value` = IF(`key` = '_updated', VALUES(`value`), IF(`value` >= {$val},`value` - {$value}, `value`))";
+    }
+    else {
+        $req = "INSERT INTO {$tbl} (`_item_id`,`_profile_id`,`key`,`index`,`value`) VALUES " . implode(',', $_in) . " ON DUPLICATE KEY UPDATE `value` = IF(`value` >= {$val},`value` - {$value}, `value`)";
+    }
     $cnt = jrCore_db_query($req, 'COUNT', false, null, false);
     if (!$cnt || $cnt < 1) {
         return false;
     }
+
+    // Do we have a dedicated key index?
+    if (jrCore_db_key_has_index_table($module, $key)) {
+        $_in = array();
+        foreach ($id as $uid) {
+            $_in[] = "({$uid},'{$value}')";
+        }
+        $tbl = jrCore_db_get_index_table_name($module, $key);
+        $req = "INSERT INTO {$tbl} (`_item_id`,`value`) VALUES " . implode(',', $_in) . " ON DUPLICATE KEY UPDATE `value` = IF(`value` >= {$val},`value` - {$value}, `value`)";
+        jrCore_db_query($req, 'COUNT', false, null, false);
+    }
+
     return true;
 }
 
@@ -784,24 +962,30 @@ function _jrCore_db_decrement_key($module, $id, $key, $value, $min_value = null,
  * Return an array of _item_id's that do NOT have a specified key set
  * @param $module string Module DataStore to search through
  * @param $key string Key Name that should not be set
+ * @param $limit int Limit number of results to $limit
  * @return array|bool
  */
-function jrCore_db_get_items_missing_key($module, $key)
+function jrCore_db_get_items_missing_key($module, $key, $limit = 0)
 {
     $func = jrCore_get_active_datastore_function($module, 'db_get_items_missing_key');
-    return $func($module, $key);
+    return $func($module, $key, $limit);
 }
 
 /**
  * Core DS Plugin
- * @param $module
- * @param $key
+ * @param $module string
+ * @param $key string
+ * @param $limit int
  * @return array|bool
  */
-function _jrCore_db_get_items_missing_key($module, $key)
+function _jrCore_db_get_items_missing_key($module, $key, $limit)
 {
     $tbl = jrCore_db_table_name($module, 'item_key');
-    $req = "SELECT `_item_id` FROM {$tbl} WHERE `_item_id` > 0 AND `_item_id` NOT IN(SELECT `_item_id` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "') GROUP BY `_item_id`";
+    $lim = '';
+    if ($limit > 0) {
+        $lim = " LIMIT {$limit}";
+    }
+    $req = "SELECT `_item_id` FROM {$tbl} WHERE `_item_id` > 0 AND `_item_id` NOT IN(SELECT `_item_id` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "') GROUP BY `_item_id`{$lim}";
     $_rt = jrCore_db_query($req, '_item_id');
     if ($_rt && is_array($_rt)) {
         return array_keys($_rt);
@@ -975,6 +1159,19 @@ function _jrCore_db_delete_multiple_item_keys($module, $id, $_keys, $core_check 
             $req = "DELETE FROM {$tbl} WHERE `_item_id` = {$uid} AND `key` IN('" . implode("','", $_keys) . "')";
             $cnt = jrCore_db_query($req, 'COUNT');
             if ($cnt && $cnt > 0) {
+
+                // Check for key indexes
+                $_rq = array();
+                foreach ($_keys as $key) {
+                    if (jrCore_db_key_has_index_table($module, $key)) {
+                        $tbl   = jrCore_db_get_index_table_name($module, $key);
+                        $_rq[] = "DELETE FROM {$tbl} WHERE `_item_id` = {$uid}";
+                    }
+                }
+                if (count($_rq) > 0) {
+                    jrCore_db_multi_select($_rq, false);
+                }
+
                 return true;
             }
         }
@@ -1047,21 +1244,28 @@ function jrCore_db_delete_key_from_multiple_items($module, $_ids, $key, $cache_r
  */
 function _jrCore_db_delete_key_from_multiple_items($module, $_ids, $key)
 {
-    $tbl = jrCore_db_table_name($module, 'item_key');
+    $_rq = array();
     if (is_array($key)) {
         $_ky = array();
         foreach ($key as $k) {
             $_ky[] = jrCore_db_escape($k);
+            if (jrCore_db_key_has_index_table($module, $k)) {
+                $tbl   = jrCore_db_get_index_table_name($module, $k);
+                $_rq[] = "DELETE FROM {$tbl} WHERE `_item_id` IN(" . implode(',', $_ids) . ")";
+            }
         }
-        $req = "DELETE FROM {$tbl} WHERE `key` IN('" . implode("','", $_ky) . "') AND `_item_id` IN(" . implode(',', $_ids) . ")";
+        $tbl   = jrCore_db_table_name($module, 'item_key');
+        $_rq[] = "DELETE FROM {$tbl} WHERE `key` IN('" . implode("','", $_ky) . "') AND `_item_id` IN(" . implode(',', $_ids) . ")";
     }
     else {
-        $req = "DELETE FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "' AND `_item_id` IN(" . implode(',', $_ids) . ")";
+        $tbl   = jrCore_db_table_name($module, 'item_key');
+        $_rq[] = "DELETE FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "' AND `_item_id` IN(" . implode(',', $_ids) . ")";
+        if (jrCore_db_key_has_index_table($module, $key)) {
+            $tbl   = jrCore_db_get_index_table_name($module, $key);
+            $_rq[] = "DELETE FROM {$tbl} WHERE `_item_id` IN(" . implode(',', $_ids) . ")";
+        }
     }
-    $cnt = jrCore_db_query($req, 'COUNT');
-    if ($cnt && $cnt > 0) {
-        return true;
-    }
+    jrCore_db_multi_select($_rq, false);
     return true;
 }
 
@@ -1087,7 +1291,20 @@ function _jrCore_db_delete_key_from_all_items($module, $key)
 {
     $tbl = jrCore_db_table_name($module, 'item_key');
     $req = "DELETE FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "'";
-    return jrCore_db_query($req, 'COUNT');
+    $cnt = jrCore_db_query($req, 'COUNT');
+    // If this key has a dedicated index table, truncate it
+    if (jrCore_db_key_has_index_table($module, $key)) {
+        $tbl = jrCore_db_get_index_table_name($module, $key);
+        $req = "TRUNCATE TABLE {$tbl}";
+        jrCore_db_query($req);
+    }
+    $_rp = array(
+        'delete_count' => $cnt,
+        'module'       => $module,
+        'key'          => $key
+    );
+    jrCore_trigger_event('jrCore', 'db_delete_key_from_all_items', $_rp);
+    return $cnt;
 }
 
 /**
@@ -1174,7 +1391,9 @@ function _jrCore_db_update_profile_item_count($module, $profile_id)
     $cnt = jrCore_db_query($req, 'COUNT');
     if (!$cnt || $cnt === 0) {
         // The first entry for a new module item
-        $req = "INSERT INTO {$ptb} (`_item_id`,`_profile_id`,`key`,`index`,`value`) VALUES ({$pid},{$pid},'profile_{$module}_item_count',0,(SELECT COUNT(`_item_id`) FROM {$tbl} WHERE `key` = '_profile_id' AND `value` = '{$pid}')) ON DUPLICATE KEY UPDATE `value` = (`value` + 1)";
+        $req = "INSERT INTO {$ptb} (`_item_id`,`_profile_id`,`key`,`index`,`value`)
+                VALUES ({$pid},{$pid},'profile_{$module}_item_count',0,(SELECT COUNT(`_item_id`) FROM {$tbl} WHERE `key` = '_profile_id' AND `value` = '{$pid}'))
+                ON DUPLICATE KEY UPDATE `value` = (`value` + 1)";
         jrCore_db_query($req, null, false, null, false);
     }
     return true;
@@ -1210,7 +1429,9 @@ function _jrCore_db_update_user_item_count($module, $profile_id, $user_id)
     $cnt = jrCore_db_query($req, 'COUNT');
     if (!$cnt || $cnt === 0) {
         // The first entry for a new user module item counter
-        $req = "INSERT INTO {$ptb} (`_item_id`,`_profile_id`,`key`,`index`,`value`) VALUES ('{$uid}',{$pid},'user_{$module}_item_count',0,(SELECT COUNT(`_item_id`) FROM {$tbl} WHERE `key` = '_user_id' AND `value` = '{$uid}')) ON DUPLICATE KEY UPDATE `value` = (`value` + 1)";
+        $req = "INSERT INTO {$ptb} (`_item_id`,`_profile_id`,`key`,`index`,`value`)
+                VALUES ('{$uid}',{$pid},'user_{$module}_item_count',0,(SELECT COUNT(`_item_id`) FROM {$tbl} WHERE `key` = '_user_id' AND `value` = '{$uid}'))
+                ON DUPLICATE KEY UPDATE `value` = (`value` + 1)";
         jrCore_db_query($req, null, false, null, false);
     }
     return true;
@@ -1230,9 +1451,17 @@ function jrCore_db_create_item($module, $_data, $_core = null, $profile_count = 
     global $_user;
 
     // See if we are limiting the number of items that can be created by a profile in this quota
-    if (isset($_user["quota_{$module}_max_items"]) && $_user["quota_{$module}_max_items"] > 0 && isset($_user["profile_{$module}_item_count"]) && $_user["profile_{$module}_item_count"] >= $_user["quota_{$module}_max_items"]) {
-        // We've hit the limit for this quota
-        return false;
+    if (!jrUser_is_admin()) {
+        if (isset($_user["quota_{$module}_max_items"]) && $_user["quota_{$module}_max_items"] > 0) {
+            if ($p_cnt = jrCore_db_get_item_key('jrProfile', $_user['user_active_profile_id'], "profile_{$module}_item_count")) {
+                if ($p_cnt >= $_user["quota_{$module}_max_items"]) {
+                    // We've hit the limit for this quota
+                    $_ln = jrUser_load_lang_strings();
+                    jrCore_set_flag("max_{$module}_items_reached", $_ln['jrCore'][70]);
+                    return false;
+                }
+            }
+        }
     }
 
     // Validate incoming data
@@ -1280,6 +1509,19 @@ function jrCore_db_create_item($module, $_data, $_core = null, $profile_count = 
         $_data["{$pfx}_display_order"] = 0;
     }
 
+    // Let listeners add/remove data or prevent item creation altogether
+    if (!$skip_trigger) {
+        $_args = array(
+            'module' => $module
+        );
+        $_data = jrCore_trigger_event('jrCore', 'db_create_item_data', $_data, $_args);
+        // Our listeners can tell us to NOT create the item
+        if (isset($_data['db_create_item']) && $_data['db_create_item'] == false) {
+            // We've been short circuited by a listener
+            return false;
+        }
+    }
+
     // Generate unique ID for this item
     $iid = jrCore_db_create_unique_item_id($module, 1);
     if (!$iid) {
@@ -1288,11 +1530,8 @@ function jrCore_db_create_item($module, $_data, $_core = null, $profile_count = 
 
     // Trigger create event
     if (!$skip_trigger) {
-        $_args = array(
-            '_item_id' => $iid,
-            'module'   => $module
-        );
-        $_data = jrCore_trigger_event('jrCore', 'db_create_item', $_data, $_args);
+        $_args['_item_id'] = $iid;
+        $_data             = jrCore_trigger_event('jrCore', 'db_create_item', $_data, $_args);
     }
 
     // Check for Pending Support for this module
@@ -1340,17 +1579,18 @@ function jrCore_db_create_item($module, $_data, $_core = null, $profile_count = 
 
         // Add pending entry to Pending table...
         if (isset($_data["{$pfx}_pending"]) && $_data["{$pfx}_pending"] == 1) {
-            $_pd = array(
+            $_pd                     = array(
                 'module' => $module,
                 'item'   => $_data,
                 'user'   => $_user
             );
             $_pd['item']['_created'] = time();
             $_pd['item']['_updated'] = time();
-            $dat = jrCore_db_escape(jrCore_strip_emoji(json_encode($_pd), false));
-            $pnd = jrCore_db_table_name('jrCore', 'pending');
-            $req = "INSERT INTO {$pnd} (pending_created,pending_module,pending_item_id,pending_linked_item_module,pending_linked_item_id,pending_data) VALUES (UNIX_TIMESTAMP(),'" . jrCore_db_escape($module) . "','{$iid}','{$lmd}','{$lid}','{$dat}')
-                    ON DUPLICATE KEY UPDATE pending_created = UNIX_TIMESTAMP(), pending_data = VALUES(pending_data)";
+            $dat                     = jrCore_db_escape(jrCore_strip_emoji(json_encode($_pd), false));
+            $pnd                     = jrCore_db_table_name('jrCore', 'pending');
+            $req                     = "INSERT INTO {$pnd} (pending_created,pending_module,pending_item_id,pending_linked_item_module,pending_linked_item_id,pending_data)
+                                        VALUES (UNIX_TIMESTAMP(),'" . jrCore_db_escape($module) . "','{$iid}','{$lmd}','{$lid}','{$dat}')
+                                        ON DUPLICATE KEY UPDATE pending_created = UNIX_TIMESTAMP(), pending_data = VALUES(pending_data)";
             jrCore_db_query($req);
             unset($_pd);
 
@@ -1423,7 +1663,7 @@ function _jrCore_db_create_item($module, $item_id, $_data, $_core = null, $profi
     $pid = (int) $_data['_profile_id'];
 
     // Check for item_order_support
-    if (isset($_data["{$pfx}_display_order"]) && $_data["{$pfx}_display_order"] == 0) {
+    if (isset($_data["{$pfx}_display_order"]) && $_data["{$pfx}_display_order"] === 0) {
 
         // Any other items of this type need to have their order incremented by ONE
         // NOTE: This is done in 2 queries since you cannot UPDATE a table that you SELECT FROM
@@ -1438,13 +1678,15 @@ function _jrCore_db_create_item($module, $item_id, $_data, $_core = null, $profi
 
     }
 
+    $_rq = array();
     $tbl = jrCore_db_table_name($module, 'item_key');
     $req = "INSERT INTO {$tbl} (`_item_id`,`_profile_id`,`key`,`index`,`value`) VALUES ";
-
     foreach ($_data as $k => $v) {
 
+        $val = false;
         if ($v === 'UNIX_TIMESTAMP()') {
             $req .= "({$iid},{$pid},'" . jrCore_db_escape($k) . "','0',UNIX_TIMESTAMP()),";
+            $val = 'UNIX_TIMESTAMP()';
         }
         else {
             // If our value is longer than 508 bytes we split it up
@@ -1463,18 +1705,30 @@ function _jrCore_db_create_item($module, $item_id, $_data, $_core = null, $profi
             }
             else {
                 if (is_numeric($v)) {
-                    $req .= "({$iid},{$pid},'" . jrCore_db_escape($k) . "','0','" . $v . "'),";
+                    $val = $v;
                 }
                 else {
-                    $req .= "({$iid},{$pid},'" . jrCore_db_escape($k) . "','0','" . jrCore_db_escape($v) . "'),";
+                    $val = jrCore_db_escape($v);
                 }
+                $req .= "({$iid},{$pid},'" . jrCore_db_escape($k) . "','0','" . $val . "'),";
             }
+        }
+
+        if ($val && jrCore_db_key_has_index_table($module, $k)) {
+            $tbi = jrCore_db_get_index_table_name($module, $k);
+            if ($val != 'UNIX_TIMESTAMP()') {
+                $val = "'{$val}'";
+            }
+            $_rq[] = "INSERT INTO {$tbi} (`_item_id`,`value`) VALUES ({$iid},{$val})";
         }
 
     }
     $req = substr($req, 0, strlen($req) - 1);
     $cnt = jrCore_db_query($req, 'COUNT', false, null, false);
     if ($cnt && $cnt > 0) {
+        if (count($_rq) > 0) {
+            jrCore_db_multi_select($_rq, false);
+        }
         return true;
     }
     return false;
@@ -1537,6 +1791,26 @@ function jrCore_db_create_multiple_items($module, $_data, $_core = null, $skip_t
         }
     }
 
+    // Let listeners add/remove data or prevent item creation altogether
+    if (!$skip_trigger) {
+        $_args = array(
+            'module' => $module
+        );
+        foreach ($_data as $k => $_dt) {
+            $_dt = jrCore_trigger_event('jrCore', 'db_create_item_data', $_dt, $_args);
+            // Our listeners can tell us to NOT create the item
+            if (isset($_dt['db_create_item']) && $_dt['db_create_item'] == false) {
+                // We've been short circuited by a listener
+                unset($_data[$k]);
+                continue;
+            }
+        }
+        if (count($_data) === 0) {
+            // Nothing to create
+            return false;
+        }
+    }
+
     // Generate unique ID for these items - note that we only get
     // the FIRST ID in the set - the rest are incremental from that
     $iid = jrCore_db_create_unique_item_id($module, count($_data));
@@ -1588,14 +1862,17 @@ function jrCore_db_create_multiple_items($module, $_data, $_core = null, $skip_t
  */
 function _jrCore_db_create_multiple_items($module, $iid, $_data, $_core = null, $skip_trigger = false)
 {
+    $_rq = array();
     $tbl = jrCore_db_table_name($module, 'item_key');
     $req = "INSERT INTO {$tbl} (`_item_id`,`_profile_id`,`key`,`index`,`value`) VALUES ";
     $uid = $iid;
     foreach ($_data as $dk => $_dt) {
         $pid = (int) $_dt['_profile_id'];
         foreach ($_dt as $k => $v) {
+            $val = false;
             if ($v === 'UNIX_TIMESTAMP()') {
                 $req .= "({$uid},{$pid},'" . jrCore_db_escape($k) . "','0',UNIX_TIMESTAMP()),";
+                $val = 'UNIX_TIMESTAMP()';
             }
             else {
                 // If our value is longer than 508 bytes we split it up
@@ -1614,20 +1891,30 @@ function _jrCore_db_create_multiple_items($module, $iid, $_data, $_core = null, 
                 }
                 else {
                     if (is_numeric($v)) {
-                        $req .= "({$uid},{$pid},'" . jrCore_db_escape($k) . "','0','" . $v . "'),";
+                        $val = $v;
                     }
                     else {
-                        $req .= "({$uid},{$pid},'" . jrCore_db_escape($k) . "','0','" . jrCore_db_escape($v) . "'),";
+                        $val = jrCore_db_escape($v);
                     }
+                    $req .= "({$uid},{$pid},'" . jrCore_db_escape($k) . "','0','" . jrCore_db_escape($v) . "'),";
                 }
             }
+            if ($val && jrCore_db_key_has_index_table($module, $k)) {
+                $tbi = jrCore_db_get_index_table_name($module, $k);
+                if ($val != 'UNIX_TIMESTAMP()') {
+                    $val = "'{$val}'";
+                }
+                $_rq[] = "INSERT INTO {$tbi} (`_item_id`,`value`) VALUES ({$iid},{$val})";
+            }
         }
-        $_lk[$uid] = $_dt;
         $uid++;
     }
     $req = substr($req, 0, strlen($req) - 1);
     $cnt = jrCore_db_query($req, 'COUNT', false, null, false);
     if ($cnt && $cnt > 0) {
+        if (count($_rq) > 0) {
+            jrCore_db_multi_select($_rq, false);
+        }
         return $cnt;
     }
     return false;
@@ -1639,12 +1926,13 @@ function _jrCore_db_create_multiple_items($module, $iid, $_data, $_core = null, 
  * @param string $key Key name to match
  * @param mixed $value Value to find in matched key (can be array of key => values)
  * @param bool $item_id_array if set to TRUE returns array of id's
+ * @param bool $skip_caching Set to true to force item reload (skip caching)
  * @return mixed array on success, bool false on failure
  */
-function jrCore_db_get_multiple_items_by_key($module, $key, $value, $item_id_array = false)
+function jrCore_db_get_multiple_items_by_key($module, $key, $value, $item_id_array = false, $skip_caching = false)
 {
     $func = jrCore_get_active_datastore_function($module, 'db_get_multiple_items_by_key');
-    return $func($module, $key, $value, $item_id_array);
+    return $func($module, $key, $value, $item_id_array, $skip_caching);
 }
 
 /**
@@ -1653,31 +1941,51 @@ function jrCore_db_get_multiple_items_by_key($module, $key, $value, $item_id_arr
  * @param $key string
  * @param $value mixed
  * @param bool|false $item_id_array
+ * @param bool $skip_caching Set to true to force item reload (skip caching)
  * @return array|bool|mixed
  */
-function _jrCore_db_get_multiple_items_by_key($module, $key, $value, $item_id_array = false)
+function _jrCore_db_get_multiple_items_by_key($module, $key, $value, $item_id_array = false, $skip_caching = false)
 {
-    $tbl = jrCore_db_table_name($module, 'item_key');
-    $key = jrCore_db_escape($key);
+    $idx = (jrCore_db_key_has_index_table($module, $key)) ? true : false;
     if (is_array($value)) {
+        $esc = jrCore_db_escape($key);
         $_rq = array();
         foreach ($value as $k => $v) {
-            if (is_numeric($k)) {
-                $_rq[] = "(`key` = '{$key}' AND `value` = '" . jrCore_db_escape($v) . "')";
+            if ($idx) {
+                $_rq[] = "(`value` = '" . jrCore_db_escape($v) . "')";
             }
             else {
-                $_rq[] = "(`key` = '" . jrCore_db_escape($k) . "' AND `value` = '" . jrCore_db_escape($v) . "')";
+                if (is_numeric($k)) {
+                    $_rq[] = "(`key` = '{$esc}' AND `value` = '" . jrCore_db_escape($v) . "')";
+                }
+                else {
+                    $_rq[] = "(`key` = '" . jrCore_db_escape($k) . "' AND `value` = '" . jrCore_db_escape($v) . "')";
+                }
             }
         }
         if (count($_rq) > 0) {
-            $req = "SELECT `_item_id` FROM {$tbl} WHERE " . implode(' OR ', $_rq);
+            if ($idx) {
+                $tbl = jrCore_db_get_index_table_name($module, $key);
+                $req = "SELECT `_item_id` FROM {$tbl} WHERE " . implode(' OR ', $_rq);
+            }
+            else {
+                $tbl = jrCore_db_table_name($module, 'item_key');
+                $req = "SELECT `_item_id` FROM {$tbl} WHERE " . implode(' OR ', $_rq);
+            }
         }
         else {
             return false;
         }
     }
     else {
-        $req = "SELECT `_item_id` FROM {$tbl} WHERE `key` = '{$key}' AND `value` = '" . jrCore_db_escape($value) . "'";
+        if ($idx) {
+            $tbl = jrCore_db_get_index_table_name($module, $key);
+            $req = "SELECT `_item_id` FROM {$tbl} WHERE `value` = '" . jrCore_db_escape($value) . "'";
+        }
+        else {
+            $tbl = jrCore_db_table_name($module, 'item_key');
+            $req = "SELECT `_item_id` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "' AND `value` = '" . jrCore_db_escape($value) . "'";
+        }
     }
     $_rt = jrCore_db_query($req, '_item_id');
     if (!$_rt || !is_array($_rt)) {
@@ -1686,7 +1994,7 @@ function _jrCore_db_get_multiple_items_by_key($module, $key, $value, $item_id_ar
     if ($item_id_array) {
         return array_keys($_rt);
     }
-    return jrCore_db_get_multiple_items($module, array_keys($_rt));
+    return jrCore_db_get_multiple_items($module, array_keys($_rt), null, $skip_caching);
 }
 
 /**
@@ -1716,8 +2024,14 @@ function jrCore_db_get_item_by_key($module, $key, $value, $skip_trigger = false,
 function _jrCore_db_get_item_by_key($module, $key, $value, $skip_trigger = false, $skip_caching = false)
 {
     if (!$_rt = jrCore_get_flag("jrCore_db_get_item_by_key_{$key}_{$value}")) {
-        $tbl = jrCore_db_table_name($module, 'item_key');
-        $req = "SELECT `_item_id` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "' AND `value` = '" . jrCore_db_escape($value) . "' LIMIT 1";
+        if (jrCore_db_key_has_index_table($module, $key)) {
+            $tbl = jrCore_db_get_index_table_name($module, $key);
+            $req = "SELECT `_item_id` FROM {$tbl} WHERE `value` = '" . jrCore_db_escape($value) . "'";
+        }
+        else {
+            $tbl = jrCore_db_table_name($module, 'item_key');
+            $req = "SELECT `_item_id` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($key) . "' AND `value` = '" . jrCore_db_escape($value) . "' LIMIT 1";
+        }
         $_rt = jrCore_db_query($req, 'SINGLE');
         jrCore_set_flag("jrCore_db_get_item_by_key_{$key}_{$value}", $_rt);
     }
@@ -1745,8 +2059,10 @@ function jrCore_db_get_item($module, $id, $skip_trigger = false, $skip_caching =
     // since it will be the same for any viewing user
     $key = ($skip_trigger) ? 1 : 0;
     $key = "{$module}-{$id}-{$key}";
-    if (!$skip_caching && $_rt = jrCore_is_cached($module, $key)) {
-        return $_rt;
+    if (!$skip_caching) {
+        if ($_rt = jrCore_is_cached($module, $key)) {
+            return $_rt;
+        }
     }
 
     $func = jrCore_get_active_datastore_function($module, 'db_get_item');
@@ -1864,7 +2180,7 @@ function _jrCore_db_get_item($module, $id, $skip_trigger = false, $skip_caching 
             // Add in Quota info to item
             if (isset($_ot['profile_quota_id']) && !$skip_trigger) {
                 $_tm = jrProfile_get_quota($_ot['profile_quota_id']);
-                if ($_tm) {
+                if ($_tm && is_array($_tm)) {
                     unset($_tm['_item_id']);
                     $_ot = $_ot + $_tm;
                 }
@@ -2065,9 +2381,12 @@ function _jrCore_db_get_item_key($module, $id, $key)
  * @param string $module Module the DataStore belongs to
  * @param array $_data Array of Key => Value pairs for insertion
  * @param array $_core Array of Key => Value pairs for insertion - skips jrCore_db_get_allowed_item_keys()
+ * @param bool $update set to FALSE to prevent _updated key from being set to UNIX_TIMESTAMP
+ * @param bool $cache_reset set to FALSE to prevent cache reset
+ * @param bool $exist_check set to prevent checking if item exists before updating
  * @return bool true on success, false on error
  */
-function jrCore_db_update_multiple_items($module, $_data = null, $_core = null)
+function jrCore_db_update_multiple_items($module, $_data = null, $_core = null, $update = true, $cache_reset = true, $exist_check = true)
 {
     global $_post, $_user;
     if (!$_data || is_null($_data) || !is_array($_data)) {
@@ -2076,18 +2395,23 @@ function jrCore_db_update_multiple_items($module, $_data = null, $_core = null)
 
     $pfx = jrCore_db_get_prefix($module);
     foreach ($_data as $id => $_up) {
+
+        // Must be valid ID
         if (!jrCore_checktype($id, 'number_nz')) {
             return false;
         }
-        // Validate incoming array
-        if (is_array($_up)) {
-            $_data[$id] = jrCore_db_get_allowed_item_keys($module, $_up);
-        }
-        else {
+        // Keys must come in as array
+        if (!is_array($_up)) {
             $_data[$id] = array();
         }
+        else {
+            $_data[$id] = jrCore_db_get_allowed_item_keys($module, $_up);
+        }
+
         // We're being updated
-        $_data[$id]['_updated'] = 'UNIX_TIMESTAMP()';
+        if ($update) {
+            $_data[$id]['_updated'] = 'UNIX_TIMESTAMP()';
+        }
 
         // Check for additional core fields being overridden
         if (!is_null($_core) && isset($_core[$id]) && is_array($_core[$id])) {
@@ -2140,7 +2464,7 @@ function jrCore_db_update_multiple_items($module, $_data = null, $_core = null)
     }
 
     $func = jrCore_get_active_datastore_function($module, 'db_update_multiple_items');
-    if ($func($module, $_data)) {
+    if ($func($module, $_data, $exist_check)) {
 
         // Check for pending
         $_rq = array();
@@ -2149,14 +2473,14 @@ function jrCore_db_update_multiple_items($module, $_data = null, $_core = null)
             if (!jrCore_get_flag("jrcore_created_pending_item_{$module}_{$id}")) {
                 if (isset($_vals["{$pfx}_pending"]) && $_vals["{$pfx}_pending"] == '1') {
                     // Add pending entry to Pending table...
-                    $_pd   = array(
+                    $_pd                     = array(
                         'module' => $module,
                         'item'   => $_vals,
                         'user'   => $_user
                     );
                     $_pd['item']['_updated'] = time();
-                    $dat   = jrCore_db_escape(jrCore_strip_emoji(json_encode($_pd), false));
-                    $_rq[] = "(UNIX_TIMESTAMP(),'" . jrCore_db_escape($module) . "','{$id}','{$_lm[$id]}','{$_li[$id]}','{$dat}')";
+                    $dat                     = jrCore_db_escape(jrCore_strip_emoji(json_encode($_pd), false));
+                    $_rq[]                   = "(UNIX_TIMESTAMP(),'" . jrCore_db_escape($module) . "','{$id}','{$_lm[$id]}','{$_li[$id]}','{$dat}')";
                     unset($_pd);
                 }
             }
@@ -2176,15 +2500,16 @@ function jrCore_db_update_multiple_items($module, $_data = null, $_core = null)
                 }
             }
         }
-
-        $_ch = array();
-        foreach ($_data as $id => $_vals) {
-            $_ch[] = array($module, "{$module}-{$id}-0", true);
-            $_ch[] = array($module, "{$module}-{$id}-1", true);
-            $_ch[] = array($module, "{$module}-{$id}-0", false);
-            $_ch[] = array($module, "{$module}-{$id}-1", false);
+        if ($cache_reset) {
+            $_ch = array();
+            foreach ($_data as $id => $_vals) {
+                $_ch[] = array($module, "{$module}-{$id}-0", true);
+                $_ch[] = array($module, "{$module}-{$id}-1", true);
+                $_ch[] = array($module, "{$module}-{$id}-0", false);
+                $_ch[] = array($module, "{$module}-{$id}-1", false);
+            }
+            jrCore_delete_multiple_cache_entries($_ch);
         }
-        jrCore_delete_multiple_cache_entries($_ch);
         return true;
     }
     return false;
@@ -2192,23 +2517,38 @@ function jrCore_db_update_multiple_items($module, $_data = null, $_core = null)
 
 /**
  * Core DS Plugin
- * @param $module string
- * @param null $_data array
+ * @param string $module
+ * @param array $_data
+ * @param bool $exist_check
  * @return bool
  */
-function _jrCore_db_update_multiple_items($module, $_data = null)
+function _jrCore_db_update_multiple_items($module, $_data = null, $exist_check = true)
 {
     // Get profile ids
-    $tbl = jrCore_db_table_name($module, 'item_key');
-    $req = "SELECT `_item_id` AS i,`value` AS v FROM {$tbl} WHERE `key` = '_profile_id' AND `_item_id` IN(" . implode(',', array_keys($_data)) . ')';
-    $_pi = jrCore_db_query($req, 'i', false, 'v');
-    if (!$_pi) {
-        $_pi = array();
+    $_pi = array();
+    if ($exist_check) {
+        if (jrCore_db_key_has_index_table($module, '_profile_id')) {
+            $tbl = jrCore_db_get_index_table_name($module, '_profile_id');
+            $req = "SELECT `_item_id` AS i, `value` AS v FROM {$tbl} WHERE `_item_id` IN(" . implode(',', array_keys($_data)) . ')';
+        }
+        else {
+            $tbl = jrCore_db_table_name($module, 'item_key');
+            $req = "SELECT `_item_id` AS i, `value` AS v FROM {$tbl} WHERE `key` = '_profile_id' AND `_item_id` IN(" . implode(',', array_keys($_data)) . ')';
+        }
+        $_pi = jrCore_db_query($req, 'i', false, 'v');
+        if (!$_pi) {
+            // items do not exist
+            return false;
+        }
     }
 
     // Are we updating _profile_id ?
     $_up = array();
     foreach ($_data as $id => $_vals) {
+        if ($exist_check && !isset($_pi[$id])) {
+            // This item does not exist - skip
+            unset($_data[$id]);
+        }
         if (isset($_vals['_profile_id'])) {
             // We are setting the _profile_id for this item - make sure ALL keys
             // for this item have been updated to the correct _profile_id
@@ -2216,8 +2556,13 @@ function _jrCore_db_update_multiple_items($module, $_data = null)
             $_up[$id] = (int) $_vals['_profile_id'];
         }
     }
+    if (count($_data) === 0) {
+        // nothing to update
+        return false;
+    }
 
     // Update
+    $_rq = array();
     $_mx = array();
     $_zo = array();
     $tbl = jrCore_db_table_name($module, 'item_key');
@@ -2227,14 +2572,17 @@ function _jrCore_db_update_multiple_items($module, $_data = null)
         $_zo[$id] = array();
         $pid      = (isset($_pi[$id])) ? intval($_pi[$id]) : 0;
         foreach ($_vals as $k => $v) {
-            // If our value is longer than 508 bytes we split it up
+
+            $val = false;
             if ($v === 'UNIX_TIMESTAMP()') {
-                $req .= "({$id},{$pid},'" . jrCore_db_escape($k) . "',0,UNIX_TIMESTAMP()),";
+                $req          .= "({$id},{$pid},'" . jrCore_db_escape($k) . "',0,UNIX_TIMESTAMP()),";
                 $_mx[$id][$k] = '0';
+                $val          = 'UNIX_TIMESTAMP()';
             }
             else {
                 $v   = jrCore_strip_emoji($v);
                 $len = strlen($v);
+                // If our value is longer than 508 bytes we split it up
                 if ($len > 508) {
                     $_tm = array();
                     while ($len) {
@@ -2253,35 +2601,52 @@ function _jrCore_db_update_multiple_items($module, $_data = null)
                 }
                 else {
                     if (is_numeric($v)) {
-                        $req .= "({$id},{$pid},'" . jrCore_db_escape($k) . "',0,'" . $v . "'),";
+                        $val = $v;
                     }
                     else {
-                        $req .= "({$id},{$pid},'" . jrCore_db_escape($k) . "',0,'" . jrCore_db_escape($v) . "'),";
+                        $val = jrCore_db_escape($v);
                     }
+                    $req          .= "({$id},{$pid},'" . jrCore_db_escape($k) . "',0,'" . $val . "'),";
                     $_mx[$id][$k] = '0';
                 }
+            }
+            if ($val && jrCore_db_key_has_index_table($module, $k)) {
+                $tbi = jrCore_db_get_index_table_name($module, $k);
+                if ($val != 'UNIX_TIMESTAMP()') {
+                    $val = "'{$val}'";
+                }
+                $_rq[] = "INSERT INTO {$tbi} (`_item_id`,`value`) VALUES ({$id},{$val}) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
             }
         }
     }
     $req = substr($req, 0, strlen($req) - 1) . " ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
     jrCore_db_query($req);
+    if (count($_rq) > 0) {
+        jrCore_db_multi_select($_rq, false);
+    }
 
     // Cleanup
     $_tm = array();
     foreach ($_mx as $id => $_vals) {
         foreach ($_vals as $fld => $max) {
-            $_tm[] = "(`_item_id` = {$id} AND `key` = '" . jrCore_db_escape($fld) . "' AND `index` > {$max})";
+            if (jrCore_is_ds_index_needed($fld)) {
+                $_tm[] = "(`_item_id` = {$id} AND `key` = '" . jrCore_db_escape($fld) . "' AND `index` > {$max})";
+            }
         }
     }
     if (count($_zo) > 0) {
         foreach ($_zo as $id => $_vals) {
             foreach ($_vals as $fld) {
-                $_tm[] = "(`_item_id` = {$id} AND `key` = '" . jrCore_db_escape($fld) . "' AND `index` = 0)";
+                if (jrCore_is_ds_index_needed($fld)) {
+                    $_tm[] = "(`_item_id` = {$id} AND `key` = '" . jrCore_db_escape($fld) . "' AND `index` = 0)";
+                }
             }
         }
     }
-    $req = "DELETE FROM {$tbl} WHERE (" . implode(' OR ', $_tm) . ')';
-    jrCore_db_query($req);
+    if (count($_tm) > 0) {
+        $req = "DELETE FROM {$tbl} WHERE " . implode(' OR ', $_tm);
+        jrCore_db_query($req);
+    }
 
     // Set _profile_id's for items that need changing
     if (count($_up) > 0) {
@@ -2300,23 +2665,29 @@ function _jrCore_db_update_multiple_items($module, $_data = null)
  * @param int $id Unique ID to update
  * @param array $_data Array of Key => Value pairs for insertion
  * @param array $_core Array of Key => Value pairs for insertion - skips jrCore_db_get_allowed_item_keys()
+ * @param bool $update set to FALSE to prevent _updated key from being set to UNIX_TIMESTAMP
+ * @param bool $cache_reset set to FALSE to prevent cache reset
+ * @param bool $exist_check set to prevent checking if item exists before updating
  * @return bool true on success, false on error
  */
-function jrCore_db_update_item($module, $id, $_data = null, $_core = null)
+function jrCore_db_update_item($module, $id, $_data = null, $_core = null, $update = true, $cache_reset = true, $exist_check = true)
 {
     $func = jrCore_get_active_datastore_function($module, 'db_update_item');
-    return $func($module, $id, $_data, $_core);
+    return $func($module, $id, $_data, $_core, $update, $cache_reset, $exist_check);
 }
 
 /**
  * Core DS plugin
- * @param $module
- * @param $id
+ * @param string $module
+ * @param int $id
  * @param null $_data
  * @param null $_core
+ * @param bool $update
+ * @param bool $cache_reset
+ * @param bool $exist_check
  * @return bool
  */
-function _jrCore_db_update_item($module, $id, $_data = null, $_core = null)
+function _jrCore_db_update_item($module, $id, $_data = null, $_core = null, $update = true, $cache_reset = true, $exist_check = true)
 {
     $_dt = array(
         $id => $_data
@@ -2327,7 +2698,7 @@ function _jrCore_db_update_item($module, $id, $_data = null, $_core = null)
             $id => $_core
         );
     }
-    return jrCore_db_update_multiple_items($module, $_dt, $_cr);
+    return jrCore_db_update_multiple_items($module, $_dt, $_cr, $update, $cache_reset, $exist_check);
 }
 
 /**
@@ -2335,11 +2706,14 @@ function _jrCore_db_update_item($module, $id, $_data = null, $_core = null)
  * @param $module string Module DataStore belongs to
  * @param $_ids array Array of _item_id's to delete
  * @param bool $delete_media Set to false to NOT delete associated media files
- * @param mixed $profile_count If set to true, profile_count will be decremented by 1 for given _profile_id.  If set to an integer, it will be used as the profile_id for the counts
+ * @param mixed $profile_count If set to true, profile counts for the deleted items will be decremented
+ * @param bool $cache_reset set to FALSE to prevent cache reset after deletion
+ * @param bool $recycle_bin set to FALSE to prevent items being added to recycle bin
  * @return bool
  */
-function jrCore_db_delete_multiple_items($module, $_ids, $delete_media = true, $profile_count = true)
+function jrCore_db_delete_multiple_items($module, $_ids, $delete_media = true, $profile_count = true, $cache_reset = true, $recycle_bin = true)
 {
+    global $_conf;
     if (!is_array($_ids) || count($_ids) === 0) {
         return false;
     }
@@ -2359,9 +2733,45 @@ function jrCore_db_delete_multiple_items($module, $_ids, $delete_media = true, $
     $func = jrCore_get_active_datastore_function($module, 'db_delete_multiple_items');
     if ($func($module, $_ids, $delete_media, $profile_count)) {
 
-        // Is the Recycle Bin turned on?
+        // Update display_order keys for any remaining items in this DS
         $pfx = jrCore_db_get_prefix($module);
-        if (!isset($_conf['jrCore_recycle_bin']) || $_conf['jrCore_recycle_bin'] != 'off') {
+        $_pn = jrCore_get_registered_module_features('jrCore', 'item_order_support');
+        if ($_pn && isset($_pn[$module]) && isset($_it[0]) && is_array($_it[0]) && isset($_it[0]['_profile_id']) && $_it[0]['_profile_id'] > 0) {
+            $pid = (int) $_it[0]['_profile_id'];
+            $_ex = array(
+                'search'              => array(
+                    "_profile_id = {$pid}"
+                ),
+                'order_by'            => array(
+                    "{$pfx}_display_order" => 'numerical_asc'
+                ),
+                'return_keys'         => array('_item_id'),
+                'return_item_id_only' => true,
+                'ignore_missing'      => true,
+                'skip_triggers'       => true,
+                'ignore_pending'      => true,
+                'privacy_check'       => false,
+                'quota_check'         => false,
+                'limit'               => 1000
+            );
+            $_ex = jrCore_db_search_items($module, $_ex);
+            if ($_ex && is_array($_ex)) {
+                // This profile has other items in this DS - we need to set display_order to new values
+                $_up = array();
+                $ord = 0;
+                foreach ($_ex as $i) {
+                    $_up[$i] = $ord++;
+                }
+                jrCore_db_set_display_order($module, $_up);
+                unset($_up);
+            }
+            unset($_ex);
+        }
+
+        // Is the Recycle Bin turned on?
+        $_uc = array();
+        $_pc = array();
+        if ($recycle_bin && (!isset($_conf['jrCore_recycle_bin']) || $_conf['jrCore_recycle_bin'] != 'off')) {
 
             $_rb = array();
             $mod = jrCore_db_escape($module);
@@ -2385,6 +2795,16 @@ function jrCore_db_delete_multiple_items($module, $_ids, $delete_media = true, $
                         elseif (isset($_item["{$pfx}_name"])) {
                             $ttl = $_item["{$pfx}_name"];
                         }
+                        $uid = (int) $_item['_user_id'];
+                        if (!isset($_uc[$uid])) {
+                            $_uc[$uid] = 0;
+                        }
+                        $_uc[$uid]++;
+                        $pid = (int) $_item['_profile_id'];
+                        if (!isset($_pc[$pid])) {
+                            $_pc[$pid] = 0;
+                        }
+                        $_pc[$pid]++;
                         break;
                 }
 
@@ -2401,20 +2821,29 @@ function jrCore_db_delete_multiple_items($module, $_ids, $delete_media = true, $
 
                 // Handle this item's media
                 if ($delete_media) {
-                    $_fl = jrCore_get_media_files($_item['_profile_id']);
+                    $flag_key = "jrcore_db_delete_multiple_items_file_list_{$_item['_profile_id']}";
+                    if (!$_fl = jrCore_get_flag($flag_key)) {
+                        $_fl = jrCore_get_media_files($_item['_profile_id'], "{$module}_*");
+                        if (!$_fl || !is_array($_fl)) {
+                            $_fl = 'no_files';
+                        }
+                        jrCore_set_flag($flag_key, $_fl);
+                    }
                     if ($_fl && is_array($_fl)) {
+                        $_item['_delete_files'] = array();
                         foreach ($_fl as $_file) {
                             $name = basename($_file['name']);
                             if (strpos($name, "{$module}_{$iid}_") === 0) {
-                                jrCore_rename_media_file($_item['_profile_id'], $_file['name'], "rb_{$name}");
-                                $_item['rb_item_media'] = 1;
+                                $_item['_delete_files'][] = $_file['name'];
+                                $_item['rb_item_media']   = 1;
                             }
                         }
+                        jrCore_queue_create('jrCore', 'db_delete_item_media', $_item);
                     }
                 }
 
                 // Store it's data in our recycle bin
-                $_rb[] = "('{$gid}',UNIX_TIMESTAMP(),'{$mod}','" . intval($_item['_profile_id']) . "','{$iid}','" . jrCore_db_escape($ttl) . "','" . jrCore_db_escape(json_encode($_item)) . "')";
+                $_rb[] = "('{$gid}',UNIX_TIMESTAMP(),'{$mod}','" . intval($_item['_profile_id']) . "','{$iid}','" . jrCore_db_escape(mb_substr($ttl, 0, 254)) . "','" . jrCore_db_escape(json_encode($_item)) . "')";
 
                 // Trigger event
                 $_args = array(
@@ -2441,18 +2870,32 @@ function jrCore_db_delete_multiple_items($module, $_ids, $delete_media = true, $
             // No Recycle Bin - take care of media
             if ($delete_media) {
                 foreach ($_it as $_item) {
+
+                    $_item['_delete_files'] = array();
                     foreach ($_item as $k => $v) {
                         if (strpos($k, '_extension')) {
-                            $field = str_replace('_extension', '', $k);
-                            jrCore_delete_item_media_file($module, $field, $_item['_profile_id'], $_item['_item_id'], false);
+                            $field                    = str_replace('_extension', '', $k);
+                            $_item['_delete_files'][] = array($module, $field);
                         }
                     }
+                    jrCore_queue_create('jrCore', 'db_delete_item_media', $_item);
                     // Trigger event
                     $_args = array(
                         '_item_id' => $_item['_item_id'],
                         'module'   => $module
                     );
                     jrCore_trigger_event('jrCore', 'db_delete_item', $_item, $_args);
+
+                    $uid = (int) $_item['_user_id'];
+                    if (!isset($_uc[$uid])) {
+                        $_uc[$uid] = 0;
+                    }
+                    $_uc[$uid]++;
+                    $pid = (int) $_item['_profile_id'];
+                    if (!isset($_pc[$pid])) {
+                        $_pc[$pid] = 0;
+                    }
+                    $_pc[$pid]++;
                 }
             }
         }
@@ -2461,32 +2904,23 @@ function jrCore_db_delete_multiple_items($module, $_ids, $delete_media = true, $
         if ($profile_count) {
             switch ($module) {
 
+                // We do not maintain counts for some modules
                 case 'jrProfile':
                 case 'jrUser':
                 case 'jrCore':
                     break;
 
                 default:
-
-                    // Update counts for profiles and users affected by the deletion of these items
-                    $_pi = array();
-                    $_ui = array();
-                    foreach ($_it as $_item) {
-                        if (isset($_item['_profile_id'])) {
-                            $_pi["{$_item['_profile_id']}"] = $_item['_profile_id'];
-                            if (isset($_item['_user_id'])) {
-                                $_ui["{$_item['_user_id']}"] = $_item['_profile_id'];
-                            }
+                    // Profile Counts
+                    if (count($_pc) > 0) {
+                        foreach ($_pc as $pid => $cnt) {
+                            jrCore_db_decrement_key('jrProfile', $pid, "profile_{$module}_item_count", $cnt, 0);
                         }
                     }
-                    if (count($_pi) > 0) {
-                        foreach ($_pi as $pid) {
-                            jrCore_db_decrement_key('jrProfile', $pid, "profile_{$module}_item_count", 1, 0);
-                        }
-                    }
-                    if (count($_ui) > 0) {
-                        foreach ($_ui as $uid => $pid) {
-                            jrCore_db_decrement_key('jrUser', $uid, "user_{$module}_item_count", 1, 0);
+                    // User Counts
+                    if (count($_uc) > 0) {
+                        foreach ($_uc as $uid => $cnt) {
+                            jrCore_db_decrement_key('jrUser', $uid, "user_{$module}_item_count", $cnt, 0);
                         }
                     }
                     break;
@@ -2509,14 +2943,16 @@ function jrCore_db_delete_multiple_items($module, $_ids, $delete_media = true, $
             }
 
             // reset caches
-            // module, key, (user logged in)
-            $_ch = array(
-                array($module, "{$module}-{$iid}-0", true),
-                array($module, "{$module}-{$iid}-1", true),
-                array($module, "{$module}-{$iid}-0", false),
-                array($module, "{$module}-{$iid}-1", false)
-            );
-            jrCore_delete_multiple_cache_entries($_ch);
+            if ($cache_reset) {
+                // module, key, (user logged in)
+                $_ch = array(
+                    array($module, "{$module}-{$iid}-0", true),
+                    array($module, "{$module}-{$iid}-1", true),
+                    array($module, "{$module}-{$iid}-0", false),
+                    array($module, "{$module}-{$iid}-1", false)
+                );
+                jrCore_delete_multiple_cache_entries($_ch);
+            }
 
             // Remove from Pending
             if (isset($_item["{$pfx}_pending"]) && $_item["{$pfx}_pending"] >= 1) {
@@ -2554,6 +2990,16 @@ function _jrCore_db_delete_multiple_items($module, $_ids, $delete_media = true, 
     $req = "DELETE FROM {$tbl} WHERE `_item_id` IN(" . implode(',', $_ids) . ")";
     jrCore_db_query($req);
 
+    if ($_tb = jrCore_db_get_all_index_tables_for_module($module)) {
+        $_rq = array();
+        foreach ($_tb as $key) {
+            $tbl   = jrCore_db_get_index_table_name($module, $key);
+            $_rq[] = "DELETE FROM {$tbl} WHERE `_item_id` IN(" . implode(',', $_ids) . ")";
+        }
+        if (count($_rq) > 0) {
+            jrCore_db_multi_select($_rq, false);
+        }
+    }
     return true;
 }
 
@@ -2640,16 +3086,19 @@ function _jrCore_db_delete_item($module, $id, $delete_media = true, $profile_cou
  *
  * Valid Search conditions are:
  * <code>
- *  =        - "equals"
- *  !=       - "not equals"
- *  >        - greater than
- *  >=       - greater than or equal to
- *  <        - less than
- *  <=       - less than or equal to
- *  like     - wildcard text search - i.e. "user_name like %ob%" would find "robert" and "bob". % is wildcard character.
- *  not_like - wildcard text negated search - same format as "like"
- *  in       - "in list" of values - i.e. "user_name in brian,douglas,paul,michael" would find all 4 matches
- *  not_in   - negated "in least" search - same format as "in"
+ *  =           - "equals"
+ *  !=          - "not equals"
+ *  >           - greater than
+ *  >=          - greater than or equal to
+ *  <           - less than
+ *  <=          - less than or equal to
+ *  between     - between and including a low,high value - i.e. "profile_latitude between 1.50,1.60
+ *  not_between - not between anf including low,high value - i.e. "profile_latitude not_between 1.50,1.60
+ *  like        - wildcard text search - i.e. "user_name like %ob%" would find "robert" and "bob". % is wildcard character.
+ *  not_like    - wildcard text negated search - same format as "like"
+ *  in          - "in list" of values - i.e. "user_name in brian,douglas,paul,michael" would find all 4 matches
+ *  not_in      - negated "in least" search - same format as "in"
+ *  regexp      - MySQL regular expression match
  * </code>
  * @param string $module Module the DataStore belongs to
  * @param array $_params Search Parameters
@@ -2680,7 +3129,14 @@ function _jrCore_db_search_items($module, $_params)
     // Other modules can provide supported parameters for searching - send
     // our trigger so those events can be added in.
     if (!isset($_params['skip_triggers']) || $_params['skip_triggers'] === false) {
+
         $_params = jrCore_trigger_event('jrCore', 'db_search_params', $_params, array('module' => $module));
+
+        // Did our listener return a full result set?
+        if (isset($_params['full_result_set'])) {
+            return $_params['full_result_set'];
+        }
+
         // See if a listener switched modules on us
         $_change = jrCore_get_flag('jrcore_active_trigger_args');
         if (isset($_change['module']) && $_change['module'] != $module) {
@@ -2688,6 +3144,7 @@ function _jrCore_db_search_items($module, $_params)
             $_params['module'] = $module;
         }
         unset($_change);
+
     }
 
     // See if we are cached
@@ -2698,6 +3155,9 @@ function _jrCore_db_search_items($module, $_params)
 
     // Check for cache
     if ((!isset($_params['no_cache']) || $_params['no_cache'] === false) && $tmp = jrCore_is_cached($module, $cky)) {
+        if (!isset($_params['skip_triggers']) || $_params['skip_triggers'] === false) {
+            $tmp = jrCore_trigger_event('jrCore', 'db_search_results', $tmp, $_params);
+        }
         return $tmp;
     }
 
@@ -2736,6 +3196,12 @@ function _jrCore_db_search_items($module, $_params)
                                     if (strpos(' ' . $_sc[0], '%')) {
                                         $_c[] = "`key` LIKE '" . jrCore_db_escape($_sc[0]) . "' AND `value` {$_sc[1]} {$_sc[2]}";
                                     }
+                                    elseif ($_sc[1] == 'between') {
+                                        $_c[] = "`key` = '" . jrCore_db_escape($_sc[0]) . "' AND `value` BETWEEN {$_sc[2]} AND {$_sc[3]}";
+                                    }
+                                    elseif ($_sc[1] == 'not_between') {
+                                        $_c[] = "`key` = '" . jrCore_db_escape($_sc[0]) . "' AND `value` NOT BETWEEN {$_sc[2]} AND {$_sc[3]}";
+                                    }
                                     else {
                                         $_c[] = "`key` = '" . jrCore_db_escape($_sc[0]) . "' AND `value` {$_sc[1]} {$_sc[2]}";
                                     }
@@ -2751,6 +3217,7 @@ function _jrCore_db_search_items($module, $_params)
                             $_params['search'][] = "_{$pfx}_id IN (SELECT `_item_id` FROM {$tbl} WHERE (" . implode(' OR ', $_c) . '))';
                         }
                     }
+                    // Check for "user_" and "profile_" key searches which are allowed when searching any DS
                     elseif (strpos(trim($cond), "{$pfx}_") === 0) {
                         $tbl = jrCore_db_table_name($mod, 'item_key');
                         if ($_sc = jrCore_db_check_for_supported_operator($cond)) {
@@ -2767,11 +3234,16 @@ function _jrCore_db_search_items($module, $_params)
             }
         }
 
+        $uik = true;  // Use index key - we will set this FALSE for specific _profile_id queries
+        $prf = '';
         $dob = '_created';
         $_ob = array();
         $_sc = array();
         $_ky = array();
+        $_eq = array();
+        $_ne = array();
         $ino = false;
+        $sgb = false;
         $_so = false;
         if (isset($_params['search']) && count($_params['search']) > 0) {
 
@@ -2798,9 +3270,11 @@ function _jrCore_db_search_items($module, $_params)
                 }
             }
 
-            $_eq = array();
-            $_ne = array();
-            $_dc = array();
+            // We need to be sure that != and not_in search conditions come
+            // last in the search array, since if we have an = or in search
+            // we may be able to exclude the != or not_in search entirely
+            $_lk = array();
+            $_hk = array();
             foreach ($_params['search'] as $k => $v) {
                 $v = trim($v);
                 if (isset($_dc[$v])) {
@@ -2809,28 +3283,60 @@ function _jrCore_db_search_items($module, $_params)
                     continue;
                 }
                 $_dc[$v] = 1;
-                @list($key, $opt, $val) = explode(' ', $v, 3);
-                if (!isset($val) || strlen($val) === 0 || !isset($opt) || strlen($opt) === 0) {
+                @list($key, $opt,) = explode(' ', $v, 3);
+                if (!isset($opt) || strlen($opt) === 0) {
                     // Bad Search
                     jrCore_logger('MAJ', 'invalid search criteria in jrCore_db_search_items parameters', array($module, $_params));
                     return false;
                 }
+                switch (jrCore_str_to_lower($opt)) {
+                    case '!=':
+                    case 'not_in':
+                        if (trim($key) == '_profile_id') {
+                            $_hk[] = $v;
+                        }
+                        else {
+                            $_lk[] = $v;
+                        }
+                        break;
+                    default:
+                        $_lk[] = $v;
+                        break;
+                }
+            }
+            if (count($_hk) > 0) {
+                $_params['search'] = array_merge($_lk, $_hk);
+            }
+            unset($_lk, $_hk);
+
+            // Search prep
+            $_dc = array();
+            foreach ($_params['search'] as $k => $v) {
+                @list($key, $opt, $val) = explode(' ', $v, 3);
                 $key = jrCore_str_to_lower($key);
                 if (!strpos(' ' . $key, '%')) {
                     $_ky[$key] = 1;
                 }
                 if (strpos($val, '(SELECT ') === 0) {
                     // We have a sub query as our match condition
-                    switch ($opt) {
-                        case 'not_in':
-                            $_sc[] = array($key, 'NOT IN', $val, 'no_quotes');
-                            break;
-                        case 'not_like':
-                            $_sc[] = array($key, 'NOT LIKE', $val, 'no_quotes');
-                            break;
-                        default:
-                            $_sc[] = array($key, $opt, $val, 'no_quotes');
-                            break;
+                    // If this is a sub query for _profile_id we can skip a join
+                    if (strpos($v, '_profile_id ') === 0) {
+                        // We are looking for specific profile id's
+                        $prf .= ' AND a.`_profile_id` ' . substr($v, 12) . ' ';
+                        $uik = false;
+                    }
+                    else {
+                        switch (jrCore_str_to_lower($opt)) {
+                            case 'not_in':
+                                $_sc[] = array($key, 'NOT IN', $val, 'no_quotes');
+                                break;
+                            case 'not_like':
+                                $_sc[] = array($key, 'NOT LIKE', $val, 'no_quotes');
+                                break;
+                            default:
+                                $_sc[] = array($key, $opt, $val, 'no_quotes');
+                                break;
+                        }
                     }
                     continue;
                 }
@@ -2853,17 +3359,30 @@ function _jrCore_db_search_items($module, $_params)
                             $_sc[] = array($key, $opt, intval($val), 'no_quotes');
                         }
                         break;
+
+                    // Not Equal To
                     case '!=':
                         // With a NOT EQUAL operator on non _item_id, we also need to include items where the key may be MISSING or NULL
                         if ($key == '_item_id' || $key == '_profile_id' || $key == '_user_id') {
                             if ($key == '_profile_id') {
-                                $_ne[$key][] = (int) $val;
+                                $val = (int) $val;
+                                // Did we already get an = search for a specific profile_id?  If so then
+                                // we can skip this != search condition
+                                if (isset($_eq[$key]) && isset($_eq[$key][$val])) {
+                                    // We have BOTH and equal AND a not equal - invalid condition
+                                    if (isset($_params['fdebug']) && $_params['fdebug'] == true) {
+                                        fdebug(array('jrCore_db_search_items error' => 'invalid search condition - _profile_id search values exclude each other', '_params' => $_params, '_backup' => $_backup)); // OK
+                                    }
+                                    return false;
+                                }
+                                // Note: we handle _profile_id searches separately
+                                $_ne[$key][$val] = $val;
                             }
                             else {
                                 $_sc[] = array($key, $opt, intval($val), 'no_quotes');
                             }
                         }
-                        elseif (isset($_params['ignore_missing']) && $_params['ignore_missing'] == true) {
+                        elseif (jrCore_db_key_found_on_all_items($key) || isset($_params['ignore_missing']) && $_params['ignore_missing'] == true) {
                             $_sc[] = array($key, $opt, $val);
                         }
                         else {
@@ -2873,18 +3392,16 @@ function _jrCore_db_search_items($module, $_params)
                             unset($_ky[$key]);
                         }
                         break;
+
+                    // Equal To
                     case '=':
                         if (ctype_digit($val)) {
                             if ($key == '_profile_id') {
-                                $_eq[$key][] = (int) $val;
-                                // Have we already found a NOT_IN for _profile_id? If so we may be able to skip this condition
-                                if (isset($_ne['_profile_id']) && in_array($val, $_ne['_profile_id'])) {
-                                    // We have BOTH and equal AND a not equal - short circuit
-                                    return false;
-                                }
+                                // NOTE: we do not add _profile_id searches to our $_sc (search conditions) array since they are handled separately
+                                $val             = (int) $val;
+                                $_eq[$key][$val] = $val;
                             }
                             else {
-                                // NOTE: we do not add _profile_id contains to our $_sc (search conditions) array since they are handled separately
                                 $_sc[] = array($key, $opt, $val);
                             }
                         }
@@ -2892,6 +3409,43 @@ function _jrCore_db_search_items($module, $_params)
                             $_sc[] = array($key, $opt, jrCore_db_escape($val));
                         }
                         break;
+
+                    // Between | Not_Between
+                    case 'between':
+                    case 'not_between':
+                        if (strpos($val, ',')) {
+                            list($vl1, $vl2) = explode(',', $val);
+                            $vl1 = trim($vl1);
+                            $vl2 = trim($vl2);
+                            if (is_numeric($vl1) && is_numeric($vl2)) {
+                                if (strpos(' ' . $vl1, '.')) {
+                                    $vl1 = floatval($vl1);
+                                }
+                                else {
+                                    $vl1 = intval($vl1);
+                                }
+                                if (strpos(' ' . $vl2, '.')) {
+                                    $vl2 = floatval($vl2);
+                                }
+                                else {
+                                    $vl2 = intval($vl2);
+                                }
+                                if ($vl2 < $vl1) {
+                                    $val = "{$vl2},{$vl1}";
+                                }
+                                else {
+                                    $val = "{$vl1},{$vl2}";
+                                }
+                                $_sc[] = array($key, jrCore_str_to_lower($opt), $val);
+                            }
+                        }
+                        else {
+                            jrCore_logger('MAJ', "invalid {$opt} search condition in jrCore_db_search_items search: {$opt}", array($module, $_params));
+                            return false;
+                        }
+                        break;
+
+                    // Like
                     case 'like':
                         if (strpos($val, '\%')) {
                             // We are looking explicitly for a percent sign
@@ -2912,10 +3466,14 @@ function _jrCore_db_search_items($module, $_params)
                         else {
                             $_sc[] = array($key, strtoupper($opt), jrCore_db_escape($val));
                         }
+                        // If we do NOT get a group_by parameter, and we are doing a
+                        // wildcard search on the KEY, we have to group by _item_id
+                        if (!isset($_params['group_by']) && strpos(' ' . $key, '%')) {
+                            $ino = '_item_id';
+                        }
                         break;
-                    case 'regexp':
-                        $_sc[] = array($key, strtoupper($opt), jrCore_db_escape($val));
-                        break;
+
+                    // Not_Like
                     case 'not_like':
                         if (strpos($val, '\%')) {
                             // We are looking explicitly for a percent sign
@@ -2931,15 +3489,24 @@ function _jrCore_db_search_items($module, $_params)
                         }
                         $tbl = jrCore_db_table_name($module, 'item_key');
                         if (isset($_params['ignore_missing']) && $_params['ignore_missing'] == true) {
-                            $vrq   = "(SELECT yy.`_item_id` FROM {$tbl} yy WHERE yy.`value` NOT LIKE '" . jrCore_db_escape($val) . "')";
-                            $_sc[] = array('_item_id', 'IN', $vrq, 'no_quotes', $key);
+                            if (jrCore_db_key_has_index_table($module, $key)) {
+                                $vrq = "(SELECT yy.`_item_id` FROM " . jrCore_db_get_index_table_name($module, $key) . " yy WHERE yy.`value` NOT LIKE '" . jrCore_db_escape($val) . "')";
+                            }
+                            else {
+                                $vrq = "(SELECT yy.`_item_id` FROM {$tbl} yy WHERE yy.key = '" . jrCore_db_escape($key) . "' AND yy.`value` NOT LIKE '" . jrCore_db_escape($val) . "')";
+                            }
                         }
                         else {
-                            $vrq   = "(SELECT yy.`_item_id` FROM {$tbl} yy LEFT JOIN {$tbl} zz ON (zz.`_item_id` = yy.`_item_id` AND zz.`key` = '" . jrCore_db_escape($key) . "') WHERE yy.`key` = '_created' AND (zz.`value` NOT LIKE '" . jrCore_db_escape($val) . "' OR zz.`value` IS NULL))";
-                            $_sc[] = array('_item_id', 'IN', $vrq, 'no_quotes', $key);
+                            $vrq = "(SELECT yy.`_item_id` FROM {$tbl} yy LEFT JOIN {$tbl} zz ON (zz.`_item_id` = yy.`_item_id` AND zz.`key` = '" . jrCore_db_escape($key) . "') WHERE yy.`key` = '_created' AND (zz.`value` NOT LIKE '" . jrCore_db_escape($val) . "' OR zz.`value` IS NULL))";
                         }
+                        $_sc[] = array('_item_id', 'IN', $vrq, 'no_quotes', $key);
                         unset($_ky[$key]);
                         break;
+
+                    case 'regexp':
+                        $_sc[] = array($key, strtoupper($opt), jrCore_db_escape($val));
+                        break;
+
                     case 'in':
                         $_vl = array();
                         foreach (explode(',', $val) as $iv) {
@@ -2948,7 +3515,7 @@ function _jrCore_db_search_items($module, $_params)
                                     $_vl[] = intval($iv);
                                 }
                                 else {
-                                    // Don't int here - strips leading zeros
+                                    // Don't (int) here - strips leading zeros
                                     $_vl[] = "'{$iv}'";
                                 }
                             }
@@ -2958,11 +3525,11 @@ function _jrCore_db_search_items($module, $_params)
                         }
                         if ($key == '_item_id' || $key == '_profile_id' || $key == '_user_id') {
                             if ($key == '_profile_id') {
-                                if (isset($_eq[$key])) {
-                                    $_eq[$key] = array_merge($_vl, $_eq[$key]);
+                                if (!isset($_eq[$key])) {
+                                    $_eq[$key] = array();
                                 }
-                                else {
-                                    $_eq[$key] = $_vl;
+                                foreach ($_vl as $vpid) {
+                                    $_eq[$key][$vpid] = $vpid;
                                 }
                             }
                             else {
@@ -2979,50 +3546,98 @@ function _jrCore_db_search_items($module, $_params)
                             $val   = "(" . implode(',', $_vl) . ')';
                             $_sc[] = array($key, 'IN', $val, 'no_quotes');
                         }
+
                         // By default if we do NOT get an ORDER BY clause on an IN, order by FIELD unless specifically set NOT to
                         if (!isset($_params['order_by']) && !isset($_params['return_item_id_only'])) {
+                            // If our key is _item_id, we can skip the GROUP BY
+                            if ($key == '_item_id') {
+                                $sgb = true;
+                            }
                             $ino = $key;
-                            $_do = $_vl;
-                        }
-                        unset($_vl);
-                        break;
-                    case 'not_in':
-                        $_vl = array();
-                        foreach (explode(',', $val) as $iv) {
-                            if (ctype_digit($iv)) {
-                                if ($key == '_profile_id') {
-                                    // Have we already seen an EQUALS or IN for _profile_id? If so, we might be able to exclude this search condition
-                                    if (isset($_eq['_profile_id'])) {
-                                        // We already have an EQUALS - see if we are also in the NOT list
-                                        if (!strpos(' ,' . trim(trim($val), ',') . ',', ',' . implode(',', $_eq['_profile_id']) . ',')) {
-                                            // our EQUAL _profile_id is NOT in our not_in list - we can skip this
-                                            continue 2;
-                                        }
-                                        else {
-                                            // This is a condition where we have specified BOTH equal AND not_equal - short circuit
-                                            return false;
-                                        }
-                                    }
-                                    $_vl[] = intval($iv);
-                                }
-                                else {
-                                    // Don't int here - strips leading zeros
-                                    $_vl[] = "'{$iv}'";
-                                }
+                            if (isset($_do)) {
+                                $_do = array_merge($_do, $_vl);
                             }
                             else {
-                                $_vl[] = "'" . jrCore_db_escape($iv) . "'";
+                                $_do = $_vl;
                             }
                         }
-                        $val = "(" . implode(',', $_vl) . ')';
+                        unset($_vl);
+
+                        break;
+
+                    case 'not_in':
+                        // If we are excluding specific _profile_id's then we can see if we have already included them
+                        if ($key == '_profile_id' && isset($_eq[$key])) {
+                            $_pval = explode(',', $val);
+                            foreach ($_pval as $ik => $iv) {
+                                $iv = intval($iv);
+                                if (isset($_eq['_profile_id'][$iv])) {
+                                    // We have both an EQUAL and a NOT EQUAL for this profile_id - exclude
+                                    unset($_eq['_profile_id'][$iv]);
+                                    unset($_pval[$ik]);
+                                }
+                            }
+                            // If we come out with equals left, we can exclude all the not_in's left since we would never match them
+                            if (count($_eq['_profile_id']) > 0) {
+                                if (isset($_params['fdebug']) && $_params['fdebug'] == true) {
+                                    fdebug(array('jrCore_db_search_items error' => "removing search condition {$k} due to equals exclusion", '_params' => $_params, '_backup' => $_backup)); // OK
+                                }
+                                unset($_params['search'][$k]);
+                                unset($_pval);
+                                continue 2;
+                            }
+                            if (isset($_do)) {
+                                $_do = $_eq['_profile_id'];
+                            }
+                            // We have some not_in profile_id's left - restore $val
+                            if (count($_pval) > 0) {
+                                $val = implode(',', $_pval);
+                                unset($_pval);
+                            }
+                            else {
+                                // We have no not-in conditions left - unset and continue
+                                unset($_params['search'][$k]);
+                                unset($_pval);
+                                continue 2;
+                            }
+                        }
+
+                        $_vl = array();
+                        foreach (explode(',', $val) as $iv) {
+                            switch ($key) {
+                                case '_item_id':
+                                case '_user_id':
+                                case '_profile_id':
+                                case '_created':
+                                case '_updated':
+                                    $_vl[] = intval($iv);
+                                    break;
+                                default:
+                                    if (ctype_digit($iv)) {
+                                        // Don't int here - strips leading zeros
+                                        $_vl[] = "'{$iv}'";
+                                    }
+                                    else {
+                                        $_vl[] = "'" . jrCore_db_escape($iv) . "'";
+                                    }
+                                    break;
+                            }
+                        }
+                        $val = '(' . implode(',', $_vl) . ')';
                         // ALL items have a _item_id/_profile_id/_user_id so no need to do the extra join here
-                        if ($key == '_item_id' || $key == '_profile_id' || $key == '_user_id' || (isset($_params['ignore_missing']) && $_params['ignore_missing'] == true)) {
+                        if (jrCore_db_key_found_on_all_items($key) || (isset($_params['ignore_missing']) && $_params['ignore_missing'] == true)) {
                             // If we have a _profile_id NOT IN, and we are running our privacy check down below,
                             // we can skip creating another JOIN condition and just add to the existing profile_id check
                             if ($key == '_profile_id') {
-                                $_ne[$key] = $_vl;
+                                if (!isset($_ne[$key])) {
+                                    $_ne[$key] = array();
+                                }
+                                foreach ($_vl as $vpid) {
+                                    $_ne[$key][$vpid] = $vpid;
+                                }
                             }
                             else {
+                                // NOTE: We use "no_quotes" here since the values in $_vl have been quoted as needed
                                 if (count($_vl) == 1) {
                                     $_sc[] = array($key, '!=', reset($_vl), 'no_quotes');
                                 }
@@ -3039,6 +3654,7 @@ function _jrCore_db_search_items($module, $_params)
                         }
                         unset($_vl);
                         break;
+
                     default:
                         jrCore_logger('MAJ', "invalid search operator in jrCore_db_search_items search: {$opt}", array($module, $_params));
                         return false;
@@ -3082,13 +3698,26 @@ function _jrCore_db_search_items($module, $_params)
         $custom_order_by = array();
         if (isset($_params['order_by']) && $_params['order_by'] !== false) {
             if (is_array($_params['order_by'])) {
-                // Check for special "display" order_by
-                if (isset($_params['order_by']["{$pfx}_display_order"]) && count($_params['order_by']) === 1) {
-                    // Sort by display order, _item_id desc default
-                    $_params['order_by']['_item_id'] = 'numerical_desc';
+
+                // Check for some special orders
+                if (count($_params['order_by']) === 1) {
+                    if (isset($_params['order_by']["{$pfx}_display_order"])) {
+                        // Sort by display order, _item_id desc default
+                        $_params['order_by']['_item_id'] = 'numerical_desc';
+                    }
+                    elseif ($module == 'jrProfile' && isset($_params['order_by']['_profile_id'])) {
+                        // Order by _item_id
+                        $_params['order_by'] = array('_item_id' => $_params['order_by']['_profile_id']);
+                    }
+                    elseif ($module == 'jrUser' && isset($_params['order_by']['_user_id'])) {
+                        // Order by _item_id
+                        $_params['order_by'] = array('_item_id' => $_params['order_by']['_user_id']);
+                    }
                 }
+
                 foreach ($_params['order_by'] as $k => $v) {
-                    if ($k == 0 && $k != '_item_id') {
+                    // if ($k == 0 && $k != '_item_id') {
+                    if ($k != '_item_id') {
                         $dob = $k;
                     }
                     // Check for random order - no need to join
@@ -3111,10 +3740,18 @@ function _jrCore_db_search_items($module, $_params)
 
                             // Any other key may NOT exist on all items
                             default:
-                                $tbl                 = jrCore_db_table_name($module, 'item_key');
-                                $vrq                 = "((a.`key` = '" . jrCore_db_escape($k) . "') OR (a.`key` = '_created' AND a.`_item_id` NOT IN(SELECT `_item_id` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($k) . "')))";
-                                $_sc[]               = array($k, 'CUSTOM', $vrq);
-                                $custom_order_by[$k] = 1;
+                                if (jrCore_db_key_found_on_all_items($k) || isset($_params['ignore_missing']) && $_params['ignore_missing'] == true) {
+                                    // This key is found on all items OR we've been specifically told to ignore any items that are missing this key
+                                    $vrq = "`key` = '" . jrCore_db_escape($k) . "'";
+                                }
+                                else {
+                                    // NOTE: Do not use an index table here since an index table
+                                    // only contains entries for items that HAVE the key
+                                    $tbl                 = jrCore_db_table_name($module, 'item_key');
+                                    $vrq                 = "((a.`key` = '" . jrCore_db_escape($k) . "') OR (a.`key` = '_created' AND a.`_item_id` NOT IN(SELECT `_item_id` FROM {$tbl} WHERE `key` = '" . jrCore_db_escape($k) . "')))";
+                                    $custom_order_by[$k] = 1;
+                                }
+                                $_sc[] = array($k, 'CUSTOM', $vrq);
                                 break;
                         }
                         $_ky[$k] = 1;
@@ -3186,7 +3823,6 @@ function _jrCore_db_search_items($module, $_params)
 
         // Build query and get data
         $idx = true;
-        $tba = jrCore_db_table_name($module, 'item_key');
         $_al = range('a', 'z');
 
         // Allow modules to tell us what key names do NOT need an "index check" - i.e.
@@ -3203,10 +3839,23 @@ function _jrCore_db_search_items($module, $_params)
 
         $req = '';       // Main data Query
         $_jc = array();  // saves key values we matched in our JOIN condition so we can skip them in the WHERE condition
+        $_di = array();
+
         foreach ($_sc as $k => $v) {
+
             // Save for our "order by" below - we must be searching on a column to order by it
             $als            = $_al[$k];
             $_ob["{$v[0]}"] = $als;
+
+            // Does this key have a dedicated index column?
+            $kdx = false;
+            $tba = jrCore_db_table_name($module, 'item_key');
+            if ($uik && jrCore_db_key_has_index_table($module, $v[0])) {
+                $kdx     = true;
+                $tba     = jrCore_db_get_index_table_name($module, $v[0]);
+                $_di[$k] = $v[0];
+            }
+
             if ($k == 0) {
                 if (is_array($_so)) {
                     // With an OR condition we have to group on the item_id or we can
@@ -3229,7 +3878,12 @@ function _jrCore_db_search_items($module, $_params)
                         $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id`)\n";
                     }
                     else {
-                        $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`index` < 2)\n";
+                        if ($kdx) {
+                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id`)\n";
+                        }
+                        else {
+                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`index` < 2)\n";
+                        }
                     }
                 }
             }
@@ -3237,14 +3891,47 @@ function _jrCore_db_search_items($module, $_params)
                 if (!$idx) {
                     // We're already doing a DISTINCT so no need for index requirement
                     if (isset($custom_order_by["{$v[0]}"])) {
-                        $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}')\n";
+                        if ($kdx) {
+                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id`)\n";
+                        }
+                        else {
+                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}')\n";
+                        }
                     }
                     else {
                         if (isset($v[3]) && $v[3] == 'no_quotes' || $v[2] == 'NULL') {
-                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}' AND {$als}.`value` {$v[1]} {$v[2]})\n";
+                            if ($kdx) {
+                                $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`value` {$v[1]} {$v[2]})\n";
+                            }
+                            else {
+                                $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}' AND {$als}.`value` {$v[1]} {$v[2]})\n";
+                            }
+                        }
+                        elseif ($v[1] == 'between') {
+                            list($v1, $v2) = explode(',', $v[2]);
+                            if ($kdx) {
+                                $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`value` BETWEEN {$v1} AND {$v2})\n";
+                            }
+                            else {
+                                $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}' AND {$als}.`value` BETWEEN {$v1} AND {$v2})\n";
+                            }
+                        }
+                        elseif ($v[1] == 'not_between') {
+                            list($v1, $v2) = explode(',', $v[2]);
+                            if ($kdx) {
+                                $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`value` NOT BETWEEN {$v1} AND {$v2})\n";
+                            }
+                            else {
+                                $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}' AND {$als}.`value` NOT BETWEEN {$v1} AND {$v2})\n";
+                            }
                         }
                         else {
-                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}' AND {$als}.`value` {$v[1]} '{$v[2]}')\n";
+                            if ($kdx) {
+                                $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`value` {$v[1]} '{$v[2]}')\n";
+                            }
+                            else {
+                                $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}' AND {$als}.`value` {$v[1]} '{$v[2]}')\n";
+                            }
                         }
                     }
                 }
@@ -3255,25 +3942,79 @@ function _jrCore_db_search_items($module, $_params)
                         case '_created':
                         case '_updated':
                             // No index needed on keys we know cannot be longer than 512
-                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}')\n";
+                            if ($kdx) {
+                                $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id`)\n";
+                            }
+                            else {
+                                $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}')\n";
+                            }
                             break;
                         default:
                             if (is_array($_ii) && isset($_ii["{$v[0]}"]) || !jrCore_is_ds_index_needed($v[0])) {
                                 if (isset($custom_order_by["{$v[0]}"])) {
-                                    $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}')\n";
+                                    if ($kdx) {
+                                        $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id`)\n";
+                                    }
+                                    else {
+                                        $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}')\n";
+                                    }
                                 }
                                 else {
                                     if (isset($v[3]) && $v[3] == 'no_quotes' || $v[2] == 'NULL') {
-                                        $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}' AND {$als}.`value` {$v[1]} {$v[2]})\n";
+                                        if ($kdx) {
+                                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`value` {$v[1]} {$v[2]})\n";
+                                        }
+                                        else {
+                                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}' AND {$als}.`value` {$v[1]} {$v[2]})\n";
+                                        }
+                                    }
+                                    elseif ($v[1] == 'between') {
+                                        list($v1, $v2) = explode(',', $v[2]);
+                                        if ($kdx) {
+                                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`value` BETWEEN {$v1} AND {$v2})\n";
+                                        }
+                                        else {
+                                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}' AND {$als}.`value` BETWEEN {$v1} AND {$v2})\n";
+                                        }
+                                    }
+                                    elseif ($v[1] == 'not_between') {
+                                        list($v1, $v2) = explode(',', $v[2]);
+                                        if ($kdx) {
+                                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`value` NOT BETWEEN {$v1} AND {$v2})\n";
+                                        }
+                                        else {
+                                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}' AND {$als}.`value` NOT BETWEEN {$v1} AND {$v2})\n";
+                                        }
+                                    }
+                                    elseif ($v[1] == 'CUSTOM') {
+                                        // [0] => forum_updated
+                                        // [1] => CUSTOM
+                                        // [2] => a.`key` = 'forum_updated'
+                                        if ($kdx) {
+                                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id`)\n";
+                                        }
+                                        else {
+                                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.{$v[2]})\n";
+                                        }
                                     }
                                     else {
-                                        $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}' AND {$als}.`value` {$v[1]} '{$v[2]}')\n";
+                                        if ($kdx) {
+                                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`value` {$v[1]} '{$v[2]}')\n";
+                                        }
+                                        else {
+                                            $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}' AND {$als}.`value` {$v[1]} '{$v[2]}')\n";
+                                        }
                                     }
                                     $_jc["{$v[0]}"] = $v;
                                 }
                             }
                             else {
-                                $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}' AND {$als}.`index` < 2)\n";
+                                if ($kdx) {
+                                    $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id`)\n";
+                                }
+                                else {
+                                    $req .= "JOIN {$tba} {$als} ON ({$als}.`_item_id` = a.`_item_id` AND {$als}.`key` = '{$v[0]}' AND {$als}.`index` < 2)\n";
+                                }
                             }
                             break;
                     }
@@ -3296,13 +4037,7 @@ function _jrCore_db_search_items($module, $_params)
         // 2 = Shared
         // 3 = Shared but Visible in Search
         $add = '';
-        if (isset($_eq['_profile_id']) && count($_eq['_profile_id']) > 0) {
-            $add = "AND a.`_profile_id` IN(" . implode(',', $_eq['_profile_id']) . ")\n";
-        }
-        if (isset($_ne['_profile_id']) && count($_ne['_profile_id']) > 0) {
-            $add = "AND a.`_profile_id` NOT IN(" . implode(',', $_ne['_profile_id']) . ")\n";
-        }
-
+        $aeq = false; // if $aeq is TRUE, we "add our equals" SQL to the query
         if (!jrUser_is_admin() && (!isset($_params['privacy_check']) || $_params['privacy_check'] !== false)) {
 
             // Get profiles that are NOT public and are allowed to change their profile privacy
@@ -3316,16 +4051,25 @@ function _jrCore_db_search_items($module, $_params)
                 $npp = count($_pp);
                 if ($npp > 0) {
 
-                    if (isset($_ne['_profile_id']) && count($_ne['_profile_id']) > 0) {
-                        // We have additional profile_id's we need to exclude - add them in here
-                        $_pp = $_pp + array_flip($_ne['_profile_id']);
-                    }
-
                     if (!jrUser_is_logged_in()) {
 
                         // If we are searching for a specific _profile_id we can check those here
                         // and see if any of them are PRIVATE profiles - if so we exclude those
                         if (isset($_eq['_profile_id']) && is_array($_eq['_profile_id']) && count($_eq['_profile_id']) > 0) {
+
+                            // If we received a NOT EQUALS _profile_id, remove those here
+                            if (isset($_ne['_profile_id']) && is_array($_ne['_profile_id'])) {
+                                $_eq['_profile_id'] = jrCore_create_combined_equal_array($_eq['_profile_id'], $_ne['_profile_id']);
+                                unset($_ne['_profile_id']);
+                            }
+                            if (count($_eq['_profile_id']) === 0) {
+                                // We have no _profile_id's left over that this user can view - exit
+                                if (isset($_params['fdebug']) && $_params['fdebug'] == true) {
+                                    fdebug(array('jrCore_db_search_items error' => "privacy check excluded _profile_ids resulted in no profile_ids left in _eq", '_params' => $_params, '_backup' => $_backup)); // OK
+                                }
+                                return false;
+                            }
+
                             foreach ($_eq['_profile_id'] as $k => $epid) {
                                 if (isset($_pp[$epid])) {
                                     // This profile is a PRIVATE profile - exclude
@@ -3334,17 +4078,52 @@ function _jrCore_db_search_items($module, $_params)
                             }
                             if (count($_eq['_profile_id']) === 0) {
                                 // We have no _profile_id's left over that this user can view - exit
-                                // Check for fdebug logging
                                 if (isset($_params['fdebug']) && $_params['fdebug'] == true) {
-                                    fdebug('Privacy Check excluded all _profile_id matches', $_backup, $_params, $_pp); // OK
+                                    fdebug(array('jrCore_db_search_items error' => "privacy check excluded all _profile_id matches", '_params' => $_params, '_backup' => $_backup)); // OK
                                 }
                                 return false;
                             }
-                            $add = "AND a.`_profile_id` IN(" . implode(',', $_eq['_profile_id']) . ")\n";
+
+                            if (isset($_di[0])) {
+                                if (jrCore_db_key_has_index_table($module, '_profile_id')) {
+                                    $tbl = jrCore_db_get_index_table_name($module, '_profile_id');
+                                    $add = "AND a.`_item_id` IN(SELECT `_item_id` FROM {$tbl} WHERE `value` IN(" . implode(',', $_eq['_profile_id']) . "))\n";
+                                }
+                                else {
+                                    $tbl = jrCore_db_table_name($module, 'item_key');
+                                    $add = "AND a.`_item_id` IN(SELECT `_item_id` FROM {$tbl} WHERE `key` = '_created' AND `_profile_id` IN(" . implode(',', $_eq['_profile_id']) . "))\n";
+                                }
+                            }
+                            else {
+                                $add = "AND a.`_profile_id` IN(" . implode(',', $_eq['_profile_id']) . ")\n";
+                            }
+                            unset($_eq['_profile_id']);
                         }
                         else {
+
+                            // We did not get a profile_id EQUALS - if we got a NOT EQUALS
+                            // let's add those into $_pp so we can exclude the extra query
+                            if (isset($_ne['_profile_id']) && is_array($_ne['_profile_id'])) {
+                                foreach ($_ne['_profile_id'] as $npid) {
+                                    $_pp[$npid] = $npid;
+                                }
+                                unset($_ne['_profile_id']);
+                            }
+
                             // Users that are not logged in only see global profiles
-                            $add .= " AND a.`_profile_id` NOT IN(" . implode(',', array_keys($_pp)) . ")\n";
+                            if (isset($_di[0])) {
+                                if (jrCore_db_key_has_index_table($module, '_profile_id')) {
+                                    $tbl = jrCore_db_get_index_table_name($module, '_profile_id');
+                                    $add = "AND a.`_item_id` NOT IN(SELECT `_item_id` FROM {$tbl} WHERE `value` IN(" . implode(',', array_keys($_pp)) . "))\n";
+                                }
+                                else {
+                                    $tbl = jrCore_db_table_name($module, 'item_key');
+                                    $add = "AND a.`_item_id` NOT IN(SELECT `_item_id` FROM {$tbl} WHERE `key` = '_created' AND `_profile_id` IN(" . implode(',', array_keys($_pp)) . "))\n";
+                                }
+                            }
+                            else {
+                                $add .= "AND a.`_profile_id` NOT IN(" . implode(',', array_keys($_pp)) . ")\n";
+                            }
                         }
 
                     }
@@ -3371,9 +4150,14 @@ function _jrCore_db_search_items($module, $_params)
                             }
                         }
                         // Power/Multi users can always see the profiles they manage
+                        // $_tm will be an array of profile_id => user_id entries
                         $_tm = jrProfile_get_user_linked_profiles($_user['_user_id']);
                         if ($_tm && is_array($_tm)) {
-                            $_pr = array_merge($_pr, array_keys($_tm));
+                            foreach ($_tm as $lpid => $luid) {
+                                if (!$_ne || !isset($_ne[$lpid])) {
+                                    $_pr[] = $lpid;
+                                }
+                            }
                             unset($_tm);
                         }
                         if (count($_pr) > 0) {
@@ -3404,24 +4188,129 @@ function _jrCore_db_search_items($module, $_params)
                                             unset($_eq['_profile_id'][$k]);
                                         }
                                     }
+                                    // If we received a NOT EQUALS _profile_id, remove those here
+                                    if (isset($_ne['_profile_id']) && is_array($_ne['_profile_id'])) {
+                                        $_eq['_profile_id'] = jrCore_create_combined_equal_array($_eq['_profile_id'], $_ne['_profile_id']);
+                                        unset($_ne['_profile_id']);
+                                    }
                                     if (count($_eq['_profile_id']) === 0) {
                                         // We have no _profile_id's left over that this user can view - exit
-                                        // Check for fdebug logging
                                         if (isset($_params['fdebug']) && $_params['fdebug'] == true) {
-                                            fdebug('Privacy Check excluded all _profile_id matches', $_backup, $_params, $_pp); // OK
+                                            fdebug(array('jrCore_db_search_items error' => "privacy check excluded all _profile_id matches (2)", '_params' => $_params, '_backup' => $_backup)); // OK
                                         }
                                         return false;
                                     }
-                                    $add = "AND a.`_profile_id` IN(" . implode(',', $_eq['_profile_id']) . ")\n";
+
+                                    if (isset($_di[0])) {
+                                        if (jrCore_db_key_has_index_table($module, '_profile_id')) {
+                                            $tbl = jrCore_db_get_index_table_name($module, '_profile_id');
+                                            $add = "AND a.`_item_id` IN(SELECT `_item_id` FROM {$tbl} WHERE `value` IN(" . implode(',', $_eq['_profile_id']) . "))\n";
+                                        }
+                                        else {
+                                            $tbl = jrCore_db_table_name($module, 'item_key');
+                                            $add = "AND a.`_item_id` IN(SELECT `_item_id` FROM {$tbl} WHERE `key` = '_created' AND `_profile_id` IN(" . implode(',', $_eq['_profile_id']) . "))\n";
+                                        }
+                                    }
+                                    else {
+                                        $add = "AND a.`_profile_id` IN(" . implode(',', $_eq['_profile_id']) . ")\n";
+                                    }
+                                    unset($_eq['_profile_id']);
                                 }
                                 else {
+                                    // Add any NOT EQUALS profiles_id's into our privacy check
+                                    if (isset($_ne['_profile_id']) && is_array($_ne['_profile_id'])) {
+                                        foreach ($_ne['_profile_id'] as $npid) {
+                                            $_pp[$npid] = 1;
+                                        }
+                                        unset($_ne['_profile_id']);
+                                    }
                                     // Make sure we exclude those in our privacy list
-                                    $add .= " AND a.`_profile_id` NOT IN(" . implode(',', array_keys($_pp)) . ")\n";
+                                    if (isset($_di[0])) {
+                                        if (jrCore_db_key_has_index_table($module, '_profile_id')) {
+                                            $tbl = jrCore_db_get_index_table_name($module, '_profile_id');
+                                            $add = "AND a.`_item_id` NOT IN(SELECT `_item_id` FROM {$tbl} WHERE `value` IN(" . implode(',', array_keys($_pp)) . "))\n";
+                                        }
+                                        else {
+                                            $tbl = jrCore_db_table_name($module, 'item_key');
+                                            $add = "AND a.`_item_id` NOT IN(SELECT `_item_id` FROM {$tbl} WHERE `key` = '_created' AND `_profile_id` IN(" . implode(',', array_keys($_pp)) . "))\n";
+                                        }
+                                    }
+                                    else {
+                                        $add .= " AND a.`_profile_id` NOT IN(" . implode(',', array_keys($_pp)) . ")\n";
+                                    }
                                 }
                             }
+                            else {
+                                // User has access to all profile id's in $_pp
+                                $aeq = true;
+                            }
+                        }
+                        else {
+                            // User belongs to no profiles - should not get here
+                            $aeq = true;
                         }
                     }
                 }
+                else {
+                    // There are no private profiles on the system (should not get here)
+                    $aeq = true;
+                }
+            }
+            else {
+                // There are no private profiles on the system
+                $aeq = true;
+            }
+        }
+        else {
+            // Admin user - bypass privacy checking
+            $aeq = true;
+        }
+
+        if ($aeq && isset($_eq['_profile_id']) && is_array($_eq['_profile_id']) && count($_eq['_profile_id']) > 0) {
+
+            // If we have been given BOTH equals and NOT equals for profiles, we want to get rid
+            // of the NOT equals - go through the equals and remove any that are NOT equals
+            if (isset($_ne['_profile_id']) && is_array($_ne['_profile_id']) && count($_ne['_profile_id']) > 0) {
+                $_eq['_profile_id'] = jrCore_create_combined_equal_array($_eq['_profile_id'], $_ne['_profile_id']);
+                if (count($_eq['_profile_id']) === 0) {
+                    // We've removed all profile id's - short circuit
+                    if (isset($_params['fdebug']) && $_params['fdebug'] == true) {
+                        fdebug(array('jrCore_db_search_items error' => "both include and exclude _profile_id params resulted in no profile_ids", '_params' => $_params, '_backup' => $_backup)); // OK
+                    }
+                    return false;
+                }
+                unset($_ne['_profile_id']);  // We no longer need to add the NOT EQUALS
+            }
+
+            if (isset($_di[0])) {
+                if (jrCore_db_key_has_index_table($module, '_profile_id')) {
+                    $tbl = jrCore_db_get_index_table_name($module, '_profile_id');
+                    $add = "AND a.`_item_id` IN(SELECT `_item_id` FROM {$tbl} WHERE `value` IN(" . implode(',', $_eq['_profile_id']) . "))\n";
+                }
+                else {
+                    $tbl = jrCore_db_table_name($module, 'item_key');
+                    $add = "AND a.`_item_id` IN(SELECT `_item_id` FROM {$tbl} WHERE `key` = '_created' AND `_profile_id` IN(" . implode(',', $_eq['_profile_id']) . "))\n";
+                }
+            }
+            else {
+                $add = "AND a.`_profile_id` IN(" . implode(',', $_eq['_profile_id']) . ")\n";
+            }
+        }
+
+        // We're excluding specific profile_id's from our search
+        if (isset($_ne['_profile_id']) && is_array($_ne['_profile_id']) && count($_ne['_profile_id']) > 0) {
+            if (isset($_di[0])) {
+                if (jrCore_db_key_has_index_table($module, '_profile_id')) {
+                    $tbl = jrCore_db_get_index_table_name($module, '_profile_id');
+                    $add = "AND a.`_item_id` NOT IN(SELECT `_item_id` FROM {$tbl} WHERE `value` IN(" . implode(',', $_ne['_profile_id']) . "))\n";
+                }
+                else {
+                    $tbl = jrCore_db_table_name($module, 'item_key');
+                    $add = "AND a.`_item_id` NOT IN(SELECT `_item_id` FROM {$tbl} WHERE `key` = '_created' AND `_profile_id` IN(" . implode(',', $_ne['_profile_id']) . "))\n";
+                }
+            }
+            else {
+                $add = "AND a.`_profile_id` NOT IN(" . implode(',', $_ne['_profile_id']) . ")\n";
             }
         }
 
@@ -3444,17 +4333,34 @@ function _jrCore_db_search_items($module, $_params)
                         }
                     }
                     else {
-                        $req .= "(a.`key` = '{$dob}' AND a.`_item_id` {$v[1]} '{$v[2]}')\n";
+                        if ($v[1] == 'between') {
+                            list($v1, $v2) = explode(',', $v[2]);
+                            $req .= "(a.`key` = '{$dob}' AND a.`_item_id` BETWEEN {$v1} AND {$v2})\n";
+                        }
+                        elseif ($v[1] == 'not_between') {
+                            list($v1, $v2) = explode(',', $v[2]);
+                            $req .= "(a.`key` = '{$dob}' AND a.`_item_id` NOT BETWEEN {$v1} AND {$v2})\n";
+                        }
+                        else {
+                            $req .= "(a.`key` = '{$dob}' AND a.`_item_id` {$v[1]} '{$v[2]}')\n";
+                        }
                     }
                 }
                 elseif ($v[1] == 'CUSTOM') {
-                    $req .= "{$v[2]}\n";
+                    if (isset($_di[$k])) {
+                        $req .= "1 = 1\n";
+                    }
+                    else {
+                        if (strpos($v[2], '`key`') === 0) {
+                            $req .= "{$_al[$k]}.{$v[2]}\n";
+                        }
+                        else {
+                            $req .= "{$v[2]}\n";
+                        }
+                    }
                 }
                 elseif ($v[1] == 'IS OR IS NOT') {
                     $req .= "a.`key` = '{$v[0]}'\n";
-                }
-                elseif ($v[0] != '_item_id' && isset($v[3]) && $v[3] == 'add_null') {
-                    $req .= "a.`key` = '{$v[0]}' AND (a.`value` {$v[1]} {$v[2]} OR a.`value` IS NULL)\n";
                 }
                 elseif (isset($v[3]) && $v[3] == 'parens' && isset($_so["{$v[0]}"])) {
                     $_bd = array();
@@ -3462,13 +4368,34 @@ function _jrCore_db_search_items($module, $_params)
                     $req .= '(';
                     foreach ($_so["{$v[0]}"] as $_part) {
                         if ($_part[0] == '_item_id') {
-                            $_bd[] = "(a.`key` = '_created' AND a.`_item_id` {$_part[1]} {$_part[2]})";
+                            if ($_part[1] == 'between') {
+                                $req .= "(a.`key` = '_created' AND a.`_item_id` BETWEEN {$_part[2]} AND {$_part[3]})\n";
+                            }
+                            elseif ($_part[1] == 'not_between') {
+                                $req .= "(a.`key` = '_created' AND a.`_item_id` NOT BETWEEN {$_part[2]} AND {$_part[3]})\n";
+                            }
+                            else {
+                                $_bd[] = "(a.`key` = '_created' AND a.`_item_id` {$_part[1]} {$_part[2]})";
+                            }
                         }
                         elseif ($_part[1] == 'LIKE') {
                             $_bd[] = "(a.`key` LIKE '{$_part[0]}' AND a.`value` {$_part[1]} {$_part[2]})";
                         }
                         else {
-                            $_bd[] = "(a.`key` = '{$_part[0]}' AND a.`value` {$_part[1]} {$_part[2]})";
+                            if ($_part[1] == 'between') {
+                                $_bd[] = "(a.`key` = '{$_part[0]}' AND a.`value` BETWEEN {$_part[2]} AND {$_part[3]})\n";
+                            }
+                            elseif ($_part[1] == 'not_between') {
+                                $_bd[] = "(a.`key` = '{$_part[0]}' AND a.`value` NOT BETWEEN {$_part[2]} AND {$_part[3]})\n";
+                            }
+                            else {
+                                if (isset($_di[$k])) {
+                                    $_bd[] = "(a.`value` {$_part[1]} {$_part[2]})";
+                                }
+                                else {
+                                    $_bd[] = "(a.`key` = '{$_part[0]}' AND a.`value` {$_part[1]} {$_part[2]})";
+                                }
+                            }
                         }
                     }
                     $req .= implode(' OR ', $_bd) . ")\n";
@@ -3482,7 +4409,17 @@ function _jrCore_db_search_items($module, $_params)
                         $req .= "a.`value` {$v[1]} {$v[2]}\n";
                     }
                     else {
-                        $req .= "a.`value` {$v[1]} '{$v[2]}'\n";
+                        if ($v[1] == 'between') {
+                            list($v1, $v2) = explode(',', $v[2]);
+                            $req .= "a.`value` BETWEEN {$v1} AND {$v2}\n";
+                        }
+                        elseif ($v[1] == 'not_between') {
+                            list($v1, $v2) = explode(',', $v[2]);
+                            $req .= "a.`value` NOT BETWEEN {$v1} AND {$v2}\n";
+                        }
+                        else {
+                            $req .= "a.`value` {$v[1]} '{$v[2]}'\n";
+                        }
                     }
                 }
                 // wildcard match on key
@@ -3491,17 +4428,59 @@ function _jrCore_db_search_items($module, $_params)
                         $req .= "a.`key` LIKE '{$v[0]}' AND a.`value` {$v[1]} {$v[2]}\n";
                     }
                     else {
-                        $req .= "a.`key` LIKE '{$v[0]}' AND a.`value` {$v[1]} '{$v[2]}'\n";
+                        if ($v[1] == 'between') {
+                            list($v1, $v2) = explode(',', $v[2]);
+                            $req .= "a.`key` LIKE '{$v[0]}' AND a.`value` BETWEEN {$v1} AND {$v2}\n";
+                        }
+                        elseif ($v[1] == 'not_between') {
+                            list($v1, $v2) = explode(',', $v[2]);
+                            $req .= "a.`key` LIKE '{$v[0]}' AND a.`value` NOT BETWEEN {$v1} AND {$v2}\n";
+                        }
+                        else {
+                            $req .= "a.`key` LIKE '{$v[0]}' AND a.`value` {$v[1]} '{$v[2]}'\n";
+                        }
                     }
                 }
                 // IN / NOT IN (no quotes) or NULL
                 elseif ($v[2] == 'NULL' || (isset($v[3]) && $v[3] == 'no_quotes')) {
-                    $req .= "a.`key` = '{$v[0]}' AND a.`value` {$v[1]} {$v[2]}\n";
+                    if (isset($_di[$k])) {
+                        $req .= "a.`value` {$v[1]} {$v[2]}\n";
+                    }
+                    else {
+                        $req .= "a.`key` = '{$v[0]}' AND a.`value` {$v[1]} {$v[2]}\n";
+                    }
                 }
                 else {
-                    $req .= "a.`key` = '{$v[0]}' AND a.`value` {$v[1]} '{$v[2]}'\n";
+                    if ($v[1] == 'between') {
+                        list($v1, $v2) = explode(',', $v[2]);
+                        if (isset($_di[$k])) {
+                            $req .= "a.`value` BETWEEN {$v1} AND {$v2}\n";
+                        }
+                        else {
+                            $req .= "a.`key` = '{$v[0]}' AND a.`value` BETWEEN {$v1} AND {$v2}\n";
+                        }
+                    }
+                    elseif ($v[1] == 'not_between') {
+                        list($v1, $v2) = explode(',', $v[2]);
+                        if (isset($_di[$k])) {
+                            $req .= "a.`value` NOT BETWEEN {$v1} AND {$v2}\n";
+                        }
+                        else {
+                            $req .= "a.`key` = '{$v[0]}' AND a.`value` NOT BETWEEN {$v1} AND {$v2}\n";
+                        }
+                    }
+                    else {
+                        if (isset($_di[$k])) {
+                            $req .= "a.`value` {$v[1]} '{$v[2]}'\n";
+                        }
+                        else {
+                            $req .= "a.`key` = '{$v[0]}' AND a.`value` {$v[1]} '{$v[2]}'\n";
+                        }
+                    }
                 }
             }
+
+            // keys beyond the first key...
             elseif ($v[1] !== 'CUSTOM') {
                 // If we are searching by _item_id we always use "a" for our prefix
                 if ($v[0] == '_item_id') {
@@ -3509,19 +4488,26 @@ function _jrCore_db_search_items($module, $_params)
                         $req .= "AND a.`_item_id` {$v[1]} {$v[2]}\n";
                     }
                     else {
-                        $req .= "AND a.`_item_id` {$v[1]} '{$v[2]}'\n";
+                        if ($v[1] == 'between') {
+                            list($v1, $v2) = explode(',', $v[2]);
+                            $req .= "AND a.`_item_id` BETWEEN {$v1} AND {$v2}\n";
+                        }
+                        elseif ($v[1] == 'not_between') {
+                            list($v1, $v2) = explode(',', $v[2]);
+                            $req .= "AND a.`_item_id` NOT BETWEEN {$v1} AND {$v2}\n";
+                        }
+                        else {
+                            $req .= "AND a.`_item_id` {$v[1]} '{$v[2]}'\n";
+                        }
                     }
                 }
                 else {
-                    $als = $_al[$k];
+                    $als = $_ob["{$v[0]}"];
                     // Special is or is not condition
                     // (e.`value` IS NOT NULL OR e.`value` IS NULL)
                     // This allows an ORDER_BY on a column that may not be set in all DS entries
                     if ($v[1] == 'IS OR IS NOT') {
                         $req .= "AND ({$als}.`value` > '' OR {$als}.`value` IS NULL)\n";
-                    }
-                    elseif (isset($v[3]) && $v[3] == 'add_null') {
-                        $req .= "AND ({$als}.`value` {$v[1]} {$v[2]} OR {$als}.`value` IS NULL)\n";
                     }
                     elseif (isset($v[3]) && $v[3] == 'parens' && isset($_so["{$v[0]}"])) {
                         $_bd = array();
@@ -3535,18 +4521,46 @@ function _jrCore_db_search_items($module, $_params)
                                 $_bd[] = "({$als}.`key` LIKE '{$_part[0]}' AND {$als}.`value` {$_part[1]} {$_part[2]})";
                             }
                             else {
-                                $_bd[] = "({$als}.`key` = '{$_part[0]}' AND {$als}.`value` {$_part[1]} {$_part[2]})";
+                                if ($_part[1] == 'between') {
+                                    $_bd[] = "({$als}.`key` = '{$_part[0]}' AND {$als}.`value` BETWEEN {$_part[2]} AND {$_part[3]})\n";
+                                }
+                                elseif ($_part[1] == 'not_between') {
+                                    $_bd[] = "({$als}.`key` = '{$_part[0]}' AND {$als}.`value` NOT BETWEEN {$_part[2]} AND {$_part[3]})\n";
+                                }
+                                else {
+                                    $_bd[] = "({$als}.`key` = '{$_part[0]}' AND {$als}.`value` {$_part[1]} {$_part[2]})";
+                                }
                             }
                         }
                         $req .= implode(' OR ', $_bd) . ")\n";
                     }
                     // wildcard (all keys)
                     elseif ($v[0] == '%') {
-                        $req .= "AND {$als}.`value` {$v[1]} '{$v[2]}'\n";
+                        if ($v[1] == 'between') {
+                            list($v1, $v2) = explode(',', $v[2]);
+                            $req .= "AND {$als}.`value` BETWEEN {$v1} AND {$v2}\n";
+                        }
+                        elseif ($v[1] == 'not_between') {
+                            list($v1, $v2) = explode(',', $v[2]);
+                            $req .= "AND {$als}.`value` NOT BETWEEN {$v1} AND {$v2}\n";
+                        }
+                        else {
+                            $req .= "AND {$als}.`value` {$v[1]} '{$v[2]}'\n";
+                        }
                     }
                     // wildcard match on key
                     elseif (strpos(' ' . $v[0], '%')) {
-                        $req .= "AND {$als}.`key` LIKE '{$v[0]}' AND {$als}.`value` {$v[1]} '{$v[2]}'\n";
+                        if ($v[1] == 'between') {
+                            list($v1, $v2) = explode(',', $v[2]);
+                            $req .= "AND {$als}.`key` LIKE '{$v[0]}' AND {$als}.`value` BETWEEN {$v1} AND {$v2}\n";
+                        }
+                        elseif ($v[1] == 'not_between') {
+                            list($v1, $v2) = explode(',', $v[2]);
+                            $req .= "AND {$als}.`key` LIKE '{$v[0]}' AND {$als}.`value` NOT BETWEEN {$v1} AND {$v2}\n";
+                        }
+                        else {
+                            $req .= "AND {$als}.`key` LIKE '{$v[0]}' AND {$als}.`value` {$v[1]} '{$v[2]}'\n";
+                        }
                     }
                     elseif ($v[2] == 'NULL' || (isset($v[3]) && $v[3] == 'no_quotes')) {
                         if (strpos($v[2], '(SELECT ') !== 0) {
@@ -3554,7 +4568,17 @@ function _jrCore_db_search_items($module, $_params)
                         }
                     }
                     else {
-                        $req .= "AND {$als}.`value` {$v[1]} '{$v[2]}'\n";
+                        if ($v[1] == 'between') {
+                            list($v1, $v2) = explode(',', $v[2]);
+                            $req .= "AND {$als}.`value` BETWEEN {$v1} AND {$v2}\n";
+                        }
+                        elseif ($v[1] == 'not_between') {
+                            list($v1, $v2) = explode(',', $v[2]);
+                            $req .= "AND {$als}.`value` NOT BETWEEN {$v1} AND {$v2}\n";
+                        }
+                        else {
+                            $req .= "AND {$als}.`value` {$v[1]} '{$v[2]}'\n";
+                        }
                     }
                 }
             }
@@ -3565,18 +4589,23 @@ function _jrCore_db_search_items($module, $_params)
             $req .= $add;
         }
 
+        // Bring in profile_id search
+        if (strlen($prf) > 0) {
+            $req .= $prf;
+        }
+
         // For our counting query
         $re2 = $req;
 
         // Group by
-        if (isset($group_by{0})) {
+        if (isset($group_by) && strlen($group_by) > 0) {
             $req .= $group_by . ' ';
             $re2 .= $group_by . ' ';
         }
 
         elseif (!strpos($req, 'RAND()')) {
             // Default - group by item_id
-            if (isset($ino) && $ino == '_item_id') {
+            if (!$sgb && $ino && $ino == '_item_id') {
                 if (isset($_params['pagebreak'])) {
                     $req .= "GROUP BY a._item_id ";
                 }
@@ -3590,7 +4619,7 @@ function _jrCore_db_search_items($module, $_params)
             // Order by
             if (isset($_params['order_by']) && is_array($_params['order_by']) && count($_params['order_by']) > 0) {
                 $_ov = array();
-                $oby = 'ORDER BY ';
+                $oby = "ORDER BY ";
 
                 foreach ($_params['order_by'] as $k => $v) {
                     $v = strtoupper($v);
@@ -3599,7 +4628,7 @@ function _jrCore_db_search_items($module, $_params)
                         case 'RAND':
                         case 'RANDOM':
                             if (isset($_params['limit']) && intval($_params['limit']) === 1) {
-                                $req .= "AND a.`_item_id` >= FLOOR(1 + RAND() * (SELECT MAX(_item_id) FROM " . jrCore_db_table_name($module, 'item') . ")) ";
+                                $req .= "AND a.`_item_id` >= FLOOR(1 + @rnd * (SELECT MAX(_item_id) FROM " . jrCore_db_table_name($module, 'item') . ")) ";
                                 $oby = false;
                             }
                             else {
@@ -3612,16 +4641,34 @@ function _jrCore_db_search_items($module, $_params)
                         case 'ASC':
                         case 'DESC':
                             if (!isset($_ob[$k]) && $k != '_item_id') {
+                                if (isset($_params['fdebug']) && $_params['fdebug'] == true) {
+                                    fdebug(array('jrCore_db_search_items error' => "you must include the {$k} field in your search criteria to order_by it", '_params' => $_params, '_backup' => $_backup)); // OK
+                                }
                                 jrCore_logger('MAJ', 'invalid order_by criteria in jrCore_db_search_items parameters', array("error: you must include the {$k} field in your search criteria to order_by it", $module, $_params, $_backup));
                                 return false;
                             }
                             // If we are ordering by _item_id, we do not order by value...
                             if (count($custom_order_by) > 0 && $k != '_item_id' && $k != '_created') {
-                                if ($v == 'ASC') {
-                                    $_ov[] = "FIELD(" . $_ob[$k] . ".`key`, '_created', '{$k}') ASC, " . $_ob[$k] . ".`value` {$v}";
+                                // Check for index tables
+                                $fld = true;
+                                if (count($_di) > 0) {
+                                    foreach ($_di as $itk => $itv) {
+                                        if ($itv == $k) {
+                                            $fld = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if ($fld) {
+                                    if ($v == 'ASC') {
+                                        $_ov[] = "FIELD(" . $_ob[$k] . ".`key`, '_created', '{$k}') ASC, " . $_ob[$k] . ".`value` {$v}";
+                                    }
+                                    else {
+                                        $_ov[] = "FIELD(" . $_ob[$k] . ".`key`, '{$k}', '_created') ASC, " . $_ob[$k] . ".`value` {$v}";
+                                    }
                                 }
                                 else {
-                                    $_ov[] = "FIELD(" . $_ob[$k] . ".`key`, '{$k}', '_created') ASC, " . $_ob[$k] . ".`value` {$v}";
+                                    $_ov[] = " " . $_ob[$k] . ".`value` {$v}";
                                 }
                             }
                             elseif ($k == '_item_id') {
@@ -3653,11 +4700,29 @@ function _jrCore_db_search_items($module, $_params)
 
                         case 'NUMERICAL_ASC':
                             if (!isset($_ob[$k]) && $k != '_item_id') {
+                                if (isset($_params['fdebug']) && $_params['fdebug'] == true) {
+                                    fdebug(array('jrCore_db_search_items error' => "you must include the {$k} field in your search criteria to order_by it (2)", '_params' => $_params, '_backup' => $_backup)); // OK
+                                }
                                 jrCore_logger('MAJ', 'invalid order_by criteria in jrCore_db_search_items parameters', array("error: you must include the {$k} field in your search criteria to order_by it", $module, $_params, $_backup));
                                 return false;
                             }
                             if (count($custom_order_by) > 0 && $k != '_item_id' && $k != '_created') {
-                                $_ov[] = "FIELD(" . $_ob[$k] . ".`key`, '_created', '{$k}') ASC, (" . $_ob[$k] . ".`value` + 0) ASC";
+                                // Check for index tables
+                                $fld = true;
+                                if (count($_di) > 0) {
+                                    foreach ($_di as $itk => $itv) {
+                                        if ($itv == $k) {
+                                            $fld = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if ($fld) {
+                                    $_ov[] = "FIELD(" . $_ob[$k] . ".`key`, '_created', '{$k}') ASC, (" . $_ob[$k] . ".`value` + 0) ASC";
+                                }
+                                else {
+                                    $_ov[] = "(" . $_ob[$k] . ".`value` + 0) ASC";
+                                }
                             }
                             else {
                                 switch ($k) {
@@ -3683,11 +4748,29 @@ function _jrCore_db_search_items($module, $_params)
 
                         case 'NUMERICAL_DESC':
                             if (!isset($_ob[$k]) && $k != '_item_id') {
+                                if (isset($_params['fdebug']) && $_params['fdebug'] == true) {
+                                    fdebug(array('jrCore_db_search_items error' => "invalid order_by criteria", '_params' => $_params, '_backup' => $_backup)); // OK
+                                }
                                 jrCore_logger('MAJ', 'invalid order_by criteria in jrCore_db_search_items parameters', array("error: you must include the {$k} field in your search criteria to order_by it", $module, $_params, $_backup));
                                 return false;
                             }
                             if (count($custom_order_by) > 0 && $k != '_item_id' && $k != '_created') {
-                                $_ov[] = "FIELD(" . $_ob[$k] . ".`key`, '{$k}', '_created') ASC, (" . $_ob[$k] . ".`value` + 0) DESC";
+                                // Check for index tables
+                                $fld = true;
+                                if (count($_di) > 0) {
+                                    foreach ($_di as $itk => $itv) {
+                                        if ($itv == $k) {
+                                            $fld = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if ($fld) {
+                                    $_ov[] = "FIELD(" . $_ob[$k] . ".`key`, '{$k}', '_created') ASC, (" . $_ob[$k] . ".`value` + 0) DESC";
+                                }
+                                else {
+                                    $_ov[] = "(" . $_ob[$k] . ".`value` + 0) DESC";
+                                }
                             }
                             else {
                                 switch ($k) {
@@ -3712,6 +4795,10 @@ function _jrCore_db_search_items($module, $_params)
                             break;
 
                         default:
+
+                            if (isset($_params['fdebug']) && $_params['fdebug'] == true) {
+                                fdebug(array('jrCore_db_search_items error' => "invalid order direction: {$v} received for {$k} - must be one of: ASC, DESC, NUMERICAL_ASC, NUMERICAL_DESC, RANDOM", '_params' => $_params, '_backup' => $_backup)); // OK
+                            }
                             jrCore_logger('MAJ', 'invalid order_by criteria in jrCore_db_search_items parameters', array("invalid order direction: {$v} received for {$k} - must be one of: ASC, DESC, NUMERICAL_ASC, NUMERICAL_DESC, RANDOM", $module, $_params, $_backup));
                             return false;
                             break;
@@ -3724,19 +4811,22 @@ function _jrCore_db_search_items($module, $_params)
 
             // If we get a LIST of items, we (by default) order by that list unless we get a different order by
             elseif ($ino && isset($_do)) {
-                $field = false;
-                if ($ino == '_item_id' || $ino == '_profile_id' || $ino == '_user_id') {
-                    $field = "a.`_item_id`";
-                }
-                elseif (isset($_ob[$ino])) {
-                    $field = $_ob[$ino] . ".`_item_id`";
-                }
-                if ($field) {
-                    if (isset($_params['limit'])) {
-                        $req .= "ORDER BY FIELD({$field}," . implode(',', array_slice($_do, 0, $_params['limit'], true)) . ",a.`_item_id`) ";
+                // No need to order if we're only getting 1 result from the DS
+                if (!isset($_params['limit']) || $_params['limit'] > 1) {
+                    $field = false;
+                    if ($ino == '_item_id' || $ino == '_profile_id' || $ino == '_user_id') {
+                        $field = "a.`_item_id`";
                     }
-                    else {
-                        $req .= "ORDER BY FIELD({$field}," . implode(',', $_do) . ") ";
+                    elseif (isset($_ob[$ino])) {
+                        $field = $_ob[$ino] . ".`value`";
+                    }
+                    if ($field) {
+                        if (isset($_params['limit'])) {
+                            $req .= "ORDER BY FIELD({$field}," . implode(',', array_slice($_do, 0, $_params['limit'], true)) . ",a.`_item_id`) ";
+                        }
+                        else {
+                            $req .= "ORDER BY FIELD({$field}," . implode(',', $_do) . ") ";
+                        }
                     }
                 }
                 unset($_do);
@@ -3766,7 +4856,7 @@ function _jrCore_db_search_items($module, $_params)
             if (!jrCore_checktype($_params['limit'], 'number_nz')) {
                 return "error: invalid limit value - must be a number greater than 0";
             }
-            $req .= 'LIMIT ' . intval($_params['limit']) . ' ';
+            $req                  .= "\nLIMIT " . intval($_params['limit']) . ' ';
             $_rs['info']['limit'] = intval($_params['limit']);
         }
 
@@ -3777,14 +4867,14 @@ function _jrCore_db_search_items($module, $_params)
             if (!isset($_params['page']) || !jrCore_checktype($_params['page'], 'number_nz')) {
                 $_params['page'] = 1;
             }
-            $req .= "LIMIT " . intval(($_params['page'] - 1) * $_params['simplepagebreak']) . ",{$_params['simplepagebreak']}";
+            $req                            .= "\nLIMIT " . intval(($_params['page'] - 1) * $_params['simplepagebreak']) . ",{$_params['simplepagebreak']}";
             $_rs['info']['next_page']       = intval($_params['page'] + 1);
             $_rs['info']['pagebreak']       = (int) $_params['simplepagebreak'];
             $_rs['info']['simplepagebreak'] = (int) $_params['simplepagebreak'];
             $_rs['info']['page']            = (int) $_params['page'];
             $_rs['info']['this_page']       = (int) $_params['page'];
             $_rs['info']['prev_page']       = ($_params['page'] > 1) ? intval($_params['page'] - 1) : 0;
-            $_rs['info']['page_base_url']   = jrCore_strip_url_params(jrCore_get_current_url(), array('p'));
+            $_rs['info']['page_base_url']   = htmlspecialchars(jrCore_strip_url_params(jrCore_get_current_url(), array('p')));
             if (isset($_params['use_total_row_count']) && $_params['use_total_row_count'] > 0) {
                 $_rs['info']['total_items'] = (int) $_params['use_total_row_count'];
             }
@@ -3840,11 +4930,12 @@ function _jrCore_db_search_items($module, $_params)
                 $_qp = array(
                     'query'      => $re2,
                     'query_time' => $end,
+                    'count'      => (isset($_ct['tc'])) ? intval($_ct['tc']) : 0,
                     'cache_key'  => $cky
                 );
                 jrCore_trigger_event('jrCore', 'db_search_count_query', $_params, $_qp);
 
-                if (isset($_params['slow_query_time']) && strlen($_params['slow_query_time']) > 0 && $end >= $_params['slow_query_time']) {
+                if (isset($_params['slow_query_time']) && $_params['slow_query_time'] > 0 && $end >= $_params['slow_query_time']) {
                     $slow_count = $end;
                 }
                 elseif ($end > 0.24 && isset($_conf['jrDeveloper_slow_queries']) && $_conf['jrDeveloper_slow_queries'] > 0 && $end > $_conf['jrDeveloper_slow_queries']) {
@@ -3872,16 +4963,16 @@ function _jrCore_db_search_items($module, $_params)
                             // invalid set
                             // Check for fdebug logging
                             if (isset($_params['fdebug']) && $_params['fdebug'] == true) {
-                                fdebug('No Items Returned from COUNT query', $_backup, $_params, $re2); // OK
+                                fdebug(array('jrCore_db_search_items error' => "no items returned from COUNT query", '_params' => $_params, '_backup' => $_backup, 're2' => $re2)); // OK
                             }
                             return false;
                         }
                     }
-                    $req .= "LIMIT " . intval(($_params['page'] - 1) * $_params['pagebreak']) . ",{$pnum}";
+                    $req .= "\nLIMIT " . intval(($_params['page'] - 1) * $_params['pagebreak']) . ",{$pnum}";
                 }
                 else {
                     $_rs['info']['total_items'] = (isset($_ct['tc']) && jrCore_checktype($_ct['tc'], 'number_nz')) ? intval($_ct['tc']) : 0;
-                    $req .= "LIMIT " . intval(($_params['page'] - 1) * $_params['pagebreak']) . ",{$_params['pagebreak']}";
+                    $req                        .= "\nLIMIT " . intval(($_params['page'] - 1) * $_params['pagebreak']) . ",{$_params['pagebreak']}";
                 }
                 $_rs['info']['total_pages']   = (int) ceil($_rs['info']['total_items'] / $_params['pagebreak']);
                 $_rs['info']['next_page']     = ($_rs['info']['total_pages'] > $_params['page']) ? intval($_params['page'] + 1) : 0;
@@ -3889,20 +4980,20 @@ function _jrCore_db_search_items($module, $_params)
                 $_rs['info']['page']          = (int) $_params['page'];
                 $_rs['info']['this_page']     = $_params['page'];
                 $_rs['info']['prev_page']     = ($_params['page'] > 1) ? intval($_params['page'] - 1) : 0;
-                $_rs['info']['page_base_url'] = jrCore_strip_url_params(jrCore_get_current_url(), array('p'));
+                $_rs['info']['page_base_url'] = htmlspecialchars(jrCore_strip_url_params(jrCore_get_current_url(), array('p')));
             }
             else {
                 // No items
                 // Check for fdebug logging
                 if (isset($_params['fdebug']) && $_params['fdebug'] == true) {
-                    fdebug('No Items Returned from COUNT query', $_backup, $_params, $re2); // OK
+                    fdebug(array('jrCore_db_search_items error' => "no items returned from COUNT query (2)", '_params' => $_params, '_backup' => $_backup, 're2' => $re2)); // OK
                 }
                 return false;
             }
         }
         else {
             // Default limit of 10
-            $req .= 'LIMIT 10';
+            $req .= "\nLIMIT 10";
         }
 
         $beg = explode(' ', microtime());
@@ -3925,9 +5016,17 @@ function _jrCore_db_search_items($module, $_params)
         }
 
         // Slow Query logging
-        if ($slow_count || (isset($_params['slow_query_time']) && strlen($_params['slow_query_time']) > 0 && $end >= $_params['slow_query_time']) || ($end > 0.24 && isset($_conf['jrDeveloper_slow_queries']) && $_conf['jrDeveloper_slow_queries'] > 0 && $end > $_conf['jrDeveloper_slow_queries'])) {
+        $slow_time = 0;
+        if (isset($_params['slow_query_time']) && $_params['slow_query_time'] > 0) {
+            $slow_time = $_params['slow_query_time'];
+        }
+        elseif (isset($_conf['jrDeveloper_slow_queries']) && $_conf['jrDeveloper_slow_queries'] > 0) {
+            $slow_time = $_conf['jrDeveloper_slow_queries'];
+        }
+        if ($slow_count || ($slow_time > 0 && $end >= $slow_time)) {
             global $_post;
             $_rq = array(
+                'process'    => (jrCore_client_is_detached()) ? 'worker (background)' : 'client',
                 '_post'      => $_post,
                 '_params'    => $_params,
                 'query_time' => $end,
@@ -3940,8 +5039,9 @@ function _jrCore_db_search_items($module, $_params)
                 $tag                          = ' pagination';
             }
             // Show whichever is longer
+            $pri = (jrCore_client_is_detached()) ? 'MIN' : 'MAJ';
             $tim = ($slow_count && $slow_count > $end) ? $slow_count : $end;
-            jrCore_logger('MAJ', "slow jrCore_db_search_items{$tag} query: {$tim} seconds", $_rq);
+            jrCore_logger($pri, "slow jrCore_db_search_items{$tag} query: {$tim} seconds", $_rq);
         }
 
         // Query Trigger
@@ -3957,7 +5057,7 @@ function _jrCore_db_search_items($module, $_params)
     else {
         $_rt = $_params['result_set'];
         if (isset($_params['fdebug']) && $_params['fdebug'] == true) {
-            fdebug('(result set was provided - no query was run)', $_backup, $_params); // OK
+            fdebug(array('jrCore_db_search_items error' => "result_set was provided by event listener - no query was run", '_params' => $_params, '_backup' => $_backup)); // OK
         }
     }
 
@@ -3989,14 +5089,10 @@ function _jrCore_db_search_items($module, $_params)
         }
         $_rs['_items'] = jrCore_db_get_multiple_items($module, $_id, $_ky, true);
         if ($_rs['_items'] && is_array($_rs['_items'])) {
+
             // Add in some meta data
             if (!isset($_rs['info']['total_items'])) {
                 $_rs['info']['total_items'] = count($_rs['_items']);
-            }
-            // Trigger search event
-            if (!isset($_params['skip_triggers']) || $_params['skip_triggers'] === false) {
-                $_params['cache_key'] = $cky;
-                $_rs                  = jrCore_trigger_event('jrCore', 'db_search_items', $_rs, $_params);
             }
 
             // If we are using the SIMPLE pagebreak setup, if we have LESS
@@ -4005,11 +5101,21 @@ function _jrCore_db_search_items($module, $_params)
                 $_rs['info']['next_page'] = 0;
             }
 
+            // Trigger search event
+            if (!isset($_params['skip_triggers']) || $_params['skip_triggers'] === false) {
+                $_params['cache_key'] = $cky;
+                $_rs                  = jrCore_trigger_event('jrCore', 'db_search_items', $_rs, $_params);
+            }
+
             $_ci = array();
             foreach ($_rs['_items'] as $v) {
                 if (isset($v['_profile_id'])) {
                     $_ci["{$v['_profile_id']}"] = $v['_profile_id'];
                 }
+            }
+            $pid = 0;
+            if (count($_ci) === 1) {
+                $pid = reset($_ci);
             }
             jrCore_set_flag('datastore_cache_profile_ids', $_ci);
             unset($_ci);
@@ -4029,14 +5135,21 @@ function _jrCore_db_search_items($module, $_params)
             $_rs['_params']['module']     = $module;
             $_rs['_params']['module_url'] = jrCore_get_module_url($module);
             if (!isset($_params['cache_seconds'])) {
-                jrCore_add_to_cache($module, $cky, $_rs);
+                jrCore_add_to_cache($module, $cky, $_rs, 0, $pid);
             }
             elseif (jrCore_checktype($_params['cache_seconds'], 'number_nz')) {
-                jrCore_add_to_cache($module, $cky, $_rs, $_params['cache_seconds']);
+                jrCore_add_to_cache($module, $cky, $_rs, $_params['cache_seconds'], $pid);
+            }
+
+            if (!isset($_params['skip_triggers']) || $_params['skip_triggers'] === false) {
+                $_rs = jrCore_trigger_event('jrCore', 'db_search_results', $_rs, $_params);
             }
             unset($_params);
             return $_rs;
         }
+    }
+    if (!isset($_params['skip_triggers']) || $_params['skip_triggers'] === false) {
+        jrCore_trigger_event('jrCore', 'db_search_results', array('no_results' => true), $_params);
     }
     return false;
 }
@@ -4097,8 +5210,69 @@ function jrCore_db_check_for_supported_operator($search)
             $val = "(" . implode(',', $_vl) . ") ";
             $cd  = array($key, 'NOT IN', $val);
             break;
+        case 'between':
+        case 'not_between':
+            if (strpos($val, ',')) {
+                list($vl1, $vl2) = explode(',', $val);
+                $vl1 = trim($vl1);
+                $vl2 = trim($vl2);
+                if (is_numeric($vl1) && is_numeric($vl2)) {
+                    if (strpos(' ' . $vl1, '.')) {
+                        $vl1 = floatval($vl1);
+                    }
+                    else {
+                        $vl1 = intval($vl1);
+                    }
+                    if (strpos(' ' . $vl2, '.')) {
+                        $vl2 = floatval($vl2);
+                    }
+                    else {
+                        $vl2 = intval($vl2);
+                    }
+                    if ($vl2 < $vl1) {
+                        $cd = array($key, jrCore_str_to_lower($opt), $vl2, $vl1);
+                    }
+                    else {
+                        $cd = array($key, jrCore_str_to_lower($opt), $vl1, $vl2);
+                    }
+                }
+            }
+            break;
     }
     return $cd;
+}
+
+/**
+ * Return TRUE if key is a key that is found on all items in the DS
+ * @param string $key
+ * @return bool
+ */
+function jrCore_db_key_found_on_all_items($key)
+{
+    switch ($key) {
+        case '_item_id':
+        case '_user_id':
+        case '_profile_id':
+        case '_created':
+        case '_updated':
+            return true;
+            break;
+        default:
+            if (strpos($key, '_title')) {
+                return true;
+            }
+            if (strpos($key, '_count')) {
+                return true;
+            }
+            if (strpos($key, '_order')) {
+                return true;
+            }
+            if (strpos($key, '_pending')) {
+                return true;
+            }
+            break;
+    }
+    return false;
 }
 
 /**
@@ -4108,17 +5282,40 @@ function jrCore_db_check_for_supported_operator($search)
  */
 function jrCore_is_ds_index_needed($key)
 {
+    switch ($key) {
+        case 'user_active':
+        case 'user_birthdate':
+        case 'user_email':
+        case 'user_group':
+        case 'user_last_login':
+        case 'user_language':
+        case 'user_name':
+        case 'user_validate':
+        case 'user_validated':
+        case 'profile_active':
+        case 'profile_disk_usage':
+        case 'profile_location':
+        case 'profile_name':
+        case 'profile_private':
+        case 'profile_quota_id':
+        case 'profile_url':
+            return false;
+            break;
+    }
     $key = ' ' . $key;
     if (strpos($key, 'category')) {
         return false;
     }
-    elseif (strpos($key, 'image')) {
+    elseif (strpos($key, '_image_')) {
         return false;
     }
     elseif (strpos($key, 'module')) {
         return false;
     }
     elseif (strpos($key, 'pending')) {
+        return false;
+    }
+    elseif (strpos($key, 'notification')) {
         return false;
     }
     elseif (strpos($key, 'date')) {
@@ -4154,20 +5351,43 @@ function jrCore_is_ds_index_needed($key)
     elseif (strpos($key, '_active')) {
         return false;
     }
-    elseif (strpos($key, '_count') && strrpos($key, '_count', -6)) {
+    elseif (strpos($key, '_file_size')) {
         return false;
     }
-    elseif (strpos($key, '_name') && strrpos($key, '_name', -5)) {
+    elseif (strpos($key, 'latitude')) {
         return false;
     }
-    elseif (strpos($key, '_title') && strrpos($key, '_title', -6)) {
+    elseif (strpos($key, 'longitude')) {
         return false;
     }
-    elseif (strpos($key, '_url') && strrpos($key, '_url', -4)) {
+    elseif (strpos($key, 'ckey')) {
         return false;
     }
-    elseif (strpos($key, '_active') && strrpos($key, '_active', -7)) {
+    elseif (strpos($key, 'pkey')) {
         return false;
+    }
+    elseif (strpos($key, '_approve')) {
+        return false;
+    }
+    elseif (strpos($key, '_enabled')) {
+        return false;
+    }
+    elseif (strlen($key) > 3) {
+        if (strrpos($key, '_count', -6)) {
+            return false;
+        }
+        elseif (strrpos($key, '_name', -5)) {
+            return false;
+        }
+        elseif (strrpos($key, '_title', -6)) {
+            return false;
+        }
+        elseif (strrpos($key, '_url', -4)) {
+            return false;
+        }
+        elseif (strrpos($key, '_active', -7)) {
+            return false;
+        }
     }
     return true;
 }
@@ -4193,6 +5413,22 @@ function jrCore_db_get_private_profiles()
         jrCore_set_flag($key, $_pp);
     }
     return $_pp;
+}
+
+/**
+ * Take 2 arrays and return only values in first array that do not exist in the second
+ * @param array $_include
+ * @param array $_exclude
+ * @return array
+ */
+function jrCore_create_combined_equal_array($_include, $_exclude)
+{
+    foreach ($_exclude as $i) {
+        if (isset($_include[$i])) {
+            unset($_include[$i]);
+        }
+    }
+    return $_include;
 }
 
 /**

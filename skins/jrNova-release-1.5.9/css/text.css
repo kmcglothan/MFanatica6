@@ -1,0 +1,166 @@
+/*
+ * Jamroom 5 Nova CSS
+ * Copyright 2003-2011 by Talldude Networks, LLC.
+ * @author Brian Johnson - brian@talldude.net
+ */
+
+/* @title Rank */
+/* @help This is the ranking number */
+.rank {
+    font-size:20px;
+    text-align:center;
+    color:#666;
+    padding:0;
+}
+
+/* @title Normal */
+/* @help This is the regular body text */
+.normal {
+	font-size:12px;
+    color:#000;
+}
+/* @title Hilited */
+/* @help This is the hilite text */
+.hilite {
+    background-color: #033652;
+	font-size:12px;
+	font-weight:bold;
+    color:#FC0;
+}
+
+/* @title Media Title */
+/* @help This is the Media Title text. */
+.media_title {
+	text-transform:capitalize;
+	font-size:12px;
+	font-weight:bold;
+    color:#000;
+}
+/* @title Media Title Link */
+/* @help This is the Media Title link text */
+.media_title a {
+    color:#033652;
+    text-decoration:none;
+}
+/* @title Media Title Hover */
+/* @help This is the Media Title hover text */
+.media_title a:hover {
+    color:#000;
+    text-decoration:underline;
+}
+/* @title Leader */
+/* @help This is the Leader section of the block titles. */
+.leader {
+    background:#CCCCCC; /* @ignore */
+    background: -moz-linear-gradient(#F6F6F6, #CCCCCC); /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#F6F6F6), to(#CCCCCC)); /* @ignore */
+    background: -webkit-linear-gradient(#F6F6F6, #CCCCCC); /* @ignore */
+    background: -o-linear-gradient(#F6F6F6, #CCCCCC); /* @ignore */
+    background: -ms-linear-gradient(#F6F6F6, #CCCCCC); /* @ignore */
+    background: linear-gradient(#F6F6F6, #CCCCCC); /* @ignore */
+    color:#222;
+    font-size:18px;
+    padding-left:12px;
+}
+/* Tag Cloud fonts */
+
+/* @title Tag Cloud Fonts */
+/* @help The Tag Cloud font */
+div.jqcloud {
+    font-family:Tahoma,Verdana,Helvetica,Arial,sans-serif;
+    font-size: 10px;
+    line-height: normal;
+}
+
+div.jqcloud a {
+    font-size: inherit;
+    text-decoration: none;
+}
+
+div.jqcloud span.w10 { font-size: 550%; }
+div.jqcloud span.w9 { font-size: 500%; }
+div.jqcloud span.w8 { font-size: 450%; }
+div.jqcloud span.w7 { font-size: 400%; }
+div.jqcloud span.w6 { font-size: 350%; }
+div.jqcloud span.w5 { font-size: 300%; }
+div.jqcloud span.w4 { font-size: 250%; }
+div.jqcloud span.w3 { font-size: 200%; }
+div.jqcloud span.w2 { font-size: 150%; }
+div.jqcloud span.w1 { font-size: 100%; }
+
+/* Tag Cloud colors */
+
+/* @title Tag Cloud Font Main Color */
+/* @help The Tag Cloud font main color */
+div.jqcloud { color: #000000; }
+div.jqcloud a { color: inherit; }
+div.jqcloud a:hover { text-decoration:none; }
+/* @title Tag Cloud Link Hover */
+/* @help The Tag Cloud link hover color */
+div.jqcloud a:hover { color: #000; }
+/* @title Tag Cloud Text Color 10 */
+/* @help The Tag Cloud weight 10 text color */
+div.jqcloud span.w10 { color: #03698D; }
+/* @title Tag Cloud Text Color 9 */
+/* @help The Tag Cloud weight 9 text color */
+div.jqcloud span.w9 { color: #03698D; }
+/* @title Tag Cloud Text Color 8 */
+/* @help The Tag Cloud weight 8 text color */
+div.jqcloud span.w8 { color: #03698D; }
+/* @title Tag Cloud Text Color 7 */
+/* @help The Tag Cloud weight 7 text color */
+div.jqcloud span.w7 { color: #044365; }
+/* @title Tag Cloud Text Color 6 */
+/* @help The Tag Cloud weight 6 text color */
+div.jqcloud span.w6 { color: #033652; }
+/* @title Tag Cloud Text Color 5 */
+/* @help The Tag Cloud weight 5 text color */
+div.jqcloud span.w5 { color: #036182; }
+/* @title Tag Cloud Text Color 4 */
+/* @help The Tag Cloud weight 4 text color */
+div.jqcloud span.w4 { color: #035977; }
+/* @title Tag Cloud Text Color 3 */
+/* @help The Tag Cloud weight 3 text color */
+div.jqcloud span.w3 { color: #03526D; }
+/* @title Tag Cloud Text Color 2 */
+/* @help The Tag Cloud weight 2 text color */
+div.jqcloud span.w2 { color: #044365; }
+/* @title Tag Cloud Text Color 1 */
+/* @help The Tag Cloud weight 1 text color */
+div.jqcloud span.w1 { color: #044365; }
+
+/* @title Tag Name Box */
+/* @help The Tag Name box */
+.tag_name_box {
+    float:left;
+    background-color:#949799;
+    border-width:1px;
+    border-color:#D4D7D9;
+    border-style:solid;
+    border-radius:4px;
+    padding:3px 9px;
+    margin:6px 6px 0 0;
+    font-size:12px;
+    text-transform:uppercase;
+}
+.tag_name_box a {
+    text-decoration:none;
+}
+/* @title Tag Name Box Hover */
+/* @help The Tag Name box hover effect */
+.tag_name_box:hover {
+    background-color:#FFCC00;
+}
+/* @title Tag Cloud */
+/* @help The Tag Cloud */
+#tag_cloud {
+    background-color: #C5C9CC;
+    color:#000;
+    border-radius:5px; /* @ignore */
+}
+/* @title Tag Cloud Hover */
+/* @help The Tag Cloud hover effect */
+#tag_cloud:hover {
+    background-color: #F7DD4F;
+    color:#000;
+}

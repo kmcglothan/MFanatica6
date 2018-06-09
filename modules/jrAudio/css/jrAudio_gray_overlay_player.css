@@ -536,12 +536,10 @@ div.jp-video div.jp-duration {
     left: 50%;
     top: 20%;
 
-    background: url("{$jrAudio_img_url}/jplayer.blue.monday.video.play.png") 0 0 no-repeat;
     text-indent: -9999px;
 }
 
 .jr_audio_gray_overlay_player div.jp-video-play:hover a.jp-video-play-icon {
-    background: url("{$jrAudio_img_url}/jplayer.blue.monday.video.play.png") 0 -100px no-repeat;
 }
 
 .jr_audio_gray_overlay_player div.jp-jplayer audio,

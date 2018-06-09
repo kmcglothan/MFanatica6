@@ -1,7 +1,10 @@
 Beta Launch Page module changelog
 
+Version 1.2.2:
+ - Change: index.tpl text description may not completely show at all browser widths
+
 Version 1.2.1:
- - Change: Fixed CSS in the index.tpl so the email form and user login link does not get hidden.
+ - Change: Fixed CSS in the index.tpl so the email form and user login link does not get hidden
 
 Version 1.2.0:
  - Change: Updated launch template and background image + changes to work with System Core 6.0.0

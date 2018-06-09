@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -112,7 +112,7 @@ function jrCore_bbcode_code($string)
                             $html = str_replace(array_keys($_crp), $_crp, $code->value);
                             $temp = '<div class="bbcode_code"><pre class="hljs ' . $code->language . '">' . $html . '</pre></div>';
 
-                            // We will replace with "real" code on output via a display listener
+                            // We will replace with "real" code in smarty_modifier_jrCore_format_string()
                             $_rep["%%{$uniq}%%"] = $temp;
                             $text .= "%%{$uniq}%%";
                             $test = false;
@@ -120,7 +120,6 @@ function jrCore_bbcode_code($string)
                         }
                     }
                     else {
-                        // $text .= jrCore_entity_string($block);
                         $text .= $block;
                         $test = false;
                     }

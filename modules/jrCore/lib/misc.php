@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -60,8 +60,8 @@ function jrCore_is_magic_view()
  */
 function jrCore_user_is_part_of_group($group, $_usr = null)
 {
-    global $_user;
     foreach (explode(',', $group) as $grp) {
+        $grp = trim($grp);
         switch ($grp) {
             case 'all':
                 return true;
@@ -99,12 +99,17 @@ function jrCore_user_is_part_of_group($group, $_usr = null)
                 }
                 break;
             default:
-                if (is_null($_usr)) {
-                    $_usr = $_user;
-                }
                 if (jrCore_checktype($grp, 'number_nz')) {
-                    if (isset($_usr['profile_quota_id']) && $_usr['profile_quota_id'] == $grp) {
-                        return true;
+                    if (is_null($_usr)) {
+                        $gid = jrUser_get_profile_home_key('profile_quota_id');
+                        if ($gid && $gid == $grp) {
+                            return true;
+                        }
+                    }
+                    else {
+                        if (isset($_usr['profile_quota_id']) && $_usr['profile_quota_id'] == $grp) {
+                            return true;
+                        }
                     }
                 }
                 break;
@@ -201,7 +206,7 @@ function jrCore_get_event_listeners($module, $event)
  * @param array $_args additional info pertaining to the event (non modifiable)
  * @param mixed $only_listener Set to a specific module (or array of modules) to broadcast to only those modules
  * @param bool $active_check set to FALSE to disable check for active module
- * @return array
+ * @return mixed
  */
 function jrCore_trigger_event($module, $event, $_data = null, $_args = null, $only_listener = false, $active_check = true)
 {
@@ -249,8 +254,8 @@ function jrCore_trigger_event($module, $event, $_data = null, $_args = null, $on
 
     // Make sure module is part of $_args
     if (is_null($_args) || !is_array($_args) || $_args === false) {
-        if (!is_array($_args) && strlen($_args) > 0) {
-            jrCore_logger('DBG', "invalid _args array received for event: {$module}/{$event}", $_data);
+        if (!is_null($_args) && $_args !== false) {
+            jrCore_logger('DBG', "invalid _args array received for event: {$module}/{$event}", array('_args' => $_args));
         }
         $_args = array();
     }
@@ -281,7 +286,9 @@ function jrCore_trigger_event($module, $event, $_data = null, $_args = null, $on
                 }
             }
             if (function_exists($func)) {
+                $start = microtime();
                 $_temp = $func($_data, $_user, $_conf, jrCore_get_flag("jrcore_active_trigger_args_{$key}"), $event);
+                jrCore_record_triggered_event($module, $event, $lmod, $func, $start);
                 if (!empty($_temp)) {
                     $_data = $_temp;
                 }
@@ -308,7 +315,9 @@ function jrCore_trigger_event($module, $event, $_data = null, $_args = null, $on
                 }
             }
             if (function_exists($func)) {
+                $start = microtime();
                 $_temp = $func($_data, $_user, $_conf, jrCore_get_flag("jrcore_active_trigger_args_{$key}"), $event);
+                jrCore_record_triggered_event($module, $event, $lmod, $func, $start);
                 if (!empty($_temp)) {
                     $_data = $_temp;
                 }
@@ -334,7 +343,9 @@ function jrCore_trigger_event($module, $event, $_data = null, $_args = null, $on
                 }
             }
             if (function_exists($func)) {
+                $start = microtime();
                 $_temp = $func($_data, $_user, $_conf, jrCore_get_flag("jrcore_active_trigger_args_{$key}"), $event);
+                jrCore_record_triggered_event($module, $event, $lmod, $func, $start);
                 if (!empty($_temp)) {
                     $_data = $_temp;
                 }
@@ -357,10 +368,88 @@ function jrCore_trigger_event($module, $event, $_data = null, $_args = null, $on
  */
 function jrCore_set_active_trigger_args($_args)
 {
+    // Save start time for triggered event
     if (is_array($_args) && isset($_args['jrcore_unique_trigger_id'])) {
         return jrCore_set_flag("jrcore_active_trigger_args_{$_args['jrcore_unique_trigger_id']}", $_args);
     }
     return false;
+}
+
+/**
+ * Record a triggered event to the event stack
+ * @param string $trigger_module
+ * @param string $event
+ * @param string $listener_module
+ * @param string $function
+ * @param float $start_time
+ * @return bool
+ */
+function jrCore_record_triggered_event($trigger_module, $event, $listener_module, $function, $start_time)
+{
+    // Are we saving triggered events?
+    if (jrCore_get_flag('jrcore_save_triggered_events')) {
+
+        // 0.81072800 1393853047
+        $now = explode(' ', microtime());
+        $now = $now[1] + $now[0];
+
+        // Have we run before?
+        $key = 'jrcore_triggered_events_start_time';
+        $beg = jrCore_get_flag($key);
+        if (!$beg) {
+            jrCore_set_flag($key, $now);
+            $elapsed = 0;
+        }
+        else {
+            $elapsed = round(($now - $beg), 3);
+        }
+        $key = 'jrcore_triggered_events';
+        if (!$_tm = jrCore_get_flag($key)) {
+            $_tm = array();
+        }
+        $stt   = explode(' ', $start_time);
+        $stt   = $stt[1] + $stt[0];
+        $_tm[] = array(
+            $trigger_module,
+            $event,
+            $listener_module,
+            $function,
+            'total: ' . $elapsed . ", function: " . round(($now - $stt), 3)
+        );
+        return jrCore_set_flag($key, $_tm);
+    }
+    return true;
+}
+
+/**
+ * Get stack of triggered events
+ * @return mixed
+ */
+function jrCore_get_triggered_events()
+{
+    if (jrCore_get_flag('jrcore_save_triggered_events')) {
+        $key = 'jrcore_triggered_events';
+        return jrCore_get_flag($key);
+    }
+    return 'error: jrCore_enable_triggered_events() not called - triggered events not saved';
+}
+
+/**
+ * Set flag to enable saving of triggered events
+ * @return mixed
+ */
+function jrCore_enable_triggered_events()
+{
+    return jrCore_set_flag('jrcore_save_triggered_events', 1);
+}
+
+/**
+ * Set flag to disable triggered events
+ * @return mixed
+ */
+function jrCore_disable_triggered_events()
+{
+    return jrCore_delete_flag('jrcore_save_triggered_events');
 }
 
 /**
@@ -374,7 +463,7 @@ function jrCore_get_designer_form_fields($module, $view = null)
     $ckey = "jrcore_get_designer_form_fields_{$module}_{$view}";
     $_tmp = jrCore_get_flag($ckey);
     if ($_tmp) {
-        if (isset($_tmp) && is_array($_tmp) && count($_tmp) > 0) {
+        if (is_array($_tmp) && count($_tmp) > 0) {
             return $_tmp;
         }
         return false;
@@ -412,7 +501,7 @@ function jrCore_get_designer_form_fields($module, $view = null)
 function jrCore_verify_designer_form_field($module, $view, $_field, $allow_hidden = false)
 {
     global $_user;
-    if (!isset($_field) || !is_array($_field) || (isset($_field['form_designer']) && $_field['form_designer'] === false)) {
+    if (!is_array($_field) || (isset($_field['form_designer']) && $_field['form_designer'] === false)) {
         return false;
     }
     // we MUST get a field name
@@ -673,7 +762,7 @@ function jrCore_is_maintenance_mode($_conf, $_post)
                         // We need to check if this is a "no session" login - if so,
                         // we are going to return false
                         $_tmp = jrCore_get_registered_module_features('jrUser', 'skip_session');
-                        if (isset($_tmp) && is_array($_tmp)) {
+                        if ($_tmp && is_array($_tmp)) {
                             foreach ($_tmp as $mod => $_opts) {
                                 if (isset($_opts["{$_post['option']}"]) && ($mod == $_post['module'] || $_opts["{$_post['option']}"] == 'magic_view')) {
                                     return false;
@@ -747,12 +836,7 @@ function jrCore_register_event_trigger($module, $event, $description)
     // a specific event from a specific module - i.e. 'jrUser','get_info_by_id'
     // all events from a specific module - i.e. 'jrUser','all_events'
     // all events for the whole system - i.e. 'jrCore','all_events'
-    $_tmp = jrCore_get_flag('jrcore_event_triggers');
-    if (!$_tmp) {
-        $_tmp = array();
-    }
-    $_tmp["{$module}_{$event}"] = $description;
-    jrCore_set_flag('jrcore_event_triggers', $_tmp);
+    $GLOBALS['__JR_FLAGS']['jrcore_event_triggers']["{$module}_{$event}"] = $description;
     return true;
 }
 
@@ -984,7 +1068,7 @@ function jrCore_set_setting_value($module, $name, $value)
     global $_conf, $_user;
     $usr = (isset($_user['user_name']) && strlen($_user['user_name']) > 0) ? $_user['user_name'] : (isset($_user['user_email']) ? $_user['user_email'] : 'installer');
     $tbl = jrCore_db_table_name('jrCore', 'setting');
-    $req = "UPDATE {$tbl} SET `updated` = UNIX_TIMESTAMP(), `value`   = '" . jrCore_db_escape($value) . "', `user`    = '" . jrCore_db_escape($usr) . "'
+    $req = "UPDATE {$tbl} SET `updated` = UNIX_TIMESTAMP(), `value` = '" . jrCore_db_escape($value) . "', `user` = '" . jrCore_db_escape($usr) . "'
              WHERE `module` = '" . jrCore_db_escape($module) . "' AND `name` = '" . jrCore_db_escape($name) . "' LIMIT 1";
     $cnt = jrCore_db_query($req, 'COUNT');
     if ($cnt && $cnt === 1) {
@@ -995,117 +1079,167 @@ function jrCore_set_setting_value($module, $name, $value)
 }
 
 /**
- * Check for and run Minute maintenance if needed
+ * Check for and run maintenance workers if needed
  * @return bool
  */
-function jrCore_minute_maintenance_check()
+function jrCore_maintenance_check()
 {
-    global $_conf, $_post;
+    global $_post;
+    // NOTE: Do not use a global lock here as that requires a
+    // trip to the DB on every process to "check"
+    // Make sure we are the only process to create the queue entry
     $now = gmstrftime('%y%m%d%H%M');
-    if (isset($_conf['jrCore_last_minute_maint_run']) && $_conf['jrCore_last_minute_maint_run'] < $now) {
+    $dir = jrCore_get_module_cache_dir('jrCore');
+    $lck = "{$dir}/minute_maintenance_{$now}.lock";
+    if (!is_file($lck)) {
 
-        $tbl = jrCore_db_table_name('jrCore', 'play_key');
-        $req = "INSERT IGNORE INTO {$tbl} (key_time, key_code) VALUES (UNIX_TIMESTAMP(), 'MM{$now}')";
-        if (jrCore_db_query($req, 'INSERT_ID') > 0) {
+        // No lock file - create minute maintenance queue entry
+        touch($lck);
+        $_queue = array(
+            'minute' => $now,
+            '_post'  => $_post
+        );
+        jrCore_queue_create('jrCore', 'minute_maintenance', $_queue, 0, null, 1);
 
-            ini_set('max_execution_time', 58);
-            jrCore_set_flag('jr_minute_maintenance_is_active', 1);
-
-            jrCore_trigger_event('jrCore', 'minute_maintenance', $_post);
-
-            jrCore_set_setting_value('jrCore', 'last_minute_maint_run', $now);
-            jrCore_delete_config_cache();
-
-            // Cleanup from minute maintenance
-            $tbl = jrCore_db_table_name('jrCore', 'play_key');
-            $req = "DELETE FROM {$tbl} WHERE key_code = 'MM{$now}'";
-            jrCore_db_query($req);
-
-            jrCore_delete_flag('jr_minute_maintenance_is_active');
-            return true;
+        // Every 10 minutes we need to make sure our queues are in good order
+        if (substr($now, 9, 1) == 1) {
+            // NOTE: Queue checks are done OUTSIDE a queue entry so we ensure they can
+            // run even if the queue_data gets out of whack
+            jrCore_check_for_dead_queue_workers();
+            jrCore_validate_queue_info();
+            jrCore_validate_queue_data();
         }
+
     }
     return false;
 }
 
 /**
- * Check for and run HOURLY maintenance if needed
+ * Minute Maintenance worker
+ * @param array $_queue
  * @return bool
  */
-function jrCore_hourly_maintenance_check()
+function jrCore_minute_maintenance_worker($_queue)
 {
-    global $_conf, $_post;
-    $off = (time() + date_offset_get(new DateTime));
-    $now = gmstrftime('%Y%m%d%H', $off);
+    global $_conf;
+
+    // Process MINUTE maintenance
+    ini_set('max_execution_time', 55);
+    jrCore_set_flag('jr_minute_maintenance_is_active', 1);
+
+    // Check for HOURLY maintenance
+    $clr = false;
+    $now = gmstrftime('%Y%m%d%H');
+
     if (isset($_conf['jrCore_last_hourly_maint_run']) && $_conf['jrCore_last_hourly_maint_run'] < $now) {
-
-        ini_set('max_execution_time', 3550);
-        jrCore_set_flag('jr_hourly_maintenance_is_active', 1);
-
-        // Run cache and directory maintenance
-        jrCore_cache_maintenance();
-        jrCore_delete_old_upload_directories();
-        jrCore_check_for_dead_queue_workers();
-        jrCore_validate_queue_info();
-
-        // Cleanup hit counter ip table
-        $tbl = jrCore_db_table_name('jrCore', 'count_ip');
-        $req = "DELETE FROM {$tbl} WHERE count_time < (UNIX_TIMESTAMP() - 86400)";
-        jrCore_db_query($req, 'COUNT');
-
-        // Cleanup old form sessions (older than 8 hours)
-        $tbl = jrCore_db_table_name('jrCore', 'form_session');
-        $req = "DELETE FROM {$tbl} WHERE form_updated < (UNIX_TIMESTAMP() - 28800)";
-        jrCore_db_query($req);
-
-        // Delete old play keys (over 12 hours)
-        $tbl = jrCore_db_table_name('jrCore', 'play_key');
-        $req = "DELETE FROM {$tbl} WHERE key_time < (UNIX_TIMESTAMP() - 43200)";
-        jrCore_db_query($req);
-
-        jrCore_trigger_event('jrCore', 'hourly_maintenance', $_post);
-
         jrCore_set_setting_value('jrCore', 'last_hourly_maint_run', $now);
-        jrCore_delete_config_cache();
-
-        jrCore_delete_flag('jr_hourly_maintenance_is_active');
-        return true;
-
+        $_tmp = array(
+            'hour'  => $now,
+            '_post' => $_queue['_post']
+        );
+        jrCore_queue_create('jrCore', 'hourly_maintenance', $_tmp, 15, null, 1);
+        $clr = true;
     }
-    return false;
-}
 
-/**
- * Check for and run DAILY maintenance if needed
- * @return bool
- */
-function jrCore_daily_maintenance_check()
-{
-    global $_conf, $_post;
+    // Check for DAILY maintenance
     $off = (time() + date_offset_get(new DateTime));
     $now = gmstrftime('%Y%m%d', $off);
     if (isset($_conf['jrCore_last_daily_maint_run']) && $_conf['jrCore_last_daily_maint_run'] < $now) {
-
-        ini_set('max_execution_time', 86000);
-
-        jrCore_set_flag('jr_daily_maintenance_is_active', 1);
-        jrCore_logger('INF', 'daily_maintenance started');
-
-        // Delete old modal updates (over 24 hours)
-        $tbl = jrCore_db_table_name('jrCore', 'modal');
-        $req = "DELETE FROM {$tbl} WHERE modal_updated < (UNIX_TIMESTAMP() - 86400)";
-        jrCore_db_query($req);
-
-        jrCore_trigger_event('jrCore', 'daily_maintenance', $_post);
-
         jrCore_set_setting_value('jrCore', 'last_daily_maint_run', $now);
-        jrCore_delete_config_cache();
-
-        // Cleanup from daily maintenance
-        jrCore_delete_flag('jr_daily_maintenance_is_active');
-        jrCore_logger('INF', 'daily_maintenance completed');
-
+        $_tmp = array(
+            'day'   => $now,
+            '_post' => $_queue['_post']
+        );
+        jrCore_queue_create('jrCore', 'daily_maintenance', $_tmp, 30, null, 1);
+        $clr = true;
     }
+
+    // Do we need to UPDATE our config cache?
+    if ($clr) {
+        jrCore_delete_config_cache();
+    }
+
+    // Delete expired global locks
+    jrCore_delete_expired_global_locks();
+
+    // Cache maintenance
+    jrCore_cache_maintenance();
+
+    jrCore_trigger_event('jrCore', 'minute_maintenance', $_queue);
+    jrCore_delete_flag('jr_minute_maintenance_is_active');
+
+    return true;
+}
+
+/**
+ * Run HOURLY maintenance
+ * @param array $_queue
+ * @return bool
+ */
+function jrCore_hourly_maintenance_worker($_queue)
+{
+    ini_set('max_execution_time', 3550);
+
+    jrCore_set_flag('jr_hourly_maintenance_is_active', 1);
+    $now = explode(' ', microtime());
+    $now = $now[1] + $now[0];
+
+    // Run maintenance
+    jrCore_form_session_maintenance();
+    jrCore_media_play_key_maintenance();
+    jrCore_purge_activity_logs();
+    jrCore_delete_old_error_and_debug_logs();
+    jrCore_delete_old_upload_directories();
+    jrCore_delete_old_maintenance_lock_files();
+    jrCore_delete_old_test_templates();
+
+    // Maintain queue integrity
+    jrCore_check_for_dead_queue_workers();
+    jrCore_validate_queue_info();
+    jrCore_validate_queue_data();
+
+    // Cleanup hit counter ip table older than 24 hours
+    $tbl = jrCore_db_table_name('jrCore', 'count_ip');
+    $req = "DELETE FROM {$tbl} WHERE count_time < (UNIX_TIMESTAMP() - 86400)";
+    jrCore_db_query($req, 'COUNT');
+
+    // Delete old modal entries (over 12 hours)
+    $tbl = jrCore_db_table_name('jrCore', 'modal');
+    $req = "SELECT modal_id FROM {$tbl} WHERE modal_updated < (UNIX_TIMESTAMP() - 43200)";
+    $_rt = jrCore_db_query($req, 'modal_id', false, 'modal_id');
+    if ($_rt && is_array($_rt)) {
+        $req = "DELETE FROM {$tbl} WHERE modal_id IN(" . implode(',', $_rt) . ')';
+        jrCore_db_query($req);
+    }
+
+    jrCore_trigger_event('jrCore', 'hourly_maintenance', $_queue);
+
+    $end = explode(' ', microtime());
+    $end = $end[1] + $end[0];
+    $end = round(($end - $now), 2);
+
+    if ($end > 5) {
+        jrCore_logger('INF', "hourly maintenance worker completed in {$end} seconds");
+    }
+    jrCore_delete_flag('jr_hourly_maintenance_is_active');
+    return true;
+}
+
+/**
+ * Run DAILY maintenance
+ * @param array $_queue
+ * @return bool
+ */
+function jrCore_daily_maintenance_worker($_queue)
+{
+    ini_set('max_execution_time', 86000);
+    jrCore_set_flag('jr_daily_maintenance_is_active', 1);
+    jrCore_logger('INF', 'daily maintenance worker started');
+
+    jrCore_trigger_event('jrCore', 'daily_maintenance', $_queue);
+
+    jrCore_logger('INF', 'daily maintenance worker completed');
+    jrCore_delete_flag('jr_daily_maintenance_is_active');
     return true;
 }
 
@@ -1244,7 +1378,7 @@ function jrCore_send_email($_add, $subject, $message, $_options = null, $_user_d
 
     // Trigger our addresses event
     $_add = jrCore_trigger_event('jrCore', 'email_addresses', $_add, $_user_data);
-    if (!$_add || count($_add) === 0) {
+    if (!$_add || isset($_add['abort']) || count($_add) === 0) {
         // Our addresses were removed by a listener
         return 0;
     }
@@ -1259,6 +1393,11 @@ function jrCore_send_email($_add, $subject, $message, $_options = null, $_user_d
     }
     elseif (stripos($message, '<html') === 0 || stripos($message, 'DOCTYPE')) {
         $html = true;
+    }
+
+    // Are we overriding any setting?
+    if (isset($_options['mailing_module']) && isset($_conf["{$_options['mailing_module']}_email_format"])) {
+        $html = ($_conf["{$_options['mailing_module']}_email_format"] == 'html') ? true : false;
     }
 
     // Make sure any bbcode is converted to HTML
@@ -1344,7 +1483,11 @@ function jrCore_send_email($_add, $subject, $message, $_options = null, $_user_d
             '_user_data' => $v,
             'queue'      => $queue
         );
-        jrCore_queue_create('jrCore', $queue, $_queue);
+        $sleep  = 0;
+        if (isset($_options['queue_sleep']) && jrCore_checktype($_options['queue_sleep'], 'number_nz')) {
+            $sleep = (int) $_options['queue_sleep'];
+        }
+        jrCore_queue_create('jrCore', $queue, $_queue, $sleep);
 
     }
     return count($_add);
@@ -1353,7 +1496,7 @@ function jrCore_send_email($_add, $subject, $message, $_options = null, $_user_d
 /**
  * Worker that processes the Core send_email Queue
  * @param $_queue array Queue entry
- * @return bool
+ * @return mixed
  */
 function jrCore_send_email_queue_worker($_queue)
 {
@@ -1369,29 +1512,29 @@ function jrCore_send_email_queue_worker($_queue)
         // Are we throttling?
         if (isset($_conf['jrMailer_throttle']) && jrCore_checktype($_conf['jrMailer_throttle'], 'number_nz')) {
 
-            // See if we have already tried on this run...
+            // See if we have already hit our max on this run
             $min = strftime('%y%m%d%H%M');
-            if ($tmp = jrCore_get_flag('jrcore_send_email_throttle_min')) {
+            if ($tmp = jrCore_get_flag('jrcore_send_email_throttled')) {
                 if ($tmp == $min) {
-                    // We cannot send now - return "60" tells the core to sleep the entry for 60 more seconds...
-                    return 60;
+                    // We have hit the max allowed to be sent in this minute - let the queue know we are throttling
+                    return 'THROTTLED';
                 }
-                jrCore_delete_flag('jrcore_send_email_throttle_min');
             }
 
             // We're throttling, and need to make sure we only send X number per minute
-            $max = (int) $_conf['jrMailer_throttle'];
+            $max = (int) $_conf['jrMailer_throttle'] + 1;
             $tbl = jrCore_db_table_name('jrMailer', 'throttle');
-            $req = "INSERT INTO {$tbl} (t_min, t_cnt) VALUES ('{$min}', 1) ON DUPLICATE KEY UPDATE t_cnt = IF(t_cnt < {$max}, (t_cnt + 1), t_cnt)";
-            $cnt = jrCore_db_query($req, 'COUNT');
-            if (!$cnt || $cnt !== 2) {
-                // If we get back "1" it means it is a NEW entry OR we have it our max
-                $req = "SELECT t_cnt FROM {$tbl} WHERE t_min = '{$min}'";
-                $_rt = jrCore_db_query($req, 'SINGLE');
-                if ($_rt && isset($_rt['t_cnt']) && $_rt['t_cnt'] >= $max) {
-                    // We cannot send now - return "60" tells the core to sleep the entry for 60 more seconds...
-                    jrCore_set_flag('jrcore_send_email_throttle_min', $min);
-                    return 60;
+            $_rq = array(
+                "INSERT INTO {$tbl} (t_min, t_cnt) VALUES ('{$min}', 1) ON DUPLICATE KEY UPDATE t_cnt = IF(t_cnt < {$max}, (t_cnt + 1), t_cnt)",
+                "SELECT t_cnt FROM {$tbl} WHERE t_min = '{$min}'"
+            );
+            $_rt = jrCore_db_multi_select($_rq, false, false);
+            if ($_rt && is_array($_rt)) {
+                if (isset($_rt[0][0]['t_cnt']) && $_rt[0][0]['t_cnt'] >= $max) {
+                    // We've hit our maximum send for this minute
+                    // Set the flag so we do not have to check again this minute
+                    jrCore_set_flag('jrcore_send_email_throttled', $min);
+                    return 'THROTTLED';
                 }
             }
         }
@@ -1489,6 +1632,9 @@ function jrCore_empty_recycle_bin_files_worker($_queue)
 {
     // Cleanup any attached media
     if (isset($_queue['_items']) && is_array($_queue['_items'])) {
+        if (!$_pr = jrCore_get_flag('jrprofile_media_changes')) {
+            $_pr = array();
+        }
         foreach ($_queue['_items'] as $_item) {
             if (isset($_item['pid']) && $_item['pid'] > 0 && isset($_item['r_data']{1})) {
                 $_tm = json_decode($_item['r_data'], true);
@@ -1506,9 +1652,47 @@ function jrCore_empty_recycle_bin_files_worker($_queue)
                         }
                     }
                 }
+                $_pr["{$_item['pid']}"] = $_item['pid'];
+            }
+        }
+        if (count($_pr) > 0) {
+            jrCore_set_flag('jrprofile_media_changes', $_pr);
+        }
+    }
+    return true;
+}
+
+/**
+ * Delete or rename media files offline when items are removed
+ * @param $_queue array Queue entry
+ * @return bool
+ */
+function jrCore_db_delete_item_media_worker($_queue)
+{
+    if (isset($_queue['_delete_files']) && is_array($_queue['_delete_files'])) {
+        foreach ($_queue['_delete_files'] as $k => $file) {
+            if (isset($_queue['rb_item_media']) && $_queue['rb_item_media'] == 1) {
+                // This file is going to the recycle bin - rename
+                $file = basename($file);
+                jrCore_rename_media_file($_queue['_profile_id'], $file, 'rb_' . $file);
+            }
+            else {
+                // This file is being deleted
+                jrCore_delete_item_media_file($file[0], $file[1], $_queue['_profile_id'], $_queue['_item_id'], false);
             }
         }
     }
+    return true;
+}
+
+/**
+ * Test Queue System Worker process
+ * @param $_queue array Queue entry
+ * @return bool
+ */
+function jrCore_test_queue_system_worker($_queue)
+{
+    usleep(50000);
     return true;
 }
 
@@ -1743,12 +1927,12 @@ function jrCore_get_graph_stat_values($module, $key, $index, $start_date = 0, $e
         if (is_array($index)) {
             foreach ($index as $k => $a) {
                 $index[$k] = jrCore_db_escape($a);
-                $_mp[$a]    = $k;
+                $_mp[$a]   = $k;
             }
             $act = " AND stat_index IN('" . implode("','", $index) . "')";
         }
         else {
-            $act          = " AND stat_index = '" . jrCore_db_escape($index) . "'";
+            $act         = " AND stat_index = '" . jrCore_db_escape($index) . "'";
             $_mp[$index] = 0;
         }
     }
@@ -1881,22 +2065,26 @@ function jrCore_counter($module, $iid, $name, $amount = 1, $unique = true)
 function jrCore_counter_is_unique_viewer($module, $iid, $name, $timeframe = 86400)
 {
     global $_user;
-    $uip = jrCore_db_escape(jrCore_get_ip());
+    if (!$uip = sprintf('%u', ip2long(jrCore_get_ip()))) {
+        $uip = 0;
+    }
     $iid = (int) $iid;
     $uid = (isset($_user['_user_id'])) ? (int) $_user['_user_id'] : 0;
     $nam = (strpos($name, '_count')) ? $name : "{$name}_count";
     $typ = jrCore_db_escape($nam);
-    $con = jrCore_db_connect(true, false);
     $tbl = jrCore_db_table_name('jrCore', 'count_ip');
-    $req = "INSERT INTO {$tbl} (count_ip, count_uid, count_user_id, count_name, count_time)
-            VALUES ('{$uip}', '{$iid}', '{$uid}', '{$typ}', UNIX_TIMESTAMP())
-            ON DUPLICATE KEY UPDATE count_time = IF(count_time < (UNIX_TIMESTAMP() - {$timeframe}), UNIX_TIMESTAMP(), count_time)";
-    $cnt = jrCore_db_query($req, 'COUNT', false, null, true, $con);
     jrCore_db_close();
+    $con = jrCore_db_connect(true, false);
+    $req = "INSERT INTO {$tbl} (count_ip, count_uid, count_user_id, count_name, count_time)
+            VALUES ({$uip}, {$iid}, {$uid}, '{$typ}', UNIX_TIMESTAMP())
+            ON DUPLICATE KEY UPDATE count_time = IF(count_time < (UNIX_TIMESTAMP() - {$timeframe}), UNIX_TIMESTAMP(), count_time)";
+    $cnt = jrCore_db_query($req, 'COUNT', false, null, false, $con);
+    jrCore_db_close();
+    jrCore_db_connect();
     if ($cnt && ($cnt === 1 || $cnt === 2)) {
         // 0 = record exists and hit is UNDER $timeframe - no count
         // 1 = new row inserted - user has not been counted
-        // 2 = it has been over the $timeframe - recount
+        // 2 = it has been over the $timeframe - updated - recount
         return true;
     }
     return false;
@@ -1966,4 +2154,129 @@ function jrCore_is_tablet_device()
         return $ret;
     }
     return ($tmp == 'yes') ? true : false;
+}
+
+/**
+ * Check to be sure sure a tool is installed and working
+ * @param string $tool tool provided by jrSystemTools
+ * @param string $module if set, module/tools will also be checked
+ * @return bool
+ */
+function jrCore_get_tool_path($tool, $module = null)
+{
+    global $_conf;
+    if (isset($_conf["jrSystemTools_{$tool}_binary"])) {
+        $tool = $_conf["jrSystemTools_{$tool}_binary"];
+    }
+    elseif (!is_null($module) && isset($_conf["{$module}_{$tool}_binary"]) && is_file($_conf["{$module}_{$tool}_binary"])) {
+        $tool = $_conf["{$module}_{$tool}_binary"];
+    }
+    elseif (!is_null($module) && is_file(APP_DIR . "/modules/{$module}/tools/{$tool}")) {
+        $tool = APP_DIR . "/modules/{$module}/tools/{$tool}";
+    }
+    elseif (is_file(APP_DIR . "/modules/jrSystemTools/tools/{$tool}")) {
+        $tool = APP_DIR . "/modules/jrSystemTools/tools/{$tool}";
+    }
+    if (is_file($tool)) {
+        if (!is_executable($tool)) {
+            // Try to set permissions if we can...
+            @chmod($tool, 0755);
+        }
+        return $tool;
+    }
+    return false;
+}
+
+/**
+ * Add a new Key and Value to the data/config/config.php file
+ * @param string $key
+ * @param mixed $value
+ * @return bool
+ */
+function jrCore_add_key_to_config($key, $value)
+{
+    $file = APP_DIR . '/data/config/config.php';
+    if ($_tmp = file($file)) {
+        $key = trim($key);
+        switch ($key) {
+            // Some keys we cannot add
+            case 'jrCore_db_host':
+            case 'jrCore_db_port':
+            case 'jrCore_db_name':
+            case 'jrCore_db_user':
+            case 'jrCore_db_pass':
+                return false;
+                break;
+        }
+        if (strlen($key) > 3) {
+            $_new = array();
+            foreach ($_tmp as $line) {
+                if (!strpos($line, "'" . $key . "'")) {
+                    $_new[] = trim($line);
+                }
+            }
+            $val = trim($value);
+            if ($val === 'true' || $val === 'false') {
+                $_new[] = "\$_conf['{$key}'] = {$val};";
+            }
+            else {
+                switch ($key) {
+                    case 'jrCore_dir_perms':
+                    case 'jrCore_file_perms':
+                        $_new[] = "\$_conf['{$key}'] = {$val};";
+                        break;
+                    default:
+                        $_new[] = "\$_conf['{$key}'] = '{$val}';";
+                        break;
+                }
+            }
+            if (jrCore_write_to_file("{$file}.tmp.php", implode("\n", $_new) . "\n")) {
+                if (rename("{$file}.tmp.php", $file)) {
+                    return true;
+                }
+                unlink("{$file}.tmp.php");
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Delete an existing key from the data/config/config.php file
+ * @param string $key
+ * @return bool
+ */
+function jrCore_delete_key_from_config($key)
+{
+    $file = APP_DIR . '/data/config/config.php';
+    if ($_tmp = file($file)) {
+        $key = trim($key);
+        switch ($key) {
+            // Some keys we cannot delete
+            case 'jrCore_db_host':
+            case 'jrCore_db_port':
+            case 'jrCore_db_name':
+            case 'jrCore_db_user':
+            case 'jrCore_db_pass':
+                return false;
+                break;
+        }
+        if (strlen($key) > 3) {
+            $_new = array();
+            foreach ($_tmp as $line) {
+                if (!strpos($line, "'" . $key . "'")) {
+                    $_new[] = trim($line);
+                }
+            }
+            if (count($_new) > 0) {
+                if (jrCore_write_to_file("{$file}.tmp.php", implode("\n", $_new) . "\n")) {
+                    if (rename("{$file}.tmp.php", $file)) {
+                        return true;
+                    }
+                    unlink("{$file}.tmp.php");
+                }
+            }
+        }
+    }
+    return false;
 }

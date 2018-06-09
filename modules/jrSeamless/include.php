@@ -2,7 +2,7 @@
 /**
  * Jamroom Seamless module
  *
- * copyright 2016 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -46,7 +46,7 @@ function jrSeamless_meta()
     $_tmp = array(
         'name'        => 'Seamless',
         'url'         => 'seamless',
-        'version'     => '1.1.11',
+        'version'     => '1.1.13',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => "Provides a template function to create &quot;seamless&quot; lists of merged DataStore items",
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/289/seamless',
@@ -118,7 +118,7 @@ function jrSeamless_widget_list_config($_post, $_user, $_conf, $_wg)
         'options'  => $_opt,
         'onchange' => 'jrSeamless_widget_list_get_module_info(this)',
         'type'     => 'select_multiple',
-        'value'    => $_wg['list_modules'],
+        'value'    => (isset($_wg['list_modules'])) ? $_wg['list_modules'] : '',
         'validate' => 'not_empty',
         'required' => true
     );
@@ -138,7 +138,10 @@ function jrSeamless_widget_list_config($_post, $_user, $_conf, $_wg)
     if (isset($_wg['list_modules'])) {
         foreach (array(0, 1, 2) as $k) {
             if (isset($_wg["list_search{$k}"]{1})) {
-                list($_sel[$k], $_opt[$k], $_val[$k]) = explode(' ', $_wg["list_search{$k}"]);
+                list($sel, $opt, $val) = explode(' ', $_wg["list_search{$k}"], 3);
+                $_sel[$k] = $sel;
+                $_opt[$k] = $opt;
+                $_val[$k] = $val;
                 if (strlen($_opt[$k]) > 0) {
                     switch ($_opt[$k]) {
                         case '=':
@@ -277,13 +280,13 @@ function jrSeamless_widget_list_config($_post, $_user, $_conf, $_wg)
     jrCore_page_custom($html);
 
     $cls = ' form_element_disabled';
-    $att = ' disabled="disabled"';
+    $att = 'disabled="disabled"';
     if ((isset($obv) && strlen($obv) > 0) || strlen($_att[0]) === 0) {
         $cls = '';
         $att = '';
     }
-    $html = '<select id="list_order_by_key" name="list_order_by_key" class="form_select list_search_key' . $cls . '"' . $att . ' style="width:30%">' . implode("\n", $_obs) . '</select>&nbsp;
-             <select id="list_order_by_dir" name="list_order_by_dir" class="form_select list_search_dir' . $cls . '"' . $att . ' style="width:17%">' . implode("\n", $_obc) . '</select>';
+    $html = '<select id="list_order_by_key" name="list_order_by_key" class="form_select list_search_key' . $cls . '" ' . $att . ' style="width:30%">' . implode("\n", $_obs) . '</select>&nbsp;
+             <select id="list_order_by_dir" name="list_order_by_dir" class="form_select list_search_dir' . $cls . '" ' . $att . ' style="width:17%">' . implode("\n", $_obc) . '</select>';
     jrCore_page_custom($html, 'Order By', null, 'If you would like the Item List to be ordered by a specific key, select it here.<br><br><b>Example:</b> To create a list of &quot;newest&quot; items, order by the <b>_created</b> key, descending.');
 
     $_num = array(
@@ -344,7 +347,7 @@ function jrSeamless_widget_list_config($_post, $_user, $_conf, $_wg)
         $_tpl[] = "<option value=\"custom\"> custom</option>";
     }
 
-    $html = '<select id="list_template" name="list_template" class="form_select list_template_select ' . $cls . '"' . $att . ' style="width:30%" onchange="if($(this).val() == \'custom\') { $(\'#ff-row-list_custom_template\').slideDown(250, function() { jrSiteBuilder_activate_editor(); } ); } else { $(\'#ff-row-list_custom_template\').slideUp(50); }">' . implode("\n", $_tpl) . '</select>';
+    $html = '<select id="list_template" name="list_template" class="form_select list_template_select ' . $cls . '" ' . $att . ' style="width:30%" onchange="if($(this).val() === \'custom\') { $(\'#ff-row-list_custom_template\').slideDown(250, function() { jrSiteBuilder_activate_editor(); } ); } else { $(\'#ff-row-list_custom_template\').slideUp(50); }">' . implode("\n", $_tpl) . '</select>';
     jrCore_page_custom($html, 'Template', null, 'Select the template that will be used for each entry in the output list');
 
     // custom template
@@ -371,20 +374,13 @@ function jrSeamless_widget_list_config($_post, $_user, $_conf, $_wg)
  */
 function jrSeamless_widget_list_config_save($_post)
 {
-    global $_conf;
     // check custom list template for errors
     if (isset($_post['list_template']) && $_post['list_template'] == 'custom' && strlen($_post['list_custom_template']) > 0) {
-        $cdr = jrCore_get_module_cache_dir('jrCore');
-        $nam = time() . ".tpl";
-        jrCore_write_to_file("{$cdr}/{$nam}", $_post['list_custom_template']);
-        $url = jrCore_get_module_url('jrCore');
-        $out = jrCore_load_url("{$_conf['jrCore_base_url']}/{$url}/test_template/{$nam}");
-        if (isset($out) && strlen($out) > 1 && (strpos($out, 'error:') === 0 || stristr($out, 'fatal error'))) {
-            unlink("{$cdr}/{$nam}");
+        $err = jrCore_test_template_for_errors('jrSeamless', $_post['list_custom_template']);
+        if ($err && strpos($err, 'error') === 0) {
             jrCore_set_form_notice('error', 'There is a syntax error in your template - please fix and try again');
             return jrCore_form_result();
         }
-        unlink("{$cdr}/{$nam}");
     }
 
     $_out = array();
@@ -438,7 +434,7 @@ function jrSeamless_widget_list_config_save($_post)
     unset($_post['list_order_by_key'], $_post['list_order_by_dir']);
 
     foreach ($_post as $k => $v) {
-        if (strpos($k, 'list_') === 0 && strlen($v) > 0) {
+        if (strpos($k, 'list_') === 0 && !is_array($v) && strlen($v) > 0) {
             $_out[$k] = $v;
         }
     }
@@ -859,15 +855,15 @@ function smarty_function_jrSeamless_list($params, $smarty)
                 arsort($_ord, SORT_NUMERIC);
                 break;
 
+            case 'random':
             case 'rand':
-                if ($_tmp = array_rand($_ord, count($_ord))) {
-                    $_or2 = array();
-                    foreach ($_tmp as $k => $v) {
-                        $_or2[$v] = $_ord[$v];
-                    }
-                    $_ord = $_or2;
-                    unset($_tmp, $_or2);
+                $keys = array_keys($_ord);
+                shuffle($keys);
+                $_tmp = array();
+                foreach ($keys as $key) {
+                    $_tmp["{$key}"] = $_ord[$key];
                 }
+                $_ord = $_tmp;
                 break;
         }
 
@@ -901,7 +897,7 @@ function smarty_function_jrSeamless_list($params, $smarty)
 
             // NOTE: We don't have to check for privacy, etc here since that was already done above
             $_sp = array(
-                'search' => array(
+                'search'         => array(
                     "_item_id in " . implode(',', $_ids)
                 ),
                 'privacy_check'  => false,

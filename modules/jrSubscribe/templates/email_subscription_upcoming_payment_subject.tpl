@@ -1,0 +1,1 @@
+Thank you for being a {$_conf.jrCore_system_name} subscriber!

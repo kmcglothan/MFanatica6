@@ -15,7 +15,7 @@ img.bg {
     position: fixed;
     top: 50px;
     left: 50px;
-    width: 100%;
+    width: 90%;
 }
 .message {
     margin: 12px;
@@ -57,7 +57,8 @@ img.bg {
 .launch_submit_button {
     display: inline-block;
     background: transparent;
-    padding: 10px 20px;
+    padding: 10px 20px 10px 10px;
+    margin-left: 10px;
     font-size: 18px;
     border: 2px solid #FFFFFF;
     color: #FFFFFF;
@@ -111,7 +112,7 @@ img.bg {
     .wrap {
         top: 0;
         left: 0;
-        width: 100%;
+        width: 90%;
     }
     .message {
         font-size: 14px;

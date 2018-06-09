@@ -28,7 +28,7 @@ function smarty_modifiercompiler_default($params)
 
     array_shift($params);
     foreach ($params as $param) {
-        // Modified by brian@jamroom.net to check for strlen()
+        // Modified by brian@jamroom.net to use strlen()
         $output = '(($tmp = @' . $output . ')===null||strlen($tmp)===0||$tmp===\'\' ? ' . $param . ' : $tmp)';
     }
 

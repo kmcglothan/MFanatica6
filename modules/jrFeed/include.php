@@ -49,7 +49,7 @@ function jrFeed_meta()
     $_tmp = array(
         'name'        => 'RSS Feed and Reader',
         'url'         => 'feed',
-        'version'     => '1.2.1',
+        'version'     => '1.2.4',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Import an external RSS Feed into a template and create RSS feeds of site content.',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/277/rss-feed-and-reader',
@@ -151,92 +151,100 @@ function smarty_function_jrFeed_list($params, $smarty)
     if (!jrCore_module_is_active('jrFeed')) {
         return '';
     }
-    // Get feed item
-    if (isset($params['name']) && $params['name'] != '') {
-        $params['name'] = trim($params['name']);
-        $_rt            = jrCore_db_get_item_by_key('jrFeed', 'feed_name', $params['name']);
-        if (!$_rt || !is_array($_rt)) {
+    $ckey = json_encode($params);
+    if (!$out = jrCore_is_cached('jrFeed', $ckey)) {
+        // Get feed item
+        if (isset($params['name']) && $params['name'] != '') {
+            $params['name'] = trim($params['name']);
+            $_rt            = jrCore_db_get_item_by_key('jrFeed', 'feed_name', $params['name']);
+            if (!$_rt || !is_array($_rt)) {
+                return '';
+            }
+            $url = $_rt['feed_url'];
+        }
+        else {
+            return 'jrFeed - feed name required';
+        }
+        // Check the incoming parameters
+        if (!isset($params['type']) || $params['type'] == '') {
+            $params['type'] = 'rss';
+        }
+        if (!jrCore_checktype($params['limit'], 'number_nz')) {
+            $params['limit'] = 5;
+        }
+        if (isset($params['template']) && $params['template'] != '') {
+            $params['tpl_dir'] = $_conf['jrCore_active_skin'];
+        }
+        else {
+            $params['template'] = "{$params['type']}_list.tpl";
+            $params['tpl_dir']  = 'jrFeed';
+        }
+        $_tmp = array();
+        foreach ($params as $k => $v) {
+            $_tmp['jrFeed']['info'][$k] = $v;
+        }
+        // Get the feed
+        $_x  = array();
+        $atm = false;
+        $xml = jrCore_load_url($url);
+        if ($xml && strpos($xml, '/Atom') && !stripos($xml, '<channel>')) {
+            $atm = true;
+        }
+        $xml = @simplexml_load_string($xml, null, LIBXML_NOCDATA);
+        if (!$xml) {
+            // Unable to parse XML for feed
             return '';
         }
-        $url = $_rt['feed_url'];
-    }
-    else {
-        return 'jrFeed - feed name required';
-    }
-    // Check the incoming parameters
-    if (!isset($params['type']) || $params['type'] == '') {
-        $params['type'] = 'rss';
-    }
-    if (!jrCore_checktype($params['limit'], 'number_nz')) {
-        $params['limit'] = 5;
-    }
-    if (isset($params['template']) && $params['template'] != '') {
-        $params['tpl_dir'] = $_conf['jrCore_active_skin'];
-    }
-    else {
-        $params['template'] = "{$params['type']}_list.tpl";
-        $params['tpl_dir']  = 'jrFeed';
-    }
-    $_tmp = array();
-    foreach ($params as $k => $v) {
-        $_tmp['jrFeed']['info'][$k] = $v;
-    }
-    // Get the feed
-    $_x  = array();
-    $atm = false;
-    $xml = jrCore_load_url($url);
-    if ($xml && strpos($xml, '/Atom') && !stripos($xml, '<channel>')) {
-        $atm = true;
-    }
-    $xml = simplexml_load_string($xml, null, LIBXML_NOCDATA);
-    if (!$xml) {
-        // Unable to parse XML for feed
-        return '';
-    }
-    if ($atm) {
-        // This is an ATOM feed
-        /** @noinspection PhpUndefinedFieldInspection */
-        $_x['title'] = (string) $xml->title;
-        $i           = 0;
-        /** @noinspection PhpUndefinedFieldInspection */
-        foreach ($xml->entry as $item) {
-            if ($i == $params['limit']) {
-                break;
+        if ($atm) {
+            // This is an ATOM feed
+            /** @noinspection PhpUndefinedFieldInspection */
+            $_x['title'] = (string) $xml->title;
+            $i           = 0;
+            /** @noinspection PhpUndefinedFieldInspection */
+            foreach ($xml->entry as $item) {
+                if ($i == $params['limit']) {
+                    break;
+                }
+                $item                          = json_decode(json_encode($item), true);
+                $_x['item'][$i]['title']       = $item['title'];
+                $_x['item'][$i]['link']        = $item['link']['@attributes']['href'];
+                $_x['item'][$i]['pubDate']     = $item['updated'];
+                $_x['item'][$i]['description'] = $item['content'];
+                if (isset($item['id'])) {
+                    $_x['item'][$i]['guid'] = $item['id'];
+                }
+                $i++;
             }
-            $item                          = json_decode(json_encode($item), true);
-            $_x['item'][$i]['title']       = $item['title'];
-            $_x['item'][$i]['link']        = $item['link']['@attributes']['href'];
-            $_x['item'][$i]['pubDate']     = $item['updated'];
-            $_x['item'][$i]['description'] = $item['content'];
-            if (isset($item['id'])) {
-                $_x['item'][$i]['guid'] = $item['id'];
-            }
-            $i++;
         }
-    }
-    else {
-        // This is an RSS Feed
-        /** @noinspection PhpUndefinedFieldInspection */
-        $_x['title'] = (string) $xml->channel->title;
-        /** @noinspection PhpUndefinedFieldInspection */
-        $_x['description'] = (string) $xml->channel->description;
-        $i                 = 0;
-        /** @noinspection PhpUndefinedFieldInspection */
-        foreach ($xml->channel->item as $item) {
-            if ($i == $params['limit']) {
-                break;
+        else {
+            // This is an RSS Feed
+            /** @noinspection PhpUndefinedFieldInspection */
+            $_x['title'] = (string) $xml->channel->title;
+            /** @noinspection PhpUndefinedFieldInspection */
+            $_x['description'] = (string) $xml->channel->description;
+            $i                 = 0;
+            /** @noinspection PhpUndefinedFieldInspection */
+            foreach ($xml->channel->item as $item) {
+                if ($i == $params['limit']) {
+                    break;
+                }
+                $_x['item'][$i]['title']       = (string) $item->title;
+                $_x['item'][$i]['link']        = (string) $item->link;
+                $_x['item'][$i]['pubDate']     = strtotime((string) $item->pubDate);
+                $_x['item'][$i]['description'] = (string) $item->description;
+                $i++;
             }
-            $_x['item'][$i]['title']       = (string) $item->title;
-            $_x['item'][$i]['link']        = (string) $item->link;
-            $_x['item'][$i]['pubDate']     = strtotime((string) $item->pubDate);
-            $_x['item'][$i]['description'] = (string) $item->description;
-            $i++;
         }
-    }
-    $_tmp['jrFeed']['feed'] = $_x;
+        $_tmp['jrFeed']['feed'] = $_x;
 
-    // Call the appropriate template and return
-    $out = jrCore_parse_template($params['template'], $_tmp, $params['tpl_dir']);
+        // Call the appropriate template and return
+        $out = jrCore_parse_template($params['template'], $_tmp, $params['tpl_dir']);
+
+        // add in caching
+        jrCore_add_to_cache('jrFeed', $ckey, $out);
+    }
+
+
     if (isset($params['assign']) && $params['assign'] != '') {
         $smarty->assign($params['assign'], $out);
         return '';

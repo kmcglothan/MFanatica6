@@ -2,7 +2,7 @@
 /**
  * Jamroom OneAll Social module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -43,8 +43,6 @@ defined('APP_DIR') or exit();
  */
 function jrOneAll_config()
 {
-    global $_conf;
-
     // OneAll Public Key
     $_tmp = array(
         'name'     => 'public_key',
@@ -110,6 +108,19 @@ function jrOneAll_config()
     );
     jrCore_register_setting('jrOneAll', $_tmp);
 
+    // Auto Link existing accounts
+    $_tmp = array(
+        'name'     => 'link_existing',
+        'default'  => 'on',
+        'type'     => 'checkbox',
+        'validate' => 'onoff',
+        'required' => 'on',
+        'label'    => 'Link Existing Accounts',
+        'help'     => 'If this option is checked, when a user attempts to link a social account to an email address that already exists in the system it will automatically link them to their existing user account if their email address has been verified by OneAll.  If this option is unchecked, the user will receive a notice indicating the account already exists.',
+        'order'    => 6
+    );
+    jrCore_register_setting('jrOneAll', $_tmp);
+
     // Social Signup Message
     $_tmp = array(
         'name'     => 'social_message',
@@ -120,7 +131,7 @@ function jrOneAll_config()
         'label'    => 'Social Options Message',
         'sublabel' => 'HTML is allowed',
         'help'     => "If you have enabled the &quot;Social Options Only&quot; setting, you can enter an optional message here that will be displayed to the user on the Login and Signup screens",
-        'order'    => 6
+        'order'    => 7
     );
     jrCore_register_setting('jrOneAll', $_tmp);
 
@@ -138,7 +149,7 @@ function jrOneAll_config()
         'section'  => 'login and signup networks',
         'layout'   => 'columns',
         'columns'  => 3,
-        'order'    => 5
+        'order'    => 10
     );
     jrCore_register_setting('jrOneAll', $_tmp);
 
@@ -157,7 +168,7 @@ function jrOneAll_config()
         'section'  => 'sharing networks',
         'layout'   => 'columns',
         'columns'  => 1,
-        'order'    => 6
+        'order'    => 20
     );
     jrCore_register_setting('jrOneAll', $_tmp);
 

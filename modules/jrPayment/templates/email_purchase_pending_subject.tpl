@@ -1,0 +1,1 @@
+[{$_conf.jrCore_system_name}] Pending purchase

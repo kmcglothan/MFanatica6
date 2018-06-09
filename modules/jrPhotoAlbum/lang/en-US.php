@@ -2,7 +2,7 @@
 /**
  * Jamroom Photo Albums module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -61,3 +61,6 @@ $lang[15] = 'add';
 $lang[16] = 'new photo album name';
 $lang[17] = 'create';
 $lang[18] = 'View images in Lightbox';
+$lang[19] = 'You haven\'t created any <b>Photo Albums</b> yet';
+$lang[20] = 'You can build collections of gallery images into a photo album. <br>Visit other profiles who have created galleries and use the';
+$lang[21] = 'button to create your photo albums.<br> Photo albums you create will show here on your profile.';

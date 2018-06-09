@@ -2,8 +2,7 @@
 /**
  * Jamroom FoxyCart eCommerce module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2017 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -444,7 +443,7 @@ function view_jrFoxyCart_items($_post, $_user, $_conf)
                 );
                 $dat[2]['title'] = jrImage_get_image_src($_p['purchase_module'], "{$pfx}_image", $_p['purchase_item_id'], 'xsmall', $_im);
                 $dat[3]['title'] = "<a href=\"{$_conf['jrCore_base_url']}/{$_d['profile_url']}\">{$_d['profile_name']}</a> - <a href=\"{$_conf['jrCore_base_url']}/{$_d['profile_url']}/{$url}/{$_p['purchase_item_id']}/" . $_d["{$pfx}_title_url"] . "\">" . $_d["{$pfx}_title"] . '</a>';
-                $dat[6]['title'] = jrCore_page_button("a{$_p['purchase_item_id']}", 'download', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$url}/vault_download/{$pfx}_file/{$_p['purchase_item_id']}')");
+                $dat[6]['title'] = jrCore_page_button("a{$_p['purchase_item_id']}", $_lang['jrFoxyCart'][4], "jrCore_window_location('{$_conf['jrCore_base_url']}/{$url}/vault_download/{$pfx}_file/{$_p['purchase_item_id']}')");
             }
             else {
                 $dat[2]['title'] = '';
@@ -638,8 +637,9 @@ function view_jrFoxyCart_subscription_history($_post, $_user, $_conf)
         );
 
         // Get profiles we have access to
+        $_tm = jrProfile_get_user_linked_profiles($_user['_user_id']);
         $_sc = array(
-            'search'         => array("_profile_id in {$_user['user_linked_profile_ids']}"),
+            'search'         => array("_profile_id in " . implode(',', array_keys($_tm))),
             'group_by'       => "_item_id",
             'order_by'       => array(
                 'profile_name' => 'ASC'
@@ -1143,7 +1143,6 @@ function view_jrFoxyCart_subscription_modify($_post, $_user, $_conf)
  * @param $_post
  * @param $_user
  * @param $_conf
- * @return string
  */
 function view_jrFoxyCart_ajax($_post, $_user, $_conf)
 {
@@ -1627,7 +1626,7 @@ function view_jrFoxyCart_payout_complete($_post, $_user, $_conf)
         // update the payout table with the amount payed out
         $_sl = json_decode($_rt['p_data'], true);
         $tbl = jrCore_db_table_name('jrFoxyCart', 'sale');
-        $req = "UPDATE {$tbl} SET sale_payed_out = '1' WHERE sale_id IN(" . implode(',', array_keys($_sl)) . ")";
+        $req = "UPDATE {$tbl} SET sale_payed_out = '1' WHERE sale_id IN(" . implode(',', array_keys($_sl)) . ") AND sale_seller_profile_id IN(" . implode(',', array_keys($_pid)) . ")";
         $cnt = jrCore_db_query($req, 'COUNT');
         jrCore_logger('INF', "Updated {$cnt} sales records as payed out per profile payout");
 

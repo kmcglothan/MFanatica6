@@ -49,7 +49,7 @@ function jrEmbed_meta()
     $_tmp = array(
         'name'        => 'Editor Embedded Media',
         'url'         => 'embed',
-        'version'     => '1.3.10',
+        'version'     => '1.3.12',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Adds an embed button to the WYSIWYG editor for embedding items',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/194/editor-embedded-media',
@@ -77,8 +77,8 @@ function jrEmbed_init()
 
     // Core support
     $_tmp = array(
-        'label' => 'Show in Editor',
-        'help'  => 'If checked, the &quot;Embed Local Media&quot; button will show in the editor',
+        'label'   => 'Show in Editor',
+        'help'    => 'If checked, the &quot;Embed Local Media&quot; button will show in the editor',
         'default' => 'on'
     );
     jrCore_register_module_feature('jrCore', 'quota_support', 'jrEmbed', 'on', $_tmp);
@@ -129,6 +129,20 @@ function jrEmbed_get_active_modules()
     return $_out;
 }
 
+/**
+ * Strip embed tags from a string
+ * @param $string
+ * @return mixed
+ */
+function jrEmbed_strip_embed_tags($string)
+{
+    if (strpos(' ' . $string, '[jrEmbed')) {
+        // We have embed codes in this string - strip
+        $string = preg_replace('/\[jrEmbed[^\]]+\]/', '', $string);
+    }
+    return $string;
+}
+
 //---------------------------------------------------------
 // SMARTY FUNCTIONS
 //---------------------------------------------------------
@@ -166,11 +180,9 @@ function smarty_modifier_jrEmbed_embed($html)
  */
 function jrEmbed_replace_tag($matches)
 {
-    global $_mods;
-
     $params = jrEmbed_get_param_array_from_string($matches[1]);
     $_data  = array();
-    if (isset($params['module']) && isset($_mods["{$params['module']}"])) {
+    if (isset($params['module']) && jrCore_module_is_active($params['module'])) {
 
         // See if this module provides an embed function
         $_data['module'] = $params['module'];
@@ -184,7 +196,9 @@ function jrEmbed_replace_tag($matches)
             $_rep = array(
                 "\n" => '',
                 "\r" => '',
-                "\t" => ''
+                "\t" => '',
+                '})' => ' } )',
+                '({' => '( { ',
             );
             return trim(preg_replace('!\s+!', ' ', str_replace(array_keys($_rep), $_rep, $_data['html'])));
         }
@@ -253,7 +267,7 @@ function jrEmbed_embed_default_html($module, $_params)
                 if (!isset($_rt['search'])) {
                     $_rt['search'] = array();
                 }
-                $_rt['search'][] = $v;
+                $_rt['search'][] = html_entity_decode($v, ENT_QUOTES);
             }
             // Order by
             elseif (strpos($k, 'order_by') === 0) {

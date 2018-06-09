@@ -2,7 +2,7 @@
 /**
  * Jamroom Search module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -46,6 +46,8 @@ defined('APP_DIR') or exit();
  */
 function jrSearch_config()
 {
+    global $_conf, $_mods;
+
     // Additional Search Fields
     $_tmp = array(
         'name'     => 'search_fields',
@@ -143,6 +145,70 @@ function jrSearch_config()
     );
     jrCore_register_setting('jrSearch', $_tmp);
 
+    // Button to change sort order
+    $html  = '';
+    $order = '';
+    if (isset($_conf['jrSearch_display_order']) && strlen($_conf['jrSearch_display_order']) > 3) {
+        $_m = explode(',', $_conf['jrSearch_display_order']);
+        if (is_array($_m) && !empty($_m)) {
+            $order = array();
+            foreach ($_m as $mod_dir) {
+                $order[$mod_dir] = $_mods[$mod_dir]['module_name'];
+            }
+            $html  = "<div class=\"form_textarea form_element_disabled\" style=\"overflow-y: scroll\">" . implode('<br>', $order) . '</div>';
+            $order = implode(',', array_keys($order));
+        }
+    }
+    $murl = jrCore_get_module_url('jrSearch');
+    $html .= jrCore_page_button('custom', 'set result order', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$murl}/item_display_order')");
+
+    $_tmp = array(
+        'name'     => 'display_order',
+        'type'     => 'custom',
+        'html'     => $html,
+        'default'  => $order,
+        'validate' => '',
+        'label'    => 'Search Result Order',
+        'help'     => 'When viewing the results of a search, the order the module results appear in can be set by clicking the &quot;Set Result Order&quot; button',
+        'section'  => 'display options',
+        'order'    => 20
+    );
+    jrCore_register_setting('jrSearch', $_tmp);
+
+    // Dedicated Search Index
+    $_tmp = array(
+        'name'     => 'dedicated',
+        'type'     => 'optionlist',
+        'options'  => 'jrSearch_get_search_modules',
+        'default'  => '',
+        'validate' => 'core_string',
+        'label'    => 'Unique Module Indexes',
+        'sublabel' => 'see help for details',
+        'help'     => 'Any module checked here will have an additional index created specifically for searches within that module\'s DataStore.  This can help speed up search queries on modules with a very large amount of data.  It is recommended you do NOT check a module here unless you are certain you need the additional search index',
+        'section'  => 'index options',
+        'layout'   => 'columns',
+        'columns'  => 3,
+        'order'    => 30
+    );
+    jrCore_register_setting('jrSearch', $_tmp);
+
+    // Excluded Modules
+    $_tmp = array(
+        'name'     => 'disabled',
+        'type'     => 'optionlist',
+        'options'  => 'jrSearch_get_search_modules',
+        'default'  => '',
+        'validate' => 'core_string',
+        'label'    => 'Disabled Modules',
+        'sublabel' => 'see help for details',
+        'help'     => 'Any module checked here will be excluded from being searched and will not have its DataStore items added to the Search index',
+        'section'  => 'disabled modules',
+        'layout'   => 'columns',
+        'columns'  => 3,
+        'order'    => 40
+    );
+    jrCore_register_setting('jrSearch', $_tmp);
+
     // Unused setting
     jrCore_delete_setting('jrSearch', 'fulltext');
 
@@ -165,4 +231,35 @@ function jrSearch_config_display($_post, $_user, $_conf)
         jrCore_set_form_notice('error', 'Full Text Indexing is currently in progress.<br>Avoid making additional changes until you press Refresh and this message no longer appears.<br><br>' . $button, false);
     }
     return true;
+}
+
+/**
+ * Validate Config settings
+ * @param $_post array Posted config values
+ * @return mixed bool|array
+ */
+function jrSearch_config_validate($_post)
+{
+    global $_conf;
+    $rebuild = false;
+    if (isset($_post['dedicated'])) {
+        if (isset($_conf['jrSearch_dedicated']) && strlen($_conf['jrSearch_dedicated']) > 0) {
+            foreach (explode(',', $_conf['jrSearch_dedicated']) as $mod) {
+                if (strlen($_post['dedicated']) < 2 || !strpos(" ,{$_post['dedicated']},", ",{$mod},")) {
+                    jrSearch_delete_index_table_for_module($mod);
+                }
+            }
+        }
+        if (strlen($_post['dedicated']) > 1) {
+            $rebuild = true;
+        }
+    }
+    if (isset($_post['disabled']) && strlen($_post['disabled']) > 1) {
+        $rebuild = true;
+    }
+    if ($rebuild) {
+        $url = jrCore_get_module_url('jrSearch');
+        jrCore_set_form_notice('success', "<a href=\"{$_conf['jrCore_base_url']}/{$url}/rebuild\"><b><u>Rebuild the Search Index</u></b></a> to apply your Global Config changes", false);
+    }
+    return $_post;
 }

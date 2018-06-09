@@ -1,0 +1,653 @@
+section {
+    position: relative;
+    color: #eeeeee;
+}
+
+#wrapper {
+    min-height: calc(100vh - 231px);
+}
+
+#content {
+    background: #111111 none repeat scroll 0 0;
+    border-bottom: 1px solid #000;
+    border-top: 1px solid #222;
+    box-shadow: 0 0 2px #000000;
+}
+
+#header {
+    background-color: #111111;
+    border-bottom: 1px solid #000000;
+}
+
+
+.date > a {
+    color: #AAAAAA;
+}
+
+.index_chart {
+    background: #0c0c0c none repeat scroll 0 0;
+    box-shadow: 0 0 2px #000000;
+}
+
+.slide_info {
+    background: rgba(0, 0, 0, 0.5) none repeat scroll 0 0;
+    color: #ffffff;
+}
+
+.slide_info span {
+    color: #5588CC;
+}
+
+.slide_info span.white {
+    color: white;
+}
+
+.center.register {
+    color: #5588CC;
+}
+
+.index_chart .table-cell {
+    border-right: 1px solid #252525;
+}
+
+.list_item.odd {
+    background: #101010 none repeat scroll 0 0;
+}
+
+.form_button {
+    background-image: linear-gradient(#cccccc, #aaaaaa);
+    border: medium none;
+    box-shadow: 0 0 2px #181818;
+    color: black;
+}
+
+.playlist_box {
+    background-color: #111111;
+    border: 1px solid #222222;
+    box-shadow: 3px 3px 3px 3px #000000;
+}
+
+.modal.simplemodal-data {
+    background: #111111 none repeat scroll 0 0;
+    box-shadow: 0 0 10px #000000;
+    color: #ccc;
+}
+
+.info_c a {
+    color: #FFFFFF;
+    text-decoration: none;
+}
+
+.page_tab_bar_holder {
+    border-bottom: 1px solid #444444;
+}
+
+.page_content {
+    color: #eee;
+}
+
+.page_banner, .form_submit_section {
+    background: #222222 none repeat scroll 0 0;
+    color: #ffffff;
+}
+
+.accordion .page_section_header {
+    background-color: #222222;
+    color: #eeeeee;
+}
+
+.item-row {
+    background: #222222 none repeat scroll 0 0;
+    border-bottom: 1px solid #333333;
+}
+
+.item-entry {
+    border-bottom: 1px solid #333333;
+    color: #ffffff;
+}
+
+.item-enabled {
+    border-bottom: 1px solid #333333;
+}
+
+.item-icon {
+    border-bottom: 1px solid #333333;
+}
+
+.page_tab {
+    background-color: #222222;
+    color: #ccc;
+}
+
+.page_tab a {
+    color: #CCCCCC;
+}
+
+.page_section_header {
+    background: #333 none repeat scroll 0 0;
+    color: tan;
+}
+
+.page_table {
+    background-color: #333333;
+}
+
+.page_table_header {
+    background-color: #111111;
+}
+
+.page_table_row_alt {
+    background-color: #151515;
+}
+
+.page_table_row {
+    background-color: #111111;
+}
+
+.page_table_cell {
+    color: #cccccc;
+}
+
+td a {
+    color: tan;
+}
+
+.photoalbum_box {
+    background: #111111 none repeat scroll 0 0;
+    border: 1px solid #222222;
+    box-shadow: 3px 3px 10px #000000;
+}
+
+.create_audio_box {
+    background: #111111 none repeat scroll 0 0;
+    border: 1px solid #222222;
+    box-shadow: 3px 3px 10px #000000;
+}
+
+#jrEvent_calendar .ecal-date {
+    background-image: linear-gradient(#333333, #222222);
+    border: 1px solid #111;
+    color: white;
+}
+
+#jrEvent_calendar table.ecal-main {
+    background-color: #080808;
+    table-layout: fixed;
+    width: 100%;
+}
+
+#jrEvent_calendar .ecal-calendar th {
+    background-image: linear-gradient(#444444, #222222);
+    border: 1px solid #111111;
+    color: #ffffff;
+    padding: 4px;
+}
+
+.info {
+    color: tan;
+}
+
+.info_c {
+    color: #BBBBBB;
+}
+
+/* ///////////////////// PLAYERS /////////////////////// */
+
+.jrNewPhotoPro_audio, .jrNewPhotoPro_player .jp-interface {
+    background: #222222 none repeat scroll 0 0;
+    border-radius: 5px;
+}
+
+.jrNewPhotoPro_player .jp-interface {
+    border-radius: 0;
+}
+
+.jrNewPhotoPro_audio .jp-playlist li {
+    border-bottom: 1px solid #444444;;
+}
+
+.action_item_holder {
+    border-bottom: 1px solid #222;
+    border-top: 1px solid #444;
+}
+
+.action_item_holder:last-child {
+    border-bottom: none;
+}
+
+.action_item_holder:hover {
+    background: #252525 none repeat scroll 0 0;
+}
+
+.section_text {
+    color: #eeeeee;
+}
+
+.form_help_drop {
+    background-color: #111;
+}
+
+.form_help_drop_left {
+    color: tan;
+}
+
+.form_help {
+    background-color: #333;
+}
+
+.forum_post_count {
+    background: #222 none repeat scroll 0 0;
+}
+
+.poll_voted {
+    color: tan;
+}
+
+.item-row-active {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.module_icon {
+    background-color: #fff;
+    border: 1px solid #000;
+    box-shadow: 0 0 3px #222222 inset;
+}
+
+.search_box.simplemodal-data {
+    background: #111111 none repeat scroll 0 0;
+}
+
+#menu ul {
+    background: #111111 none repeat scroll 0 0;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+    color: #ffffff;
+}
+
+#menu ul li {
+    box-shadow: 0 1px 0 #000000, 0 2px 0 #222222;
+}
+
+#menu ul a:hover {
+    background: #5588CC none repeat scroll 0 0;
+}
+
+.plugin #providers .provider .name {
+    color: white !important;
+}
+
+#social_login #branding > a {
+    color: white;
+}
+
+#social_login #branding a span.plugin_title {
+    color: #5588CC;
+}
+
+.head {
+    color: white;
+}
+
+.index .head {
+    color: #fff;
+}
+
+.form_text, .form_textarea, .form_select {
+    background: #222222 none repeat scroll 0 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) inset, 0 0 1px rgba(0, 0, 0, 0.1) inset, 0 2px 0 rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+.index {
+    background: #111111 none repeat scroll 0 0;
+    border-bottom: 1px solid #000;
+    box-shadow: 0 0 10px #000;
+}
+
+.index_item > .wrap > .wrap {
+    background: #222 none repeat scroll 0 0;
+}
+
+.index_item .wrap > span, .featured_item span {
+    color: #ddd;
+}
+
+.index_item .wrap span a {
+    color: tan;
+}
+
+.white {
+    background: #222 none repeat scroll 0 0;
+}
+
+.index_item .wrap a {
+    color: white;
+}
+
+div#footer {
+    background-color: #111111;
+    border-top: 1px solid #222222;
+}
+
+.white > a {
+    color: #ffffa4;
+}
+
+.white a .table-cell p {
+    color: white;
+}
+.white a .table-cell > h4 {
+    color: white;
+}
+.italic {
+    color: tan;
+}
+.detail_box h1 {
+    color: white;
+}
+
+.hover span.video_title, .white a .table-cell .video_title {
+    color: tan;
+}
+
+.block .block_content .block {
+    border-top: 1px solid #222;
+}
+
+.page_banner_box {
+    background: #222222 none repeat scroll 0 0;
+}
+
+.item a {
+    color: #fff;
+}
+
+.index .head a {
+    color: #ffffff;
+}
+
+/* ///////////////////// CHAT /////////////////////// */
+
+/* @title No Chat Room Notice */
+/* @help This is the no chat room container */
+#jrchat-no-room-notice {
+    width: 80%;
+    margin: 20px auto;
+    padding: 20px;
+    background: #111111;
+    font-size: 15px;
+    text-align:center;
+    border-radius: 5px;
+    border:1px solid #222222;
+    text-transform: capitalize;
+}
+
+/* @title Chat Room Box */
+/* @help This is the chat room container */
+#jrchat-room-box {
+    background-color:#666666;
+    padding: 5px;
+    border-radius: 5px;
+    border:1px solid #222222;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+/* @title Chat Room Options */
+/* @help This is the chat room options div */
+.jrchat-room-opt {
+    position: relative;
+    background: #666666;
+    display: block;
+    padding: 6px 10px;
+    font-size: 16px;
+    margin: 5px;
+    border-radius: 4px;
+    border:1px solid #222222;
+}
+
+/* @title Chat Room Bubble */
+/* @help This is the chat room user count bubble */
+.jrchat-bubble {
+    background-color:#5588CC;
+    color: #FFFFFF;
+    font-size: 11px;
+    line-height: 18px;
+    position: absolute;
+    bottom: -2px;
+    left: -2px;
+    width: 18px;
+    height: 18px;
+    border: 1px solid #222222;
+    border-radius: 9px;
+    text-align: center;
+}
+
+/* @title Chat Room Config Bubble */
+/* @help This is the chat room Config bubble */
+.jrchat-config {
+    background-color:#5588CC;
+    color: #FFFFFF;
+    font-size: 11px;
+    line-height: 18px;
+    position: absolute;
+    bottom: -2px;
+    left: 22px;
+    width: 18px;
+    height: 18px;
+    border: 1px solid #222222;
+    border-radius: 9px;
+    text-align: center;
+}
+
+/* @title Chat Room Control */
+/* @help This is the chat room user control div */
+#jrchat-user-control {
+    background: #666666;
+    padding: 0 3px;
+    border-radius: 5px;
+    border:1px solid #222222;
+    position: fixed;
+    top: 63px;
+    right: 10px;
+    width: 260px;
+    height: 300px;
+    display: none;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+/* @title Chat Room User Settings */
+/* @help This is the chat room user settings div */
+#jrchat-user-settings {
+    background: #666666;
+    padding: 0 3px;
+    border-radius: 5px;
+    position: fixed;
+    top: 63px;
+    right: 10px;
+    width: 260px;
+    height: 300px;
+    display: none;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+/* @title Chat Room Browser */
+/* @help This is the chat room browser div */
+#jrchat-room-browser {
+    background: #666666;
+    padding: 0 3px;
+    border-radius: 5px;
+    border:1px solid #222222;
+    position: fixed;
+    top: 63px;
+    right: 10px;
+    width: 260px;
+    height: 300px;
+    display: none;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    z-index: 110000;
+}
+
+#jrchat-room-search {
+    background: #222222;
+    width: 100%;
+    padding:8px;
+    margin:0;
+    box-sizing: border-box;
+    border-right:1px solid #111111;
+    border-bottom:1px solid #111111;
+    border-left:1px solid #111111;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+/* @title Chat Room */
+/* @help This is the chat room div */
+#jrchat-room {
+    background: #000000;
+    height: 100%;
+    position: fixed;
+    right: 0;
+    top: 0;
+    box-sizing: border-box;
+    z-index: 100000;
+    overflow-x: hidden;
+}
+
+/* @title Chat Room Tabs */
+/* @help This is the chat room tabs */
+#jrchat-tabs {
+    background-color:#111111;
+    position: fixed;
+    bottom: 70px;
+    display: table;
+    box-sizing: border-box;
+    z-index: 100000;
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-top:1px solid #222222;
+    border-bottom:1px solid #222222;
+    border-left:1px solid #222222;
+}
+
+/* @title Chat Room Background */
+/* @help This is the chat room background */
+#jrchat-chat {
+    width: 100%;
+    background: #666666;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100000;
+    box-sizing: border-box;
+    border-left: 1px solid #222222;
+    overflow-x: hidden;
+}
+
+/* @title Chat Room Title */
+/* @help This is the chat room title */
+#jrchat-title {
+    background-color:#111111;
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 54px;
+    width: 100%;
+    z-index: 110000;
+    font-size: 16px;
+    padding: 6px 8px 8px 8px;
+    box-sizing: border-box;
+    box-shadow: 0 1px 3px 0 #000000;
+    border:1px solid #222222;
+    color:#FFFFFF;
+}
+
+/* @title Chat Room Text */
+/* @help This is the chat room beginning of chat text */
+#jrchat-page-limit {
+    margin: 6px 0;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #FFFFFF;
+    text-align: center;
+}
+
+/* @title Chat Room From */
+/* @help This is the chat room from bubble */
+.jrchat-msg-from {
+    padding: 9px 12px 21px 12px;
+    background: #111111;
+    margin-left: 26px;
+    overflow: hidden;
+    border:1px solid #222222;
+    color: #FFFFFF;
+}
+
+/* @title Chat Room To */
+/* @help This is the chat room to bubble */
+.jrchat-msg-to {
+    padding: 9px 12px;
+    background: #222222;
+    margin-right: 26px;
+    overflow: hidden;
+    border:1px solid #000000;
+    color: #FFFFFF;
+}
+
+/* @title Chat Room Byline */
+/* @help This is the chat room date/time text */
+.jrchat-msg-byline {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    display: block;
+    font-size: 9px;
+    color:#D2B48C;
+}
+
+/* @title Chat Room Message */
+/* @help This is the chat room new message section */
+#jrchat-new-message {
+    background-color:#111111;
+    position: absolute;    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 70px;
+    padding: 10px 8px;
+    box-sizing: border-box;
+    border:1px solid #222222;
+}
+
+#jrchat-new-message > textarea {
+    min-height:40px;
+}
+
+#jrchat-new-message-input {
+    font-family: inherit;
+    width: 70%;
+    position: absolute;
+    top: 9px;
+    left: 6px;
+    right: 36px;
+    height: 52px;
+    box-sizing: border-box;
+    resize: none;
+    font-size: 13px;
+}
+
+#jrchat_smiley_button {
+    top:6px;
+    margin-right:12px;
+}
+
+.item {
+    color: #CCCCCC;
+}
+
+#content .col6 > h1 {
+    color: white;
+}

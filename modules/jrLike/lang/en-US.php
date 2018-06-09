@@ -2,7 +2,7 @@
 /**
  * Jamroom Like It module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -60,3 +60,7 @@ $lang[17] = 'Liked Items';
 $lang[18] = 'You do not have the privileges to like an item';
 $lang[19] = 'You are not allowed to Like your own items';
 $lang[20] = 'You must be logged in to like or dislike an item';
+$lang[21] = 'Liked a %1 item created by %2:';
+$lang[22] = 'Disliked a %1 item created by %2:';
+$lang[23] = 'Liked an %1 item created by %2:';
+$lang[24] = 'Disliked an %1 item created by %2:';

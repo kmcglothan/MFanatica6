@@ -1,0 +1,77 @@
+Payment Support module change log
+
+Version 1.0.7:
+ - Bug Fix: cart would be displayed at the bottom of page when "clear cart" was pressed
+
+Version 1.0.6:
+ - New: Ability to assign a transaction missing user information to an existing user
+
+Version 1.0.5:
+ - New: Support added for Stripe Webhook Signatures in Stripe plugin config
+ - Bug Fix: "Delete" button for Invoice transaction not deleting register entry
+ - Bug Fix: Some transactions in the Event Browser could be out of order
+
+Version 1.0.4:
+ - New: "modify" button in Transaction Detail allows for transaction details to be modified
+ - Bug Fix: Expense values could be off in Monthly Report detail screen for a given month
+
+Version 1.0.3:
+ - Bug Fix: Invalid "There are no profiles with pending payouts" message could show on payout form
+ - Bug Fix: "Enable PayPal Checkout" may not work correctly in some situations
+
+Version 1.0.2:
+ - New: PayPal invoice payments are now recorded to Payments browser if business email matches
+ - Change: Stripe "charge failure" event in Activity Log now includes email address for failed payment
+ - Bug Fix: Items per page jumper not working in Transactions Browser
+ - Bug Fix: Register entries with positive income showing a "-" sign on transaction detail page
+
+Version 1.0.1:
+ - Bug Fix: Possible browser redirect bug when using FoxyCart single sign on (SSO)
+
+Version 1.0.0:
+ - New: Support added for FoxyCart Single Sign On (SSO) to pre-populate checkout with user info
+
+Version 1.0.0b9:
+ - New: Ability to create, update and delete custom payment transactions from Payments browser
+ - New: FoxyCart importer updated to import manual register entries and subscription payments
+ - Bug Fix: Net Income value in Monthly Report tool could be incorrect
+
+Version 1.0.0b8:
+ - Bug Fix: FoxyCart daily subscription feed may not be passed to Subscription module correctly
+
+Version 1.0.0b7:
+ - Bug Fix: Importing payments now properly imports previous payments for FoxyCart subscriptions
+
+Version 1.0.0b6:
+ - Bug Fix: Currency symbol may not show in payment browser for payments made with non-active plugin
+ - Bug Fix: Stripe gateway transaction fee not being included if running Stripe in test mode
+
+Version 1.0.0b5:
+ - New: "webhook_parsed" global event that includes raw transaction events before processing
+ - New: Hourly maintenance worker for Stripe plugin to update register entries missing gateway fee
+ - New: Products and Customer profile views now have buttons into the main Payments view
+ - New: Updated webhook functionality to watch for duplicate web hooks
+ - New: Added ability to use PayPal in conjunction with other payment processors
+ - New: Updated profile payout to properly handle refunded items that were previously paid out
+ - New "Show Clear Cart" global config option to show or hide the "Clear Cart" button in the cart
+ - Change: CSS Updated for module icons in control panel tables to make them more uniform
+ - Change: "Summary" profile view is now the default view, and includes updates to make things more clear
+ - Change: "Clear Cart" and "Continue Shopping" buttons have swapped places in cart
+ - Bug Fix: Refunded transactions were not showing as refunded in Payments browser on profile
+ - Bug Fix: "Purchases" tab may not show to users if Payments not allowed in profile
+ - Bug Fix: Gateway fee was not always being added in when using Stripe plugin
+ - Bug Fix: FoxyCart plugin was not working correctly unless FoxyCart module was also installed
+
+Version 1.0.0b4:
+ - New: Updated Stripe plugin to work with some small changes in latest Stripe API
+ - Change: Update to move the Cart button into the Site Menu instead of a floating icon
+ - Bug Fix: Cart did not look correct on some mobile devices
+
+Version 1.0.0b3:
+ - Change: Updates to better support new Products module
+
+Version 1.0.0b2:
+ - Bug Fix: Removed "success" class from cart checkout button - causing CSS issue in some skins
+
+Version 1.0.0b1:
+ - Initial Release

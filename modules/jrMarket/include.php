@@ -2,7 +2,7 @@
 /**
  * Jamroom Marketplace module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -49,12 +49,12 @@ function jrMarket_meta()
     $_tmp = array(
         'name'        => 'Marketplace',
         'url'         => 'marketplace',
-        'version'     => '1.4.5',
+        'version'     => '1.5.2',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Browse, Install and Update modules and skins from the Marketplace',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2865/marketplace',
         'category'    => 'core',
-        'requires'    => 'jrCore:6.0.4',
+        'requires'    => 'jrCore:6.1.0b1',
         'license'     => 'mpl'
     );
     return $_tmp;
@@ -66,9 +66,15 @@ function jrMarket_meta()
 function jrMarket_init()
 {
     // Marketplace event triggers
+    jrCore_register_event_trigger('jrMarket', 'installed_module_files', 'Fired when new module files are moved into the /modules directory');
     jrCore_register_event_trigger('jrMarket', 'installed_module', 'Fired when a new module is successfully installed from the Marketplace');
+    jrCore_register_event_trigger('jrMarket', 'installed_skin_files', 'Fired when new skin files are moved into the /skins directory');
     jrCore_register_event_trigger('jrMarket', 'installed_skin', 'Fired when a new skin is successfully installed from the Marketplace');
+    jrCore_register_event_trigger('jrMarket', 'updated_module_info', 'Fired when updated module info is retrieved from the Marketplace');
+    jrCore_register_event_trigger('jrMarket', 'updated_module_files', 'Fired when updated module files are moved into the /modules directory');
     jrCore_register_event_trigger('jrMarket', 'updated_module', 'Fired when a module is successfully updated in System Update');
+    jrCore_register_event_trigger('jrMarket', 'updated_skin_info', 'Fired when updated skin info is retrieved from the Marketplace');
+    jrCore_register_event_trigger('jrMarket', 'updated_skin_files', 'Fired when updated skin files are moved into the /skins directory');
     jrCore_register_event_trigger('jrMarket', 'updated_skin', 'Fired when a skin is successfully updated in System Update');
 
     jrCore_register_module_feature('jrCore', 'tool_view', 'jrMarket', 'systems', array('Marketplace Systems', 'Create and Update Marketplace Systems'));
@@ -90,6 +96,9 @@ function jrMarket_init()
     // Register our JS and CSS
     jrCore_register_module_feature('jrCore', 'javascript', 'jrMarket', 'jrMarket.js', 'admin');
     jrCore_register_module_feature('jrCore', 'css', 'jrMarket', 'jrMarket.css');
+
+    // No session on module/skin verify view
+    jrCore_register_module_feature('jrUser', 'skip_session', 'jrMarket', 'verify_item');
 
     // Our tips
     jrCore_register_module_feature('jrTips', 'tip', 'jrMarket', 'tip');
@@ -218,7 +227,7 @@ function jrMarket_daily_maintenance_listener($_data, $_user, $_conf, $_args, $ev
 
         // We are checking for updates...
         $sleep = mt_rand(0, 3599);
-        jrCore_queue_create('jrMarket', 'check_for_updates', array('sleep' => $sleep), $sleep);
+        jrCore_queue_create('jrMarket', 'check_for_updates', array('sleep' => $sleep), $sleep, null, 1);
 
     }
 
@@ -329,9 +338,10 @@ function jrMarket_get_skin_license($skin)
 
 /**
  * Get an array of available marketplace updates
+ * @param bool $developer
  * @return bool|mixed|string
  */
-function jrMarket_get_system_updates()
+function jrMarket_get_system_updates($developer = false)
 {
     global $_mods;
     if (!$_mkt = jrMarket_get_active_release_system()) {
@@ -345,6 +355,8 @@ function jrMarket_get_system_updates()
     if (!isset($_rt) || !is_array($_rt)) {
         return false;
     }
+
+    jrMarket_reset_opcode_caches();
 
     // Modules and Versions
     $_ad = array();
@@ -393,10 +405,15 @@ function jrMarket_get_system_updates()
     $_si = jrMarket_get_active_system_info();
 
     // Get any updates
-    $_rs = jrCore_load_url("{$_mkt['system_url']}/networkmarket/updates?dev=1&" . implode('&', $_ad) . '&' . implode('&', $_ch), $_si, 'POST', jrMarket_get_port(), null, null, true, 60);
-    if (isset($_rs) && strpos($_rs, '{') === 0) {
-        $_rs = json_decode($_rs, true);
-        return $_rs;
+    $dev = '';
+    if ($developer) {
+        // passing in the developer flag let's the backend check all channels
+        // the user is configured for - even ones not in the local system
+        $dev = 'dev=1&';
+    }
+    $_rs = jrCore_load_url("{$_mkt['system_url']}/networkmarket/updates?" . $dev . implode('&', $_ad) . '&' . implode('&', $_ch), $_si, 'POST', jrMarket_get_port(), null, null, true, 60);
+    if ($_rs && strpos($_rs, '{') === 0) {
+        return json_decode($_rs, true);
     }
     return false;
 }
@@ -686,61 +703,44 @@ function jrMarket_install_module($module, $license, $item_id = 0)
         jrCore_set_form_notice('error', 'Corrupted update file recieved - md5 checksum mismatch');
         jrCore_location('referrer');
     }
-    // Untar and move into location
-    if (is_dir("{$cdr}/{$module}")) {
-        // old one exists - remove
-        jrCore_delete_dir_contents("{$cdr}/{$module}");
-        unlink("{$cdr}/{$module}");
-    }
-    jrCore_extract_tar_archive("{$cdr}/{$module}.tar", $cdr);
-    if (is_dir("{$cdr}/{$module}")) {
 
-        $fix = false;
-        // See if we are doing an FTP install or directory install
-        if (!is_writable(APP_DIR . '/modules')) {
-            if (!@chmod(APP_DIR . '/modules', $_conf['jrCore_dir_perms'])) {
-                if (!jrMarket_ftp_set_permissions('module', $module, 'open')) {
-                    jrCore_set_form_notice('error', "Unable to change permissions on module directory /modules/{$module} - unable to install module");
-                    jrCore_location('referrer');
-                }
-                $fix = true;
-            }
-        }
-
-        // Move into place
-        jrMarket_move_update_to_live('module', $module, $_rs['version'], "{$cdr}/{$module}");
-        if ($error = jrCore_get_flag('jrmarket_update_error')) {
-            jrCore_set_form_notice('error', $error);
-            jrCore_location('referrer');
-        }
-
-        if ($fix) {
-            jrMarket_ftp_set_permissions('module', $module, 'close');
-        }
-
-        // Validate module
-        define('IN_JAMROOM_INSTALLER', 1);
-        jrCore_verify_module($module);
-
-        // Make sure module_system_id and license are updated
-        $tbl = jrCore_db_table_name('jrCore', 'module');
-        $req = "UPDATE {$tbl} SET module_system_id = '{$_mkt['system_id']}', module_license = '" . jrCore_db_escape($license) . "' WHERE module_directory = '{$module}' LIMIT 1";
-        jrCore_db_query($req);
-
-        // Reset settings/module cache so new module is picked up
-        unlink("{$cdr}/{$module}.tar");
-        jrCore_delete_all_cache_entries('jrCore', 0);
-        jrMarket_reset_opcode_caches();
-        jrCore_trigger_event('jrMarket', 'installed_module', $_rs);
-        jrCore_logger('INF', "successfully installed new module {$module}, version {$_rs['version']}");
-        return true;
-    }
-    else {
-        unlink("{$cdr}/{$module}.tar");
-        jrCore_set_form_notice('error', 'Unable to prepare module directory in item staging area - please try again');
+    $res = jrMarket_extract_and_update_item_files('module', $module, $_rs['version']);
+    if (strpos($res, 'error:') === 0) {
+        jrCore_set_form_notice('error', substr($res, 7));
         jrCore_location('referrer');
     }
-    return false;
+
+    // Trigger event so modules know we have new files in place
+    $_rp = array(
+        'market_type'    => 'module',
+        'market_name'    => $_rs['name'],
+        'market_version' => $_rs['version'],
+        'market_cksum'   => $_rs['hash'],
+        'market_size'    => $_rs['size'],
+        'market_file'    => "{$cdr}/{$module}.tar"
+    );
+    jrCore_trigger_event('jrMarket', 'installed_module_files', $_rp, $_rs);
+
+    // Validate module
+    define('IN_JAMROOM_INSTALLER', 1);
+    jrCore_verify_module($module);
+
+    // Make sure module_system_id and license are updated
+    if (isset($_mkt['system_id'])) {
+        $tbl = jrCore_db_table_name('jrCore', 'module');
+        $req = "UPDATE {$tbl} SET module_system_id = '" . jrCore_db_escape($_mkt['system_id']) . "', module_license = '" . jrCore_db_escape($license) . "' WHERE module_directory = '{$module}' LIMIT 1";
+        jrCore_db_query($req);
+    }
+
+    // Reset settings/module cache so new module is picked up
+    unlink("{$cdr}/{$module}.tar");
+    jrCore_delete_config_cache();
+    jrCore_delete_all_cache_entries('jrCore', 0);
+    jrMarket_reset_opcode_caches();
+    jrCore_trigger_event('jrMarket', 'installed_module', $_rs);
+    jrCore_logger('INF', "successfully installed new module {$module}, version {$_rs['version']}");
+    return true;
+
 }
 
 /**
@@ -838,63 +838,88 @@ function jrMarket_install_skin($skin, $license, $item_id = 0)
         jrCore_set_form_notice('error', 'Corrupted update file recieved - md5 checksum mismatch');
         jrCore_location('referrer');
     }
-    // Untar and move into location
-    if (is_dir("{$cdr}/{$skin}")) {
-        // old one exists - remove
-        jrCore_delete_dir_contents("{$cdr}/{$skin}");
-        unlink("{$cdr}/{$skin}");
+
+    $res = jrMarket_extract_and_update_item_files('skin', $skin, $_rs['version']);
+    if (strpos($res, 'error:') === 0) {
+        jrCore_set_form_notice('error', substr($res, 7));
+        jrCore_location('referrer');
     }
-    jrCore_extract_tar_archive("{$cdr}/{$skin}.tar", $cdr);
-    if (is_dir("{$cdr}/{$skin}")) {
+
+    // Trigger event so modules know we have new files in place
+    $_rp = array(
+        'market_type'    => 'skin',
+        'market_name'    => $_rs['name'],
+        'market_version' => $_rs['version'],
+        'market_cksum'   => $_rs['hash'],
+        'market_size'    => $_rs['size'],
+        'market_file'    => "{$cdr}/{$skin}.tar"
+    );
+    jrCore_trigger_event('jrMarket', 'installed_skin_files', $_rp, $_rs);
+
+    // Validate skin
+    jrCore_verify_skin($skin);
+
+    // Make sure module_system_id is updated
+    $_mk = jrMarket_get_active_release_system();
+    if ($_mk && is_array($_mk)) {
+        $tbl = jrCore_db_table_name('jrCore', 'skin');
+        $req = "UPDATE {$tbl} SET skin_system_id = '" . jrCore_db_escape($_mk['system_id']) . "', skin_license = '" . jrCore_db_escape($license) . "' WHERE skin_directory = '{$skin}' LIMIT 1";
+        jrCore_db_query($req);
+    }
+
+    // Reset settings/module cache so new module is picked up
+    unlink("{$cdr}/{$skin}.tar");
+    jrCore_delete_config_cache();
+    jrCore_delete_all_cache_entries('jrCore', 0);
+    jrMarket_reset_opcode_caches();
+    jrCore_trigger_event('jrMarket', 'installed_skin', $_rs);
+    jrCore_logger('INF', "successfully installed new skin {$skin}, version {$_rs['version']}");
+    return true;
+}
+
+/**
+ * Update marketplace files for an item
+ * @param string $type module|skin
+ * @param string $name Directory Name (i.e. jrCore)
+ * @param string $version NEW version
+ * @return bool|string
+ */
+function jrMarket_extract_and_update_item_files($type, $name, $version)
+{
+    global $_conf;
+    // move into location
+    $cdr = jrCore_get_module_cache_dir('jrMarket');
+    if (is_dir("{$cdr}/{$name}")) {
+        // old one exists - remove
+        jrCore_delete_dir_contents("{$cdr}/{$name}");
+        rmdir("{$cdr}/{$name}");
+    }
+    jrCore_extract_tar_archive("{$cdr}/{$name}.tar", $cdr);
+    if (is_dir("{$cdr}/{$name}")) {
 
         $fix = false;
         // See if we are doing an FTP install or directory install
-        if (!is_writable(APP_DIR . '/skins')) {
-            if (!@chmod(APP_DIR . '/skins', $_conf['jrCore_dir_perms'])) {
-                if (!jrMarket_ftp_set_permissions('skin', $skin, 'open')) {
-                    jrCore_set_form_notice('error', "Unable to change permissions on skin directory /skins/{$skin} - unable to install skin");
-                    jrCore_location('referrer');
+        if (!is_writable(APP_DIR . "/{$type}s")) {
+            if (!@chmod(APP_DIR . "/{$type}s", $_conf['jrCore_dir_perms'])) {
+                if (!jrMarket_ftp_set_permissions('type', $name, 'open')) {
+                    return "error: unable to change permissions on directory /{$type}s/{$name} - unable to install {$type}";
                 }
                 $fix = true;
             }
         }
 
         // Move into place
-        jrMarket_move_update_to_live('skin', $skin, $_rs['version'], "{$cdr}/{$skin}");
+        jrMarket_move_update_to_live($type, $name, $version, "{$cdr}/{$name}");
         if ($error = jrCore_get_flag('jrmarket_update_error')) {
-            jrCore_set_form_notice('error', $error);
-            jrCore_location('referrer');
+            return "error: {$error}";
         }
 
         if ($fix) {
-            jrMarket_ftp_set_permissions('skin', $skin, 'close');
+            jrMarket_ftp_set_permissions($type, $name, 'close');
         }
-
-        // Validate skin
-        jrCore_verify_skin($skin);
-
-        // Make sure module_system_id is updated
-        $_mk = jrMarket_get_active_release_system();
-        if (is_array($_mk)) {
-            $tbl = jrCore_db_table_name('jrCore', 'skin');
-            $req = "UPDATE {$tbl} SET skin_system_id = '{$_mk['system_id']}', skin_license = '" . jrCore_db_escape($license) . "' WHERE skin_directory = '{$skin}' LIMIT 1";
-            jrCore_db_query($req);
-        }
-
-        // Reset settings/module cache so new module is picked up
-        unlink("{$cdr}/{$skin}.tar");
-        jrCore_delete_all_cache_entries('jrCore', 0);
-        jrMarket_reset_opcode_caches();
-        jrCore_trigger_event('jrMarket', 'installed_skin', $_rs);
-        jrCore_logger('INF', "successfully installed new skin {$skin}, version {$_rs['version']}");
         return true;
     }
-    else {
-        unlink("{$cdr}/{$skin}.tar");
-        jrCore_set_form_notice('error', 'Unable to prepare skin directory in item staging area - please try again');
-        jrCore_location('referrer');
-    }
-    return false;
+    return "error: error extracting {$type} TAR archive";
 }
 
 /**
@@ -942,6 +967,7 @@ function jrMarket_move_update_to_live($type, $name, $version, $tmpdir)
         // Our target directory already exists.  Is it the "LIVE" directory?
         $target = readlink($symlink);
         if ($target && basename($target) == basename("{$symlink}-release-{$version}")) {
+
             // This is our LIVE directory!
             // Note: This can happen on a Marketplace RELOAD
             // In this case what we do is:
@@ -969,11 +995,9 @@ function jrMarket_move_update_to_live($type, $name, $version, $tmpdir)
             }
 
         }
-        else {
-            // It is NOT the live directory - we can remove it
-            jrCore_delete_dir_contents("{$symlink}-release-{$version}", false);
-            rmdir("{$symlink}-release-{$version}");
-        }
+        // Remove directory
+        jrCore_delete_dir_contents("{$symlink}-release-{$version}", false);
+        rmdir("{$symlink}-release-{$version}");
 
     }
 
@@ -1246,6 +1270,16 @@ function jrMarket_update_module($module, $_set, $force = false, $modal = false, 
         jrCore_json_response(array('url' => $url));
     }
 
+    // Trigger Update Info event
+    $_rp = array(
+        'market_type'    => 'module',
+        'market_name'    => $_rs['name'],
+        'market_version' => $_rs['version'],
+        'market_cksum'   => $_rs['hash'],
+        'market_size'    => $_rs['size']
+    );
+    jrCore_trigger_event('jrMarket', 'updated_module_info', $_rp, $_rs);
+
     // Go get the actual file
     $cdr = jrCore_get_module_cache_dir('jrMarket');
     $fil = jrCore_load_url($_rs['url'], null, 'GET', jrMarket_get_port(), null, null, true, 360);
@@ -1273,72 +1307,76 @@ function jrMarket_update_module($module, $_set, $force = false, $modal = false, 
         jrCore_json_response(array('url' => $url));
     }
 
-    // Untar and move into location
-    if (is_dir("{$cdr}/{$_rs['name']}")) {
-        // old one exists - remove
-        jrCore_delete_dir_contents("{$cdr}/{$_rs['name']}");
-        unlink("{$cdr}/{$_rs['name']}");
+    $res = jrMarket_extract_and_update_item_files('module', $_rs['name'], $_rs['version']);
+    if ($res && strpos($res, 'error:') === 0) {
+        jrCore_set_form_notice('error', substr($res, 7));
+        return false;
     }
-    jrCore_extract_tar_archive("{$cdr}/{$_rs['name']}.tar", $cdr);
-    if (is_dir("{$cdr}/{$_rs['name']}")) {
 
-        $fix = false;
-        // See if we are doing an FTP install or directory install
-        if (!is_writable(APP_DIR . '/modules')) {
-            if (!@chmod(APP_DIR . '/modules', $_conf['jrCore_dir_perms'])) {
-                if (!jrMarket_ftp_set_permissions('module', $_rs['name'], 'open')) {
-                    if ($modal) {
-                        jrCore_form_modal_notice('error', 'Unable to change permissions on module directory via FTP');
-                        jrCore_form_modal_notice('complete', 'Errors were encountered updating the module');
-                        exit;
-                    }
-                    jrCore_set_form_notice('error', 'Unable to change permissions on module directory via FTP - unable to update module');
-                    jrCore_json_response(array('url' => $url));
-                }
-                $fix = true;
-            }
-        }
+    // Trigger event so modules know we have new files in place
+    $_rp = array(
+        'market_type'    => 'module',
+        'market_name'    => $_rs['name'],
+        'market_version' => $_rs['version'],
+        'market_cksum'   => $_rs['hash'],
+        'market_size'    => $_rs['size'],
+        'market_file'    => "{$cdr}/{$_rs['name']}.tar"
+    );
+    jrCore_trigger_event('jrMarket', 'updated_module_files', $_rp, $_rs);
+    unlink("{$cdr}/{$_rs['name']}.tar");
 
-        // Move into place
-        jrMarket_move_update_to_live('module', $module, $_rs['version'], "{$cdr}/{$module}");
-        if ($error = jrCore_get_flag('jrmarket_update_error')) {
-            jrCore_set_form_notice('error', $error);
-            jrCore_json_response(array('url' => $url));
-        }
-
-        if ($fix) {
-            jrMarket_ftp_set_permissions('module', $_rs['name'], 'close');
-        }
-
-        // Reset module cache
-        @unlink("{$cdr}/{$_rs['name']}.tar");
-        jrCore_delete_config_cache();
-        jrCore_delete_all_cache_entries('jrMarket');
-        jrCore_delete_all_cache_entries($module);
-        jrMarket_reset_opcode_caches();
-
-        // Reset Templates
-        if ($module != 'jrImage') {
-            $cdr = jrCore_get_module_cache_dir($module);
-            if (is_dir($cdr)) {
-                jrCore_delete_dir_contents($cdr);
-            }
-        }
-        if ($module == 'jrCore' && is_dir(APP_DIR . "/data/cache/{$_conf['jrCore_active_skin']}")) {
-            jrCore_delete_dir_contents(APP_DIR . "/data/cache/{$_conf['jrCore_active_skin']}");
-            jrCore_set_setting_value('jrCore', "{$_conf['jrCore_active_skin']}_javascript_version", '');
-        }
-
-        // Rebuild JS and CSS
-        jrCore_create_master_css($_conf['jrCore_active_skin']);
-        jrCore_create_master_javascript($_conf['jrCore_active_skin']);
-
-        jrCore_trigger_event('jrMarket', 'updated_module', $_mods[$module], $_rs);
-        jrCore_logger('INF', "successfully updated module {$module} from version {$_mods[$module]['module_version']} to {$_rs['version']}");
-        return true;
+    // Reset caches
+    clearstatcache();
+    jrMarket_reset_opcode_caches();
+    jrCore_delete_config_cache();
+    jrCore_delete_all_cache_entries('jrMarket');
+    jrCore_delete_all_cache_entries($module);
+    jrCore_reset_template_cache();
+    if (is_dir(APP_DIR . "/modules/{$module}/img/icons_black")) {
+        jrCore_reset_sprite_cache();
     }
-    @unlink("{$cdr}/{$_rs['name']}.tar");
-    return false;
+
+    // Verify
+    $res = jrMarket_verify_item('module', $module);
+    if ($res && strpos($res, 'error:') === 0) {
+        jrCore_logger('CRI', "error updating module {$module} from version {$_mods[$module]['module_version']} to {$_rs['version']}");
+        jrCore_set_form_notice('error', substr($res, 7));
+        return false;
+    }
+    jrCore_trigger_event('jrMarket', 'updated_module', $_mods[$module], $_rs);
+    jrCore_logger('INF', "successfully updated module {$module} from version {$_mods[$module]['module_version']} to {$_rs['version']}");
+    return true;
+}
+
+/**
+ * Verify an item in another process
+ * @param string $type
+ * @param string $dir
+ * @returns string
+ */
+function jrMarket_verify_item($type, $dir)
+{
+    global $_conf;
+
+    // Do we support updating in a separate process?
+    $func = 'view_jrMarket_verify_item';
+    if (!function_exists($func)) {
+        require_once APP_DIR . '/modules/jrMarket/index.php';
+    }
+    if (function_exists($func)) {
+        $key = "{$type}_{$dir}_verify";
+        jrCore_set_temp_value('jrMarket', $key, time());
+        $url = jrCore_get_module_url('jrMarket');
+        return jrCore_load_url("{$_conf['jrCore_base_url']}/{$url}/verify_item/{$type}/{$dir}", null, 'GET', 80, null, null, true, 60);
+    }
+    // Looks like our marketplace is not updated in this process yet
+    if ($type == 'module') {
+        jrCore_verify_module($dir);
+    }
+    else {
+        jrCore_verify_skin($dir);
+    }
+    return true;
 }
 
 /**
@@ -1518,6 +1556,16 @@ function jrMarket_update_skin($skin, $_set, $force = false, $modal = false, $ite
         jrCore_json_response(array('url' => $url));
     }
 
+    // Trigger event so modules know we have new files in place
+    $_rp = array(
+        'market_type'    => 'skin',
+        'market_name'    => $_rs['name'],
+        'market_version' => $_rs['version'],
+        'market_cksum'   => $_rs['hash'],
+        'market_size'    => $_rs['size']
+    );
+    jrCore_trigger_event('jrMarket', 'updated_skin_info', $_rp, $_rs);
+
     // Go get the actual file
     $cdr = jrCore_get_module_cache_dir('jrMarket');
     $fil = jrCore_load_url($_rs['url'], null, 'GET', jrMarket_get_port(), null, null, true, 360);
@@ -1544,68 +1592,52 @@ function jrMarket_update_skin($skin, $_set, $force = false, $modal = false, $ite
         jrCore_set_form_notice('error', 'Corrupted update file recieved - md5 checksum mismatch');
         jrCore_json_response(array('url' => $url));
     }
-    // Untar and move into location
-    if (is_dir("{$cdr}/{$_rs['name']}")) {
-        // old one exists - remove
-        jrCore_delete_dir_contents("{$cdr}/{$_rs['name']}");
-        unlink("{$cdr}/{$_rs['name']}");
+
+    $res = jrMarket_extract_and_update_item_files('skin', $_rs['name'], $_rs['version']);
+    if ($res && strpos($res, 'error:') === 0) {
+        jrCore_set_form_notice('error', substr($res, 7));
+        return false;
     }
-    jrCore_extract_tar_archive("{$cdr}/{$_rs['name']}.tar", $cdr);
-    if (is_dir("{$cdr}/{$_rs['name']}")) {
 
-        $fix = false;
-        // See if we are doing an FTP install or directory install
-        if (!is_writable(APP_DIR . '/skins')) {
-            if (!@chmod(APP_DIR . '/skins', $_conf['jrCore_dir_perms'])) {
-                if (!jrMarket_ftp_set_permissions('skin', $_rs['name'], 'open')) {
-                    if ($modal) {
-                        jrCore_form_modal_notice('error', 'Unable to change permissions on skin directory - unable to update skin');
-                        jrCore_form_modal_notice('complete', 'Errors were encountered updating the module');
-                        exit;
-                    }
-                    jrCore_set_form_notice('error', 'Unable to change permissions on skin directory - unable to update skin');
-                    jrCore_json_response(array('url' => $url));
-                }
-                $fix = true;
-            }
-        }
-
-        // Move into place
-        jrMarket_move_update_to_live('skin', $skin, $_rs['version'], "{$cdr}/{$skin}");
-        if ($error = jrCore_get_flag('jrmarket_update_error')) {
-            jrCore_set_form_notice('error', $error);
-            jrCore_json_response(array('url' => $url));
-        }
-
-        if ($fix) {
-            jrMarket_ftp_set_permissions('skin', $_rs['name'], 'close');
-        }
-
-        unlink("{$cdr}/{$_rs['name']}.tar");
-
-        // Reset module cache
-        if ($skin == $_conf['jrCore_active_skin']) {
-
-            jrCore_delete_config_cache();
-            jrCore_delete_all_cache_entries('jrMarket');
-            jrCore_delete_all_cache_entries('jrCore');
-            jrMarket_reset_opcode_caches();
-
-            if (is_dir(APP_DIR . "/data/cache/{$_conf['jrCore_active_skin']}")) {
-                jrCore_delete_dir_contents(APP_DIR . "/data/cache/{$_conf['jrCore_active_skin']}");
-            }
-
-            // Rebuild JS and CSS
-            jrCore_create_master_css($_conf['jrCore_active_skin']);
-            jrCore_create_master_javascript($_conf['jrCore_active_skin']);
-        }
-
-        jrCore_trigger_event('jrMarket', 'updated_skin', $_mta, $_rs);
-        jrCore_logger('INF', "successfully updated skin {$skin} from version {$_mta['version']} to {$_rs['version']}");
-        return true;
-    }
+    // Trigger event so modules know we have new files in place
+    $_rp = array(
+        'market_type'    => 'skin',
+        'market_name'    => $_rs['name'],
+        'market_version' => $_rs['version'],
+        'market_cksum'   => $_rs['hash'],
+        'market_size'    => $_rs['size'],
+        'market_file'    => "{$cdr}/{$_rs['name']}.tar"
+    );
+    jrCore_trigger_event('jrMarket', 'updated_skin_files', $_rp, $_rs);
     unlink("{$cdr}/{$_rs['name']}.tar");
-    return false;
+
+    // Reset caches if we are updating our live skin
+    if ($skin == $_conf['jrCore_active_skin']) {
+        jrCore_delete_all_cache_entries('jrMarket');
+        jrCore_delete_all_cache_entries('jrCore');
+        jrMarket_reset_opcode_caches();
+        jrCore_delete_config_cache();
+        jrCore_reset_template_cache();
+        jrCore_reset_sprite_cache();
+    }
+
+    // Verify
+    $res = jrMarket_verify_item('skin', $skin);
+    if ($res && strpos($res, 'error:') === 0) {
+        jrCore_logger('CRI', "error updating skin {$skin} from version {$_mta['version']} to {$_rs['version']}");
+        jrCore_set_form_notice('error', substr($res, 7));
+        return false;
+    }
+
+    // Rebuild JS and CSS
+    if ($skin == $_conf['jrCore_active_skin']) {
+        jrCore_create_master_css($_conf['jrCore_active_skin']);
+        jrCore_create_master_javascript($_conf['jrCore_active_skin']);
+    }
+
+    jrCore_trigger_event('jrMarket', 'updated_skin', $_mta, $_rs);
+    jrCore_logger('INF', "successfully updated skin {$skin} from version {$_mta['version']} to {$_rs['version']}");
+    return true;
 }
 
 /**
@@ -1750,10 +1782,10 @@ function smarty_function_jrMarket_purchase_button($params, $smarty)
     }
     $out .= '<img id="fsi_' . $iid . '" src="' . $_conf['jrCore_base_url'] . '/skins/' . $_conf['jrCore_active_skin'] . '/img/submit.gif" width="24" height="24" style="display:none" alt="working...">&nbsp;';
     if ($ins) {
-        $out .= "<input id=\"p{$iid}\" type=\"button\" class=\"form_button\" style=\"width:150px;\" value=\"" . addslashes($val) . "\" onclick=\"if (confirm('{$pmt}')) { jrMarket_quick_purchase('bundle', '{$prc}','{$iid}', '{$nam}'); }\">";
+        $out .= "<input id=\"p{$iid}\" type=\"button\" class=\"form_button\" style=\"width:150px;\" value=\"" . addslashes($val) . "\" onclick=\"jrCore_confirm('{$pmt}', '', function() { jrMarket_quick_purchase('bundle', '{$prc}','{$iid}', '{$nam}'); } )\">";
     }
     elseif (isset($params['quick']) && $params['quick'] === true) {
-        $out .= "<input id=\"p{$iid}\" type=\"button\" class=\"form_button\" style=\"width:150px;\" value=\"" . addslashes($val) . "\" onclick=\"if (confirm('{$pmt}')) { jrMarket_quick_purchase('bundle', '{$prc}','{$iid}', '{$nam}'); }\">";
+        $out .= "<input id=\"p{$iid}\" type=\"button\" class=\"form_button\" style=\"width:150px;\" value=\"" . addslashes($val) . "\" onclick=\"jrCore_confirm('{$pmt}', '', function() { jrMarket_quick_purchase('bundle', '{$prc}','{$iid}', '{$nam}'); } )\">";
     }
     else {
         $out .= '<img id="fsi_' . $iid . '" src="' . $_conf['jrCore_base_url'] . '/skins/' . $_conf['jrCore_active_skin'] . '/img/submit.gif" width="24" height="24" style="display:none" alt="working...">&nbsp;';
@@ -1772,7 +1804,7 @@ function smarty_function_jrMarket_purchase_button($params, $smarty)
                     dataType: 'json',
                     url: purl,
                     success: function(msg) {
-                        if (typeof msg.error != 'undefined') {
+                        if (typeof msg.error !== 'undefined') {
                             alert(msg.error);
                         }
                         else {
@@ -1781,7 +1813,7 @@ function smarty_function_jrMarket_purchase_button($params, $smarty)
                                 jrCore_set_csrf_cookie(iurl);
                                 $.get(iurl, function(res) {
                                     // Check for error
-                                    if (typeof res.error !== \"undefined\") {
+                                    if (typeof res.error !== 'undefined') {
                                         $('#fsi_" . $iid . "').hide(300, function() {
                                             alert(res.error);
                                         });

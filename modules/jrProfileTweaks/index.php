@@ -2,7 +2,7 @@
 /**
  * Jamroom Profile Tweaks module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -237,10 +237,10 @@ function view_jrProfileTweaks_customize($_post, $_user, $_conf)
             // If a QUOTA CONFIG default has been set, its the default
             if (strpos(' ,' . $_profile['quota_jrProfileTweaks_allow_skin'] . ',', ',' . $_profile['quota_jrProfileTweaks_default_skin'] . ',')) {
                 $_opt[$_profile['quota_jrProfileTweaks_default_skin']] .= ' ' . $_ln['jrProfileTweaks'][21];
-                $default = $_profile['quota_jrProfileTweaks_default_skin'];
+                $default                                               = $_profile['quota_jrProfileTweaks_default_skin'];
 
                 // a custom skin had been set, but its no longer an option in this quota
-                if (!strpos(' ,' . $_profile['quota_jrProfileTweaks_allow_skin'] . ',', ',' . $_profile['profile_custom_skin'] . ',')) {
+                if (!isset($_profile['profile_custom_skin']) || !strpos(' ,' . $_profile['quota_jrProfileTweaks_allow_skin'] . ',', ',' . $_profile['profile_custom_skin'] . ',')) {
                     $_profile['profile_custom_skin'] = $default;
                 }
             }
@@ -299,9 +299,7 @@ function view_jrProfileTweaks_customize_save($_post, $_user, $_conf)
 
     $_data = array();
 
-    //-----------------------------
     // Logo
-    //-----------------------------
     $_image = jrCore_get_uploaded_media_files('jrProfileTweaks', 'profile_logo_image');
     if (is_array($_image)) {
 
@@ -324,9 +322,7 @@ function view_jrProfileTweaks_customize_save($_post, $_user, $_conf)
         }
     }
 
-    //-----------------------------
     // Background image
-    //-----------------------------
     $_image = jrCore_get_uploaded_media_files('jrProfileTweaks', 'profile_bg_image');
     if (is_array($_image)) {
 
@@ -361,9 +357,7 @@ function view_jrProfileTweaks_customize_save($_post, $_user, $_conf)
         $_data['profile_bg_tile'] = $_post['profile_bg_tile'];
     }
 
-    //-----------------------------
     // INDEX
-    //-----------------------------
     if (isset($_user['quota_jrProfileTweaks_allow_index_redirect']) && $_user['quota_jrProfileTweaks_allow_index_redirect'] == 'on') {
         if (isset($_post['profile_index_page']) && strlen($_post['profile_index_page']) > 0) {
             $_data['profile_index_page'] = $_post['profile_index_page'];
@@ -376,9 +370,7 @@ function view_jrProfileTweaks_customize_save($_post, $_user, $_conf)
         jrCore_db_delete_item_key('jrProfile', $pid, 'profile_index_page');
     }
 
-    //-----------------------------
     // SKIN
-    //-----------------------------
     if (isset($_user['quota_jrProfileTweaks_allow_skin']) && strlen($_user['quota_jrProfileTweaks_allow_skin']) > 0) {
 
         if (isset($_post['profile_custom_skin']) && strlen($_post['profile_custom_skin']) > 0 && $_post['profile_custom_skin'] != $_conf['jrCore_active_skin']) {
@@ -405,57 +397,7 @@ function view_jrProfileTweaks_customize_save($_post, $_user, $_conf)
 
     jrCore_form_delete_session();
     jrProfile_reset_cache($pid);
+    jrUser_reset_cache($_user['_user_id']);
     jrCore_set_form_notice('success', 13);
     jrCore_form_result();
-}
-
-//------------------------------
-// logo
-//------------------------------
-function view_jrProfileTweaks_logo($_post, $_user, $_conf)
-{
-    if (!isset($_post['_1']) || !jrCore_checktype($_post['_1'], 'number_nz')) {
-        jrCore_notice_page('error', 'invalid profile id');
-        return false;
-    }
-    $dir = jrCore_get_media_directory($_post['_1']);
-    $img = "{$dir}/jrProfile_{$_post['_1']}_profile_logo_image.{$_post['_2']}";
-    if (!is_file($img)) {
-        jrCore_notice_page('error', 'unable to open logo image file');
-        return false;
-    }
-    // Show it
-    $mime = jrCore_mime_type("image.{$_post['_2']}");
-    header("Content-type: {$mime}");
-    header('Content-Disposition: inline; filename="profile_logo_image.' . $_post['_2'] . '"');
-    header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + 8640000));
-    echo file_get_contents($img);
-    session_write_close();
-    jrCore_db_close();
-    exit;
-}
-
-//------------------------------
-// background
-//------------------------------
-function view_jrProfileTweaks_background($_post, $_user, $_conf)
-{
-    if (!isset($_post['_1']) || !jrCore_checktype($_post['_1'], 'number_nz')) {
-        jrCore_notice_page('error', 'invalid profile id');
-        return false;
-    }
-    $dir = jrCore_get_media_directory($_post['_1']);
-    $img = "{$dir}/jrProfile_{$_post['_1']}_profile_bg_image.jpg";
-    if (!is_file($img)) {
-        jrCore_notice_page('error', 'unable to open background image file');
-        return false;
-    }
-    // Show it
-    header("Content-type: image/jpeg");
-    header('Content-Disposition: inline; filename="profile_bg_image.jpg"');
-    header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + 8640000));
-    echo file_get_contents($img);
-    session_write_close();
-    jrCore_db_close();
-    exit;
 }

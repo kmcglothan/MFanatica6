@@ -163,7 +163,7 @@ function view_jrGallery_create($_post, $_user, $_conf)
     jrProfile_check_disk_usage();
 
     // Start our create form
-    jrCore_page_banner(1);
+    jrCore_page_banner(2);
 
     // Form init
     $_tmp = array(
@@ -306,10 +306,9 @@ function view_jrGallery_update($_post, $_user, $_conf)
 
     // Gallery Title
     $_tmp = array(
-        'name'     => 'gallery_existing_title',
-        'type'     => 'hidden',
-        'validate' => 'printable',
-        'value'    => $_it['gallery_title_url']
+        'name'  => 'gallery_existing_title',
+        'type'  => 'hidden',
+        'value' => $_it['gallery_title_url']
     );
     jrCore_form_field_create($_tmp);
 
@@ -330,9 +329,7 @@ function view_jrGallery_update($_post, $_user, $_conf)
             "_profile_id = {$_user['user_active_profile_id']}",
             "gallery_title_url = {$_it['gallery_title_url']}"
         ),
-        "order_by" => array(
-            '_item_id' => 'DESC'
-        ),
+        'order_by' => array('gallery_order' => 'numerical_asc'),
         "limit"    => 500
     );
     if (jrUser_is_admin() || jrProfile_is_profile_owner($_it['_profile_id'])) {
@@ -346,9 +343,9 @@ function view_jrGallery_update($_post, $_user, $_conf)
     // Gallery Images
     $_tmp = array(
         'name'     => 'gallery_image',
-        'label'    => 11,
+        'label'    => 62,
         'help'     => 5,
-        'text'     => 'select images to upload',
+        'text'     => 40,
         'type'     => 'image',
         'multiple' => true,
         'required' => false,
@@ -371,6 +368,9 @@ function view_jrGallery_update_save($_post, $_user, $_conf)
 
     // For our Gallery Images, we are going to create a UNIQUE DataStore entry
     // for each file that is uploaded
+    $existing_title = $_post['gallery_existing_title'];
+    unset($_post['gallery_existing_title']);
+
     // Get our posted data - the jrCore_form_get_save_data function will
     // return just those fields that were presented in the form.
     $_up                      = jrCore_form_get_save_data('jrGallery', 'update', $_post);
@@ -384,13 +384,13 @@ function view_jrGallery_update_save($_post, $_user, $_conf)
     $cnt = count($_files);
     $_rt = array(
         'search'         => array(
-            "gallery_title_url = {$_post['gallery_existing_title']}",
+            "gallery_title_url = {$existing_title}",
             "_profile_id = {$_user['user_active_profile_id']}",
         ),
         'return_keys'    => array('_item_id', '_updated', 'gallery_order'),
         'skip_triggers'  => true,
         'ignore_pending' => true,
-        'limit'          => 25000
+        'limit'          => 500
     );
     $_rt = jrCore_db_search_items('jrGallery', $_rt);
     if (!$_rt || !is_array($_rt) || !isset($_rt['_items'])) {
@@ -448,7 +448,8 @@ function view_jrGallery_update_save($_post, $_user, $_conf)
         jrCore_form_result("{$_conf['jrCore_base_url']}/{$_post['module_url']}/update/id={$_rt['_items'][0]['_item_id']}");
     }
 
-    jrProfile_reset_cache();
+    jrProfile_reset_cache($_user['user_active_profile_id'], 'jrGallery');
+    jrUser_reset_cache($_user['_user_id'], 'jrGallery');
     jrCore_form_result("{$_conf['jrCore_base_url']}/{$_user['profile_url']}/{$_post['module_url']}/{$_up['gallery_title_url']}/all");
 }
 
@@ -488,7 +489,8 @@ function view_jrGallery_delete_save($_post, $_user, $_conf)
     foreach ($_rt['_items'] as $_g) {
         jrCore_db_delete_item('jrGallery', $_g['_item_id']);
     }
-    jrProfile_reset_cache();
+    jrProfile_reset_cache($_user['user_active_profile_id'], 'jrGallery');
+    jrUser_reset_cache($_user['_user_id'], 'jrGallery');
     jrCore_form_result("{$_conf['jrCore_base_url']}/{$_user['profile_url']}/{$_post['module_url']}");
 }
 
@@ -509,7 +511,13 @@ function view_jrGallery_detail($_post, $_user, $_conf)
     }
 
     // Start our create form
-    jrCore_page_banner(15);
+    // Add in a link back to the full gallery update page
+
+    $_lang = jrUser_load_lang_strings();
+    $murl  = jrCore_get_module_url('jrGallery');
+    $icon  = jrCore_get_icon_html('gear');
+    $lnk   = '<a href="' . $_conf['jrCore_base_url'] . '/' . $murl . '/update/id=' . $_post['id'] . '" title="' . $_lang['jrGallery'][11] . '">' . $icon . '</a>';
+    jrCore_page_banner(15, $lnk);
 
     $canc = jrCore_is_profile_referrer("{$_conf['jrCore_base_url']}/{$_post['module_url']}/update/{$_rt['gallery_title_url']}");
     if (strpos(jrCore_get_local_referrer(), '/update/id=')) {
@@ -543,20 +551,21 @@ function view_jrGallery_detail($_post, $_user, $_conf)
             $_rt['signature'] = sha1($_conf['jrGallery_api_key'] . $_conf['jrGallery_aviary_key'] . $_rt['timestamp'] . $_rt['salt']);
         }
         $htm = jrCore_parse_template('gallery_manipulate.tpl', $_rt, 'jrGallery');
-        jrCore_page_custom($htm, 'Gallery Image');
+        jrCore_page_custom($htm, $_lang['jrGallery'][41]);
         $no_image = true;
     }
 
     // New Image (replace existing)
     $_tmp = array(
         'name'     => 'gallery_image',
-        'label'    => 41,
+        'label'    => 43,
         'help'     => 42,
-        'text'     => 43,
+        'text'     => 60,
         'type'     => 'image',
         'size'     => 'xlarge',
         'value'    => $_rt,
-        'required' => false
+        'required' => false,
+        'multiple' => false
     );
     if ($no_image) {
         $_tmp['no_image'] = true;
@@ -640,7 +649,7 @@ function view_jrGallery_detail_save($_post, $_user, $_conf)
     }
 
     // get the just edited remote image file from http://aviary.com if it has been edited using the aviary image editor.
-    if (jrCore_file_extension($_post['gallery_alt_img']) === 'png') {
+    if (isset($_post['gallery_alt_img']) && jrCore_file_extension($_post['gallery_alt_img']) === 'png') {
 
         $ftemp = file_get_contents($_post['gallery_alt_img']);
         $fname = 'jrGallery_' . $_post['id'] . '_gallery_image.png';
@@ -702,7 +711,7 @@ function view_jrGallery_detail_save($_post, $_user, $_conf)
     jrCore_save_all_media_files('jrGallery', 'detail', $_user['user_active_profile_id'], $_post['id']);
 
     jrCore_form_delete_session();
-    jrProfile_reset_cache();
+    jrProfile_reset_cache($_user['user_active_profile_id'], 'jrGallery');
     jrUser_reset_cache($_user['_user_id'], 'jrGallery');
 
     $_rt = array_merge($_rt, $_sv);
@@ -728,7 +737,10 @@ function view_jrGallery_delete_image($_post, $_user, $_conf)
         jrUser_not_authorized();
     }
     jrCore_db_delete_item('jrGallery', $_post['id']);
-    jrProfile_reset_cache();
+
+    // Reset caches
+    jrProfile_reset_cache($_user['user_active_profile_id'], 'jrGallery');
+    jrUser_reset_cache($_user['_user_id'], 'jrGallery');
 
     // See if we have images left in the gallery
     if (isset($_rt['gallery_title_url']) && strlen($_rt['gallery_title_url']) > 0) {
@@ -760,6 +772,31 @@ function view_jrGallery_delete_image($_post, $_user, $_conf)
     jrCore_form_result("{$_conf['jrCore_base_url']}/{$_user['profile_url']}/{$_post['module_url']}");
 }
 
+//------------------------------
+// delete_image_ajax
+//------------------------------
+function view_jrGallery_delete_image_ajax($_post, $_user, $_conf)
+{
+    jrUser_session_require_login();
+    jrCore_validate_location_url();
+
+    jrUser_check_quota_access('jrGallery');
+    $_lang = jrUser_load_lang_strings();
+    if (!isset($_post['id']) || !jrCore_checktype($_post['id'], 'number_nz')) {
+        jrCore_json_response(array('OK' => 0, 'error' => $_lang['jrGallery'][14]));
+    }
+    $_rt = jrCore_db_get_item('jrGallery', $_post['id']);
+    if (!jrUser_can_edit_item($_rt)) {
+        jrCore_json_response(array('OK' => 0, 'error' => 'not authorized'));
+    }
+    jrCore_db_delete_item('jrGallery', $_post['id']);
+    jrProfile_reset_cache();
+    jrUser_reset_cache($_user['_user_id'], 'jrGallery');
+
+    // success
+    jrCore_json_response(array('OK' => 1));
+}
+
 //----------------------------------
 // update the order of an gallery
 //----------------------------------
@@ -774,7 +811,7 @@ function view_jrGallery_order_update($_post, $_user, $_conf)
     // the calling user has access to them
     if (!jrUser_is_admin()) {
         $_rt = jrCore_db_get_multiple_items('jrGallery', $_post['gallery_order']);
-        if (!isset($_rt) || !is_array($_rt)) {
+        if (!$_rt || !is_array($_rt)) {
             return jrCore_json_response(array('error', 'unable to retrieve audio entries from database'));
         }
         foreach ($_rt as $_v) {
@@ -792,7 +829,8 @@ function view_jrGallery_order_update($_post, $_user, $_conf)
     if (count($_up) > 0) {
         jrCore_db_update_multiple_items('jrGallery', $_up);
     }
-    jrProfile_reset_cache();
+    jrProfile_reset_cache($_user['user_active_profile_id'], 'jrGallery');
+    jrUser_reset_cache($_user['_user_id'], 'jrGallery');
     return jrCore_json_response(array('success', 'gallery_order successfully updated'));
 }
 
@@ -858,4 +896,75 @@ function view_jrGallery_widget_config_body($_post, $_user, $_conf)
     );
     $_rt = jrCore_db_search_items('jrGallery', $_sp);
     return jrCore_parse_template('widget_config_body.tpl', $_rt, 'jrGallery');
+}
+
+//------------------------------
+// image_title_save
+//------------------------------
+function view_jrGallery_image_title_save($_post, $_user, $_conf)
+{
+
+    jrCore_validate_location_url();
+    $_ln = jrUser_load_lang_strings();
+
+    // Make sure we get a good _item_id
+    if (!isset($_post['id']) || !jrCore_checktype($_post['id'], 'number_nz')) {
+        $_rs = array(
+            'OK'    => 0,
+            'error' => $_ln['jrGallery'][54] // 'No image id received, so cant update database'
+        );
+        jrCore_json_response($_rs);
+    }
+
+    // Get data
+    $_rt = jrCore_db_get_item('jrGallery', $_post['id']);
+    if (!$_rt || !is_array($_rt)) {
+        // Item does not exist....
+        $_rs = array(
+            'OK'    => 0,
+            'error' => $_ln['jrGallery'][55] // 'item not found in datastore'
+        );
+        jrCore_json_response($_rs);
+    }
+
+    if (!jrUser_can_edit_item($_rt)) {
+        $_rs = array(
+            'OK' => 0,
+            'error', $_ln['jrGallery'][56] // 'permission denied'
+        );
+        jrCore_json_response($_rs);
+    }
+
+    // Make sure we get a good URL
+    if (isset($_post['gallery_image_title']) && strlen($_post['gallery_image_title']) > 0) {
+        if (!jrCore_checktype($_post['gallery_image_title'], 'printable')) {
+            $_rs = array(
+                'OK'    => 0,
+                'error' => $_ln['jrGallery'][57] // 'not a valid title'
+            );
+            jrCore_json_response($_rs);
+        }
+        $_up = array(
+            'gallery_image_title'     => $_post['gallery_image_title'],
+            'gallery_image_title_url' => jrCore_url_string($_post['gallery_image_title']),
+        );
+        $_cr = array(
+            '_updated' => $_rt['_updated']
+        );
+        jrCore_db_update_item('jrGallery', $_post['id'], $_up, $_cr);
+    }
+    else {
+        jrCore_db_delete_item_key('jrGallery', $_post['id'], 'gallery_image_title');
+        jrCore_db_delete_item_key('jrGallery', $_post['id'], 'gallery_image_title_url');
+    }
+
+    $_rt = jrCore_db_get_item('jrGallery', $_post['id']);
+    if (isset($_rt['gallery_image_title'])) {
+        $title = $_rt['gallery_image_title'];
+    }
+    else {
+        $title = '';
+    }
+    $_rs = array('OK' => 1, 'gallery_image_title' => $title);
+    jrCore_json_response($_rs);
 }

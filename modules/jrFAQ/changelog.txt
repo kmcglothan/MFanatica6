@@ -1,5 +1,9 @@
 FAQ module changelog
 
+Version 1.0.6:
+ - Bug Fix: Reordering system only works for admin on Jamroom 6.1
+ - Bug Fix: FAQ menu option was showing on all profiles
+
 Version 1.0.5:
  - New: Reordering system added to sort the FAQ into the desired structure
 

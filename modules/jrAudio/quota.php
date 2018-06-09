@@ -2,7 +2,7 @@
 /**
  * Jamroom Audio module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -116,21 +116,9 @@ function jrAudio_quota_config()
     );
     jrProfile_register_quota_setting('jrAudio', $_tmp);
 
-    // Allow Player
-    $_tmp = array(
-        'name'     => 'allow_player',
-        'type'     => 'checkbox',
-        'validate' => 'onoff',
-        'label'    => 'allow facebook player',
-        'help'     => 'If this option is checked, then audio files shared from profiles in this quota will appear in an embedded MP3 player on Facebook.<br><br><strong>NOTE:</strong> Facebook requires embedded media to be shared over SSL - you must have SSL configured and working on your site or the shared MP3 player will not work!',
-        'default'  => 'off',
-        'section'  => 'permissions',
-        'order'    => 15
-    );
-    jrProfile_register_quota_setting('jrAudio', $_tmp);
-
     // Remove old options no longer used
     jrProfile_delete_quota_setting('jrAudio', 'conversion_worker_count');
+    jrProfile_delete_quota_setting('jrAudio', 'allow_player');
 
     return true;
 }

@@ -1,0 +1,65 @@
+/* @title Page Background */
+/* @help What color should the background be for the actual page content? */
+.page_content {
+    background-color:#000;
+}
+
+.page_custom {
+    background:#000;
+}
+
+/* @title Page Section */
+/* @help The Page Section is the small divider that can divide forms into logical groups. */
+.page_section_header {
+	background-color:#920B0C;
+    border-radius:4px;
+    font-size:14px;
+    text-align:center;
+    text-transform:lowercase;
+    font-variant:small-caps;
+    padding:6px;
+    margin:6px 0 8px 0; /* @ignore */
+    color:#FFF;
+}
+.page_section_header a {
+    color:#FFF;
+}
+.page_section_header a:hover {
+    color:#DDD;
+}
+
+/* @title Page Divider */
+/* @help The small horizontal line or section that can be used to divide large sections of a page */
+.page_divider {
+    background-color:#000;
+    height:8px;
+    border-bottom-width:1px;
+    border-bottom-style:solid;
+    border-bottom-color:#920B0C;
+}
+
+/* @title Page Note */
+/* @help If a module has a special &quot;note&quot; that it wants to display, this controls how it looks. */
+.page_note {
+    background-color:#920B0C;
+    font-size:14px;
+    padding:9px;
+    margin-top:12px;
+    margin-bottom:9px;
+    text-align:center;
+    border-width:0;
+    border-style:solid;
+    border-color:#DDDDDD;
+    color:#FFF;
+    border-radius:4px;
+}
+
+/* @title Page Search Hilight */
+/* @help For options that support searching and hilighting, this is the background color for text matching. */
+.page_search_highlight {
+    background-color:#080403;
+    padding:4px;
+    border:1px solid #606060;
+    border-radius:4px;
+    color:#920B0C;
+}

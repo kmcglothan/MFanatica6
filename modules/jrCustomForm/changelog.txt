@@ -1,5 +1,11 @@
 Simple Custom Forms module changelog
 
+Version 1.2.6:
+ - New: Responses from logged out users are spam checked using the Spam Blocker module
+
+Version 1.2.5:
+ - New: Banned Items check is run on IP Address and any email fields in Custom forms
+
 Version 1.2.4:
  - Bug Fix: Custom Form fields could be created that were reserved for internal use
  - Bug Fix: Default "content" field could not be deleted

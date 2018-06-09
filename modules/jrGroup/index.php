@@ -2,7 +2,7 @@
 /**
  * Jamroom Groups module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -164,11 +164,18 @@ function view_jrGroup_create_save($_post, &$_user, &$_conf)
     // Save any uploaded media files added in by our module
     jrCore_save_all_media_files('jrGroup', 'create', $_user['user_active_profile_id'], $xid);
 
-    // Add group creator as member to table
-    $tbl = jrCore_db_table_name('jrGroup', 'member');
-    $req = "INSERT INTO {$tbl} (member_created, member_user_id, member_group_id, member_status) VALUES (UNIX_TIMESTAMP(), '{$_user['_user_id']}', '{$xid}', '1')";
-    if (jrCore_db_query($req, 'COUNT')) {
-        jrCore_db_update_item('jrGroup', $xid, array('group_member_count' => 1));
+    // Add profile owner(s) to the member to table
+    $_owners = jrProfile_get_owner_info($_user['user_active_profile_id']);
+    if ($_owners && is_array($_owners) && count($_owners) > 0) {
+        $tbl = jrCore_db_table_name('jrGroup', 'member');
+        $req = "INSERT INTO {$tbl} (member_created, member_user_id, member_group_id, member_status) VALUES";
+        foreach ($_owners as $owner) {
+            $req .= " (UNIX_TIMESTAMP(), '{$owner['_user_id']}', '{$xid}', '1'),";
+        }
+        $req = substr($req, 0, -1);
+        if ($cnt = jrCore_db_query($req, 'COUNT')) {
+            jrCore_db_update_item('jrGroup', $xid, array('group_member_count' => $cnt));
+        }
     }
 
     // Add to Actions
@@ -456,12 +463,20 @@ function view_jrGroup_button($_post, $_user, $_conf)
         if (jrCore_db_query($req, 'COUNT')) {
             // Send action email to group owner
             if ($sts == 0) { // pending
-                $_rep = array(
-                    '_applicant' => $_user,
-                    '_group'     => $_gr
-                );
-                list($sub, $msg) = jrCore_parse_email_templates('jrGroup', 'application', $_rep);
-                jrUser_notify($_gr['_user_id'], $_user['_user_id'], 'jrGroup', 'pending_application', $sub, $msg);
+                // Get group owners
+                $_owners = jrProfile_get_owner_info($_gr['_profile_id']);
+                if ($_owners && is_array($_owners)) {
+                    $_rep = array(
+                        '_applicant' => $_user,
+                        '_group'     => $_gr
+                    );
+                    list($sub, $msg) = jrCore_parse_email_templates('jrGroup', 'application', $_rep);
+                    foreach ($_owners as $_o) {
+                        if ($_o['_user_id'] != $_user['_user_id']) {
+                            jrUser_notify($_o['_user_id'], $_user['_user_id'], 'jrGroup', 'pending_application', $sub, $msg);
+                        }
+                    }
+                }
             }
             else {
                 // member is not pending - increment group_member_count
@@ -496,13 +511,20 @@ function view_jrGroup_button($_post, $_user, $_conf)
                 // decrement group_member_count
                 jrCore_db_decrement_key('jrGroup', $gid, 'group_member_count', 1);
 
-                // Send action email to group owner
-                $_rep = array(
-                    '_applicant' => $_user,
-                    '_group'     => $_gr
-                );
-                list($sub, $msg) = jrCore_parse_email_templates('jrGroup', 'leaving', $_rep);
-                jrUser_notify($_gr['_user_id'], $_user['_user_id'], 'jrGroup', 'user_leaving', $sub, $msg);
+                // Send action email to group owners
+                $_owners = jrProfile_get_owner_info($_gr['_profile_id']);
+                if ($_owners && is_array($_owners)) {
+                    $_rep = array(
+                        '_applicant' => $_user,
+                        '_group'     => $_gr
+                    );
+                    list($sub, $msg) = jrCore_parse_email_templates('jrGroup', 'leaving', $_rep);
+                    foreach ($_owners as $_o) {
+                        if ($_o['_user_id'] != $_user['_user_id']) {
+                            jrUser_notify($_o['_user_id'], $_user['_user_id'], 'jrGroup', 'user_leaving', $sub, $msg);
+                        }
+                    }
+                }
             }
             else {
                 $_rs = array('error' => 'An error was encountered removing your group application - please try again');

@@ -1,5 +1,8 @@
 Support Center module
 
+Version 1.1.3:
+ - Change: Updated index.tpl to look better on mobile devices
+
 Version 1.1.2:
  - Change: support.tpl updated to use same padding and layout as the module or skin info tab
  - Bug Fix: Skin support index may show default skin icon instead of actual skin icon

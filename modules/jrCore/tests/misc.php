@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -50,14 +50,14 @@ function test_jrCore_misc()
     jrUnitTest_add_coverage_file(APP_DIR . "/modules/jrCore/lib/misc.php");
 
     $_ch = array(
-        'http://test.com'                 => '<a href="http://test.com" target="_blank">http://test.com</a>',
-        'http://test.com/'                => '<a href="http://test.com/" target="_blank">http://test.com/</a>',
-        'https://test.com'                => '<a href="https://test.com" target="_blank">https://test.com</a>',
-        'https://test.com/'               => '<a href="https://test.com/" target="_blank">https://test.com/</a>',
-        'https://test.com?one=two'        => '<a href="https://test.com?one=two" target="_blank">https://test.com?one=two</a>',
-        'https://test.com?one=two&tmp=1'  => '<a href="https://test.com?one=two&tmp=1" target="_blank">https://test.com?one=two&tmp=1</a>',
-        'yes https://test.com'            => 'yes <a href="https://test.com" target="_blank">https://test.com</a>',
-        'https://test.com yes'            => '<a href="https://test.com" target="_blank">https://test.com</a> yes',
+        'http://test.com'                 => '<a href="http://test.com" target="_blank" rel="nofollow">http://test.com</a>',
+        'http://test.com/'                => '<a href="http://test.com/" target="_blank" rel="nofollow">http://test.com/</a>',
+        'https://test.com'                => '<a href="https://test.com" target="_blank" rel="nofollow">https://test.com</a>',
+        'https://test.com/'               => '<a href="https://test.com/" target="_blank" rel="nofollow">https://test.com/</a>',
+        'https://test.com?one=two'        => '<a href="https://test.com?one=two" target="_blank" rel="nofollow">https://test.com?one=two</a>',
+        'https://test.com?one=two&tmp=1'  => '<a href="https://test.com?one=two&tmp=1" target="_blank" rel="nofollow">https://test.com?one=two&tmp=1</a>',
+        'yes https://test.com'            => 'yes <a href="https://test.com" target="_blank" rel="nofollow">https://test.com</a>',
+        'https://test.com yes'            => '<a href="https://test.com" target="_blank" rel="nofollow">https://test.com</a> yes',
         '<a href="https://test.com"> yes' => '<a href="https://test.com"> yes'
     );
 
@@ -66,7 +66,6 @@ function test_jrCore_misc()
         jrUnitTest_init_test('jrCore_string_to_url test ' . $num);
         $tmp = jrCore_string_to_url($string);
         if ($tmp != $result) {
-            fdebug($tmp);  // OK
             jrUnitTest_exit_with_error("incorrect URL result");
         }
         $num++;

@@ -22,9 +22,9 @@
 
                 <div class="center" style="width:100%">
                     {if isset($doc_image_url) && strlen($doc_image_url) > 5}
-                        <a href="{$doc_image_url}">{jrCore_module_function function="jrImage_display" module="jrDocs" type="doc_image" item_id=$_item_id size="1280" class="iloutline doc_screenshot_img" alt=$doc_title _v=$_updated width="800"}</a>
+                        <a href="{$doc_image_url}">{jrCore_module_function function="jrImage_display" module="jrDocs" type="doc_image" item_id=$_item_id size=1280 class="iloutline doc_screenshot_img img_scale" alt=$doc_title _v=$_updated}</a>
                     {else}
-                        <a href="{$jamroom_url}/{$murl}/image/doc_image/{$_item_id}/1280/_v={$_updated}" data-lightbox="images" title="{$doc_title|jrCore_entity_string}">{jrCore_module_function function="jrImage_display" module="jrDocs" type="doc_image" item_id=$_item_id size="1280" class="iloutline doc_screenshot_img" alt=$doc_title _v=$_updated width="800"}</a>
+                        <a href="{$jamroom_url}/{$murl}/image/doc_image/{$_item_id}/1280/_v={$_updated}" data-lightbox="images" title="{$doc_title|jrCore_entity_string}">{jrCore_module_function function="jrImage_display" module="jrDocs" type="doc_image" item_id=$_item_id size="1280" class="iloutline doc_screenshot_img img_scale" alt=$doc_title _v=$_updated}</a>
                     {/if}
 
                     {if !empty($doc_content)}

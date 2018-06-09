@@ -1,0 +1,66 @@
+/* @title Text Input */
+/* @help Format for Text Input form elements */
+.form_text {
+    font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: #000000;
+    font-size: 15px;
+    width: 75%;
+    min-height: 19px;
+    padding: 5px 4px; /* @ignore */
+    margin: 2px 4px; /* @ignore */
+    background-color: #FFFFFF;
+    border: 1px solid #CCCCCC;
+    border-radius: 2px;
+    vertical-align: middle;
+}
+
+/* @title Date Input */
+/* @help Format for Date Input form elements */
+.form_date {
+    font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: #000000;
+    font-size: 15px;
+    width: 15%;
+    min-height: 19px;
+    padding: 5px 4px; /* @ignore */
+    margin: 2px 4px; /* @ignore */
+    background-color: #FFFFFF;
+    border: 1px solid #CCCCCC;
+    border-radius: 2px;
+    vertical-align: middle;
+}
+
+/* @title Style Editor input */
+/* @help Used in the Style Editor for text fields */
+.style-input {
+    font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: #000000;
+    font-size: 12px;
+    padding: 2px 4px 3px 4px; /* @ignore */
+    margin: 0;
+    background-color: #FFFFFF;
+    border: 1px solid #CCCCCC;
+    border-radius: 2px;
+}
+
+.style-reset {
+    top: 4px;
+    right: 34px;
+}
+
+/* @title Input Focus */
+/* @help Class applied to a text input field when the field is selected for input. */
+
+.form_text[disabled="disabled"], .form_text[readonly="readonly"] {
+    background: #DDDDDD;
+    color: #888888;
+}
+
+.form_text_search {
+    width: 45%;
+}
+
+.live_search_text {
+    color: #CCCCCC;
+    font-style: italic;
+}

@@ -1,9 +1,8 @@
 <?php
 /**
- * Jamroom 5 Video (Combined) module
+ * Jamroom Video (Combined) module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -50,7 +49,7 @@ function jrCombinedVideo_meta()
     $_tmp = array(
         'name'        => 'Video (Combined)',
         'url'         => 'video',
-        'version'     => '1.0.13',
+        'version'     => '1.0.14',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Combine video modules into a unified Videos section on Profiles',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2946/combined-video',
@@ -202,7 +201,7 @@ function jrCombinedVideo_module_view_listener($_data, $_user, $_conf, $_args, $e
  * @param $_args array Smarty function parameters
  * @param $smarty object Smarty Object
  * @param $test_only bool check if button WOULD be shown for given module
- * @return string
+ * @return mixed
  */
 function jrCombinedVideo_item_create_button($module, $_item, $_args, $smarty, $test_only = false)
 {
@@ -213,7 +212,7 @@ function jrCombinedVideo_item_create_button($module, $_item, $_args, $smarty, $t
         $_args['module'] = $module;
         return smarty_function_jrCombinedVideo_create_button($_args, $smarty);
     }
-    return '';
+    return false;
 }
 
 /**
@@ -223,7 +222,7 @@ function jrCombinedVideo_item_create_button($module, $_item, $_args, $smarty, $t
  * @param $_args Smarty function parameters
  * @param $smarty Smarty Object
  * @param $test_only - check if button WOULD be shown for given module
- * @return string
+ * @return mixed
  */
 function jrCombinedVideo_create_album_button($module, $_item, $_args, $smarty, $test_only = false)
 {

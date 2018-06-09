@@ -49,7 +49,7 @@ function jrGoogleAnalytics_meta()
     $_tmp = array(
         'name'        => 'Google Analytics',
         'url'         => 'googleanalytics',
-        'version'     => '1.2.2',
+        'version'     => '1.2.3',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Add Google Analytics to your site pages and profiles',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2923/google-analytics',

@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -144,6 +144,7 @@ function test_jrCore_datastore()
             $_dt['ut_delete_key_two']   = 'delete me';
             $_dt['ut_delete_key_three'] = 'delete me';
             $_dt['ut_long_key']         = $_lnk[$num];
+            $_dt['ut_order_num']        = $num;
         }
         $_cr = array(
             '_created'    => (time() - $num),
@@ -196,6 +197,16 @@ function test_jrCore_datastore()
         );
     }
     if (!jrCore_db_update_multiple_items('jrUnitTest', $_dt)) {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Update Multiple Items (item does not exist)');
+    $_up = array(
+        500 => array(
+            'ut_whatever_one' => 2
+        )
+    );
+    if (jrCore_db_update_multiple_items('jrUnitTest', $_up)) {
         jrUnitTest_exit_with_error();
     }
 
@@ -412,7 +423,182 @@ function test_jrCore_datastore()
         jrUnitTest_exit_with_error();
     }
 
+    jrUnitTest_init_test('Retrieve items from DS (double not_in)');
+    $_sc = array(
+        'search'        => array(
+            "ut_num not_in 1,2,3,4,5",
+            "ut_num not_in 10,11,12,13,14,15",
+        ),
+        'order_by'      => array('ut_num' => 'numerical_asc'),
+        'skip_triggers' => true,
+        'limit'         => 10
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !isset($_rt['_items'][0]) || $_rt['_items'][0]['_item_id'] == '1') {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Retrieve items from DS (double not_in with ignore_missing)');
+    $_sc = array(
+        'search'        => array(
+            "ut_num not_in 1,2,3,4,5",
+            "ut_num not_in 10,11,12,13,14,15",
+        ),
+        'order_by'       => array('ut_num' => 'numerical_asc'),
+        'ignore_missing' => true,
+        'skip_triggers'  => true,
+        'limit'          => 10
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !isset($_rt['_items'][0]) || $_rt['_items'][0]['_item_id'] == '1') {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Retrieve items from DS (double in _profile_id)');
+    $_sc = array(
+        'search'        => array(
+            "_profile_id in {$rpid}",
+            "_profile_id in {$private_profile_id}"
+        ),
+        'skip_triggers' => true,
+        'limit'         => 20
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !isset($_rt['_items'][0]) || count($_rt['_items']) !== 20) {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Retrieve items from DS (double not_in _profile_id)');
+    $_sc = array(
+        'search'        => array(
+            "_profile_id not_in {$rpid}",
+            "_profile_id not_in {$private_profile_id}"
+        ),
+        'skip_triggers' => true,
+        'limit'         => 1
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if ($_rt || isset($_rt['_items'][0])) {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Retrieve items from DS (_profile_id in and not_in)');
+    $_sc = array(
+        'search'        => array(
+            "_profile_id in {$rpid},{$private_profile_id}",
+            "_profile_id not_in {$private_profile_id}"
+        ),
+        'skip_triggers' => true,
+        'limit'         => 10
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !isset($_rt['_items'][0]) || count($_rt['_items']) !== 9) {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Retrieve items from DS (_profile_id double in)');
+    $_sc = array(
+        'search'        => array(
+            "_profile_id in {$rpid}",
+            "_profile_id in {$private_profile_id}"
+        ),
+        'skip_triggers' => true,
+        'limit'         => 20
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !isset($_rt['_items'][0]) || count($_rt['_items']) !== 20) {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Retrieve items from DS (double order_by)');
+    $_sc = array(
+        'search'        => array(
+            "_profile_id > 0",
+            "_profile_id <= 20"
+        ),
+        'order_by'      => array(
+            'ut_number' => 'numerical_asc',
+            'ut_float'  => 'desc'
+        ),
+        'skip_triggers' => true,
+        'limit'         => 20
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !isset($_rt['_items'][0]) || count($_rt['_items']) !== 9) {
+        jrUnitTest_exit_with_error();
+    }
+
+    // Between
+    jrUnitTest_init_test('Retrieve 3 items from DS (between)');
+    $_sc = array(
+        'search'        => array(
+            "ut_num between 9,11"
+        ),
+        'skip_triggers' => true,
+        'limit'         => 10
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !isset($_rt['_items'][0]) || $_rt['_items'][0]['_item_id'] != '9' || count($_rt['_items']) != 3) {
+        jrUnitTest_exit_with_error();
+    }
+
+    // Not Between
+    jrUnitTest_init_test('Retrieve 4 items from DS (not_between)');
+    $_sc = array(
+        'search'        => array(
+            "ut_num not_between 3,18"
+        ),
+        'skip_triggers' => true,
+        'limit'         => 10
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !isset($_rt['_items'][0]) || $_rt['_items'][0]['_item_id'] != '1' || count($_rt['_items']) != 4) {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Retrieve 6 items from DS (between with or)');
+    $_sc = array(
+        'search'        => array(
+            "ut_num between 9,11 || ut_num between 3,5"
+        ),
+        'skip_triggers' => true,
+        'limit'         => 20
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !isset($_rt['_items'][0]) || $_rt['_items'][0]['_item_id'] != '3' || count($_rt['_items']) != 6) {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Retrieve 4 items from DS (not_between with or)');
+    $_sc = array(
+        'search'        => array(
+            "ut_num not_between 3,18 || ut_num not_between 2,19"
+        ),
+        'skip_triggers' => true,
+        'limit'         => 20
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !isset($_rt['_items'][0]) || $_rt['_items'][0]['_item_id'] != '1' || count($_rt['_items']) != 4) {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('multiple profile_id search');
+    $_sc = array(
+        'search'     => array(
+            "_profile_id not_in 2,3,4,5,6,7,8",
+            "_profile_id in 1,12,15,19"
+        ),
+        'profile_id' => 1,
+        'limit'      => 5
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !isset($_rt['_items'][0]) || $_rt['_items'][0]['_item_id'] != '1' || count($_rt['_items']) != 5) {
+        jrUnitTest_exit_with_error();
+    }
+
+    //---------------------------
     // Logged out profile check
+    //---------------------------
     // Setup $private_profile_id as PRIVATE
     $tbl = jrCore_db_table_name('jrProfile', 'item_key');
     $req = "INSERT IGNORE INTO {$tbl} (`_item_id`,`_profile_id`,`key`,`index`,`value`) VALUES ('{$private_profile_id}', '{$private_profile_id}', 'profile_private', 0, '0')";
@@ -457,6 +643,46 @@ function test_jrCore_datastore()
     );
     $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
     if (!$_rt || !is_array($_rt['_items']) || count($_rt['_items']) !== 9) {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Retrieve all items from DS (private profile) - logged out');
+    $_sc = array(
+        'search'        => array(
+            "_profile_id in {$rpid},{$private_profile_id}"
+        ),
+        'skip_triggers' => true,
+        'limit'         => 20
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !is_array($_rt['_items']) || count($_rt['_items']) !== 9) {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Retrieve all items from DS (not_in private profile) - logged out');
+    $_sc = array(
+        'search'        => array(
+            "_profile_id not_in {$private_profile_id}"
+        ),
+        'skip_triggers' => true,
+        'limit'         => 20
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !is_array($_rt['_items']) || count($_rt['_items']) !== 9) {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Return count of items from DS (private profile) - logged out');
+    $_sc = array(
+        'search'        => array(
+            "_profile_id > 0"
+        ),
+        'return_count'  => true,
+        'skip_triggers' => true,
+        'limit'         => 20
+    );
+    $cnt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$cnt || is_array($cnt) || $cnt !== 9) {
         jrUnitTest_exit_with_error();
     }
 
@@ -592,6 +818,50 @@ function test_jrCore_datastore()
     );
     $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
     if (!$_rt || !isset($_rt['_items']) || !isset($_rt['_items'][0]) || $_rt['_items'][0]['_item_id'] != 1 || !isset($_rt['_items'][8]) || $_rt['_items'][8]['_item_id'] != 9) {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Wildcard search with pagebreak');
+    $_sc = array(
+        'search'        => array('% like %Object%'),
+        'order_by'      => array('_item_id' => 'asc'),
+        'skip_triggers' => true,
+        'no_cache'      => true,
+        'pagebreak'     => 10,
+        'page'          => 1
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !isset($_rt['_items'][9])) {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Wildcard search with pagebreak + use_total_row_count');
+    $_sc = array(
+        'search'              => array('% like %Object%'),
+        'order_by'            => array('_item_id' => 'asc'),
+        'skip_triggers'       => true,
+        'no_cache'            => true,
+        'pagebreak'           => 5,
+        'page'                => 3,
+        'use_total_row_count' => 20
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !isset($_rt['_items'][4]) || $_rt['_items'][4]['_item_id'] != 15) {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Wildcard search with pagebreak + module use_total_row_count');
+    $_sc = array(
+        'search'              => array('% like %Object%'),
+        'order_by'            => array('_item_id' => 'asc'),
+        'skip_triggers'       => true,
+        'no_cache'            => true,
+        'pagebreak'           => 5,
+        'page'                => 3,
+        'use_total_row_count' => 'jrUnitTest'
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !isset($_rt['_items'][4]) || $_rt['_items'][4]['_item_id'] != 15) {
         jrUnitTest_exit_with_error();
     }
 
@@ -826,6 +1096,17 @@ function test_jrCore_datastore()
         jrUnitTest_exit_with_error();
     }
 
+    jrUnitTest_init_test('Search _item_id OR invalid condition');
+    $_sc = array(
+        'search'        => array('_item_id = 1 || _item_id 5 '),
+        'skip_triggers' => true,
+        'limit'         => 9
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if ($_rt && is_array($_rt)) {
+        jrUnitTest_exit_with_error();
+    }
+
     jrUnitTest_init_test('Search ut_delete_key% OR ut_has_key');
     $_sc = array(
         'search'        => array('ut_delete_key% LIKE %elete% || ut_increment_key > 0'),
@@ -1012,6 +1293,16 @@ function test_jrCore_datastore()
     );
     $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
     if (!$_rt || !isset($_rt['_items'][0]) || !is_array($_rt['_items']) || count($_rt['_items']) !== 14) {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('title FULL_TEXT (5 items)');
+    $_sc = array(
+        'search' => array('ut_delete_key_one full_text delete'),
+        'limit'  => 20
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !isset($_rt['_items'][0]) || !is_array($_rt['_items']) || count($_rt['_items']) !== 5) {
         jrUnitTest_exit_with_error();
     }
 
@@ -1275,6 +1566,7 @@ function test_jrCore_datastore()
         'skip_triggers'  => true,
         'ignore_pending' => true,
         'no_cache'       => true,
+        'pagebreak'      => 10,
         'limit'          => 3
     );
     $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
@@ -1291,6 +1583,25 @@ function test_jrCore_datastore()
         'skip_triggers'  => true,
         'ignore_pending' => true,
         'no_cache'       => true,
+        'pagebreak'      => 10,
+        'limit'          => 10
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !is_array($_rt['_items']) || !isset($_rt['_items'][4]) || $_rt['_items'][4]['_item_id'] != '1') {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('ORDER BY _item_id using DESC - IDS specified with pagebreak');
+    $_sc = array(
+        'search'         => array(
+            '_item_id in 2,6,4,12,13,1,9,7,5,3'
+        ),
+        'order_by'       => array('_item_id' => 'desc'),
+        'skip_triggers'  => true,
+        'ignore_pending' => true,
+        'no_cache'       => true,
+        'pagebreak'      => 5,
+        'page'           => 2,
         'limit'          => 10
     );
     $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
@@ -1343,6 +1654,47 @@ function test_jrCore_datastore()
     );
     $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
     if ($_rt || is_array($_rt) || isset($_rt['_items'])) {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Search and order_by with ignore_missing');
+    $_sc = array(
+        'search'         => array(
+            'ut_order_num > 0'
+        ),
+        'order_by'       => array(
+            'ut_order_num' => 'numerical_desc'
+        ),
+        'skip_triggers'  => true,
+        'ignore_pending' => true,
+        'ignore_missing' => true,
+        'no_cache'       => true,
+        'limit'          => 5
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !is_array($_rt) || !isset($_rt['_items']) || !isset($_rt['_items'][4]) || $_rt['_items'][4]['_item_id'] != '5' || $_rt['_items'][0]['_item_id'] != '9') {
+        jrUnitTest_exit_with_error();
+    }
+
+    jrUnitTest_init_test('Multiple search on same key');
+    $_sc = array(
+        'search'         => array(
+            'ut_order_num > 0',
+            'ut_order_num < 100',
+            'ut_order_num < 1000',
+            'ut_order_num < 10000'
+        ),
+        'order_by'       => array(
+            'ut_order_num' => 'numerical_desc'
+        ),
+        'skip_triggers'  => true,
+        'ignore_pending' => true,
+        'ignore_missing' => true,
+        'no_cache'       => true,
+        'limit'          => 5
+    );
+    $_rt = jrCore_db_search_items('jrUnitTest', $_sc);
+    if (!$_rt || !is_array($_rt) || !isset($_rt['_items']) || !isset($_rt['_items'][4]) || $_rt['_items'][4]['_item_id'] != '5' || $_rt['_items'][0]['_item_id'] != '9') {
         jrUnitTest_exit_with_error();
     }
 
@@ -1454,12 +1806,13 @@ function test_jrCore_datastore()
 
     // Delete multiple items
     jrUnitTest_init_test('Delete Multiple Items (bad item_id array)');
+    /** @noinspection PhpParamsInspection */
     if (jrCore_db_delete_multiple_items('jrUnitTest', 'bad value', false, false)) {
         jrUnitTest_exit_with_error();
     }
 
     jrUnitTest_init_test('Delete Multiple Items');
-    if (!jrCore_db_delete_multiple_items('jrUnitTest', $_id)) {
+    if (!jrCore_db_delete_multiple_items('jrUnitTest', $_id, false, false, true, false)) {
         jrUnitTest_exit_with_error();
     }
 

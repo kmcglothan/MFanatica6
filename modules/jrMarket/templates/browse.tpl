@@ -32,7 +32,7 @@
                     {/if}
 
                     <small>by <a href="{$item.profile_full_url}" target="_blank">@{$item.profile_url}</a></small><br>
-                    <span class="market-description">{$item.market_description|truncate:220}<br><a href="{$item.market_detail_url}" target="_blank">more info...</a></span>
+                    <span class="market-description">{$item.market_description|jrCore_strip_html|truncate:220}<br><a href="{$item.market_detail_url}" target="_blank">more info...</a></span>
                 </div>
             </div>
 
@@ -43,7 +43,11 @@
                     {if $item.market_file_item_price > 0}
 
                         <span style="display:inline-block;margin-bottom:10px">
-                        {if isset($item.market_allow_license_install) && $item.market_allow_license_install == '1'}
+                        {if !empty($item.market_missing_required_mod)}
+                            <h3>Requires:</h3><br>
+                            <span class="market-requires"><a href="{$jamroom_url}/{$murl}/browse/module?search_string={$item.market_missing_required_mod}">{$item.market_missing_required_title}</a></span>
+
+                        {elseif isset($item.market_allow_license_install) && $item.market_allow_license_install == '1'}
                             <h3>You have a License</h3>
 
                         {elseif isset($item.market_user_promo_code) && $item.market_user_promo_code == '1' && $item.market_already_installed != '1' && $type != 'Installed'}
@@ -65,13 +69,16 @@
                             <input type="button" class="form_button form_button_disabled" style="width:150px" value="Already Installed" onclick="window.location='{$jamroom_url}/{jrCore_module_url module="jrCore"}/skin_admin/info/skin={$item.market_name}'">
                             {/if}
 
+                        {elseif !empty($item.market_missing_required_mod)}
+                            <input type="button" class="form_button form_button_disabled" style="width:150px" value="Install">
+
                         {elseif isset($item.market_allow_license_install) && $item.market_allow_license_install == '1'}
 
-                            <img id="fsi_{$item._item_id}" src="{$jamroom_url}/skins/{$_conf.jrCore_active_skin}/img/submit.gif" width="24" height="24" style="display:none" alt="{jrCore_lang module="jrCore" id="73" default="working..."}">&nbsp;<input type="button" class="form_button" style="width:150px" value="install" onclick="if (confirm('You already own a license for this item - install?')) { jrMarket_quick_purchase('{$item.market_type}','{$item.market_file_item_price}','{$item._item_id}','{$item.market_name}'); }">
+                            <img id="fsi_{$item._item_id}" src="{$jamroom_url}/skins/{$_conf.jrCore_active_skin}/img/submit.gif" width="24" height="24" style="display:none" alt="{jrCore_lang module="jrCore" id="73" default="working..."}">&nbsp;<input type="button" class="form_button" style="width:150px" value="install" onclick="jrCore_confirm('Install Item?', 'You own a license for this item', function() { jrMarket_quick_purchase('{$item.market_type}','{$item.market_file_item_price}','{$item._item_id}','{$item.market_name}'); } )">
 
                         {elseif isset($quick_purchase_id) && strlen($quick_purchase_id) > 5 && isset($_conf.jrMarket_quick_purchase) && $_conf.jrMarket_quick_purchase == 'on'}
 
-                            <img id="fsi_{$item._item_id}" src="{$jamroom_url}/skins/{$_conf.jrCore_active_skin}/img/submit.gif" width="24" height="24" style="display:none" alt="{jrCore_lang module="jrCore" id="73" default="working..."}">&nbsp;<input type="button" class="form_button" style="width:150px" value="quick purchase" onclick="if (confirm('Quick purchase and install this item for USD {$item.market_file_item_price|number_format:2}?')) { jrMarket_quick_purchase('{$item.market_type}','{$item.market_file_item_price}','{$item._item_id}','{$item.market_name}'); }">
+                            <img id="fsi_{$item._item_id}" src="{$jamroom_url}/skins/{$_conf.jrCore_active_skin}/img/submit.gif" width="24" height="24" style="display:none" alt="{jrCore_lang module="jrCore" id="73" default="working..."}">&nbsp;<input type="button" class="form_button" style="width:150px" value="quick purchase" onclick="jrCore_confirm('Purchase and Install?', 'Quick purchase and install this item for USD {$item.market_file_item_price|number_format:2}?', function() { jrMarket_quick_purchase('{$item.market_type}','{$item.market_file_item_price}','{$item._item_id}','{$item.market_name}'); } )">
 
                         {elseif !isset($active_market.system_email) || strlen($active_market.system_email) === 0 || !isset($active_market.system_code) || strlen($active_market.system_code) !== 32}
 
@@ -104,7 +111,7 @@
 
                         {else}
 
-                            <img id="fsi_{$item._item_id}" src="{$jamroom_url}/skins/{$_conf.jrCore_active_skin}/img/submit.gif" width="24" height="24" style="display:none" alt="{jrCore_lang module="jrCore" id="73" default="working..."}">&nbsp;<input type="button" class="form_button" style="width:150px" value="install" onclick="if (confirm('Install this item?')) { jrMarket_install_item('{$item.market_type}','{$item._item_id}','{$item.market_name}'); }">
+                            <img id="fsi_{$item._item_id}" src="{$jamroom_url}/skins/{$_conf.jrCore_active_skin}/img/submit.gif" width="24" height="24" style="display:none" alt="{jrCore_lang module="jrCore" id="73" default="working..."}">&nbsp;<input type="button" class="form_button" style="width:150px" value="install" onclick="jrCore_confirm('Install this item?', '', function() { jrMarket_install_item('{$item.market_type}','{$item._item_id}','{$item.market_name}'); } )">
 
                         {/if}
 
@@ -243,7 +250,7 @@
 
                         {else}
 
-                            <img id="fsi_{$item._item_id}" src="{$jamroom_url}/skins/{$_conf.jrCore_active_skin}/img/submit.gif" width="24" height="24" style="display:none" alt="{jrCore_lang module="jrCore" id="73" default="working..."}">&nbsp;<input type="button" class="form_button" style="width:150px" value="install" onclick="if (confirm('Install all items in this bundle?')) { jrMarket_install_item('bundle','{$item._item_id}','{$item._item_id}'); }">
+                            <img id="fsi_{$item._item_id}" src="{$jamroom_url}/skins/{$_conf.jrCore_active_skin}/img/submit.gif" width="24" height="24" style="display:none" alt="{jrCore_lang module="jrCore" id="73" default="working..."}">&nbsp;<input type="button" class="form_button" style="width:150px" value="install" onclick="jrCore_confirm('Install Bundle?', 'Install all items in this bundle?', function() { jrMarket_install_item('bundle','{$item._item_id}','{$item._item_id}'); } )">
 
                         {/if}
 

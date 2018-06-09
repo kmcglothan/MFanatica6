@@ -2,7 +2,7 @@
 /**
  * Jamroom Audio module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -54,27 +54,20 @@ function view_jrAudio_download_album($_post, $_user, $_conf)
         jrCore_notice_page('error', 'invalid album name - verify usage');
     }
     $profile_name = jrCore_db_get_item_key('jrProfile', $_post['_1'], 'profile_name');
-    $zipfile_file = "album_{$_post['_2']}.zip";
-    $zipfile_name = ucwords("{$profile_name} - " . str_replace('-', ' ', $_post['_2'])) . '.zip';
+    $zipfile_file = "album_" . jrCore_url_string($_post['_2']) . ".zip";
+    $zipfile_name = "{$profile_name} - {$_post['_2']}.zip";
 
-    // cleanup old album names...
-    $old_zipfile = jrCore_get_media_directory($_post['_1'], FORCE_LOCAL) . '/' . $zipfile_file;
-    if (is_file($old_zipfile)) {
-        @unlink($old_zipfile);
-    }
+    // Do we exist?
+    if (!jrCore_media_file_exists($_post['_1'], $zipfile_file)) {
 
-    // See if we are already being created...
-    if ($tim = jrCore_get_temp_value('jrAudio', $zipfile_name)) {
-        // We are already being created - see how long it has been
-        if ((time() - $tim) < 300) {
-            // We are still under 5 minutes - exit
-            jrCore_notice_page('notice', 'This album download is still being created - please try again in a few minutes', 'referrer');
+        ignore_user_abort(true);
+        if ($tim = jrCore_get_temp_value('jrAudio', $zipfile_name)) {
+            // We are already being created - see how long it has been
+            if ((time() - $tim) < 300) {
+                // We are still under 5 minutes - exit
+                jrCore_notice_page('notice', 'This album download is still being created - please try again in a few minutes', 'referrer');
+            }
         }
-    }
-    ignore_user_abort(true);
-
-    // See if our file exists
-    if (!jrCore_media_file_exists($_post['_1'], $zipfile_name)) {
 
         // Start our work
         jrCore_set_temp_value('jrAudio', $zipfile_name, time());
@@ -83,7 +76,7 @@ function view_jrAudio_download_album($_post, $_user, $_conf)
         $_sp = array(
             'search'                       => array(
                 "_profile_id = {$_post['_1']}",
-                "audio_album_url = {$_post['_2']}"
+                "audio_album_url = " . jrCore_url_string($_post['_2'])
             ),
             'return_keys'                  => array('_item_id', '_profile_id', 'profile_name', 'audio_title', 'audio_file_name', 'audio_file_track', 'audio_file_original_name', 'audio_file_size', 'audio_file_extension', 'audio_file_original_extension'),
             'exclude_jrUser_keys'          => true,
@@ -141,18 +134,10 @@ function view_jrAudio_download_album($_post, $_user, $_conf)
                     jrCore_delete_temp_value('jrAudio', $zipfile_name);
                     jrCore_notice_page('error', 'unable to create album download ZIP file');
                 }
-                if (!jrCore_write_media_file($_post['_1'], $zipfile_name, $tmp)) {
+                if (!jrCore_write_media_file($_post['_1'], $zipfile_file, $tmp)) {
                     jrCore_delete_temp_value('jrAudio', $zipfile_name);
                     jrCore_notice_page('error', 'unable to create album download ZIP file (2)');
                 }
-
-                // Cleanup
-                /*
-                unlink($tmp);
-                foreach ($_fl as $del) {
-                    unlink($del);
-                }
-                */
 
             }
             else {
@@ -167,7 +152,8 @@ function view_jrAudio_download_album($_post, $_user, $_conf)
         }
         jrCore_delete_temp_value('jrAudio', $zipfile_name);
     }
-    jrCore_media_file_download($_post['_1'], $zipfile_name, $zipfile_name);
+
+    jrCore_media_file_download($_post['_1'], $zipfile_file, $zipfile_name);
     session_write_close();
     jrCore_db_close();
     exit;
@@ -186,7 +172,7 @@ function view_jrAudio_import($_post, $_user, $_conf)
 
     // Form init
     $url  = jrCore_get_module_url('jrCore');
-    $url  = "{$_conf['jrCore_base_url']}/{$url}/dashboard/queue_viewer/queue_name=audio_conversions";
+    $url  = "{$_conf['jrCore_base_url']}/{$url}/dashboard/queue_viewer/queue_module=jrAudio/queue_name=audio_conversions";
     $_tmp = array(
         'submit_value'  => 'import audio files',
         'submit_prompt' => 'Are you sure you want to Import the audio files? Please be patient - depending on the number of audio files, this could take some time.',
@@ -373,9 +359,9 @@ function view_jrAudio_import_save($_post, &$_user, $_conf)
                 // See if we have already imported this song from a previous run
                 $_sc = array(
                     'search'         => array(
-                        "_profile_id = {$pid}",
+                        "audio_title_url = {$_tmp['audio_title_url']}",
                         "audio_album_url = {$_tmp['audio_album_url']}",
-                        "audio_title_url = {$_tmp['audio_title_url']}"
+                        "_profile_id = {$pid}"
                     ),
                     'skip_triggers'  => true,
                     'privacy_check'  => false,
@@ -403,6 +389,7 @@ function view_jrAudio_import_save($_post, &$_user, $_conf)
                 $_dt = array(
                     'profile_name'     => $_tmp['audio_file_artist'],
                     'profile_url'      => $pnm,
+                    'profile_active'   => 1,
                     'profile_quota_id' => $_post['import_quota_id'],
                     'profile_private'  => (isset($_qt['jrProfile_default_privacy'])) ? $_qt['jrProfile_default_privacy'] : '1'
                 );
@@ -446,8 +433,8 @@ function view_jrAudio_import_save($_post, &$_user, $_conf)
 
         // Try to grab an embedded image if we have one
         $_img = jrAudio_get_apic_image($full_file);
-        if (isset($_img) && is_array($_img)) {
-            $dir = jrCore_get_media_directory($pid);
+        if (is_array($_img)) {
+            $dir = jrCore_get_media_directory($pid, FORCE_LOCAL);
             jrCore_write_to_file("{$dir}/{$aid}_audio_image", $_img['image_data']);
             jrCore_write_to_file("{$dir}/{$aid}_audio_image.tmp", "audio_image.{$_img['extension']}");
             jrCore_save_media_file('jrAudio', "{$dir}/{$aid}_audio_image", $pid, $aid, 'audio_image');
@@ -490,6 +477,123 @@ function view_jrAudio_import_save($_post, &$_user, $_conf)
 }
 
 //------------------------------
+// tag
+//------------------------------
+function view_jrAudio_tag($_post, $_user, $_conf)
+{
+    jrUser_master_only();
+    jrCore_page_include_admin_menu();
+    jrCore_page_admin_tabs('jrAudio');
+    jrCore_page_banner("Update ID3 Audio Tags");
+
+    if (!isset($_post['quota_id']) || !jrCore_checktype($_post['quota_id'], 'number_nz')) {
+        $num = jrCore_db_number_rows('jrAudio', 'item');
+        $qid = 0;
+    }
+    else {
+        $_sc = array(
+            'quota_id'       => (int) $_post['quota_id'],
+            'return_count'   => true,
+            'ignore_pending' => true,
+            'privacy_check'  => false,
+            'limit'          => 1000000
+        );
+        $num = jrCore_db_search_items('jrAudio', $_sc);
+        $qid = (int) $_post['quota_id'];
+    }
+    if (!jrCore_checktype($num, 'number_nn')) {
+        $num = 0;
+    }
+
+    jrCore_page_note("The Audio ID3 Tag tool will create audio ID3 tag queue entries for the audio files selected.<br><br><strong>Tag Workers: {$_conf['jrAudio_conversion_worker_count']} &nbsp; &nbsp; Total Audio Files Selected: {$num}</strong>");
+
+    // Form init
+    $url  = jrCore_get_module_url('jrCore');
+    $url  = "{$_conf['jrCore_base_url']}/{$url}/dashboard/queue_viewer/queue_module=jrAudio/queue_name=audio_update";
+    $_tmp = array(
+        'submit_value'  => 'submit audio for tagging',
+        'submit_prompt' => 'Are you sure you want to update the ID3 Tags on the audio files? Please be patient - on large systems this could take some time.',
+        'cancel'        => 'referrer',
+        'submit_modal'  => 'update',
+        'modal_width'   => 600,
+        'modal_height'  => 400,
+        'modal_note'    => 'Creating Audio File Tag Queue Entries',
+        'modal_close'   => 'view ID3 tag queue',
+        'modal_onclick' => "jrCore_window_location('{$url}')"
+    );
+    jrCore_form_create($_tmp);
+
+    // Select Quota
+    $_qt  = array(
+        '0' => 'All Quotas'
+    );
+    $_qt  = $_qt + jrProfile_get_quotas();
+    $_tmp = array(
+        'name'     => 'convert_quotas',
+        'label'    => 'Quota',
+        'help'     => 'If you want to tag the audio files for a specific quota, select the quota here.',
+        'type'     => 'select',
+        'options'  => $_qt,
+        'value'    => $qid,
+        'default'  => '0',
+        'validate' => 'number_nn',
+        'onchange' => "var v=this.options[this.selectedIndex].value; jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/tag/quota_id='+ v)"
+    );
+    jrCore_form_field_create($_tmp);
+    jrCore_page_display();
+}
+
+//------------------------------
+// tag_save
+//------------------------------
+function view_jrAudio_tag_save($_post, &$_user, $_conf)
+{
+    jrUser_master_only();
+    jrCore_form_modal_notice('update', "Tagging Audio Files - please be patient");
+    ini_set('max_execution_time', 82800); // 23 hours max
+
+    // Get Audio files and create queue entries
+    $num = 0;
+    $lid = 0;
+    while (true) {
+        $_sp = array(
+            'search'                       => array(
+                "_item_id > {$lid}"
+            ),
+            'order_by'                     => array(
+                '_item_id' => 'asc'
+            ),
+            'exclude_jrProfile_quota_keys' => true,
+            'exclude_jrUser_keys'          => true,
+            'privacy_check'                => false,
+            'ignore_pending'               => true,
+            'limit'                        => 250
+        );
+        if (isset($_post['convert_quotas']) && jrCore_checktype($_post['convert_quotas'], 'number_nz')) {
+            $_sp['search'][] = "profile_quota_id = {$_post['convert_quotas']}";
+        }
+        $_sg = jrCore_db_search_items('jrAudio', $_sp);
+        if ($_sg && is_array($_sg) && isset($_sg['_items'])) {
+            foreach ($_sg['_items'] as $v) {
+                jrCore_queue_create('jrAudio', 'audio_update', $v);
+                $num++;
+                if (($num % 100) === 0 || isset($_sg['info']['total_items']) && $num >= $_sg['info']['total_items']) {
+                    jrCore_form_modal_notice('update', "Submitted {$num} ID3 tag queue entries");
+                }
+                $lid = (int) $v['_item_id'];
+            }
+        }
+        else {
+            break;
+        }
+    }
+    jrCore_form_delete_session();
+    jrCore_form_modal_notice('complete', "{$num} audio files were submitted for tagging");
+    jrCore_db_close();
+    exit;
+}
+
+//------------------------------
 // reconvert
 //------------------------------
 function view_jrAudio_reconvert($_post, $_user, $_conf)
@@ -514,12 +618,15 @@ function view_jrAudio_reconvert($_post, $_user, $_conf)
         $num = jrCore_db_search_items('jrAudio', $_sc);
         $qid = (int) $_post['quota_id'];
     }
+    if (!jrCore_checktype($num, 'number_nn')) {
+        $num = 0;
+    }
 
     jrCore_page_note("The Convert Audio tool will create new audio conversion queue entries for the audio files specified.<br>It is recommended to run this during a low usage time - it can place a large load on your server while in process.<br><br><strong>Conversion Workers: {$_conf['jrAudio_conversion_worker_count']} &nbsp; &nbsp; Total Audio Files Selected: {$num}</strong>");
 
     // Form init
     $url  = jrCore_get_module_url('jrCore');
-    $url  = "{$_conf['jrCore_base_url']}/{$url}/dashboard/queue_viewer/queue_name=audio_conversions";
+    $url  = "{$_conf['jrCore_base_url']}/{$url}/dashboard/queue_viewer/queue_module=jrAudio/queue_name=audio_conversions";
     $_tmp = array(
         'submit_value'  => 'submit audio for conversion',
         'submit_prompt' => 'Are you sure you want to Convert the audio files? Please be patient - on large systems this could take some time.',
@@ -534,10 +641,23 @@ function view_jrAudio_reconvert($_post, $_user, $_conf)
     jrCore_form_create($_tmp);
 
     // Select Quota
-    $_qt  = array(
+    $_qt = array(
         '0' => 'All Quotas'
     );
     $_qt = $_qt + jrProfile_get_quotas();
+
+    // Remove any quotas that are not setup for conversions
+    $tbl = jrCore_db_table_name('jrProfile', 'quota_value');
+    $req = "SELECT `quota_id`, `value` FROM {$tbl} WHERE `module` = 'jrAudio' AND `name` = 'audio_conversions'";
+    $_ac = jrCore_db_query($req, 'quota_id', false, 'value');
+    if ($_ac && is_array($_ac)) {
+        foreach ($_ac as $i => $v) {
+            if ($v == 'off') {
+                $_qt[$i] .= ' - conversions disabled';
+            }
+        }
+    }
+
     $_tmp = array(
         'name'     => 'convert_quotas',
         'label'    => 'Conversion Quota',
@@ -670,7 +790,6 @@ function view_jrAudio_create_album($_post, $_user, $_conf)
 {
     // Must be logged in to create a new audio file
     jrUser_session_require_login();
-    jrCore_check_ffmpeg_install();
     jrUser_check_quota_access('jrAudio');
     jrProfile_check_disk_usage();
 
@@ -685,23 +804,23 @@ function view_jrAudio_create_album($_post, $_user, $_conf)
 
     // Audio Album
     $_tmp = array(
-        'name'      => 'audio_album',
-        'label'     => 31,
-        'help'      => 32,
-        'type'      => 'text',
-        'validate'  => 'printable',
-        'required'  => true
+        'name'     => 'audio_album',
+        'label'    => 31,
+        'help'     => 32,
+        'type'     => 'text',
+        'validate' => 'printable',
+        'required' => true
     );
     jrCore_form_field_create($_tmp);
 
     // Audio Genre
     $_tmp = array(
-        'name'      => 'audio_genre',
-        'label'     => 12,
-        'help'      => 13,
-        'type'      => 'select_and_text',
-        'validate'  => 'printable',
-        'required'  => false
+        'name'     => 'audio_genre',
+        'label'    => 12,
+        'help'     => 13,
+        'type'     => 'select_and_text',
+        'validate' => 'printable',
+        'required' => false
     );
     jrCore_form_field_create($_tmp);
 
@@ -852,8 +971,8 @@ function view_jrAudio_create_album_save($_post, &$_user, $_conf)
         if (!$_image) {
             if (isset($file_name) && is_file($file_name)) {
                 $_img = jrAudio_get_apic_image($file_name);
-                if (isset($_img) && is_array($_img)) {
-                    $dir = jrCore_get_media_directory($_user['user_active_profile_id']);
+                if (is_array($_img)) {
+                    $dir = jrCore_get_media_directory($_user['user_active_profile_id'], FORCE_LOCAL);
                     jrCore_write_to_file("{$dir}/{$aid}_audio_image", $_img['image_data']);
                     jrCore_write_to_file("{$dir}/{$aid}_audio_image.tmp", "audio_image.{$_img['extension']}");
                     jrCore_save_media_file('jrAudio', "{$dir}/{$aid}_audio_image", $_user['user_active_profile_id'], $aid);
@@ -908,18 +1027,17 @@ function view_jrAudio_update_album($_post, $_user, $_conf)
 {
     // Must be logged in to create a new audio file
     jrUser_session_require_login();
-    jrCore_check_ffmpeg_install();
     jrUser_check_quota_access('jrAudio');
     jrProfile_check_disk_usage();
 
     if (!isset($_post['_1']) || strlen($_post['_1']) === 0) {
-        jrCore_notice_page('error', 60);
+        jrCore_notice_page('error', 61);
     }
 
     // get our first audio entry that uses this album
     $_sc = array(
         'search'         => array(
-            "audio_album_url = {$_post['_1']}",
+            "audio_album_url = " . jrCore_url_string($_post['_1']),
             "_profile_id = {$_user['user_active_profile_id']}"
         ),
         'skip_triggers'  => true,
@@ -929,7 +1047,7 @@ function view_jrAudio_update_album($_post, $_user, $_conf)
     );
     $_rt = jrCore_db_search_items('jrAudio', $_sc);
     if (!$_rt || !is_array($_rt['_items'])) {
-        jrCore_notice_page('error', 60);
+        jrCore_notice_page('error', 61);
     }
     jrCore_page_banner(60);
 
@@ -951,23 +1069,23 @@ function view_jrAudio_update_album($_post, $_user, $_conf)
 
     // Audio Album
     $_tmp = array(
-        'name'      => 'audio_album',
-        'label'     => 31,
-        'help'      => 32,
-        'type'      => 'text',
-        'validate'  => 'printable',
-        'required'  => true
+        'name'     => 'audio_album',
+        'label'    => 31,
+        'help'     => 32,
+        'type'     => 'text',
+        'validate' => 'printable',
+        'required' => true
     );
     jrCore_form_field_create($_tmp);
 
     // Audio Genre
     $_tmp = array(
-        'name'      => 'audio_genre',
-        'label'     => 12,
-        'help'      => 13,
-        'type'      => 'select_and_text',
-        'validate'  => 'printable',
-        'required'  => false
+        'name'     => 'audio_genre',
+        'label'    => 12,
+        'help'     => 13,
+        'type'     => 'select_and_text',
+        'validate' => 'printable',
+        'required' => false
     );
     jrCore_form_field_create($_tmp);
 
@@ -1084,7 +1202,6 @@ function view_jrAudio_create($_post, $_user, $_conf)
 {
     // Must be logged in to create a new audio file
     jrUser_session_require_login();
-    jrCore_check_ffmpeg_install();
     jrUser_check_quota_access('jrAudio');
     jrProfile_check_disk_usage();
 
@@ -1104,34 +1221,34 @@ function view_jrAudio_create($_post, $_user, $_conf)
 
     // Audio Title
     $_tmp = array(
-        'name'      => 'audio_title',
-        'label'     => 10,
-        'help'      => 11,
-        'type'      => 'text',
-        'validate'  => 'printable',
-        'required'  => true
+        'name'     => 'audio_title',
+        'label'    => 10,
+        'help'     => 11,
+        'type'     => 'text',
+        'validate' => 'printable',
+        'required' => true
     );
     jrCore_form_field_create($_tmp);
 
     // Audio Genre
     $_tmp = array(
-        'name'      => 'audio_genre',
-        'label'     => 12,
-        'help'      => 13,
-        'type'      => 'select_and_text',
-        'validate'  => 'printable',
-        'required'  => true
+        'name'     => 'audio_genre',
+        'label'    => 12,
+        'help'     => 13,
+        'type'     => 'select_and_text',
+        'validate' => 'printable',
+        'required' => true
     );
     jrCore_form_field_create($_tmp);
 
     // Audio Album
     $_tmp = array(
-        'name'      => 'audio_album',
-        'label'     => 31,
-        'help'      => 32,
-        'type'      => 'select_and_text',
-        'validate'  => 'printable',
-        'required'  => false
+        'name'     => 'audio_album',
+        'label'    => 31,
+        'help'     => 32,
+        'type'     => 'select_and_text',
+        'validate' => 'printable',
+        'required' => false
     );
     jrCore_form_field_create($_tmp);
 
@@ -1264,8 +1381,8 @@ function view_jrAudio_create_save($_post, &$_user, $_conf)
         if ($_fl && is_array($_fl)) {
             foreach ($_fl as $file) {
                 $_img = jrAudio_get_apic_image($file);
-                if (isset($_img) && is_array($_img)) {
-                    $dir = jrCore_get_media_directory($_user['user_active_profile_id']);
+                if (is_array($_img)) {
+                    $dir = jrCore_get_media_directory($_user['user_active_profile_id'], FORCE_LOCAL);
                     jrCore_write_to_file("{$dir}/{$aid}_audio_image", $_img['image_data']);
                     jrCore_write_to_file("{$dir}/{$aid}_audio_image.tmp", "audio_image.{$_img['extension']}");
                     jrCore_save_media_file('jrAudio', "{$dir}/{$aid}_audio_image", $_user['user_active_profile_id'], $aid);
@@ -1291,7 +1408,6 @@ function view_jrAudio_update($_post, $_user, $_conf)
 {
     // Must be logged in
     jrUser_session_require_login();
-    jrCore_check_ffmpeg_install();
     jrUser_check_quota_access('jrAudio');
 
     // We should get an id on the URL
@@ -1333,34 +1449,34 @@ function view_jrAudio_update($_post, $_user, $_conf)
 
     // Audio Title
     $_tmp = array(
-        'name'      => 'audio_title',
-        'label'     => 10,
-        'help'      => 11,
-        'type'      => 'text',
-        'validate'  => 'printable',
-        'required'  => true
+        'name'     => 'audio_title',
+        'label'    => 10,
+        'help'     => 11,
+        'type'     => 'text',
+        'validate' => 'printable',
+        'required' => true
     );
     jrCore_form_field_create($_tmp);
 
     // Audio Genre
     $_tmp = array(
-        'name'      => 'audio_genre',
-        'label'     => 12,
-        'help'      => 13,
-        'type'      => 'select_and_text',
-        'validate'  => 'printable',
-        'required'  => true
+        'name'     => 'audio_genre',
+        'label'    => 12,
+        'help'     => 13,
+        'type'     => 'select_and_text',
+        'validate' => 'printable',
+        'required' => true
     );
     jrCore_form_field_create($_tmp);
 
     // Audio Album
     $_tmp = array(
-        'name'      => 'audio_album',
-        'label'     => 31,
-        'help'      => 32,
-        'type'      => 'select_and_text',
-        'validate'  => 'printable',
-        'required'  => false
+        'name'     => 'audio_album',
+        'label'    => 31,
+        'help'     => 32,
+        'type'     => 'select_and_text',
+        'validate' => 'printable',
+        'required' => false
     );
     jrCore_form_field_create($_tmp);
 
@@ -1593,26 +1709,28 @@ function view_jrAudio_delete_album($_post, $_user, $_conf)
     if (!isset($_post['_1']) || strlen($_post['_1']) === 0) {
         jrCore_notice_page('error', 20);
     }
-    $_rt = jrCore_db_get_item_by_key('jrAudio', 'audio_album_url', $_post['_1']);
-    if (!isset($_rt) || !is_array($_rt)) {
+    $_id = jrCore_db_get_multiple_items_by_key('jrAudio', 'audio_album_url', jrCore_url_string($_post['_1']));
+    if (!$_id || !is_array($_id)) {
         jrCore_notice_page('error', 20);
     }
 
     // Make sure the calling user has permission to edit this item
-    if (!jrUser_can_edit_item($_rt)) {
+    if (!jrUser_can_edit_item($_id[0])) {
         jrUser_not_authorized();
     }
 
-    // Delete all items that match
-    $_id = jrCore_db_get_multiple_items_by_key('jrAudio', 'audio_album_url', $_post['_1'], true);
-    if (isset($_id) && is_array($_id)) {
-        jrCore_db_delete_multiple_items('jrAudio', $_id);
+    // Delete items that match
+    $_dl = array();
+    foreach ($_id as $k => $v) {
+        $_dl[] = (int) $v['_item_id'];
     }
+    jrCore_db_delete_multiple_items('jrAudio', $_dl);
 
     // Delete existing album ZIP file...
-    jrAudio_delete_album_zip_file($_user['user_active_profile_id'], $_rt['audio_album_url']);
+    jrAudio_delete_album_zip_file($_user['user_active_profile_id'], $_id[0]['audio_album_url']);
 
-    jrProfile_reset_cache();
+    jrProfile_reset_cache($_user['user_active_profile_id'], 'jrAudio');
+    jrUser_reset_cache($_user['_user_id'], 'jrAudio');
     jrCore_form_result("{$_conf['jrCore_base_url']}/{$_user['profile_url']}/{$_post['module_url']}");
 }
 
@@ -1705,8 +1823,7 @@ function view_jrAudio_embed($_post, $_user, $_conf)
     }
 
     $_rt = jrCore_db_get_item('jrAudio', $_post['_1']);
-
-    if (!$_rt) {
+    if (!$_rt || !is_array($_rt)) {
         jrCore_notice_page('notice', 'audio with that id could not be found in the datastore');
     }
 
@@ -1718,6 +1835,5 @@ function view_jrAudio_embed($_post, $_user, $_conf)
     jrCore_page_set_meta_header_only();
     jrCore_page_custom($html);
     jrCore_page_display();
-
 }
 

@@ -1,9 +1,8 @@
 <?php
 /**
- * Jamroom 5 Editor Image Upload module
+ * Jamroom Editor Image Upload module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -36,7 +35,7 @@
  * not permitted to limit liability and therefore such limitations
  * may not apply to you.
  *
- * Jamroom 5 Upload Image Module - language strings
+ * Jamroom Upload Image Module - language strings
  * @copyright 2003 - 2013 by The Jamroom Network - All Rights Reserved
  */
 

@@ -1,5 +1,14 @@
 Profile Group Discussions module changelog
 
+Version 1.4.13:
+ - Bug Fix: Some group discussion data may not be cached correctly
+
+Version 1.4.12:
+ - Bug Fix: Module load order changed to ensure group data exists in timeline event listener
+
+Version 1.4.11:
+ - Change: item_index_meta.tpl added to add social media tags for list page
+
 Version 1.4.10:
  - New: Updated to work with new version of RSS Feed reader module
 

@@ -2,7 +2,7 @@
 /**
  * Jamroom Simple Chat module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -193,6 +193,12 @@ function view_jrChat_delete_message($_post, $_user, $_conf)
     }
     $mid = (int) $_post['id'];
     $tbl = jrCore_db_table_name('jrChat', 'message');
+    $req = "SELECT * FROM {$tbl} WHERE msg_id = '{$mid}'";
+    $_ms = jrCore_db_query($req, 'SINGLE');
+    if (!$_ms || !is_array($_ms)) {
+        $_rs = array('ok' => 1);
+        jrCore_json_response($_rs);
+    }
     if (jrUser_is_admin()) {
         $req = "DELETE FROM {$tbl} WHERE msg_id = '{$mid}'";
     }
@@ -202,10 +208,19 @@ function view_jrChat_delete_message($_post, $_user, $_conf)
     }
     $cnt = jrCore_db_query($req, 'COUNT');
     if ($cnt && $cnt > 0) {
+
         // Get rid of any attached file as well...
         if ($_fl = jrCore_db_get_item_by_key('jrChat', 'chat_message_id', $mid)) {
             jrCore_db_delete_item('jrChat', $_fl['_item_id']);
         }
+
+        // Create new DELETE message
+        $rid = (int) $_ms['msg_room_id'];
+        $uid = (int) $_ms['msg_user_id'];
+        $msg = "~delmsg:{$mid}~{";
+        $req = "INSERT INTO {$tbl} (msg_room_id, msg_user_id, msg_created, msg_content) VALUES ('{$rid}', '{$uid}', UNIX_TIMESTAMP(), '{$msg}')";
+        jrCore_db_query($req);
+
         jrCore_trigger_event('jrChat', 'delete_message', $_post);
         $_rs = array('ok' => 1);
     }
@@ -362,13 +377,14 @@ function view_jrChat_messages($_post, $_user, $_conf)
             if (!$bid) {
                 $bid = (int) $m['i'];
             }
-            $_rs[$k]['c'] = smarty_modifier_jrCore_format_string(jrCore_replace_emoji($m['c']), $_user['profile_quota_id'], null, 'html');
+            $_rs[$k]['c'] = jrChat_replace_lightbox_tag(smarty_modifier_jrCore_format_string(jrCore_replace_emoji($m['c']), $_user['profile_quota_id'], null, 'html'));
             if (!is_null($sst)) {
                 $_rs[$k]['c'] = jrCore_hilight_string($_rs[$k]['c'], $sst);
             }
             $lid = $m['i'];
         }
     }
+    jrChat_set_slot_last_id($_user['_user_id'], $_post['room_id'], $lid);
     $_rp = array(
         'uid' => $_user['_user_id'],
         'new' => $_rs,   // Chat messages
@@ -423,7 +439,7 @@ function view_jrChat_new_messages($_post, $_user, $_conf)
                 // This is out active room - format messages
                 foreach ($_m as $k => $m) {
                     // Format messages for the room we are viewing
-                    $_rs[$room_id][$k]['c'] = smarty_modifier_jrCore_format_string(jrCore_replace_emoji($m['c']), $_user['profile_quota_id'], null, 'html');
+                    $_rs[$room_id][$k]['c'] = jrChat_replace_lightbox_tag(smarty_modifier_jrCore_format_string(jrCore_replace_emoji($m['c']), $_user['profile_quota_id'], null, 'html'));
                     $lid                    = (int) $m['i'];
                     if ($lid > $_post['last_id']) {
                         $tnm++;
@@ -433,9 +449,13 @@ function view_jrChat_new_messages($_post, $_user, $_conf)
             else {
                 // We have new messages in another room...
                 $_nw[$room_id] = count($_m);
-                $tnm += $_nw[$room_id];
+                $tnm           += $_nw[$room_id];
             }
         }
+    }
+    if ($tnm > 0 && $lid > 0) {
+        // We had new messages in this room - update last message id for slot
+        jrChat_set_slot_last_id($_user['_user_id'], $_post['room_id'], $lid);
     }
     $_rp = array(
         'cnt'    => jrChat_get_room_user_count($rid),
@@ -599,6 +619,7 @@ function view_jrChat_users($_post, $_user, $_conf)
             $_ss = jrUser_session_online_user_ids(3600, $_ui);
 
             // Are any of them typing?
+            $_tt = false;
             if ($_ss && is_array($_ss)) {
                 $tbl = jrCore_db_table_name('jrChat', 'typing');
                 $req = "SELECT t_user_id AS u, UNIX_TIMESTAMP() - t_time AS t FROM {$tbl} WHERE t_room_id = '{$rid}'";
@@ -606,6 +627,8 @@ function view_jrChat_users($_post, $_user, $_conf)
             }
 
             // Get users online status
+            $_ol = array();
+            $_ia = array();
             foreach ($_rp as $k => $_u) {
                 $uid = (int) $_u['_user_id'];
                 if (isset($_ss[$uid])) {
@@ -617,23 +640,29 @@ function view_jrChat_users($_post, $_user, $_conf)
                         case 'auto':
                         case 'online':
                             // When is the last time they were active in this room?
-                            if (isset($_tt[$uid]) && $_tt[$uid] > 0) {
+                            if ($_tt && isset($_tt[$uid]) && $_tt[$uid] > 0) {
                                 if ($_tt[$uid] < 1200) {
                                     // This user has recently been active in this room
-                                    $_rp[$k]['user_chat_online_current_status'] = 'online';
+                                    $_u['user_chat_online_current_status'] = 'online';
+                                    $_ol[]                                 = $_u;
+                                    unset($_rp[$k]);
                                 }
-                                elseif ($_tt[$uid] < 3600 || isset($_ss[$uid]) && $_ss[$uid] < 3600) {
+                                elseif ($_tt[$uid] < 3600 || isset($_ss[$uid]) && $_ss[$uid] > (time() - 3600)) {
                                     // This user has recently been active in this room OR on this site
-                                    $_rp[$k]['user_chat_online_current_status'] = 'inactive';
+                                    $_u['user_chat_online_current_status'] = 'inactive';
+                                    $_ia[]                                 = $_u;
+                                    unset($_rp[$k]);
                                 }
                                 else {
                                     // User is not online
                                     $_rp[$k]['user_chat_online_current_status'] = 'offline';
                                 }
                             }
-                            elseif (isset($_ss[$uid]) && $_ss[$uid] < 3600) {
+                            elseif (isset($_ss[$uid]) && $_ss[$uid] > (time() - 3600)) {
                                 // User is NOT active in the room but is active on the site
-                                $_rp[$k]['user_chat_online_current_status'] = 'inactive';
+                                $_u['user_chat_online_current_status'] = 'inactive';
+                                $_ia[]                                 = $_u;
+                                unset($_rp[$k]);
                             }
                             else {
                                 // User is offline
@@ -646,7 +675,9 @@ function view_jrChat_users($_post, $_user, $_conf)
                             break;
 
                         case 'inactive':
-                            $_rp[$k]['user_chat_online_current_status'] = 'inactive';
+                            $_u['user_chat_online_current_status'] = 'inactive';
+                            $_ia[]                                 = $_u;
+                            unset($_rp[$k]);
                             break;
 
                     }
@@ -656,6 +687,7 @@ function view_jrChat_users($_post, $_user, $_conf)
                     $_rp[$k]['user_chat_online_current_status'] = 'offline';
                 }
             }
+            $_rp = array_merge($_ol, $_ia, $_rp);
         }
     }
 
@@ -839,7 +871,7 @@ function view_jrChat_get_chats($_post, $_user, $_conf)
     $dat[1]['width'] = '2%';
     $dat[2]['title'] = $_ln['jrChat'][16];
     $dat[2]['width'] = '86%';
-    $dat[3]['title'] = $_ln['jrChat'][17];
+    $dat[3]['title'] = $_ln['jrChat'][52];
     $dat[3]['width'] = '10%';
     $dat[4]['title'] = $_ln['jrChat'][18];
     $dat[4]['width'] = '2%';
@@ -867,16 +899,15 @@ function view_jrChat_get_chats($_post, $_user, $_conf)
     // Chat Rooms
     if (count($_cr) > 0) {
         foreach ($_cr as $k => $_r) {
-            $cnt = (isset($_r['room_new_count']) && $_r['room_new_count'] > 0) ? $_r['room_new_count'] : 0;
             $dat = array();
             if (jrUser_is_admin() && $_r['room_public'] == 1) {
-                $dat[1]['title'] = jrCore_page_button("room-del-{$k}", 'X', "if(confirm('" . addslashes($_ln['jrChat'][19]) . "')) { jrChat_delete_room_id('{$_r['room_id']}','{$cnt}') }");
+                $dat[1]['title'] = jrCore_page_button("room-del-{$k}", 'X', "if(confirm('" . addslashes($_ln['jrChat'][19]) . "')) { jrChat_delete_room_id('{$_r['room_id']}') }");
             }
             elseif ($_r['room_user_id'] == $_user['_user_id']) {
-                $dat[1]['title'] = jrCore_page_button("room-del-{$k}", 'X', "if(confirm('" . addslashes($_ln['jrChat'][20]) . "')) { jrChat_delete_room_id('{$_r['room_id']}','{$cnt}') }");
+                $dat[1]['title'] = jrCore_page_button("room-del-{$k}", 'X', "if(confirm('" . addslashes($_ln['jrChat'][20]) . "')) { jrChat_delete_room_id('{$_r['room_id']}') }");
             }
             elseif (jrUser_is_admin()) {
-                $dat[1]['title'] = jrCore_page_button("room-del-{$k}", 'X', "if(confirm('" . addslashes($_ln['jrChat'][20]) . "')) { jrChat_delete_room_id('{$_r['room_id']}','{$cnt}') }");
+                $dat[1]['title'] = jrCore_page_button("room-del-{$k}", 'X', "if(confirm('" . addslashes($_ln['jrChat'][20]) . "')) { jrChat_delete_room_id('{$_r['room_id']}') }");
             }
             else {
                 $dat[1]['title'] = jrCore_page_button("room-del-{$k}", 'X', 'disabled');
@@ -889,16 +920,12 @@ function view_jrChat_get_chats($_post, $_user, $_conf)
             else {
                 $dat[2]['title'] .= $_ln['jrChat'][24];
             }
-            $transcript_url = "{$_conf['jrCore_base_url']}/{$_post['module_url']}/transcript/room_id={$_r['room_id']}";
+            $transcript_url  = "{$_conf['jrCore_base_url']}/{$_post['module_url']}/transcript/room_id={$_r['room_id']}";
             $dat[2]['title'] .= ' &bull; <a href="' . $transcript_url . '">' . $_ln['jrChat'][35] . '</a> &bull; ' . jrCore_format_time($_r['room_updated'], false, 'relative') . '</small>';
-            if ($cnt > 0) {
-                $dat[3]['title'] = jrCore_number_format($cnt);
+            $dat[3]['title'] = '<small>' . jrCore_number_format($_r['room_msg_count']) .'</small>';
+            $dat[3]['class'] = 'center';
+            if ($_r['room_new_count'] > 0) {
                 $dat[3]['class'] = 'center success';
-            }
-            else {
-                $_r['room_new_count'] = 0;
-                $dat[3]['title']      = 0;
-                $dat[3]['class']      = 'center';
             }
             $dat[4]['title'] = jrCore_page_button("room-enter-{$k}", "&#10148;", "jrChat_load_room_id('{$_r['room_id']}', '{$_r['room_new_count']}')");
             $dat[4]['class'] = 'center';
@@ -918,7 +945,7 @@ function view_jrChat_get_chats($_post, $_user, $_conf)
             // admin users can create OPEN chats
             $dat[1]['title'] = '<input id="jrchat-new-chat-title" type="text" class="form_text" placeholder="' . jrCore_entity_string($_ln['jrChat'][23]) . '" onkeypress="if (event && event.keyCode == 13) { if (this.value.trim().length > 0) { event.preventDefault(); jrChat_create_room(); return false } else { event.preventDefault(); return false } }">';
             $dat[1]['class'] = '" colspan="2';
-            $dat[2]['title'] = '<input id="jrchat-new-chat-type" name="private" type="checkbox" class="form_checkbox" checked="checked"><br>' . $_ln['jrChat'][24];
+            $dat[2]['title'] = '<input id="jrchat-new-chat-type" name="private" type="checkbox" class="form_checkbox" checked><br><small>' . $_ln['jrChat'][24] . '</small>';
             $dat[2]['class'] = 'center jrchat-type-checkbox';
             $dat[3]['title'] = jrCore_page_button('create', '&#x2713;', "jrChat_create_room()");
             $dat[3]['class'] = 'center';
@@ -940,25 +967,29 @@ function view_jrChat_get_chats($_post, $_user, $_conf)
             $_tm = jrCore_db_get_multiple_items('jrUser', $_nm);
             if ($_tm && is_array($_tm)) {
                 foreach ($_tm as $_u) {
-                    $_nm["{$_u['_user_id']}"] = $_u['user_name'];
+                    $_nm["{$_u['_user_id']}"] = jrCore_str_to_lower($_u['user_name']);
                 }
             }
             unset($_tm);
         }
 
+        $don             = false;
         $dat             = array();
         $dat[1]['title'] = '';
         $dat[2]['title'] = $_ln['jrChat'][25];
-        $dat[3]['title'] = $_ln['jrChat'][17];
+        $dat[3]['title'] = $_ln['jrChat'][52];
         $dat[4]['title'] = $_ln['jrChat'][18];
         jrCore_page_table_header($dat, null, true);
 
         foreach ($_pr as $k => $_r) {
-            $cnt = (isset($_r['room_new_count']) && $_r['room_new_count'] > 0) ? $_r['room_new_count'] : 0;
+            if ($don && $_r['room_msg_count'] == 0) {
+                // No need to show any rooms with no messages
+                continue;
+            }
             $uid = (int) $_r['room_user_id'];
             $dat = array();
             if (jrUser_is_admin() || $_r['room_user_id'] == $_user['_user_id']) {
-                $dat[1]['title'] = jrCore_page_button("chat-del-{$k}", 'X', "if(confirm('" . addslashes($_ln['jrChat'][20]) . "')) { jrChat_delete_room_id('{$_r['room_id']}','{$cnt}') }");
+                $dat[1]['title'] = jrCore_page_button("chat-del-{$k}", 'X', "if(confirm('" . addslashes($_ln['jrChat'][20]) . "')) { jrChat_delete_room_id('{$_r['room_id']}') }");
             }
             else {
                 $dat[1]['title'] = jrCore_page_button("chat-del-{$k}", 'X', 'disabled');
@@ -966,17 +997,26 @@ function view_jrChat_get_chats($_post, $_user, $_conf)
             $dat[1]['class'] = 'center';
             if ($uid == $_user['_user_id']) {
                 // We CREATED this room - show user we are chatting with
-                $dat[2]['title'] = $_r['room_title'];
+                $dat[2]['title'] = jrCore_str_to_lower($_r['room_title']);
             }
             elseif (isset($_nm[$uid]) && strlen($_nm[$uid]) > 1) {
                 // We did NOT create this room - if this is an admin user show BOTH names
                 if (jrUser_is_admin()) {
-                    if ($_r['room_title'] == $_user['profile_url']) {
-                        // This is a chat with us
+                    if ($_r['room_title'] == $_user['user_name']) {
                         $dat[2]['title'] = $_nm[$uid];
                     }
                     else {
-                        $dat[2]['title'] = $_nm[$uid] . ' & ' . $_r['room_title'];
+                        // We've hit the first chat that is not with us - add divider
+                        if (!$don) {
+                            $div             = array();
+                            $div[1]['title'] = '';
+                            $div[2]['title'] = 'other private user chats';
+                            $div[3]['title'] = $_ln['jrChat'][52];
+                            $div[4]['title'] = $_ln['jrChat'][18];
+                            jrCore_page_table_header($div, null, true);
+                            $don = true;
+                        }
+                        $dat[2]['title'] = $_nm[$uid] . ' & ' . jrCore_str_to_lower($_r['room_title']);
                     }
                 }
                 else {
@@ -986,15 +1026,18 @@ function view_jrChat_get_chats($_post, $_user, $_conf)
             else {
                 $dat[2]['title'] = $_ln['jrChat'][25];
             }
-            $dat[2]['title'] .= '<br><small>' . jrCore_format_time($_r['room_updated'], false, 'relative') . '</small>';
-            if ($cnt > 0) {
-                $dat[3]['title'] = $cnt;
-                $dat[3]['class'] = 'center success';
+            $dat[2]['title'] .= '<br><small>';
+            if ($_r['room_msg_count'] > 0) {
+                $dat[2]['title'] .= jrCore_format_time($_r['room_updated'], false, 'relative');
             }
             else {
-                $_r['room_new_count'] = 0;
-                $dat[3]['title']      = 0;
-                $dat[3]['class']      = 'center';
+                $dat[2]['title'] .= '-';
+            }
+            $dat[2]['title'] .= '</small>';
+            $dat[3]['title'] = '<small>' . jrCore_number_format($_r['room_msg_count']) . '</small>';
+            $dat[3]['class'] = 'center';
+            if ($_r['room_new_count'] > 0) {
+                $dat[3]['class'] = 'center success';
             }
             $dat[4]['title'] = jrCore_page_button("chat-enter-{$k}", "&#10148;", "jrChat_load_room_id('{$_r['room_id']}', '{$_r['room_new_count']}')");
             $dat[4]['class'] = 'center';
@@ -1310,19 +1353,52 @@ function view_jrChat_create_private_room($_post, $_user, $_conf)
             }
         }
     }
-    $ttl = jrCore_db_get_item_key('jrUser', $iid, 'user_name');
+    $ttl = jrCore_db_escape(jrCore_db_get_item_key('jrUser', $iid, 'user_name'));
 
     // Create the new PRIVATE room
     $uid = (int) $_user['_user_id'];
+
+    // Does the room already exist?  Note that the room could of been created by the other user
     $tbl = jrCore_db_table_name('jrChat', 'room');
-    $req = "INSERT INTO {$tbl} (room_user_id, room_created, room_updated, room_title, room_private) VALUES ('{$uid}', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), '" . jrCore_db_escape($ttl) . "', 1)";
-    $rid = jrCore_db_query($req, 'INSERT_ID');
+    $req = "SELECT room_id FROM {$tbl} WHERE room_user_id = '{$uid}' AND room_title = '{$ttl}' LIMIT 1";
+    $_ex = jrCore_db_query($req, 'SINGLE');
+    if (!$_ex || !is_array($_ex)) {
+
+        // OK - we did not find a room that was created by us to chat with the other user.
+        // Has the other user already created a private chat back to us?
+        $req = "SELECT room_id FROM {$tbl} WHERE room_user_id = '{$iid}' AND room_title = '" . jrCore_db_escape($_user['user_name']) . "' LIMIT 1";
+        $_ex = jrCore_db_query($req, 'SINGLE');
+        if (!$_ex || !is_array($_ex)) {
+            $req = "INSERT INTO {$tbl} (room_user_id, room_created, room_updated, room_title, room_private) VALUES ('{$uid}', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), '{$ttl}', 1)";
+            $rid = jrCore_db_query($req, 'INSERT_ID');
+            $new = true;
+        }
+        else {
+            $rid = $_ex['room_id'];
+            $new = false;
+        }
+    }
+    else {
+        $rid = $_ex['room_id'];
+        $new = false;
+    }
     if ($rid && jrCore_checktype($rid, 'number_nz')) {
 
-        // We created the room - add the creating user's slot
+        // get creating user's slot
+        $sid = false;
         $tbl = jrCore_db_table_name('jrChat', 'slot');
-        $req = "INSERT INTO {$tbl} (slot_room_id, slot_user_id) VALUES ('{$rid}', '{$uid}'), ('{$rid}', '{$iid}')";
-        $sid = jrCore_db_query($req, 'INSERT_ID');
+        if (!$new) {
+            // We did not create a new room - get existing slot
+            $req = "SELECT slot_id FROM {$tbl} WHERE slot_room_id = '{$rid}' AND slot_user_id = '{$uid}' LIMIT 1";
+            $_si = jrCore_db_query($req, 'SINGLE');
+            if ($_si && is_array($_si)) {
+                $sid = (int) $_si['slot_id'];
+            }
+        }
+        if ($new) {
+            $req = "INSERT INTO {$tbl} (slot_room_id, slot_user_id) VALUES ('{$rid}', '{$uid}'), ('{$rid}', '{$iid}')";
+            $sid = jrCore_db_query($req, 'INSERT_ID');
+        }
         if ($sid && jrCore_checktype($sid, 'number_nz')) {
             $_rs = array(
                 'rid' => $rid,
@@ -1331,9 +1407,11 @@ function view_jrChat_create_private_room($_post, $_user, $_conf)
         }
         else {
             // Cleanup
-            $tbl = jrCore_db_table_name('jrChat', 'room');
-            $req = "DELETE FROM {$tbl} WHERE room_id = '{$rid}'";
-            jrCore_db_query($req);
+            if ($new) {
+                $tbl = jrCore_db_table_name('jrChat', 'room');
+                $req = "DELETE FROM {$tbl} WHERE room_id = '{$rid}'";
+                jrCore_db_query($req);
+            }
             $_rs = array('error' => 'an error was encountered creating the room - please try again');
         }
     }

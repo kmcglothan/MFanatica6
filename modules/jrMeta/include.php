@@ -49,7 +49,7 @@ function jrMeta_meta()
     $_tmp = array(
         'name'        => 'Meta Tag Manager',
         'url'         => 'metatag',
-        'version'     => '1.1.0',
+        'version'     => '1.1.1',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Create and insert Meta Tags into site and profile pages',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2914/meta-tag-manager',
@@ -218,6 +218,11 @@ function jrMeta_insert_tags_listener($_data, $_user, $_conf, $_args, $event)
                                 }
                                 break;
 
+                            // All pages
+                            case 'a':
+                                $_tg["{$v['n']}"] = jrCore_entity_string($v['c']);
+                                break;
+
                         }
 
                     }
@@ -287,12 +292,12 @@ function jrMeta_form_display_listener($_data, $_user, $_conf, $_args, $event)
 
 /**
  * meta tags as html inject into header
- * @param $_data array incoming data array from jrCore_save_media_file()
+ * @param $_data string incoming data
  * @param $_user array current user info
  * @param $_conf array Global config
  * @param $_args array additional info about the module
  * @param $event string Event Trigger name
- * @return array
+ * @return string
  */
 function jrMeta_view_results_listener($_data, $_user, $_conf, $_args, $event)
 {
@@ -398,6 +403,7 @@ function jrMeta_get_default_names()
         'keywords'                 => 'keywords',
         'language'                 => 'language',
         'rating'                   => 'rating',
+        'referrer'                 => 'referrer',
         'revisit-after'            => 'revisit-after',
         'rights-standard'          => 'rights-standard',
         'robots'                   => 'robots',

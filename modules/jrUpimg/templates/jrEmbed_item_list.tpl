@@ -1,4 +1,5 @@
 {jrCore_module_url module="jrImage" assign="murl"}
+{jrCore_module_url module="jrUpimg" assign="uimurl"}
 <style type="text/css">
     .qq-upload-spinner {
         background: url("{$jamroom_url}/{$murl}/img/module/jrCore/loading.gif");
@@ -6,8 +7,9 @@
 </style>
 
 <script type="text/javascript">
-    function jrUpimage_upload_image(fileName) {
-        var alt_text =  fileName.replace(/[^a-zA-Z 0-9 _.]+/g,'');
+    function jrUpimage_upload_image(fileName)
+    {
+        var alt_text = fileName.replace(/[^a-zA-Z 0-9 _.]+/g, '');
         $.ajax({
             type: 'POST',
             data: { upload_token: '{$upload_token}' },
@@ -50,7 +52,7 @@
                     ed.windowManager.close();
                 }
                 else {
-                    alert('uploaded file was not saved. ' + _msg.success_msg);
+                    jrCore_alert('uploaded file was not saved. ' + _msg.success_msg);
                 }
             }
         });
@@ -59,43 +61,43 @@
     {jrCore_module_url module="jrCore" assign="curl"}
     $(document).ready(function() {
         var pm_active_uploads = {ldelim}{rdelim};
-    var pm_upimg_file = new qq.FileUploader({
-        element: document.getElementById('pm_upimg_file'),
-        action: '{$jamroom_url}/{$curl}/upload_file/',
-        inputName: 'pm_upimg_file',
-        acceptFiles: 'png,jpg,gif,jpeg',
-        sizeLimit: {$_user['quota_jrCore_max_upload_size']},
-        multiple: false,
-        debug: false,
-        params: {
-            upload_name: 'upimg_file',
-            field_name: 'pm_upimg_file',
-            upload_token: '{$upload_token}',
-            extensions: 'png,jpg,gif,jpeg',
-            multiple: 'false'
-        },
-        uploadButtonText: '{jrCore_lang module="jrUpimg" id="2" default="Select an image to upload and insert"}',
-        cancelButtonText: '{jrCore_lang module="jrCore" id="2" default="cancel"}',
-        failUploadText: 'upload failed',
-        onUpload: function(id, fileName) {
-            pm_active_uploads[fileName] = 1;
-            $('.form_submit_section input').attr("disabled", "disabled").addClass('form_button_disabled');
-        },
-        onComplete: function(id, fileName, response) {
-            delete pm_active_uploads[fileName];
-            var count = 0;
-            for (var i in pm_active_uploads) {
-                if (pm_active_uploads.hasOwnProperty(i)) {
-                    count++;
+        var pm_upimg_file = new qq.FileUploader({
+            element: document.getElementById('pm_upimg_file'),
+            action: '{$jamroom_url}/{$curl}/upload_file/',
+            inputName: 'pm_upimg_file',
+            acceptFiles: 'png,jpg,gif,jpeg',
+            sizeLimit: {$_user['quota_jrCore_max_upload_size']},
+            multiple: false,
+            debug: false,
+            params: {
+                upload_name: 'upimg_file',
+                field_name: 'pm_upimg_file',
+                upload_token: '{$upload_token}',
+                extensions: 'png,jpg,gif,jpeg',
+                multiple: 'false'
+            },
+            uploadButtonText: '{jrCore_lang module="jrUpimg" id="2" default="Select an image to upload and insert"}',
+            cancelButtonText: '{jrCore_lang module="jrCore" id="2" default="cancel"}',
+            failUploadText: 'upload failed',
+            onUpload: function(id, fileName) {
+                pm_active_uploads[fileName] = 1;
+                $('.form_submit_section input').attr("disabled", "disabled").addClass('form_button_disabled');
+            },
+            onComplete: function(id, fileName, response) {
+                delete pm_active_uploads[fileName];
+                var count = 0;
+                for (var i in pm_active_uploads) {
+                    if (pm_active_uploads.hasOwnProperty(i)) {
+                        count++;
+                    }
                 }
+                if (count === 0) {
+                    $('.form_submit_section input').removeAttr("disabled", "disabled").removeClass('form_button_disabled');
+                }
+                jrUpimage_upload_image(fileName);
             }
-            if (count === 0) {
-                $('.form_submit_section input').removeAttr("disabled", "disabled").removeClass('form_button_disabled');
-            }
-            jrUpimage_upload_image(fileName);
-        }
-    });
-    return true;
+        });
+        return true;
     })
     ;
 </script>
@@ -108,7 +110,7 @@
             <div class="page_table_cell center">
                 {$imgsize = jrCore_get_cookie('imgsizg')}
 
-                <select id="image-size" class="form_select" style="width:auto"  onchange="jrSetCookie('imgsizg', JSON.stringify($(this).val()));">
+                <select id="image-size" class="form_select" style="width:auto" onchange="jrSetCookie('imgsizg', JSON.stringify($(this).val()));">
                     {foreach $image_sizes as $pixels}
                         {if strlen($image_names[$pixels]) > 2}
                             {$name = " - `$image_names[$pixels]`"}
@@ -117,11 +119,11 @@
                         {/if}
 
                         {if isset($imgsize) && $imgsize == $pixels}
-                            <option value="{$pixels}" selected="selected">{$pixels}px  {$name}</option>
+                            <option value="{$pixels}" selected="selected">{$pixels}px {$name}</option>
                         {elseif !isset($imgsize) && $pixels == 256}
-                            <option value="{$pixels}" selected="selected">{$pixels}px  {$name}</option>
+                            <option value="{$pixels}" selected="selected">{$pixels}px {$name}</option>
                         {else}
-                            <option value="{$pixels}">{$pixels}px  {$name}</option>
+                            <option value="{$pixels}">{$pixels}px {$name}</option>
                         {/if}
                     {/foreach}
                     {if !isset($_conf.jrImage_block_original_size) || $_conf.jrImage_block_original_size == "off"}
@@ -177,5 +179,93 @@
 
     </div>
 
+
+    <br><br>
+    {if isset($_items) && is_array($_items)}
+        <div class="container">
+            <table class="page_table">
+                <tr class="page_table_row">
+                    <th class="page_table_cell center">Previously uploaded images</th>
+                </tr>
+
+                <tr class="page_table_row_alt">
+                    <td>
+                            {foreach $_items as $key => $item}
+                                <div style="float:left;padding:3px;text-align:center">
+                                    <a onclick="jrUpimg_insert_image('/{$uimurl}/image/upimg_file/{$item._item_id}', '{$item.upimg_file_name|addslashes}')" title="{$item.upimg_file_name}">
+                                        {jrCore_module_function function="jrImage_display" module="jrUpimg" type="upimg_file" item_id=$item._item_id size="medium" class="jrgallery_update_image" crop="auto" alt=$item.upimg_file_name width=148 height=148 title=$item.upimg_file_name}
+                                    </a><br>
+                                    {$gtitle|truncate:20}<br>
+                                    <a onclick="jrEmbed_load_module('jrUpimg', 1, 'profile_url:{$item.profile_url}');">@{$item.profile_name}</a><br>
+                                    <small>{$item.upimg_file_width} x {$item.upimg_file_height}px</small>
+                                </div>
+                            {/foreach}
+
+                    </td>
+                </tr>
+
+
+            </table>
+        </div>
+    {else}
+        <div class="container">
+            <table class="page_table">
+                <tr class="page_table_row">
+                    <td class="page_table_cell center">No previously uploaded images located</td>
+                </tr>
+            </table>
+        </div>
+    {/if}
+
 </div>
 
+
+
+
+<script type="text/javascript">
+    function jrUpimg_insert_image(url, title)
+    {
+        var ed = top.tinymce.activeEditor, dom = ed.dom;
+        var s = $('#image-size').val();
+        var p = $('#imgpos').val();
+        var m = $('#imgmar').val();
+        if (s === '') {
+            s = 'original';
+        }
+        switch (p) {
+            case 'stretch':
+                p = 'width:100%;';
+                break;
+            case 'left':
+                p = 'float:left;';
+                break;
+            case 'right':
+                p = 'float:right;';
+                break;
+            case '':
+                p = '';
+                break;
+        }
+        switch (m) {
+            case 0:
+                m = '';
+                break;
+            default:
+                m = 'margin:' + m + 'px;';
+                break;
+        }
+        ed.insertContent(dom.createHTML('img', {
+            src: core_system_url + url + '/' + s,
+            alt: title,
+            title: title,
+            border: 0,
+            style: p + m
+        }));
+        var h = $(ed.getContainer()).height();
+        if (h < s) {
+            ed.theme.resizeTo('100%', s);
+        }
+        ed.windowManager.close();
+    }
+
+</script>

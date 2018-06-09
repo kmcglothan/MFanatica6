@@ -2,7 +2,7 @@
 /**
  * Jamroom Item Ratings module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -50,8 +50,10 @@ function jrRating_rate_item($_post, $_user, $_conf)
     jrCore_validate_location_url();
 
     // See if we are requiring login
+    $_ln = jrUser_load_lang_strings();
     if (isset($_conf['jrRating_require_login']) && $_conf['jrRating_require_login'] == 'on' && !jrUser_is_logged_in()) {
-        return json_encode(array('error' => 'User not logged in - not allowed to rate'));
+        jrCore_set_form_notice('error', $_ln['jrRating'][18]);
+        return json_encode(array('error' => 'login'));
     }
     // Check quota
     $allowed = jrUser_get_profile_home_key('quota_jrRating_allowed');
@@ -80,16 +82,12 @@ function jrRating_rate_item($_post, $_user, $_conf)
         $_post['_3'] = 1;
     }
 
-    $_lang = jrUser_load_lang_strings();
-
     // See if the user has already rated this item
     $pfx = jrCore_db_get_prefix($_post['module']);
     $uip = jrCore_get_ip();
     $_sp = array(
         'search'         => array(
-            "rating_item_id = {$_post['_1']}",
-            "rating_module = {$_post['module']}",
-            "rating_index = {$_post['_3']}"
+            "rating_item_ckey = {$_post['_1']}:{$_post['_3']}:{$_post['module']}"
         ),
         'skip_triggers'  => true,
         'privacy_check'  => false,
@@ -111,7 +109,18 @@ function jrRating_rate_item($_post, $_user, $_conf)
     $_rt = ($_rt && is_array($_rt) && isset($_rt['_items'][0])) ? $_rt['_items'][0] : false;
     $url = false;
 
-    if (is_array($_rt)) {
+    $_dt = array(
+        'module' => $_post['module'],
+        'rating' => $_post['_2'],
+        '_item'  => $_it
+    );
+    $_dt = jrCore_trigger_event('jrRating', 'rate_item', $_dt, $_rt);
+    if (isset($_dt['error']) && strlen($_dt['error']) > 0) {
+        // We encountered an error in a listener
+        return json_encode(array('error' => $_dt['error']));
+    }
+
+    if ($_rt && is_array($_rt)) {
         // User has already rated this item - see if we are locked
         if (isset($_conf['jrRating_re-rate_timeout']) && jrCore_checktype($_conf['jrRating_re-rate_timeout'], 'number_nz')) {
             // Looks like we are blocking re-rating after X number of seconds
@@ -145,7 +154,7 @@ function jrRating_rate_item($_post, $_user, $_conf)
                     if (strlen($txt) > 60) {
                         $txt = substr($txt, 0, 60) . '...';
                     }
-                    $ttl = "{$_lang['jrRating'][15]}: {$txt}";
+                    $ttl = "{$_ln['jrRating'][15]}: {$txt}";
                 }
                 elseif (isset($_it["{$pfx}_item"])) {
                     $ipfx = jrCore_db_get_prefix($_it["{$pfx}_module"]);
@@ -168,6 +177,7 @@ function jrRating_rate_item($_post, $_user, $_conf)
         // Create new rating
         $_info  = array(
             'rating_ip'          => $uip,
+            'rating_item_ckey'   => "{$_post['_1']}:{$_post['_3']}:{$_post['module']}",
             'rating_module'      => $_post['module'],
             'rating_item_id'     => $_post['_1'],
             'rating_value'       => $_post['_2'],
@@ -202,11 +212,10 @@ function jrRating_rate_item($_post, $_user, $_conf)
 
         // Add to Actions...
         if (jrUser_is_logged_in() && $_conf['jrRating_allow_actions'] == 'on') {
-            $_as = array(
-                'action_original_module'  => $_post['module'],
-                'action_original_item_id' => (int) $_post['_1']
-            );
-            jrCore_run_module_function('jrAction_save', 'rate', 'jrRating', $rid, $_as, false, 0, true);
+            $_rt['action_original_module']  = $_post['module'];
+            $_rt['action_original_item_id'] = (int) $_post['_1'];
+            $_rt['quota_jrAction_allowed']  = (isset($_user['quota_jrAction_allowed'])) ? $_user['quota_jrAction_allowed'] : false;
+            jrCore_run_module_function('jrAction_save', 'rate', 'jrRating', $rid, $_rt, false, $_core['_profile_id'], $_it['_profile_id']);
         }
 
     }
@@ -281,7 +290,7 @@ function jrRating_rate_item($_post, $_user, $_conf)
         $_owners = jrProfile_get_owner_info($_it['_profile_id']);
         if (isset($_owners) && is_array($_owners)) {
             $_info2['system_name']      = $_conf['jrCore_system_name'];
-            $_info2['rating_user_name'] = (isset($_user['user_name'])) ? $_user['user_name'] : $_lang['jrRating'][14];
+            $_info2['rating_user_name'] = (isset($_user['user_name'])) ? $_user['user_name'] : $_ln['jrRating'][14];
             $_info2['rating_url']       = $url;
             list($sub, $msg) = jrCore_parse_email_templates('jrRating', 'new_rating', $_info2);
             foreach ($_owners as $_o) {

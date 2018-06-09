@@ -2,7 +2,7 @@
 /**
  * Jamroom Video module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -39,13 +39,101 @@
 defined('APP_DIR') or exit();
 
 //------------------------------
+// verify
+//------------------------------
+function view_jrVideo_verify($_post, $_user, $_conf)
+{
+    jrUser_master_only();
+    jrCore_page_include_admin_menu();
+    jrCore_page_admin_tabs('jrVideo');
+    jrCore_page_banner('Verify Video Files');
+
+    $flash = (isset($_conf['jrVideo_enable_flash']) && $_conf['jrVideo_enable_flash'] == 'off') ? 'Disabled' : 'Enabled';
+    $note  = "The Verify Files tool ensures each video has the correct video files as configured in the Global Config:<br>Required MP4 Support: <b>Enabled</b><br>Flash Video Support: <b>{$flash}</b>";
+    jrCore_page_note($note, false);
+    if ($flash == 'Enabled') {
+        jrCore_page_notice('error', '<b>Important!</b><br>To ensure browser support more disk space is required than in previous versions of the Video Module.<br>This tool will inform you if there is not enough disk space on your server to support the required video files.', false);
+    }
+
+    // Form init
+    $_tmp = array(
+        'submit_value'  => 'Verify Video Files',
+        'cancel'        => "{$_conf['jrCore_base_url']}/{$_post['module_url']}/admin/tools",
+        'submit_title'  => 'Verify video files?',
+        'submit_prompt' => 'Please be patient while video files are added to the queue for processing',
+        'submit_modal'  => 'update',
+        'modal_width'   => 600,
+        'modal_height'  => 400,
+        'modal_note'    => 'Please be patient while videos are being processed'
+    );
+    jrCore_form_create($_tmp);
+
+    $_tmp = array(
+        'name'  => 'verify',
+        'type'  => 'hidden',
+        'value' => 'on'
+    );
+    jrCore_form_field_create($_tmp);
+    jrCore_page_display();
+}
+
+//------------------------------
+// verify_save
+//------------------------------
+function view_jrVideo_verify_save($_post, $_user, $_conf)
+{
+    global $_conf;
+    jrUser_master_only();
+    jrCore_form_validate($_post);
+
+    @ini_set('max_execution_time', 86400); // 24 hours max
+    @ini_set('memory_limit', '1024M');
+
+    // How much free disk space is on the server?
+    if ($_tmp = jrCore_get_disk_usage()) {
+        // How much space is currently being used by the FLV videos?
+        $used = jrCore_db_run_key_function('jrVideo', 'video_file_size', '*', 'SUM');
+        // Save at least 250mb for the system and small differences
+        $free = ($_tmp['disk_free'] - (250 * 1048576));
+        if (($used * 1.25) > $free) {
+            jrCore_form_modal_notice('error', 'There is not enough free disk space on your server');
+            jrCore_form_modal_notice('complete', 'an error was encountered verifying the video files');
+            jrCore_form_result('referrer');
+        }
+    }
+
+    $_rt = jrCore_db_get_all_key_values('jrVideo', '_profile_id');
+    jrCore_form_modal_notice('update', jrCore_number_format(count($_rt)) . ' total videos found - analyzing');
+
+    if ($_rt && is_array($_rt)) {
+        $num = 0;
+        foreach ($_rt as $item_id => $profile_id) {
+            $_queue = array(
+                '_item_id'     => (int) $item_id,
+                '_profile_id'  => (int) $profile_id,
+                'enable_flash' => $_conf['jrVideo_enable_flash']
+            );
+            jrCore_queue_create('jrVideo', 'verify_video_files', $_queue);
+            $num++;
+            if (($num % 10) === 0) {
+                jrCore_form_modal_notice('update', "submitted " . jrCore_number_format($num) . " video files for validation");
+            }
+        }
+        jrCore_form_modal_notice('complete', "Success: " . jrCore_number_format($num) . " video files found to verify - check Queue Viewer");
+    }
+    else {
+        jrCore_form_modal_notice('complete', 'No video files found');
+    }
+    jrCore_form_result('referrer');
+}
+
+//------------------------------
 // create_album
 //------------------------------
 function view_jrVideo_create_album($_post, $_user, $_conf)
 {
     // Must be logged in to create a new video file
     jrUser_session_require_login();
-    jrCore_check_ffmpeg_install();
     jrUser_check_quota_access('jrVideo');
     jrProfile_check_disk_usage();
 
@@ -195,6 +283,7 @@ function view_jrVideo_create_album_save($_post, &$_user, &$_conf)
                 'screenshot'    => 1,
                 'sample'        => $sample,
                 'sample_length' => $_conf['jrVideo_sample_length'],
+                'create_flash'  => $_conf['jrVideo_enable_flash'],
                 'max_workers'   => (isset($_conf['jrVideo_conversion_worker_count'])) ? intval($_conf['jrVideo_conversion_worker_count']) : 1
             );
             jrCore_queue_create('jrVideo', 'video_conversions', $_queue);
@@ -219,7 +308,6 @@ function view_jrVideo_create($_post, $_user, $_conf)
 {
     // Must be logged in to create a new video file
     jrUser_session_require_login();
-    jrCore_check_ffmpeg_install();
     jrUser_check_quota_access('jrVideo');
     jrProfile_check_disk_usage();
 
@@ -346,6 +434,7 @@ function view_jrVideo_create_save($_post, &$_user, &$_conf)
                 'screenshot'    => 1,
                 'sample'        => $sample,
                 'sample_length' => $_conf['jrVideo_sample_length'],
+                'create_flash'  => $_conf['jrVideo_enable_flash'],
                 'max_workers'   => intval($_conf['jrVideo_conversion_worker_count'])
             );
             jrCore_queue_create('jrVideo', 'video_conversions', $_queue);
@@ -364,7 +453,6 @@ function view_jrVideo_update($_post, $_user, $_conf)
 {
     // Must be logged in
     jrUser_session_require_login();
-    jrCore_check_ffmpeg_install();
 
     // We should get an id on the URL
     if (!isset($_post['id']) || !jrCore_checktype($_post['id'], 'number_nz')) {
@@ -514,6 +602,7 @@ function view_jrVideo_update_save($_post, &$_user, &$_conf)
             'item_id'       => $_post['id'],
             'sample'        => $sample,
             'sample_length' => $_conf['jrVideo_sample_length'],
+            'create_flash'  => $_conf['jrVideo_enable_flash'],
             'max_workers'   => intval($_conf['jrVideo_conversion_worker_count'])
         );
         jrCore_queue_create('jrVideo', 'video_conversions', $_queue);
@@ -533,6 +622,7 @@ function view_jrVideo_update_save($_post, &$_user, &$_conf)
                 'item_id'       => $_post['id'],
                 'sample'        => true,
                 'sample_length' => $_conf['jrVideo_sample_length'],
+                'create_flash'  => $_conf['jrVideo_enable_flash'],
                 'max_workers'   => intval($_conf['jrVideo_conversion_worker_count'])
             );
             jrCore_queue_create('jrVideo', 'create_video_sample', $_queue);
@@ -555,6 +645,103 @@ function view_jrVideo_update_save($_post, &$_user, &$_conf)
     jrCore_form_delete_session();
     jrProfile_reset_cache();
     jrCore_form_result("{$_conf['jrCore_base_url']}/{$_user['profile_url']}/{$_post['module_url']}/{$_post['id']}/{$_sv['video_title_url']}");
+}
+
+//------------------------------
+// update_album
+//------------------------------
+function view_jrVideo_update_album($_post, $_user, $_conf)
+{
+    // Must be logged in to create a new audio file
+    jrUser_session_require_login();
+    jrUser_check_quota_access('jrVideo');
+    jrProfile_check_disk_usage();
+
+    if (!isset($_post['_1']) || strlen($_post['_1']) === 0) {
+        jrCore_notice_page('error', 67);
+    }
+
+    // get our first audio entry that uses this album
+    $_sc = array(
+        'search'         => array(
+            "video_album_url = {$_post['_1']}",
+            "_profile_id = {$_user['user_active_profile_id']}"
+        ),
+        'skip_triggers'  => true,
+        'ignore_pending' => true,
+        'privacy_check'  => false,
+        'limit'          => 1
+    );
+    $_rt = jrCore_db_search_items('jrVideo', $_sc);
+    if (!$_rt || !is_array($_rt['_items'])) {
+        jrCore_notice_page('error', 67);
+    }
+    jrCore_page_banner(66);
+
+    // Form init
+    $_tmp = array(
+        'submit_value' => 66,
+        'cancel'       => jrCore_is_profile_referrer(),
+        'values'       => $_rt['_items'][0]
+    );
+    jrCore_form_create($_tmp);
+
+    // Video Album URL
+    $_tmp = array(
+        'type'  => 'hidden',
+        'name'  => 'existing_url',
+        'value' => $_rt['_items'][0]['video_album_url'],
+    );
+    jrCore_form_field_create($_tmp);
+
+    // Video Album
+    $_tmp = array(
+        'name'     => 'video_album',
+        'label'    => 42,
+        'help'     => 43,
+        'type'     => 'text',
+        'validate' => 'printable',
+        'required' => true
+    );
+    jrCore_form_field_create($_tmp);
+    jrCore_page_display();
+}
+
+//------------------------------
+// update_album_save
+//------------------------------
+function view_jrVideo_update_album_save($_post, &$_user, $_conf)
+{
+    // Must be logged in
+    jrUser_session_require_login();
+    jrCore_form_validate($_post);
+    jrUser_check_quota_access('jrVideo');
+
+    // get all audio entries in this album
+    $_sc = array(
+        'search'         => array(
+            "video_album_url = {$_post['existing_url']}",
+            "_profile_id = {$_user['user_active_profile_id']}"
+        ),
+        'skip_triggers'  => true,
+        'ignore_pending' => true,
+        'privacy_check'  => false,
+        'limit'          => 1000
+    );
+    $_rt = jrCore_db_search_items('jrVideo', $_sc);
+    if (!$_rt || !is_array($_rt) || !is_array($_rt['_items'])) {
+        jrCore_set_form_notice('error', 62);
+        jrCore_form_result();
+    }
+
+    // Get our posted data - the jrCore_form_get_save_data function will
+    // return just those fields that were presented in the form.
+    $_sv                    = jrCore_form_get_save_data('jrVideo', 'update_album', $_post);
+    $_sv['video_album_url'] = jrCore_url_string($_post['video_album']);
+
+    jrCore_form_delete_session();
+    jrProfile_reset_cache();
+    jrCore_form_result("{$_conf['jrCore_base_url']}/{$_user['profile_url']}/{$_post['module_url']}/albums/{$_sv['video_album_url']}");
 }
 
 //------------------------------
@@ -663,42 +850,33 @@ function view_jrVideo_order_update($_post, $_user, $_conf)
 function view_jrVideo_widget_config_body($_post, $_user, $_conf)
 {
     jrUser_session_require_login();
+    jrUser_admin_only();
     if (!isset($_post['p']) || !jrCore_checktype($_post['p'], 'number_nz')) {
         $_post['p'] = 1;
     }
-
-    $ss      = array();
-    $default = true;
-
+    $_search = array(
+        'video_active = on'
+    );
     // specific ids
     if (isset($_post['ids']) && $_post['ids'] !== "false" && $_post['ids'] !== "undefined" && $_post['ids'] !== "") {
-        $ss[]    = "_item_id IN {$_post['ids']}";
-        $default = false;
+        $_search[] = "_item_id IN {$_post['ids']}";
     }
     // search string
     if (isset($_post['sstr']) && $_post['sstr'] !== "false" && $_post['sstr'] !== "undefined" && $_post['sstr'] !== "") {
-        $ss[]    = "video_% LIKE %{$_post['sstr']}%";
-        $default = false;
+        $_search[] = "video_% LIKE %{$_post['sstr']}%";
     }
     // profile
     if (isset($_post['profile_url']) && $_post['profile_url'] !== "false" && $_post['profile_url'] !== "undefined" && $_post['profile_url'] !== "") {
-        $ss[]    = "profile_url = {$_post['profile_url']}";
-        $default = false;
+        $_search[] = "profile_url = {$_post['profile_url']}";
     }
     // album
     if (isset($_post['album_url']) && $_post['album_url'] !== "false" && $_post['album_url'] !== "undefined" && $_post['album_url'] !== "") {
         $album_url = jrCore_url_string($_post['album_url']);
-        $ss[]      = "video_album_url = $album_url";
-        $default   = false;
+        $_search[] = "video_album_url = {$album_url}";
     }
-    // default list of items
-    if ($default) {
-        $ss[] = "_profile_id = {$_user['user_active_profile_id']}";
-    }
-
     // Create search params from $_post
     $_sp = array(
-        'search'              => $ss,
+        'search'              => $_search,
         'pagebreak'           => 8,
         'page'                => $_post['p'],
         'exclude_jrUser_keys' => true

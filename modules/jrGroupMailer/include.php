@@ -2,8 +2,7 @@
 /**
  * Jamroom Group Mailer module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2017 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -47,7 +46,7 @@ function jrGroupMailer_meta()
     $_tmp = array(
         'name'        => 'Group Mailer',
         'url'         => 'groupmailer',
-        'version'     => '1.1.0',
+        'version'     => '1.1.3',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Send an email to all members in a Profile Group',
         'category'    => 'profiles',
@@ -127,14 +126,14 @@ function jrGroupMailer_prep_email_worker($_queue)
                     // Get group members
                     $_gm = array();
                     foreach ($_gt['group_member'] as $gm) {
-                        if ($gm['_user_id'] != $_queue['groupmailer_sender'] ) {
+                        if ($gm['_user_id'] != $_queue['groupmailer_sender']) {
                             $_gm["{$gm['_user_id']}"] = $gm['_user_id'];
                         }
                     }
                     // did we find members in this group?
                     if ($_gm && is_array($_gm) && count($_gm) > 0) {
                         // Get user_id's associated with these group members ...
-                        $_s = array(
+                        $_s  = array(
                             'search'              => array(
                                 "_user_id in " . implode(',', $_gm)
                             ),
@@ -163,6 +162,7 @@ function jrGroupMailer_prep_email_worker($_queue)
             foreach ($_em as $_chunk) {
                 // Create our send queue
                 $_queue['emails'] = $_chunk;
+                unset($_queue['queue_id']);
                 jrCore_queue_create('jrGroupMailer', 'send_email', $_queue);
             }
             $_tmp = array(
@@ -182,6 +182,7 @@ function jrGroupMailer_prep_email_worker($_queue)
  */
 function jrGroupMailer_send_email_worker($_queue)
 {
+    // jrCore_logger('inf', 'jrGroupMailer send email worker starting', $_queue);
     if (isset($_queue['emails']) && is_array($_queue['emails'])) {
         $_us = array(
             'search'                       => array(
@@ -216,7 +217,7 @@ function jrGroupMailer_send_email_worker($_queue)
                 foreach ($_u as $k => $v) {
                     $_rep['{$' . $k . '}'] = $v;
                 }
-                $msg      = jrCore_replace_emoji(str_replace(array_keys($_rep), $_rep, $_queue['groupmailer_message']));
+                $msg = jrCore_replace_emoji(str_replace(array_keys($_rep), $_rep, $_queue['groupmailer_message']));
                 jrUser_notify($uid, 0, 'jrGroupMailer', 'email', $_queue['groupmailer_title'], $msg);
                 $_em[$uid] = $_u['user_email'];
             }
@@ -322,24 +323,24 @@ function jrGroupMailer_delete_template($template_id)
  * @param $_args Smarty function parameters
  * @param $smarty Smarty Object
  * @param $test_only - check if button WOULD be shown for given module
- * @return string
+ * @return mixed
  */
 function jrGroupMailer_compose_email_button($module, $_item, $_args, $smarty, $test_only = false)
 {
     global $_conf, $_user;
-
-    if ($test_only) {
-        return true;
-    }
-    if ($module == 'jrGroup' && isset($_item['quota_jrGroupMailer_allowed']) && $_item['quota_jrGroupMailer_allowed'] == 'on' && ($_item['_user_id'] == $_user['_user_id'] || jrUser_is_admin())) {
-        $murl = jrCore_get_module_url('jrGroupMailer');
-
-        $_rt = array(
-            'url'  => "{$_conf['jrCore_base_url']}/{$murl}/compose/gid={$_item['_item_id']}",
-            'icon' => 'pen',
-            'alt'  => 'group email'
-        );
-        return $_rt;
+    if ($module == 'jrGroup') {
+        if ($test_only) {
+            return true;
+        }
+        if (isset($_item['quota_jrGroupMailer_allowed']) && $_item['quota_jrGroupMailer_allowed'] == 'on' && ($_item['_user_id'] == $_user['_user_id'] || jrUser_is_admin())) {
+            $murl = jrCore_get_module_url('jrGroupMailer');
+            $_rt  = array(
+                'url'  => "{$_conf['jrCore_base_url']}/{$murl}/compose/gid={$_item['_item_id']}",
+                'icon' => 'pen',
+                'alt'  => 'group email'
+            );
+            return $_rt;
+        }
     }
     return false;
 }

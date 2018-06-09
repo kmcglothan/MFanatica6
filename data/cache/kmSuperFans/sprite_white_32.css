@@ -1,0 +1,207 @@
+.sprite_icon_white_32{display:inline-block;width:32px;height:32px;}
+.sprite_icon_white_32_img{background:url('//mf6.paradigmusic.com/data/cache/kmSuperFans/sprite_white_32.png?_v=1526514941') no-repeat top left; height:100%;width:100%;}
+.sprite_icon_white_32_at{background-position:0 0}
+.sprite_icon_white_32_chat-close{background-position:-32px 0}
+.sprite_icon_white_32_chat-contact{background-position:-64px 0}
+.sprite_icon_white_32_chat-contract{background-position:-96px 0}
+.sprite_icon_white_32_chat-down{background-position:-128px 0}
+.sprite_icon_white_32_chat-expand{background-position:-160px 0}
+.sprite_icon_white_32_chat-open{background-position:-192px 0}
+.sprite_icon_white_32_chat-popout{background-position:-224px 0}
+.sprite_icon_white_32_chat-send{background-position:-256px 0}
+.sprite_icon_white_32_arrow-down{background-position:-288px 0}
+.sprite_icon_white_32_arrow-left{background-position:-320px 0}
+.sprite_icon_white_32_arrow-right{background-position:-352px 0}
+.sprite_icon_white_32_arrow-up{background-position:-384px 0}
+.sprite_icon_white_32_attach{background-position:-416px 0}
+.sprite_icon_white_32_brush{background-position:-448px 0}
+.sprite_icon_white_32_bundle{background-position:-480px 0}
+.sprite_icon_white_32_camera{background-position:-512px 0}
+.sprite_icon_white_32_cancel{background-position:-544px 0}
+.sprite_icon_white_32_cart{background-position:-576px 0}
+.sprite_icon_white_32_chart{background-position:-608px 0}
+.sprite_icon_white_32_close{background-position:-640px 0}
+.sprite_icon_white_32_download{background-position:-672px 0}
+.sprite_icon_white_32_gear{background-position:-704px 0}
+.sprite_icon_white_32_gears{background-position:-736px 0}
+.sprite_icon_white_32_globe{background-position:-768px 0}
+.sprite_icon_white_32_hand{background-position:-800px 0}
+.sprite_icon_white_32_headphone{background-position:-832px 0}
+.sprite_icon_white_32_info{background-position:-864px 0}
+.sprite_icon_white_32_key{background-position:-896px 0}
+.sprite_icon_white_32_light{background-position:-928px 0}
+.sprite_icon_white_32_link{background-position:-960px 0}
+.sprite_icon_white_32_lock{background-position:-992px 0}
+.sprite_icon_white_32_male{background-position:-1024px 0}
+.sprite_icon_white_32_music{background-position:-1056px 0}
+.sprite_icon_white_32_next{background-position:-1088px 0}
+.sprite_icon_white_32_ok{background-position:-1120px 0}
+.sprite_icon_white_32_pen{background-position:-1152px 0}
+.sprite_icon_white_32_pen2{background-position:-1184px 0}
+.sprite_icon_white_32_play{background-position:-1216px 0}
+.sprite_icon_white_32_plus{background-position:-1248px 0}
+.sprite_icon_white_32_pointer{background-position:-1280px 0}
+.sprite_icon_white_32_previous{background-position:-1312px 0}
+.sprite_icon_white_32_question{background-position:-1344px 0}
+.sprite_icon_white_32_quote{background-position:-1376px 0}
+.sprite_icon_white_32_record{background-position:-1408px 0}
+.sprite_icon_white_32_redo{background-position:-1440px 0}
+.sprite_icon_white_32_refresh{background-position:-1472px 0}
+.sprite_icon_white_32_ring{background-position:-1504px 0}
+.sprite_icon_white_32_rss{background-position:-1536px 0}
+.sprite_icon_white_32_search{background-position:-1568px 0}
+.sprite_icon_white_32_search2{background-position:-1600px 0}
+.sprite_icon_white_32_settings{background-position:-1632px 0}
+.sprite_icon_white_32_site{background-position:-1664px 0}
+.sprite_icon_white_32_star-empty{background-position:-1696px 0}
+.sprite_icon_white_32_star{background-position:-1728px 0}
+.sprite_icon_white_32_star2{background-position:-1760px 0}
+.sprite_icon_white_32_star3{background-position:-1792px 0}
+.sprite_icon_white_32_stats{background-position:-1824px 0}
+.sprite_icon_white_32_tag{background-position:-1856px 0}
+.sprite_icon_white_32_target{background-position:-1888px 0}
+.sprite_icon_white_32_trash{background-position:-1920px 0}
+.sprite_icon_white_32_undo{background-position:-1952px 0}
+.sprite_icon_white_32_upload{background-position:-1984px 0}
+.sprite_icon_white_32_wizard{background-position:-2016px 0}
+.sprite_icon_white_32_calendar{background-position:-2048px 0}
+.sprite_icon_white_32_payment-cart{background-position:-2080px 0}
+.sprite_icon_white_32_sb_clone{background-position:-2112px 0}
+.sprite_icon_white_32_audio{background-position:-2144px 0}
+.sprite_icon_white_32_bio{background-position:-2176px 0}
+.sprite_icon_white_32_birthday{background-position:-2208px 0}
+.sprite_icon_white_32_blog{background-position:-2240px 0}
+.sprite_icon_white_32_camera2{background-position:-2272px 0}
+.sprite_icon_white_32_chart_down{background-position:-2304px 0}
+.sprite_icon_white_32_chart_same{background-position:-2336px 0}
+.sprite_icon_white_32_chart_up{background-position:-2368px 0}
+.sprite_icon_white_32_clock{background-position:-2400px 0}
+.sprite_icon_white_32_control{background-position:-2432px 0}
+.sprite_icon_white_32_documentation{background-position:-2464px 0}
+.sprite_icon_white_32_faq{background-position:-2496px 0}
+.sprite_icon_white_32_follow{background-position:-2528px 0}
+.sprite_icon_white_32_followers{background-position:-2560px 0}
+.sprite_icon_white_32_forum{background-position:-2592px 0}
+.sprite_icon_white_32_gallery{background-position:-2624px 0}
+.sprite_icon_white_32_group{background-position:-2656px 0}
+.sprite_icon_white_32_guestbook{background-position:-2688px 0}
+.sprite_icon_white_32_heart{background-position:-2720px 0}
+.sprite_icon_white_32_home{background-position:-2752px 0}
+.sprite_icon_white_32_influence{background-position:-2784px 0}
+.sprite_icon_white_32_location{background-position:-2816px 0}
+.sprite_icon_white_32_mail{background-position:-2848px 0}
+.sprite_icon_white_32_mention{background-position:-2880px 0}
+.sprite_icon_white_32_menu{background-position:-2912px 0}
+.sprite_icon_white_32_notifications{background-position:-2944px 0}
+.sprite_icon_white_32_online{background-position:-2976px 0}
+.sprite_icon_white_32_page{background-position:-3008px 0}
+.sprite_icon_white_32_profile{background-position:-3040px 0}
+.sprite_icon_white_32_store{background-position:-3072px 0}
+.sprite_icon_white_32_trending{background-position:-3104px 0}
+.sprite_icon_white_32_video{background-position:-3136px 0}
+
+@media screen and (-webkit-min-device-pixel-ratio: 2),
+screen and (-o-min-device-pixel-ratio: 3/2),
+screen and (min--moz-device-pixel-ratio: 2),
+screen and (min-device-pixel-ratio: 2) {
+  .sprite_icon_white_32_img{background:url('//mf6.paradigmusic.com/data/cache/kmSuperFans/sprite_white_64.png?_v=1526514941') no-repeat top left; height:100%;width:100%;}
+  .sprite_icon_white_32_at{background-position:0 0;background-size:3168px 32px}
+  .sprite_icon_white_32_chat-close{background-position:-32px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_chat-contact{background-position:-64px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_chat-contract{background-position:-96px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_chat-down{background-position:-128px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_chat-expand{background-position:-160px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_chat-open{background-position:-192px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_chat-popout{background-position:-224px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_chat-send{background-position:-256px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_arrow-down{background-position:-288px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_arrow-left{background-position:-320px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_arrow-right{background-position:-352px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_arrow-up{background-position:-384px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_attach{background-position:-416px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_brush{background-position:-448px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_bundle{background-position:-480px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_camera{background-position:-512px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_cancel{background-position:-544px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_cart{background-position:-576px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_chart{background-position:-608px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_close{background-position:-640px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_download{background-position:-672px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_gear{background-position:-704px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_gears{background-position:-736px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_globe{background-position:-768px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_hand{background-position:-800px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_headphone{background-position:-832px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_info{background-position:-864px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_key{background-position:-896px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_light{background-position:-928px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_link{background-position:-960px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_lock{background-position:-992px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_male{background-position:-1024px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_music{background-position:-1056px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_next{background-position:-1088px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_ok{background-position:-1120px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_pen{background-position:-1152px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_pen2{background-position:-1184px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_play{background-position:-1216px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_plus{background-position:-1248px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_pointer{background-position:-1280px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_previous{background-position:-1312px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_question{background-position:-1344px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_quote{background-position:-1376px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_record{background-position:-1408px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_redo{background-position:-1440px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_refresh{background-position:-1472px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_ring{background-position:-1504px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_rss{background-position:-1536px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_search{background-position:-1568px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_search2{background-position:-1600px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_settings{background-position:-1632px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_site{background-position:-1664px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_star-empty{background-position:-1696px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_star{background-position:-1728px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_star2{background-position:-1760px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_star3{background-position:-1792px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_stats{background-position:-1824px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_tag{background-position:-1856px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_target{background-position:-1888px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_trash{background-position:-1920px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_undo{background-position:-1952px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_upload{background-position:-1984px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_wizard{background-position:-2016px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_calendar{background-position:-2048px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_payment-cart{background-position:-2080px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_sb_clone{background-position:-2112px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_audio{background-position:-2144px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_bio{background-position:-2176px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_birthday{background-position:-2208px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_blog{background-position:-2240px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_camera2{background-position:-2272px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_chart_down{background-position:-2304px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_chart_same{background-position:-2336px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_chart_up{background-position:-2368px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_clock{background-position:-2400px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_control{background-position:-2432px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_documentation{background-position:-2464px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_faq{background-position:-2496px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_follow{background-position:-2528px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_followers{background-position:-2560px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_forum{background-position:-2592px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_gallery{background-position:-2624px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_group{background-position:-2656px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_guestbook{background-position:-2688px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_heart{background-position:-2720px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_home{background-position:-2752px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_influence{background-position:-2784px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_location{background-position:-2816px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_mail{background-position:-2848px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_mention{background-position:-2880px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_menu{background-position:-2912px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_notifications{background-position:-2944px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_online{background-position:-2976px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_page{background-position:-3008px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_profile{background-position:-3040px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_store{background-position:-3072px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_trending{background-position:-3104px 0;background-size:3168px 32px}
+  .sprite_icon_white_32_video{background-position:-3136px 0;background-size:3168px 32px}
+}

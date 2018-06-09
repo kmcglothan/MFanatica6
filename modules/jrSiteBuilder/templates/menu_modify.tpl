@@ -74,7 +74,9 @@
                     <td class="page_banner_right">
                         {jrCore_module_url module="jrImage" assign="iurl"}
                         <img width="24" height="24" alt="working..." src="{$jamroom_url}/{$iurl}/img/skin/{$_conf.jrCore_active_skin}/submit.gif" id="reset_menu_submit_indicator" style="display: none;">
+                        {if count($_list) > 0}
                         <input type="button" value="Reset to Default" class="form_button" onclick="jrSiteBuilder_reset_menu()"></td>
+                        {/if}
                  </tr>
             </table>
             </div>
@@ -142,7 +144,7 @@
                 <li id="list_new" style="display:none">
                     <div style="position:relative">
                         <div class="sb-menu-entry">
-                            <input id="sb-new-entry" type="text" class="sb-menu-text" name="menu_title" value="" onkeypress="if (event && ( event.keyCode == 13 || event.keyCode == 9)) { jrSiteBuilder_create_menu_entry(this) }">
+                            <input id="sb-new-entry" type="text" class="form_text sb-menu-text" name="menu_title" onkeypress="if (event && ( event.keyCode == 13 || event.keyCode == 9)) { jrSiteBuilder_create_menu_entry(this) }">
                             <button class="form_button sb-menu-add-button" onclick="jrSiteBuilder_create_menu_entry($('#sb-new-entry'))">Add</button>
                         </div>
                     </div>
@@ -152,10 +154,10 @@
 
             </div>
 
-            <div style="text-align:center;padding-top: 32px">
+            <div style="text-align:center;padding-top:24px">
                 <input type="button" class="form_button" value="add new menu entry" onclick="$('#list_new').show();$('#sb-new-entry').focus();">
                 {if jrCore_is_developer_mode()}
-                    <input type="button" class="form_button" value="Show Menu Code" onclick="jrSiteBuilder_menu_code()"><br><br>
+                <br><br><input type="button" class="form_button" value="Developer: Show Menu Code" onclick="jrSiteBuilder_menu_code()">
                 {/if}
             </div>
 

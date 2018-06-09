@@ -2,7 +2,7 @@
 /**
  * Jamroom Banned Items module
  *
- * copyright 2016 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -49,11 +49,12 @@ function jrBanned_meta()
     $_tmp = array(
         'name'        => 'Banned Items',
         'url'         => 'banned',
-        'version'     => '1.3.1',
+        'version'     => '1.3.5',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Create, Update and Delete Banned names, words, email and IP addresses',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/1950/banned-items',
         'license'     => 'mpl',
+        'requires'    => 'jrCore:6.1.6',
         'category'    => 'admin'
     );
     return $_tmp;
@@ -82,12 +83,32 @@ function jrBanned_init()
     // Our default master view
     jrCore_register_module_feature('jrCore', 'default_admin_view', 'jrBanned', 'browse');
 
+    // System resets
+    jrCore_register_event_listener('jrDeveloper', 'reset_system', 'jrBanned_reset_system_listener');
+
     return true;
 }
 
 //---------------------
 // EVENT LISTENERS
 //---------------------
+
+/**
+ * Cleanup schema on system reset
+ * @param $_data array Array of information from trigger
+ * @param $_user array Current user
+ * @param $_conf array Global Config
+ * @param $_args array additional parameters passed in by trigger caller
+ * @param $event string Triggered Event name
+ * @return array
+ */
+function jrBanned_reset_system_listener($_data, $_user, $_conf, $_args, $event)
+{
+    $tbl = jrCore_db_table_name('jrBanned', 'banned');
+    jrCore_db_query("TRUNCATE TABLE {$tbl}");
+    jrCore_db_query("OPTIMIZE TABLE {$tbl}");
+    return $_data;
+}
 
 /**
  * Check for banned IPs
@@ -101,11 +122,13 @@ function jrBanned_init()
 function jrBanned_process_init_listener($_data, $_user, $_conf, $_args, $event)
 {
     // Make sure this is NOT a banned IP
-    $ip = jrCore_get_ip();
-    if (jrBanned_is_banned('ip', $ip)) {
-        header('HTTP/1.0 403 Forbidden');
-        jrCore_notice('error', 'You do not have permission to access this server');
-        exit;
+    if (jrCore_is_view_request()) {
+        $ip = jrCore_get_ip();
+        if (jrBanned_is_banned('ip', $ip)) {
+            header('HTTP/1.0 403 Forbidden');
+            jrCore_notice('error', 'You do not have permission to access this server');
+            exit;
+        }
     }
     return $_data;
 }
@@ -160,7 +183,7 @@ function jrBanned_module_view_listener($_data, $_user, $_conf, $_args, $event)
                                 }
                                 break;
                             case 'textarea':
-                                $key         = $_field['name'];
+                                $key  = $_field['name'];
                                 $type = 'word';
                                 break;
                         }
@@ -245,20 +268,30 @@ function jrBanned_search_fields_listener($_data, $_user, $_conf, $_args, $event)
  */
 function jrBanned_get_banned_config($type)
 {
-    if (!is_array($type)) {
-        $type = array($type);
-    }
-    $key = "jrbanned_is_banned_" . json_encode($type);
+    $key = "jrbanned_config_{$type}";
     if (!$_rt = jrCore_get_flag($key)) {
-        $tbl = jrCore_db_table_name('jrBanned', 'banned');
-        $req = "SELECT ban_type AS t, ban_value AS v FROM {$tbl} WHERE ban_type IN('" . implode("','", $type) . "')";
-        $_rt = jrCore_db_query($req, 'NUMERIC');
-        if (!$_rt || !is_array($_rt)) {
-            $_rt = 'no_items';
+        if (!$_rt = jrCore_get_local_cache_key($key)) {
+            if (!$_rt = jrCore_is_cached('jrBanned', $key, false, false)) {
+                $tbl = jrCore_db_table_name('jrBanned', 'banned');
+                $req = "SELECT ban_id AS i, ban_value AS v FROM {$tbl} WHERE ban_type = '" . jrCore_db_escape($type) . "'";
+                $_rt = jrCore_db_query($req, 'i', false, 'v');
+                if (!$_rt || !is_array($_rt)) {
+                    $_rt = 'no_items';
+                }
+                jrCore_set_flag($key, $_rt);
+                jrCore_set_local_cache_key($key, $_rt);
+                jrCore_add_to_cache('jrBanned', $key, $_rt, 0, 0, false, false);
+            }
+            else {
+                jrCore_set_flag($key, $_rt);
+                jrCore_set_local_cache_key($key, $_rt);
+            }
         }
-        jrCore_set_flag($key, $_rt);
+        else {
+            jrCore_set_flag($key, $_rt);
+        }
     }
-    if (!is_array($_rt) || count($_rt) === 0) {
+    if (!$_rt || !is_array($_rt) || count($_rt) === 0) {
         // No items of this type
         return false;
     }
@@ -274,48 +307,45 @@ function jrBanned_get_banned_config($type)
 function jrBanned_is_banned($type, $value = null)
 {
     if (mb_strlen($value) > 1) {
-        if (jrCore_is_view_request()) {
+        if (!$_rt = jrBanned_get_banned_config($type)) {
+            // No items of this type
+            return false;
+        }
+        $value = trim(strip_tags($value));
+        switch ($type) {
 
-            if (!$_rt = jrBanned_get_banned_config($type)) {
-                // No items of this type
-                return false;
-            }
-            $value = trim(strip_tags($value));
-            switch ($type) {
-
-                case 'ip':
-                    foreach ($_rt as $v) {
-                        if (strpos($value, $v['v']) === 0) {
-                            return $v['v'];
-                        }
+            case 'ip':
+                foreach ($_rt as $i => $v) {
+                    if (strpos($value, $v) === 0) {
+                        return $v;
                     }
-                    break;
+                }
+                break;
 
-                case 'word':
-                case 'name':
-                case 'email':
-                    foreach ($_rt as $v) {
-                        if ($v['v'] == $value || preg_match('/\b' . preg_quote($v['v']) . '\b/ui', " {$value} ")) {
-                            return $v['v'];
-                        }
+            case 'word':
+            case 'name':
+            case 'email':
+                foreach ($_rt as $i => $v) {
+                    if ($v == $value || preg_match('/\b' . preg_quote($v) . '\b/ui', " {$value} ")) {
+                        return $v;
                     }
-                    break;
+                }
+                break;
 
-                default:
-                    // Do we have other registered types?
-                    $_mf = jrCore_get_registered_module_features('jrBanned', 'banned_type');
-                    if ($_mf && is_array($_mf)) {
-                        foreach ($_mf as $mod => $_inf) {
-                            if (isset($_inf[$type]['function']) && function_exists($_inf[$type]['function'])) {
-                                $func = $_inf[$type]['function'];
-                                if ($tmp = $func($value, $_rt)) {
-                                    return $tmp;
-                                }
+            default:
+                // Do we have other registered types?
+                $_mf = jrCore_get_registered_module_features('jrBanned', 'banned_type');
+                if ($_mf && is_array($_mf)) {
+                    foreach ($_mf as $mod => $_inf) {
+                        if (isset($_inf[$type]['function']) && function_exists($_inf[$type]['function'])) {
+                            $func = $_inf[$type]['function'];
+                            if ($tmp = $func($value, $_rt)) {
+                                return $tmp;
                             }
                         }
                     }
-                    break;
-            }
+                }
+                break;
         }
     }
     return false;

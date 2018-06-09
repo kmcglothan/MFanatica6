@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -47,6 +47,7 @@ defined('APP_DIR') or exit();
  */
 function jrCore_config()
 {
+    global $_conf;
     // System Name
     $_tmp = array(
         'name'     => 'system_name',
@@ -114,7 +115,7 @@ function jrCore_config()
             'options'  => $_opt,
             'validate' => 'core_string',
             'required' => 'on',
-            'label'    => 'active cache system',
+            'label'    => 'active data cache',
             'help'     => 'What Cache plugin should be the active cache system?',
             'section'  => 'general',
             'order'    => 5
@@ -129,11 +130,25 @@ function jrCore_config()
             'type'     => 'hidden',
             'required' => 'on',
             'validate' => 'not_empty',
-            'label'    => 'active cache system',
+            'label'    => 'active data cache',
             'help'     => 'this hidden field holds the name of the active caching sub system - do not modify by hand'
         );
         jrCore_register_setting('jrCore', $_tmp);
     }
+
+    // Full Page Cache
+    $_tmp = array(
+        'name'     => 'full_page',
+        'default'  => 'off',
+        'type'     => 'checkbox',
+        'required' => 'on',
+        'validate' => 'onoff',
+        'label'    => 'full page caching',
+        'help'     => 'If this option is checked, logged out users will see fully cached pages. This can significantly improve site speed and response time',
+        'section'  => 'general',
+        'order'    => 7
+    );
+    jrCore_register_setting('jrCore', $_tmp);
 
     // Maintenance Mode
     $_tmp = array(
@@ -160,6 +175,40 @@ function jrCore_config()
         'help'     => 'If you have enabled &quot;Maintenance Mode&quot; you can enter a message that is shown on the login page.',
         'section'  => 'maintenance',
         'order'    => 21
+    );
+    jrCore_register_setting('jrCore', $_tmp);
+
+    // Purge Logs
+    $_dys = array(
+        0 => 'never',
+        1 => 'after 1 day',
+        2 => 'after 2 days',
+        3 => 'after 3 days',
+        4 => 'after 4 days',
+        5 => 'after 5 days',
+        6 => 'after 6 days',
+        7 => 'after 7 days',
+        10 => 'after 10 days',
+        12 => 'after 12 days',
+        15 => 'after 15 days',
+        20 => 'after 20 days',
+        30 => 'after 30 days',
+        40 => 'after 40 days',
+        50 => 'after 50 days',
+        60 => 'after 60 days',
+        90 => 'after 90 days'
+    );
+    $_tmp = array(
+        'name'     => 'purge_log_days',
+        'default'  => 15,
+        'upgrade'  => 0,
+        'type'     => 'select',
+        'options'  => $_dys,
+        'required' => 'on',
+        'label'    => 'purge activity logs',
+        'help'     => 'How many days after an Activity Log is recorded should it be deleted?',
+        'section'  => 'maintenance',
+        'order'    => 22
     );
     jrCore_register_setting('jrCore', $_tmp);
 
@@ -355,48 +404,6 @@ function jrCore_config()
     );
     jrCore_register_setting('jrCore', $_tmp);
 
-    // Last Minute Run (hidden)
-    $_tmp = array(
-        'name'     => 'last_minute_maint_run',
-        'default'  => '0',
-        'type'     => 'hidden',
-        'required' => 'on',
-        'min'      => 1208010101,
-        'max'      => 4012312323,
-        'validate' => 'number_nn',
-        'label'    => 'last minute maintenance run',
-        'help'     => 'this hidden field keeps track of the last time minute maintenance was run - do not modify by hand.'
-    );
-    jrCore_register_setting('jrCore', $_tmp);
-
-    // Last Hourly Run (hidden)
-    $_tmp = array(
-        'name'     => 'last_hourly_maint_run',
-        'default'  => '0',
-        'type'     => 'hidden',
-        'required' => 'on',
-        'min'      => 2012080101,
-        'max'      => 2099123123,
-        'validate' => 'number_nn',
-        'label'    => 'last hourly maintenance run',
-        'help'     => 'this hidden field keeps track of the last time the hourly maintenance was run - do not modify by hand.'
-    );
-    jrCore_register_setting('jrCore', $_tmp);
-
-    // Last Daily Run (hidden)
-    $_tmp = array(
-        'name'     => 'last_daily_maint_run',
-        'default'  => '0',
-        'type'     => 'hidden',
-        'required' => 'on',
-        'min'      => 20120801,
-        'max'      => 20991231,
-        'validate' => 'number_nn',
-        'label'    => 'last daily maintenance run',
-        'help'     => 'this hidden field keeps track of the last time the daily maintenance was run - do not modify by hand.'
-    );
-    jrCore_register_setting('jrCore', $_tmp);
-
     // Active DataStore (hidden)
     $_tmp = array(
         'name'     => 'active_datastore_system',
@@ -406,18 +413,6 @@ function jrCore_config()
         'validate' => 'not_empty',
         'label'    => 'active datastore system',
         'help'     => 'this hidden field holds the name of the active DataStore sub system - do not modify by hand'
-    );
-    jrCore_register_setting('jrCore', $_tmp);
-
-    // Queues Active (hidden)
-    $_tmp = array(
-        'name'     => 'queues_active',
-        'default'  => 'on',
-        'type'     => 'hidden',
-        'required' => 'on',
-        'validate' => 'onoff',
-        'label'    => 'queues active',
-        'help'     => 'this hidden field is used to activate and deactive the core queue system'
     );
     jrCore_register_setting('jrCore', $_tmp);
 
@@ -448,7 +443,7 @@ function jrCore_config()
     // Unique String
     $_tmp = array(
         'name'     => 'unique_string',
-        'default'  => md5(microtime()),
+        'default'  => '0',
         'type'     => 'hidden',
         'required' => 'on',
         'validate' => 'md5',
@@ -456,11 +451,56 @@ function jrCore_config()
         'help'     => 'this hidden field holds a unique string value for use in hashing - do not modify'
     );
     jrCore_register_setting('jrCore', $_tmp);
+    if (isset($_conf['jrCore_unique_string']) && $_conf['jrCore_unique_string'] == '0') {
+        jrCore_set_setting_value('jrCore', 'unique_string', md5(microtime()));
+    }
+
+    // Last Hourly Run (hidden)
+    $_tmp = array(
+        'name'     => 'last_hourly_maint_run',
+        'default'  => '0',
+        'type'     => 'hidden',
+        'required' => 'on',
+        'min'      => 2012080101,
+        'max'      => 2099123123,
+        'validate' => 'number_nn',
+        'label'    => 'last hourly maintenance run',
+        'help'     => 'this hidden field keeps track of the last time the hourly maintenance was run - do not modify by hand.'
+    );
+    jrCore_register_setting('jrCore', $_tmp);
+
+    // Last Daily Run (hidden)
+    $_tmp = array(
+        'name'     => 'last_daily_maint_run',
+        'default'  => '0',
+        'type'     => 'hidden',
+        'required' => 'on',
+        'min'      => 20120801,
+        'max'      => 20991231,
+        'validate' => 'number_nn',
+        'label'    => 'last daily maintenance run',
+        'help'     => 'this hidden field keeps track of the last time the daily maintenance was run - do not modify by hand.'
+    );
+    jrCore_register_setting('jrCore', $_tmp);
+
+    // Index Keys (hidden)
+    $_tmp = array(
+        'name'     => 'index_keys',
+        'default'  => '',
+        'type'     => 'hidden',
+        'required' => 'on',
+        'validate' => 'printable',
+        'label'    => 'DS index key tables',
+        'help'     => 'this hidden field keeps track of dedicated DS index tables - do not modify by hand.'
+    );
+    jrCore_register_setting('jrCore', $_tmp);
 
     // Settings no longer used
     jrCore_delete_setting('jrCore', 'enable_precache');
     jrCore_delete_setting('jrCore', 'precache_workers');
     jrCore_delete_setting('jrCore', 'dls_adjust');
+    jrCore_delete_setting('jrCore', 'queues_active');
+    jrCore_delete_setting('jrCore', 'last_minute_maint_run');
 
     return true;
 }

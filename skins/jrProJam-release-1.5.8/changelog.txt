@@ -1,0 +1,328 @@
+ProJam Skin Changelog
+
+Version 1.5.8:
+ - Bug Fix: Modified side_music.tpl to fix "Today's Featured Artist" title.
+ - Change: Replaced all instances of onclick window.location to jrCore_window_location function. Templates modified:
+            side_music.tpl, tos_pp_row.tpl, side_music_charts.tpl, contact_us.tpl, index.tpl, about.tpl, side_home.tpl, news_story_row.tpl,
+            side_news.tpl, whos_online.tpl, news.tpl, index_blogs.tpl, side_videos_chart.tpl, side_videos.tpl, news_story.tpl, site_news.tpl,
+            side_members.tpl, terms_of_service.tpl, site_blog.tpl, privacy_policy.tpl and news_list.tpl.
+
+Version 1.5.7:
+ - Bug Fix: Modified footer.tpl to update social links to work with a full profile URL or just the profile name.
+
+Version 1.5.6:
+ - Change: Removed extra character at the end of the profile_menu.tpl file.
+ - Change: Moved new payment module view cart icon to main menu.
+ - Change: Updated profile Followers section to have a view all link. Modified profile_footer.tpl
+
+Version 1.5.5:
+ - Change: Fixed radio and channel popups so the player fits the height of the popup window. Templates modified: index_channel.tpl and index_radio.tpl
+ - Change: Moved CSS from the radio and channel popup page to in between the header tags. Templates modified: radio_player.tpl, channel_player.tpl and meta.tpl.
+
+Version 1.5.4:
+ - Bug Fix: Added missing jrCore_module_url function to index.tpl for the Welcome message.
+ - Bug Fix: Added if statement to check to see if the video and audio category and genre are set. Modified: video_categories_row.tpl, video_chart_categories_row.tpl, music_genres_row.tpl, music_chart_genres_row.tpl
+ - Change: The jrCore_list order_by in index_new_videos.tpl was changed to _item_id from _created.
+
+Version 1.5.3:
+ - Change: Added check for tablet so mobile menu shows. Modified templates: header.tpl, header_menu_mobile.tpl and footer.tpl
+ - Change: Fixed "Favorite Artist" and "Favorite Song" image from being to big on mobile. Modified templates: favorite_artist.tpl and favorite_song.tpl
+
+Version 1.5.2:
+- Change: Fixed padding for chat by line that overlapped the chat text.
+
+Version 1.5.1:
+ - New: Added chat CSS file for the new chat module.
+ - Change: Added language entries in the en-US.php and es-ES.php files for the who is online update.
+ - Change: Changed scroll up to use an icon instead of an image. Templates modified: footer.css, footer.tpl
+ - Change: Added timeline CSS for share modal window. Modified action.css file.
+ - Change: profile_menu.tpl adjusted to match module version to allow for System Tips to work
+ - Bug Fix: Updated online.tpl to check for logged in users to show the who is online list.
+ - Bug Fix: Small calendar on events page has double heading
+ - Bug Fix: Fixed side_comments.tpl $item.comment_text variable.
+
+Version 1.5.0:
+ - New: Added YouTube and Pinterest social links and images to the footer template.
+ - Change: Updated profile templates and CSS files to accommodate new video player
+ - Change: Updated CSS files to fix attach file button.
+ - Change: Removed bottom positioning for share this checkbox on timeline form.
+ - Bug Fix: typo in youtube pagination causing 2 next buttons to show
+
+Version 1.4.7:
+ - Bug Fix: Fixed Music Genres and Video Category paging issue. Modified the music_row.tpl and videos_row.tpl
+
+Version 1.4.6:
+ - Bug Fix: Fixed artists_row.tpl and site_blogs_list.tpl where the bio and blog text were being truncated and was breaking the layout.
+
+Version 1.4.5:
+ - Change: Changed the index Site News and Site Blog tabs so more than one profile can show in the list. Set in skin config setting.
+ - Bug Fix: Fixed index Scheduled Event tabs to only show upcoming events.
+ - Templates Modified: config.php, index.tpl, index_events.tpl, site_news.tpl and site_blog.tpl
+
+Version 1.4.4:
+ - Bug Fix: Fixed URL for Google link in the footer.tpl
+
+Version 1.4.3:
+ - New: Side chart media titles now link to their detail pages.
+ - Bug Fix: Fixed side charts to not show if the Advanced Chart module is not active.
+ - Templates Changed: side_charts_row.tpl, side_home.tpl, side_music.tpl, side_music_charts.tpl,
+                      side_videos.tpl and side_video_charts.tpl.
+
+Version 1.4.2:
+ - Bug Fix: Homepage, Music and Music charts side chart plays fixed.
+
+Version 1.4.1:
+ - Bug Fix: Homepage charts plays now working
+
+Version 1.4.0:
+ - New: Added social icons to the footer
+ - New: Added comments to profile index, controlled by skin settings.
+ - Change: Changed footer contact link to a mailto link if the custom from module is not active.
+ - Change: Changed skin settings to have separate sections or tabs.
+
+Version 1.3.9:
+ - Bug Fix: Fixed layout on pages with side by side images.
+
+Version 1.3.8:
+ - Bug Fix: Fixed the menu button to be on the same line as the logo image and still work on mobile devices.
+
+Version 1.3.7:
+ - Bug Fix: Added a check for the private notes module around the contact us link.
+ - Template Files:
+   ------------------------------------------------------
+    Modified: footer.tpl
+   ------------------------------------------------------
+
+Version 1.3.6:
+ - Bug Fix: Moved ajax calls into templates and out of the js file.
+ - Template Files:
+   ------------------------------------------------------
+    Modified: Too many to list. Almost all files were modified.
+   ------------------------------------------------------
+ - Javascript Files:
+   ------------------------------------------------------
+    Modified: jrProJam.js
+   ------------------------------------------------------
+
+Version 1.3.5:
+ - Bug Fix: Fixed ProJam/ProJamLight previous and next buttons from showing a yellow line at the bottom of the button.
+ - Change: Changed form_button class to make the text center in the button.
+ - New: Added 3 small calendars to the events page.
+ - Change: Replaced chart plays variable with the chart_count variable.
+ - Template Files:
+   ------------------------------------------------------
+    Modified: events.tpl
+   ------------------------------------------------------
+ - CSS Files:
+   ------------------------------------------------------
+    Modified: core_buttons.css, core_form_button.css
+   ------------------------------------------------------
+
+Version 1.3.4:
+ - Change: Updated slide menu to new version
+ - Moved logo down on mobile view.
+ - Bug Fix: Fixed ProJam/ProJamLight chart row stream count variable
+ - Template Files Modified:
+   ------------------------------------------------------
+    header.tpl          footer.tpl
+    music_chart_row.tpl
+   ------------------------------------------------------
+ - New Version of Javascript file:
+   ------------------------------------------------------
+    contrib/slidebars/slidebars.min.js
+   ------------------------------------------------------
+
+Version 1.3.3:
+ - New: Profile custom logo support
+ - Template Files Modified:
+   ------------------------------------------------------
+    header.tpl
+   ------------------------------------------------------
+
+Version 1.3.2:
+ - Bug Fix: Fixed recently rated box on the profile page
+
+Version 1.3.1:
+ - Bug Fix: Fixed music and video lists to show PayPal button if being used instead of FoxyCart.
+ - Template Files Modified/Added:
+   ------------------------------------------------------
+    music_row.tpl               music_chart_row.tpl
+    videos_row.tpl              video_chart_row.tpl
+   ------------------------------------------------------
+
+Version 1.3.0:
+ - Change: Updated entire skin to work better with mobile devices and fixed some bugs.
+ - Files Modified:
+   ------------------------------------------------------
+    All files should be uploaded, too many files were
+    modified to list here.
+   ------------------------------------------------------
+
+Version 1.2.3:
+ - New: Added a Jamroom 180x150 banner instead of using the skins icon in the 180x150 Ad space.
+ - File Modified:
+   ------------------------------------------------------
+    side_home.tpl               side_members.tpl
+    side_music.tpl              side_music_charts.tpl
+    side_news.tpl               side_news_story.tpl
+    side_videos.tpl             side_videos_chart.tpl
+   ------------------------------------------------------
+
+Version 1.2.2:
+ - Change: Centered profile image on the profile page for mobile devices when logged out.
+ - File Modified:
+   ------------------------------------------------------
+    profile_header.tpl
+   ------------------------------------------------------
+
+Version 1.2.1:
+ - Change: Centered profile image on the profile page for mobile devices.
+ - File Modified:
+   ------------------------------------------------------
+    mobile_core.css
+   ------------------------------------------------------
+
+Version 1.2.0:
+ - Change: Centered profile image on the profile page.
+ - Change: Changed profile name layout for mobile devices.
+ - New: Added System Updates link to the ACP drop down menu.
+ - File Modified:
+   ------------------------------------------------------
+    mobile_core.css             profile_header.tpl
+    en-US.php                   es-ES.php
+    header.tpl
+   ------------------------------------------------------
+
+Version 1.1.15:
+ - New: Added more editable sections skins CSS admin panel area.
+
+Version 1.1.14:
+ - Update to use smarty3 syntax for javascript wrappers
+
+Version 1.1.13:
+ - Change: Updated page-table-jumper style.
+ - File Modified:
+   ------------------------------------------------------
+    core_table.css
+   ------------------------------------------------------
+
+Version 1.1.12:
+ - Change: Updated all skin images to use jrCore_image function instead of img tags.
+ - Changed: Changed pagebreak on site blogs page.
+ - Changed: Changed pagebreak on stations page.
+ - Changed: Changed pagebreak on channels page.
+ - Change: Added a check on the profile page to see if the jrFollower module is active.
+ - Templates Modified:
+   ------------------------------------------------------
+    about.tpl               channels_playlist.tpl
+    channels_row.tpl        favorite_song.tpl
+    header.tpl              index_blogs.tpl
+    index_channel.tpl       index_radio.tpl
+    music_chart_row.tpl     side_charts_row.tpl
+    side_home.tpl           side_members.tpl
+    side_music.tpl          side_music_charts.tpl
+    side_news.tpl           side_news_story.tpl
+    side_videos.tpl         side_videos_chart.tpl
+    site_feeds.tpl          site_blogs.tpl
+    stations_row.tpl        station_playlist.tpl
+    top_channels_row.tpl    top_stations_row.tpl
+    video_chart_row.tpl     stations.tpl
+    channels.tpl            profile_header.tpl
+   ------------------------------------------------------
+
+Version 1.1.11:
+ - Change: updated CSS for new actions styles.
+    ------------------------------------------------------
+    CSS File Modified: core_action.css
+    ------------------------------------------------------
+
+Version 1.1.10:
+ - Bug Fix: Today's Featured Artist and Today's Featured Member jrCore_list functions.
+ - Bug Fix: Favorite Artist and Favorite Song section to look more uniform.
+    ------------------------------------------------------
+    CSS Files Modified: core_site.css
+    ------------------------------------------------------
+    ------------------------------------------------------
+    Templates Modified: header.tpl  side_home.tpl
+                        side_members.tpl    side_music.tpl
+                        side_music_charts.tpl   side_videos.tpl
+                        side_videos_chart.tpl
+    ------------------------------------------------------
+
+Version 1.1.9:
+ - Bug Fix: W3C HTML validation fixes
+    ------------------------------------------------------
+    Templates Modified: header.tpl  favorite_artist.tpl
+                        side_home.tpl   side_charts_row.tpl
+    ------------------------------------------------------
+
+Version 1.1.8:
+ - Bug Fix: Gallery URLs could point to incorrect gallery if multiple galleries had the same name
+ - Change: update to use new Title Support in ACP
+
+Version 1.1.7:
+ - Changed "Featured" and "Favorite" layout.
+ - New: Added Forum solution CSS color fixes.
+ - Fixed Online tab from showing an empty box when no users are logged in.
+    ------------------------------------------------------
+    CSS File added: core_site.css   core_slider.css
+                    mobile_core.css core_forum.css
+    ------------------------------------------------------
+    ------------------------------------------------------
+    Templates Modified: header.tpl   index_featured_slider.tpl
+                        favorite_artist.tpl favorite_song.tpl
+                        online.tpl whos_online.tpl
+    ------------------------------------------------------
+
+Version 1.1.6:
+ - New: Added core_action.css file and moved all action css to that file.
+    ------------------------------------------------------
+    CSS File added: core_action.css
+    ------------------------------------------------------
+ - Updated CSS files to fix action text colors.
+    ------------------------------------------------------
+    CSS Files Modified: core_profile.css    core_element.css
+    ------------------------------------------------------
+
+Version 1.1.5:
+ - Updated CSS urls to allow for override by image upload override in the ACP
+
+Version 1.1.4:
+ - Fixed Dasboard link from not showing to site admins.
+   ------------------------------------------------------
+   Templates Modified: header.tpl   profile_header.tpl
+   ------------------------------------------------------
+
+Version 1.1.3:
+ - Updated Blog/News titles to use item ID for showing the item on the News Story page instead of the title url variable.
+
+Version 1.1.2:
+ - Fixed events row displaying different link url's for the same event
+ - Updated mobile CSS styles.
+   ------------------------------------------------------
+   CSS Files Modified: mobile_core.css
+   ------------------------------------------------------
+
+version 1.1.1:
+ - Fixed Skin Settings link in the header.tpl file to use the active skin variable.
+
+version 1.1.0:
+ - New: Added download button if price isn't set and download block is turned off.
+ - New: Added forum CSS file.
+
+version 1.0.8:
+ - New: Added jrCore_icon function where gear image was being used.
+
+version 1.0.7:
+ - New: Added genre search tab to the music chart page side section.
+ - New: Added genre search tab to the video page side section.
+ - New: Added genre search tab to the video chart page side section.
+
+version 1.0.6:
+ - New: Added genre search tab to the music page side section.
+
+version 1.0.5:
+ - New: Added User Online Status to profile page
+
+ version 1.0.4:
+ - Adding new Changelog

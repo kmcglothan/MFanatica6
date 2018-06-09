@@ -1,9 +1,8 @@
 <?php
 /**
- * Jamroom 5 Play Control module
+ * Jamroom Play Control module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2017 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.

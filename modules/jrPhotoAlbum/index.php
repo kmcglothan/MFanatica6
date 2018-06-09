@@ -2,7 +2,7 @@
 /**
  * Jamroom Photo Albums module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -73,7 +73,7 @@ function view_jrPhotoAlbum_add($_post, $_user, $_conf)
             'search'                       => array(
                 "_profile_id = " . jrUser_get_profile_home_key('_profile_id')
             ),
-            'order_by'                     => array('_created' => 'desc'),
+            'order_by'                     => array('photoalbum_display_order' => 'numerical_asc'),
             'exclude_jrProfile_quota_keys' => true,
             'pagebreak'                    => 6,
             'page'                         => $p

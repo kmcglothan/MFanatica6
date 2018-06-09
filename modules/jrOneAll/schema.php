@@ -2,7 +2,7 @@
 /**
  * Jamroom OneAll Social module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -57,8 +57,21 @@ function jrOneAll_db_schema()
         "UNIQUE user_provider (user_id, provider)",
         "INDEX provider (provider)",
         "INDEX updated (updated)",
-        "INDEX checked (checked)"
+        "INDEX checked (checked)",
+        "INDEX user_token (user_token)",
+        "INDEX shared (shared)"
     );
     jrCore_db_verify_table('jrOneAll', 'link', $_tmp, 'InnoDB');
+
+    // Log
+    $_tmp = array(
+        "log_id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
+        "log_created INT(11) UNSIGNED NOT NULL DEFAULT '0'",
+        "log_command VARCHAR(256) NOT NULL DEFAULT ''",
+        "log_text TEXT NOT NULL",
+        "INDEX log_created (log_created)"
+    );
+    jrCore_db_verify_table('jrOneAll', 'api_log', $_tmp, 'InnoDB');
+
     return true;
 }

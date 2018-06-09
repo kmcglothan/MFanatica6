@@ -10,7 +10,7 @@
                         <a href="{$jamroom_url}/{$item.profile_url}/{$murl}/{$item._item_id}/{$item.video_title|jrCore_url_string}">{jrCore_module_function function="jrImage_display" module="jrVideo" type="video_image" item_id=$item._item_id size="large" crop="auto" class="iloutline img_scale" alt=$item.video_title width=false height=false}</a>
                     </div>
                 </div>
-                <div class="col7">
+                <div class="col5">
                     <div class="p5">
                         <h3><a href="{$jamroom_url}/{$item.profile_url}/{$murl}/{$item._item_id}/{$item.video_title|jrCore_url_string}">{$item.video_title}</a></h3><br>
                         {if isset({$item.video_album}) && strlen({$item.video_album}) > 0}
@@ -22,7 +22,7 @@
                         {jrCore_module_function function="jrRating_form" type="star" module="jrVideo" index="1" item_id=$item._item_id current=$item.video_rating_1_average_count|default:0 votes=$item.video_rating_1_count|default:0}
                     </div>
                 </div>
-                <div class="col3 last">
+                <div class="col5 last">
                     <div class="block_config">
                         {jrCore_item_list_buttons module="jrVideo" field="video_file" item=$item}
                     </div>

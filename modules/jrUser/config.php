@@ -2,7 +2,7 @@
 /**
  * Jamroom Users module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -54,7 +54,7 @@ function jrUser_config()
         'validate' => 'onoff',
         'label'    => 'User Signups',
         'help'     => 'Check this option to allow users to signup for your site.',
-        'section'  => 'signup settings',
+        'section'  => 'signup',
         'order'    => 1
     );
     jrCore_register_setting('jrUser', $_tmp);
@@ -67,7 +67,7 @@ function jrUser_config()
         'validate' => 'onoff',
         'label'    => 'Signup Notification',
         'help'     => 'If this option is checked the system will notify Admins when a new User Account is created.',
-        'section'  => 'signup settings',
+        'section'  => 'signup',
         'order'    => 2
     );
     jrCore_register_setting('jrUser', $_tmp);
@@ -80,7 +80,7 @@ function jrUser_config()
         'validate' => 'onoff',
         'label'    => 'Re-Authenticate',
         'help'     => 'If this option is checked, when a user attempts to change their <strong>email address</strong> or <strong>password</strong> they will have to enter their existing password to continue.',
-        'section'  => 'account settings',
+        'section'  => 'account',
         'order'    => 10
     );
     jrCore_register_setting('jrUser', $_tmp);
@@ -93,8 +93,22 @@ function jrUser_config()
         'validate' => 'onoff',
         'label'    => 'change notification',
         'help'     => 'If this option is checked and a user changes their email address or password they will be sent a notification to their <strong>old</strong> email address letting them know that their account information has been changed.',
-        'section'  => 'account settings',
+        'section'  => 'account',
         'order'    => 11
+    );
+    jrCore_register_setting('jrUser', $_tmp);
+
+    // Default Language
+    $_tmp = array(
+        'name'     => 'default_language',
+        'default'  => 'en-US',
+        'type'     => 'select',
+        'options'  => 'jrUser_get_languages',
+        'required' => 'on',
+        'label'    => 'default language',
+        'help'     => 'The Default language is the language that is setup for new user accounts by default.',
+        'section'  => 'account',
+        'order'    => 12
     );
     jrCore_register_setting('jrUser', $_tmp);
 
@@ -109,8 +123,8 @@ function jrUser_config()
         'max'      => 20160,
         'label'    => 'session expiration',
         'help'     => 'How many minutes of inactivity will cause a User session to be marked as expired?',
-        'section'  => 'account settings',
-        'order'    => 13
+        'section'  => 'sessions',
+        'order'    => 20
     );
     jrCore_register_setting('jrUser', $_tmp);
 
@@ -132,55 +146,21 @@ function jrUser_config()
         'required' => 'on',
         'label'    => 'auto login reset',
         'help'     => 'How often should a user have to re-enter their login credentials? If the user does not visit the site for the number of days selected here, they will need to login again.',
-        'section'  => 'account settings',
-        'order'    => 14
+        'section'  => 'sessions',
+        'order'    => 21
     );
     jrCore_register_setting('jrUser', $_tmp);
 
-    // Default Language
+    // change notice
     $_tmp = array(
-        'name'     => 'default_language',
-        'default'  => 'en-US',
-        'type'     => 'select',
-        'options'  => 'jrUser_get_languages',
-        'required' => 'on',
-        'label'    => 'default language',
-        'help'     => 'The Default language is the language that is setup for new user accounts by default.',
-        'section'  => 'account settings',
-        'order'    => 15
-    );
-    jrCore_register_setting('jrUser', $_tmp);
-
-    // Enable SSL
-    $_tmp = array(
-        'name'     => 'force_ssl',
+        'name'     => 'bot_sessions',
         'type'     => 'checkbox',
         'default'  => 'off',
         'validate' => 'onoff',
-        'label'    => 'Create SSL URLs',
-        'sublabel' => 'SSL Certificate Required!',
-        'help'     => 'Checking this option will cause local non-SSL URLs that are embedded in text items to be shown as an SSL url for logged in users',
-        'section'  => 'site settings',
-        'order'    => 20
-    );
-    jrCore_register_setting('jrUser', $_tmp);
-
-    // Site privacy options
-    $_priv = array(
-        '1' => 'Public (all pages visible)',
-        '2' => 'Limited (site index and log in / signup only)',
-        '3' => 'Private (no pages visible)'
-    );
-    $_tmp  = array(
-        'name'     => 'site_privacy',
-        'default'  => '1',
-        'type'     => 'select',
-        'options'  => $_priv,
-        'required' => 'on',
-        'label'    => 'Site Privacy',
-        'help'     => 'Select which site pages visitors who are not logged in can see.<br><br><strong>NOTE:</strong> This setting only applies to users who are not logged in.',
-        'section'  => 'site settings',
-        'order'    => 21
+        'label'    => 'enable bot sessions',
+        'help'     => 'If this option is checked, session tracking will be enable for Web Bots (such as Google bot, Bing bot, etc.). This allows the dashboard to display the number of bots online. Disable this to turn off bot sessions, which will use less system resources',
+        'section'  => 'sessions',
+        'order'    => 22
     );
     jrCore_register_setting('jrUser', $_tmp);
 
@@ -196,8 +176,8 @@ function jrUser_config()
             'required' => 'on',
             'label'    => 'active session system',
             'help'     => 'What Session plugin should be the active session system?',
-            'section'  => 'site settings',
-            'order'    => 22
+            'section'  => 'sessions',
+            'order'    => 23
         );
         jrCore_register_setting('jrUser', $_tmp);
     }
@@ -215,6 +195,39 @@ function jrUser_config()
         jrCore_register_setting('jrUser', $_tmp);
     }
 
+    // Enable SSL
+    $_tmp = array(
+        'name'     => 'force_ssl',
+        'type'     => 'checkbox',
+        'default'  => 'off',
+        'validate' => 'onoff',
+        'label'    => 'Create SSL URLs',
+        'sublabel' => 'SSL Certificate Required!',
+        'help'     => 'Checking this option will cause local non-SSL URLs that are embedded in text items to be shown as an SSL url for logged in users',
+        'section'  => 'site options',
+        'order'    => 30
+    );
+    jrCore_register_setting('jrUser', $_tmp);
+
+    // Site privacy options
+    $_priv = array(
+        '1' => 'Public (all pages visible)',
+        '2' => 'Limited (site index and log in / signup only)',
+        '3' => 'Private (no pages visible)'
+    );
+    $_tmp  = array(
+        'name'     => 'site_privacy',
+        'default'  => '1',
+        'type'     => 'select',
+        'options'  => $_priv,
+        'required' => 'on',
+        'label'    => 'Site Privacy',
+        'help'     => 'Select which site pages visitors who are not logged in can see.<br><br><strong>NOTE:</strong> This setting only applies to users who are not logged in.',
+        'section'  => 'site options',
+        'order'    => 31
+    );
+    jrCore_register_setting('jrUser', $_tmp);
+
     // Login Note
     $_tmp = array(
         'name'     => 'login_note',
@@ -226,7 +239,7 @@ function jrUser_config()
         'sublabel' => 'HTML is allowed',
         'help'     => 'Enter a note that will be shown on the login page.',
         'section'  => 'notes',
-        'order'    => 30
+        'order'    => 40
     );
     jrCore_register_setting('jrUser', $_tmp);
 
@@ -241,7 +254,7 @@ function jrUser_config()
         'sublabel' => 'HTML is allowed',
         'help'     => 'Enter a note that will be shown on the signup page',
         'section'  => 'notes',
-        'order'    => 31
+        'order'    => 41
     );
     jrCore_register_setting('jrUser', $_tmp);
 

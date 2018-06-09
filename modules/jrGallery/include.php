@@ -46,12 +46,12 @@ function jrGallery_meta()
     $_tmp = array(
         'name'        => 'Image Galleries',
         'url'         => 'gallery',
-        'version'     => '1.8.8',
+        'version'     => '1.9.2',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Add Image Gallery support to Profiles',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/280/image-galleries',
         'category'    => 'profiles',
-        'requires'    => 'jrCore:6.0.0',
+        'requires'    => 'jrCore:6.1.0b2',
         'license'     => 'jcl'
     );
     return $_tmp;
@@ -72,6 +72,7 @@ function jrGallery_init()
     // We have some small custom CSS for our page
     jrCore_register_module_feature('jrCore', 'css', 'jrGallery', 'jrGallery.css');
     jrCore_register_module_feature('jrCore', 'javascript', 'jrGallery', 'jrGallery.js');
+    jrCore_register_module_feature('jrCore', 'javascript', 'jrGallery', 'jquery.pagesearch.js');
 
     // Allow admin to customize our forms
     jrCore_register_module_feature('jrCore', 'designer_form', 'jrGallery', 'create');
@@ -84,6 +85,14 @@ function jrGallery_init()
     jrCore_register_module_feature('jrCore', 'max_item_support', 'jrGallery', 'on');
     jrCore_register_module_feature('jrCore', 'action_support', 'jrGallery', 'create', 'item_action.tpl');
     jrCore_register_module_feature('jrCore', 'action_support', 'jrGallery', 'update', 'item_action.tpl');
+
+    // Payments
+    jrCore_register_event_listener('jrPayment', 'payment_entry', 'jrGallery_payment_entry_listener');
+    jrCore_register_event_listener('jrPayment', 'purchase_entry', 'jrGallery_purchase_entry_listener');
+    jrCore_register_event_listener('jrPayment', 'cart_entry', 'jrGallery_cart_entry_listener');
+    jrCore_register_event_listener('jrPayment', 'txn_detail_entry', 'jrGallery_txn_detail_entry_listener');
+    jrCore_register_event_listener('jrPayment', 'vault_download', 'jrGallery_vault_download_listener');
+    jrCore_register_event_listener('jrBundle', 'bundle_filename', 'jrGallery_bundle_filename_listener');
 
     // Sales support
     jrCore_register_event_listener('jrFoxyCart', 'add_price_field', 'jrGallery_add_price_field_listener');
@@ -132,6 +141,9 @@ function jrGallery_init()
         'active' => 'on'
     );
     jrCore_register_module_feature('jrCore', 'item_detail_button', 'jrGallery', 'jrGallery_image_download_button', $_tmp);
+
+    // When an action is shared via jrOneAll, we can provide the text of the shared item
+    jrCore_register_event_listener('jrOneAll', 'network_share_text', 'jrGallery_network_share_text_listener');
 
     return true;
 }
@@ -186,8 +198,13 @@ function jrGallery_quick_share_gallery_save($_post, $_user, $_conf)
         $_rt['gallery_order'] = ($k + 1);
         $aid                  = jrCore_db_create_item('jrGallery', $_rt);
         if (!$aid) {
-            $_ln = jrUser_load_lang_strings();
-            return "ERROR: {$_ln['jrGallery'][7]}";
+            if ($error_message = jrCore_get_flag("max_jrGallery_items_reached")) {
+                return "ERROR: {$error_message}";
+            }
+            else {
+                // See if we can save any
+                continue;
+            }
         }
         $_tm = array(
             '_item_id'    => $aid,
@@ -218,7 +235,7 @@ function jrGallery_quick_share_gallery_save($_post, $_user, $_conf)
  * @param $_args Smarty function parameters
  * @param $smarty Smarty Object
  * @param $test_only - check if button WOULD be shown for given module
- * @return string
+ * @return mixed
  */
 function jrGallery_image_download_button($module, $_item, $_args, $smarty, $test_only = false)
 {
@@ -336,7 +353,10 @@ function jrGallery_module_view_listener($_data, $_user, $_conf, $_args, $event)
                 case '1280':
                 case 'xxlarge':
                 case 'xxxlarge':
-                    jrCore_counter('jrGallery', $_data['_2'], 'gallery_image_view_count');
+                    // Do we exist?
+                    if ($_rt = jrCore_db_get_item('jrGallery', intval($_data['_2']))) {
+                        jrCore_counter('jrGallery', $_data['_2'], 'gallery_image_view_count');
+                    }
                     break;
             }
         }
@@ -422,14 +442,13 @@ function jrGallery_download_file_listener($_data, $_user, $_conf, $_args, $event
 function jrGallery_url_found_listener($_data, $_user, $_conf, $_args, $event)
 {
     // Is it a local gallery image url
-    if (strpos($_args['url'], $_conf['jrCore_base_url']) === 0) {
+    if (isset($_args['url']) && strpos($_args['url'], $_conf['jrCore_base_url']) === 0) {
         $_x = explode('/', substr($_args['url'], strlen($_conf['jrCore_base_url']) + 1));
         if ($_x && is_array($_x) && isset($_x[1]) && $_x[1] == jrCore_get_module_url('jrGallery')) {
             $idx = (int) $_args['i'];
             if (isset($_x[2]) && jrCore_checktype($_x[2], 'number_nz')) {
                 $_item                             = jrCore_db_get_item('jrGallery', $_x[2], true);
-                $title                             = (isset($_item['gallery_image_title']) && strlen($_item['gallery_image_title']) > 0) ? $_item['gallery_image_title'] : $_item['gallery_image_name'];
-                $_data['_items'][$idx]['title']    = $title;
+                $_data['_items'][$idx]['title']    = jrGallery_get_gallery_image_title($_item);
                 $_data['_items'][$idx]['load_url'] = "{$_conf['jrCore_base_url']}/{$_x[1]}/parse/urlscan_player/{$_x[2]}/__ajax=1";
                 $_data['_items'][$idx]['url']      = $_args['url'];
             }
@@ -451,24 +470,117 @@ function jrGallery_db_search_items_listener($_data, $_user, $_conf, $_args, $eve
 {
     if ($_args['module'] == 'jrGallery' && isset($_data['_items'])) {
         foreach ($_data['_items'] as $k => $v) {
-
-            // Figure title
-            if (isset($v['gallery_image_title']) && strlen($v['gallery_image_title']) > 0) {
-                $_data['_items'][$k]['gallery_alt_text'] = jrCore_entity_string($v['gallery_image_title']);
-            }
-            else {
-                // use caption for alt|title if set
-                if (isset($v['gallery_caption']) && strlen($v['gallery_caption']) > 0) {
-                    $_data['_items'][$k]['gallery_alt_text'] = jrCore_entity_string(jrCore_strip_html($v['gallery_caption']));
-                }
-                elseif (isset($v['gallery_image_name'])) {
-                    $_data['_items'][$k]['gallery_alt_text'] = jrCore_entity_string(jrGallery_title_name($v['gallery_image_name']));
-                }
-                else {
-                    $_data['_items'][$k]['gallery_alt_text'] = jrCore_entity_string($v['gallery_title']);
-                }
-            }
+            $title                                       = jrGallery_get_gallery_image_title($v);
+            $_data['_items'][$k]['gallery_bundle_title'] = $title;
+            $_data['_items'][$k]['gallery_alt_text']     = $title;
         }
+    }
+    return $_data;
+}
+
+/**
+ * Format gallery entry in purchases
+ * @param $_data array Array of information from trigger
+ * @param $_user array Current user
+ * @param $_conf array Global Config
+ * @param $_args array additional parameters passed in by trigger caller
+ * @param $event string Triggered Event name
+ * @return array
+ */
+function jrGallery_payment_entry_listener($_data, $_user, $_conf, $_args, $event)
+{
+    global $_mods;
+    if (isset($_args['r_item_data']) && is_array($_args['r_item_data'])) {
+        $image_url         = jrGallery_get_gallery_image_url($_args['r_item_data']);
+        $image_ttl         = jrGallery_get_gallery_image_title($_args['r_item_data']);
+        $_data[2]['title'] = '<a href="' . $_conf['jrCore_base_url'] . '/' . $_args['r_item_data']['profile_url'] . '/' . jrCore_get_module_url($_args['r_module']) . '">' . $_mods['jrGallery']['module_name'] . '</a> - <a href="' . $image_url . '">' . $image_ttl . '</a><br><a href="' . $_conf['jrCore_base_url'] . '/' . $_args['r_item_data']['profile_url'] . '"><small>@' . $_args['r_item_data']['profile_url'] . '</small></a>';
+    }
+    return $_data;
+}
+
+/**
+ * Format gallery entry in USER purchases
+ * @param $_data array Array of information from trigger
+ * @param $_user array Current user
+ * @param $_conf array Global Config
+ * @param $_args array additional parameters passed in by trigger caller
+ * @param $event string Triggered Event name
+ * @return array
+ */
+function jrGallery_purchase_entry_listener($_data, $_user, $_conf, $_args, $event)
+{
+    if (isset($_args['r_item_data']) && is_array($_args['r_item_data'])) {
+        $image_url         = jrGallery_get_gallery_image_url($_args['r_item_data']);
+        $image_ttl         = jrGallery_get_gallery_image_title($_args['r_item_data']);
+        $_data[2]['title'] = '<a href="' . $image_url . '">' . $image_ttl . '</a><br><a href="' . $_conf['jrCore_base_url'] . '/' . $_args['r_item_data']['profile_url'] . '"><small>@' . $_args['r_item_data']['profile_url'] . '</small></a>';
+    }
+    return $_data;
+}
+
+/**
+ * Format gallery image in cart
+ * @param $_data array Array of information from trigger
+ * @param $_user array Current user
+ * @param $_conf array Global Config
+ * @param $_args array additional parameters passed in by trigger caller
+ * @param $event string Triggered Event name
+ * @return array
+ */
+function jrGallery_cart_entry_listener($_data, $_user, $_conf, $_args, $event)
+{
+    $_data[2]['title'] = jrGallery_get_gallery_image_title($_args) . '<br><small><a href="' . $_conf['jrCore_base_url'] . '/' . $_args['profile_url'] . '">@' . $_args['profile_url'] . '</a> &bull; gallery image</small>';
+    return $_data;
+}
+
+/**
+ * Format gallery image in transaction detail
+ * @param $_data array Array of information from trigger
+ * @param $_user array Current user
+ * @param $_conf array Global Config
+ * @param $_args array additional parameters passed in by trigger caller
+ * @param $event string Triggered Event name
+ * @return array
+ */
+function jrGallery_txn_detail_entry_listener($_data, $_user, $_conf, $_args, $event)
+{
+    global $_mods;
+    if (isset($_args['r_item_data']) && is_array($_args['r_item_data'])) {
+        $image_url         = jrGallery_get_gallery_image_url($_args['r_item_data']);
+        $image_ttl         = jrGallery_get_gallery_image_title($_args['r_item_data']);
+        $_data[2]['title'] = '<a href="' . $_conf['jrCore_base_url'] . '/' . $_args['r_item_data']['profile_url'] . '/' . jrCore_get_module_url($_args['r_module']) . '">' . $_mods['jrGallery']['module_name'] . '</a> - <a href="' . $image_url . '">' . $image_ttl . '</a><br><a href="' . $_conf['jrCore_base_url'] . '/' . $_args['r_item_data']['profile_url'] . '"><small>@' . $_args['r_item_data']['profile_url'] . '</small></a>';
+    }
+    return $_data;
+}
+
+/**
+ * Return correct filename for a gallery image
+ * @param $_data array Array of information from trigger
+ * @param $_user array Current user
+ * @param $_conf array Global Config
+ * @param $_args array additional parameters passed in by trigger caller
+ * @param $event string Triggered Event name
+ * @return array
+ */
+function jrGallery_bundle_filename_listener($_data, $_user, $_conf, $_args, $event)
+{
+    $_ln               = jrUser_load_lang_strings($_conf['jrUser_default_language']);
+    $_data['filename'] = '@' . $_args['profile_url'] . ' - ' . $_ln['jrGallery']['menu'] . ' - ' . jrCore_str_to_lower(jrGallery_get_gallery_image_title($_args)) . '.' . jrCore_str_to_lower($_args['gallery_image_extension']);
+    return $_data;
+}
+
+/**
+ * Download ZIP file of bundle contents
+ * @param $_data array Array of information from trigger
+ * @param $_user array Current user
+ * @param $_conf array Global Config
+ * @param $_args array additional parameters passed in by trigger caller
+ * @param $event string Triggered Event name
+ * @return array
+ */
+function jrGallery_vault_download_listener($_data, $_user, $_conf, $_args, $event)
+{
+    if ($_args['module'] == 'jrGallery') {
+        $_data['vault_name'] = '@' . $_data['profile_url'] . ' - ' . jrCore_str_to_lower($_data['gallery_title'] . ' - ' . jrGallery_get_gallery_image_title($_data)) . '.' . jrCore_str_to_lower($_data['gallery_image_extension']);
     }
     return $_data;
 }
@@ -490,7 +602,7 @@ function jrGallery_add_price_field_listener($_data, $_user, $_conf, $_args, $eve
 }
 
 /**
- * Return audio_album field for Bundle module
+ * Return field for Bundle module
  * @param $_data array incoming data array from jrCore_save_media_file()
  * @param $_user array current user info
  * @param $_conf array Global config
@@ -581,6 +693,56 @@ function jrGallery_embed_variables_listener($_data, $_user, $_conf, $_args, $eve
     }
     return $_data;
 }
+
+
+/**
+ * Add share data to a jrOneAll network share
+ * @param $_data array incoming data array
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return mixed
+ */
+function jrGallery_network_share_text_listener($_data, $_user, $_conf, $_args, $event)
+{
+    // $_data:
+    // [providers] => twitter
+    // [user_token] => c64xxxxa-b66e-4c6c-xxxx-cdea7xxxxx03
+    // [user_id] => 1
+    // [action_module] => jrGallery
+    // [action_data] => (JSON array of data for item initiating action)
+    $_data = json_decode($_data['action_data'], true);
+    if (!isset($_data) || !is_array($_data)) {
+        return false;
+    }
+    $_ln = jrUser_load_lang_strings($_data['user_language']);
+
+    // We return an array:
+    // 'text' => text to post (i.e. "tweet")
+    // 'url'  => URL to media item,
+    // 'name' => name if media item
+    $url = jrCore_get_module_url('jrGallery');
+    $txt = $_ln['jrGallery'][23];
+    if ($_data['action_mode'] == 'update') {
+        $txt = $_ln['jrGallery'][39];
+    }
+    $_out = array(
+        'text' => "{$_conf['jrCore_base_url']}/{$_data['profile_url']} {$_data['profile_name']} {$txt}: \"{$_data['gallery_title']}\" {$_conf['jrCore_base_url']}/{$_data['profile_url']}/{$url}/{$_data['gallery_title_url']}/all",
+        'link' => array(
+            'url'  => "{$_conf['jrCore_base_url']}/{$_data['profile_url']}/{$url}/{$_data['gallery_title_url']}/all",
+            'name' => $_data['gallery_title']
+        )
+    );
+    // See if they included a picture with the song
+    if (isset($_data['gallery_image_size']) && jrCore_checktype($_data['gallery_image_size'], 'number_nz')) {
+        $_out['picture'] = array(
+            'url' => "{$_conf['jrCore_base_url']}/{$url}/image/gallery_image/{$_data['_item_id']}/large"
+        );
+    }
+    return $_out;
+}
+
 
 //---------------------------------------------------------
 // FUNCTIONS
@@ -683,6 +845,28 @@ function jrGallery_get_gallery_image_url($item)
 }
 
 /**
+ * Get a unique gallery image Title
+ * @param $item array Gallery image data array
+ * @return string
+ */
+function jrGallery_get_gallery_image_title($item)
+{
+    if (isset($item['gallery_image_title']) && strlen($item['gallery_image_title']) > 0) {
+        $title = $item['gallery_image_title'];
+    }
+    elseif (isset($item['gallery_image_name']) && strlen($item['gallery_image_name']) > 0) {
+        $title = $item['gallery_image_name'];
+    }
+    elseif (isset($item['gallery_caption']) && strlen($item['gallery_caption']) > 0) {
+        $title = jrCore_strip_html($item['gallery_caption']);
+    }
+    else {
+        $title = $item['gallery_title'];
+    }
+    return jrGallery_strip_image_extensions($title);
+}
+
+/**
  * Strip image extensions from a string
  * @param string $string
  * @return mixed
@@ -762,7 +946,7 @@ function jrGallery_dashboard_pending($_post, $_user, $_conf)
                 'height' => 56,
                 'alt'    => 'img',
                 'title'  => 'img',
-                '_v'     => (isset($_usr['user_image_time']) && $_usr['user_image_time'] > 0) ? $_usr['user_image_time'] : false
+                '_v'     => (isset($_data['user_image_time']) && $_data['user_image_time'] > 0) ? $_data['user_image_time'] : false
             );
             $dat[3]['title'] = "<a href=\"{$_conf['jrCore_base_url']}/{$murl}/image/gallery_image/{$_pend['pending_item_id']}/1280\" data-lightbox=\"images\">" . jrImage_get_image_src('jrGallery', 'gallery_image', $_pend['pending_item_id'], 'icon', $_im) . '</a>';
             if (isset($_data['item']["{$mpfx}_title"]) && strlen($_data['item']["{$mpfx}_title"]) > 0) {
@@ -855,6 +1039,25 @@ function smarty_function_jrGallery_get_gallery_image_url($params, $smarty)
         jrCore_smarty_missing_error('item');
     }
     $out = jrGallery_get_gallery_image_url($params['item']);
+    if (!empty($params['assign'])) {
+        $smarty->assign($params['assign'], $out);
+        return '';
+    }
+    return $out;
+}
+
+/**
+ * Get a unique gallery image Title
+ * @param array $params parameters for function
+ * @param object $smarty Smarty object
+ * @return string
+ */
+function smarty_function_jrGallery_get_gallery_image_title($params, $smarty)
+{
+    if (isset($params['item']) || !is_array($params['item'])) {
+        jrCore_smarty_missing_error('item');
+    }
+    $out = jrGallery_get_gallery_image_title($params['item']);
     if (!empty($params['assign'])) {
         $smarty->assign($params['assign'], $out);
         return '';

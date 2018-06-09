@@ -7,5 +7,4 @@ This is a quick email to let you know that your User Account was updated:
     - Account password was changed
 {/if}
 
-If you did NOT change this in your account, please contact us ASAP so
-we can be sure your account is safe.
+If you did NOT change this in your account, please contact us ASAP so we can be sure your account is safe.

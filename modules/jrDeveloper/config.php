@@ -2,7 +2,7 @@
 /**
  * Jamroom Developer Tools module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -74,20 +74,6 @@ function jrDeveloper_config()
     );
     jrCore_register_setting('jrDeveloper', $_tmp);
 
-    // Query Debug
-    $_tmp = array(
-        'name'     => 'query_debug',
-        'default'  => 'off',
-        'type'     => 'checkbox',
-        'validate' => 'onoff',
-        'required' => 'on',
-        'label'    => 'URL detail in Queries',
-        'help'     => 'Enabling the &quot;URL detail in Queries&quot; option will add a comment to SQL queries that includes the user and URL information - this can help track down issues with long queries.  Leave this option <b>disabled</b> unless it is needed.',
-        'section'  => 'general settings',
-        'order'    => 3
-    );
-    jrCore_register_setting('jrDeveloper', $_tmp);
-
     // Log Slow Queries
     $_opt = array(
         0     => 'Disabled',
@@ -141,6 +127,7 @@ function jrDeveloper_config()
     jrCore_register_setting('jrDeveloper', $_tmp);
 
     jrCore_delete_setting('jrDeveloper', 'loader_mode');
+    jrCore_delete_setting('jrDeveloper', 'query_debug');
     return true;
 }
 

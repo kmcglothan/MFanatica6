@@ -1,0 +1,871 @@
+section {
+    position: relative;
+    color: #ccc;
+}
+
+.pad {
+    padding: 0 2em;
+    position: relative;
+}
+
+.actions > ul {
+    height: 34px;
+    margin: 0;
+    padding: 0;
+}
+
+.actions > ul {
+    height: 34px;
+    margin: 0;
+    padding: 0;
+}
+
+#header ul {
+    margin: 0;
+    padding: 0;
+}
+
+.index_features ul {
+    margin: 0;
+    padding: 0;
+}
+
+.feature_list {
+    margin: 0;
+    padding: 0;
+}
+
+.jrFollowMe_player ul {
+    margin: 0;
+    padding: 0;
+}
+
+ul.page_tab_bar {
+    margin: 0;
+}
+
+.textArea .loader {
+    bottom: 10px;
+    position: absolute;
+    right: 0;
+}
+
+.block_search {
+    right: 0;
+    position: absolute;
+    text-align: right;
+    top: 7px;
+    white-space: nowrap;
+    width: auto;
+}
+
+span.title {
+    font-size: 16px;
+}
+
+#horizontal .hideshow > a:first-child {
+    border-right: medium none;
+}
+
+.CodeMirror {
+    background: #0f1418 none repeat scroll 0 0;
+    color: white;
+}
+
+.shadow {
+    box-shadow: 1px 1px 5px #000;
+}
+
+h2 {
+    font-size: 18px;
+}
+
+.p5 > h2 {
+    margin: 0;
+}
+
+.p5 h3 {
+    margin: 0 0 5px;
+}
+
+h3 {
+    text-align: left;
+}
+
+.footer {
+    background-color: #080808;
+    bottom: 0;
+    counter-reset: black;
+    min-height: 180px;
+    position: absolute;
+    width: 100%;
+}
+
+.widget-item-widget_gallery .col3 {
+    padding: 1px;
+    width: 24.2%;
+}
+
+.image_stack2 {
+    left: 42px !important;
+}
+
+.image_stack1 {
+    left: 21px !important;
+}
+
+.button_player a.jp-play, .button_player a.jp-pause {
+    display: none;
+}
+
+.box > span {
+    color: #eee;
+    float: none;
+    font-size: 18px;
+    left: 47px;
+    position: absolute;
+    text-transform: capitalize;
+    top: 10px;
+}
+
+.box .block_search .form_text {
+    width: 77%;
+}
+
+.bundle_box {
+    background: #333 linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.6));
+    border: medium none;
+    box-shadow: 1px 0 5px 3px #000;
+}
+
+/* This section is mainly for ISkin documentation. You may wanna delete it */
+.widget-item-widget_html .item li {
+    list-style: inherit;
+}
+
+.widget-item.widget-item-widget_calendar {
+    background-color: white;
+    box-shadow: 0 0 2px #999;
+}
+
+.widget-item.widget-item-widget_tag_cloud {
+    background-color: white;
+    box-shadow: 0 0 2px #999;
+}
+
+.widget-item h4 {
+    margin: 0;
+    padding: 1em 0 0;
+}
+
+.box > .block_search > h3 {
+    display: inline;
+}
+
+.index h1 {
+    color: white;
+    font-size: 4em;
+    font-weight: 100;
+    text-shadow: 1px 1px 0 #333;
+    text-transform: uppercase;
+}
+
+.index .overlay h1 {
+    text-shadow: none;
+}
+
+#slides > a {
+    color: rgba(0, 0, 0, 0);
+    display: block;
+    height: 100px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    z-index: 100;
+}
+
+.desk #slides, .mobile #slides {
+    position: relative;
+}
+
+.slidesjs-previous.slidesjs-navigation {
+    background: rgba(0, 0, 0, 0) url("{$jrMaestro_img_url}/left.png") no-repeat scroll 0 0 / contain;
+    left: 1%;
+}
+
+.slidesjs-next.slidesjs-navigation {
+    background: rgba(0, 0, 0, 0) url("{$jrMaestro_img_url}/right.png") no-repeat scroll 0 0 / contain;
+    right: 1%;
+}
+
+.slidesjs-pagination, ul.pager {
+    bottom: 70px;
+    position: absolute;
+    right: 50%;
+    transform: translateX(50%);
+    width: 180px;
+    z-index: 100;
+}
+
+ul.pager {
+    width: auto;
+}
+
+.slidesjs-pagination-item, .pager li {
+    color: white;
+    float: left;
+    text-align: center;
+    width: 36px;
+}
+
+.slidesjs-pagination-item > a, ul.pager li > a {
+    background: rgba(0, 0, 0, 0.5) none repeat scroll 0 0;
+    border-radius: 50%;
+    color: white;
+    padding: 6px 10px;
+}
+
+.slidesjs-pagination-item a.active, ul.pager li > a.active {
+    background-color: rgba(255, 255, 255, 0.5);
+    color: black;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.texts {
+    background-color: rgba(0, 0, 0, 0);
+    height: 100%;
+    position: absolute;
+    top: 0;
+    transition: background-color 0s ease 0s, all 1s ease 0s;
+    width: 100%;
+    z-index: 50;
+}
+
+.texts .wrap {
+    left: 12%;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 80%;
+}
+
+.texts p {
+    color: white;
+    font-size: 16px;
+    text-shadow: 1px 1px 0 #333;
+}
+
+.index {
+    position: relative;
+}
+
+.texts.over {
+    background: rgba(0, 0, 0, 0.6) none repeat scroll 0 0;
+}
+
+.texts .wrap > div {
+    display: none;
+    float: left;
+    width: 642px;
+}
+
+.hover {
+    background: rgba(0, 0, 0, 0.7) none repeat scroll 0 0;
+    height: 100%;
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    transition: opacity 1s ease 0s;
+    width: 100%;
+}
+
+.hover.over {
+    opacity: 1;
+}
+
+.hover > div {
+    color: white;
+    padding: 0;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+}
+
+.hover .wrap {
+    margin: auto;
+    max-width: 80%;
+    padding: 0 1em;
+}
+
+.hover .date.desk {
+    color: #ccc;
+    font-size: 12px;
+    font-style: italic;
+    text-align: right;
+}
+
+.social h2 {
+    color: white;
+    font-size: 14px;
+    font-weight: 100;
+    letter-spacing: 8px;
+    margin: 1em 0 0;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.social > li {
+    display: inline-block;
+    list-style: outside none none;
+    padding: 0 20px;
+}
+
+.social li a {
+    background-color: #666;
+    display: block;
+    height: 50px;
+    margin: auto;
+    width: 50px;
+}
+
+div.social {
+    padding: 2em 0 0;
+    position: relative;
+}
+
+ul.social {
+    display: block;
+    margin: 10px auto;
+    min-width: 320px;
+    padding: 1em 0;
+    width: 50%;
+    text-align: center;
+}
+
+.social li a.social-facebook {
+    background: rgba(0, 0, 0, 0) url("{$jrMaestro_img_url}/social-facebook.png") no-repeat scroll 0 0;
+}
+
+.social li a.social-twitter {
+    background: rgba(0, 0, 0, 0) url("{$jrMaestro_img_url}/social-twitter.png") no-repeat scroll 0 0;
+}
+
+.social li a.social-google {
+    background: rgba(0, 0, 0, 0) url("{$jrMaestro_img_url}/social-google.png") no-repeat scroll 0 0;
+}
+
+.social li a.social-linkedin {
+    background: rgba(0, 0, 0, 0) url("{$jrMaestro_img_url}/social-linkedin.png") no-repeat scroll 0 0;
+}
+
+.social li a.social-youtube {
+    background: rgba(0, 0, 0, 0) url("{$jrMaestro_img_url}/social-youtube.png") no-repeat scroll 0 0;
+}
+
+.social li a.social-facebook:hover,
+.social li a.social-twitter:hover,
+.social li a.social-linkedin:hover,
+.social li a.social-youtube:hover,
+.social li a.social-google:hover {
+    background-position: 0 -50px;
+}
+
+.social > div {
+    clear: both;
+    color: white;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.smallScreen {
+    display: none;
+}
+
+.tablet {
+    display: none;
+}
+
+.more {
+    margin: 1.5em 0 0;
+}
+
+a.read_more {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    border: 3px solid #269;
+    border-radius: 3px;
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 8px;
+    text-align: center;
+    text-decoration: none;
+}
+
+a.read_more:hover {
+    border-color: white;
+}
+
+.texts .read_more {
+    opacity: 0;
+    transition: opacity 1s ease 0s;
+}
+
+.texts .read_more.over {
+    opacity: 1;
+}
+
+.index .read_more {
+    display: inline-block;
+    margin: 1em 0;
+}
+
+.index_icon {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    cursor: auto;
+    display: block;
+    height: 20px;
+    left: 5px;
+    position: absolute;
+    top: 5px;
+    width: 20px;
+}
+
+.features {
+    background: #080808 none no-repeat scroll 0 0;
+    border-top: 1px solid #222;
+    color: #fff;
+    padding: 120px 0;
+    position: relative;
+}
+
+.footer {
+    background-color: #080808;
+}
+
+.features.dark h2 {
+    color: #eee;
+}
+
+.index h2, .features h2 {
+    font-size: 36px;
+    font-weight: lighter;
+    text-align: center;
+}
+
+.features h2 {
+    margin: 0 auto 38px;
+    max-width: 750px;
+    padding: 0 20px;
+}
+
+.index_features li img {
+    margin: 0 1em 0 0;
+}
+
+.bottom {
+    bottom: 5px;
+    height: 50px;
+    position: absolute;
+    width: 100%;
+}
+
+.index_item > .wrap {
+    margin: 0;
+    padding: 5px;
+}
+
+.see_more {
+    background: #333 linear-gradient(#333333, #111111) repeat scroll 0 0;
+    border: medium none;
+    border-radius: 4px;
+    box-shadow: 0 0 3px #000;
+    color: white;
+    display: block;
+    font-size: 15px;
+    height: 35px;
+    margin: 2em auto 0;
+    padding: 0;
+    position: relative;
+    text-transform: uppercase;
+    width: 120px;
+}
+
+.see_more:hover {
+    background: #333 linear-gradient(#444444, #222222) repeat scroll 0 0;
+}
+
+.index_border .inner {
+    background: #ccc none repeat scroll 0 0;
+    position: relative;
+    height: 1px;
+    margin: auto;
+    max-width: 1000px;
+}
+
+.index_border {
+    background: #f3f3f3 none repeat scroll 0 0;
+    position: relative;
+}
+
+.middle {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+}
+
+.middle button {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    border: 3px solid #fc6;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    margin: 1em 0 0;
+    padding: 4px 8px;
+}
+
+.middle button:hover {
+    border-color: white;
+}
+
+.hover {
+    background: rgba(0, 0, 0, 0.7) none repeat scroll 0 0;
+    color: #bbb;
+    height: 100%;
+    left: 0;
+    position: absolute;
+    text-align: center;
+    top: 0;
+    width: 100%;
+    opacity: 0;
+    transition: opacity 1s ease 0s;
+}
+
+.hover.over {
+    opacity: 1;
+}
+
+.features .title {
+    color: white;
+}
+
+section.features .col2 > .wrap {
+    padding: 7px;
+}
+
+.index_row .wrap > div > div > div {
+    font-size: 18px;
+    padding: 5px;
+    vertical-align: middle;
+}
+
+.index_row {
+    background: #000 none repeat scroll 0 0;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) inset, 0 0 0 rgba(0, 0, 0, 0.3) inset, 0 2px 0 rgba(255, 255, 255, 0.5);
+    color: white;;
+    margin: 5px;
+}
+
+.index_row .img_scale {
+    box-shadow: 0 0 2px #333;
+}
+
+.index_row span {
+    color: #aaa;
+    font-size: 14px;
+}
+
+a.see_more {
+    padding: 1em 2em;
+    text-decoration: none;
+}
+
+.features .button_player div.jp-interface ul.jp-controls li {
+    float: none;
+}
+
+.index_row .wrap > div {
+    height: 100%;
+}
+
+.index .overlay, .dark .overlay, .footer .overlay {
+    display: block;
+    height: 100%;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    z-index: 0;
+}
+
+.footer .overlay {
+    background: rgba(0, 0, 0, 0.6) none repeat scroll 0 0;
+}
+
+.logo {
+    left: 0;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+}
+
+.logo .jlogo {
+    display: block;
+    margin: auto;
+    max-width: 467px;
+    width: 100%;
+}
+
+.index h3 {
+    text-align: center;
+    margin: 0;
+}
+
+.index .play {
+    margin: 3em auto 0;
+    text-align: center;
+    opacity: 0;
+}
+
+.play > a {
+    background: rgba(0, 0, 0, 0) url("{$jrMaestro_img_url}/play.png") no-repeat scroll 0 0;
+    display: block;
+    height: 50px;
+    width: 50px;
+    margin: 1em auto;
+}
+
+.down {
+    bottom: -30px;
+    left: 50%;
+    position: absolute;
+    transform: translateX(-50%);
+    width: 60px;
+    z-index: 100;
+}
+
+.down > a {
+    background: #080808 url("{$jrMaestro_img_url}/down.png") no-repeat scroll center center;
+    border-radius: 50%;
+    display: block;
+    height: 60px;
+    width: 60px;
+}
+
+.down.up > a {
+    background: #080808 url("{$jrMaestro_img_url}/down.png") no-repeat scroll center center;
+    transform: rotate(180deg);
+}
+
+.dark .box_body {
+    background: #000 none repeat scroll 0 0;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) inset, 0 0 0 rgba(0, 0, 0, 0.3) inset, 0 2px 0 rgba(255, 255, 255, 0.05);
+}
+
+.dark .media {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    box-shadow: none;
+}
+
+.audio_button > a {
+    background: rgba(0, 0, 0, 0) url("{$jrMaestro_img_url}/jp-play.png") no-repeat scroll 0 0 / contain;
+    display: block;
+    height: 25px;
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    width: 25px;
+}
+
+.audio_button.large a {
+    position: static;
+    right: 0;
+    top: 0;
+}
+
+.top_stories {
+    margin: auto;
+    left: 0;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+}
+
+.slide_box > div {
+    float: left;
+    height: 607px;
+    text-align: center;
+    width: 20%;
+}
+
+.buttons button {
+    background: rgba(255, 255, 255, 0.25) none repeat scroll 0 0;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    color: white;
+    cursor: pointer;
+    font-size: 20px;
+    margin: 25px 50px 0;
+    padding: 9px;
+    text-transform: capitalize;
+    width: 235px;
+}
+
+.buttons button:hover {
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    background: rgba(0, 0, 0, 0.5) none repeat scroll 0 0;
+}
+
+.slide_box {
+    margin: auto;
+    position: relative;
+    transition: all 1s ease 0s;
+    width: 500%;
+}
+
+.slide > img {
+    margin: 2em 0;
+}
+
+.features.dark .row > .wrap {
+    background: rgba(0, 0, 0, 0.6) none repeat scroll 0 0;
+}
+
+.features .row > .wrap {
+    background: #000 none repeat scroll 0 0;
+    padding: 5px;
+}
+
+.logo_large {
+    max-width: 540px;
+}
+
+.jlogo {
+    position: relative;
+    top: -2px;
+}
+
+.index_item .middle .wrap {
+    padding: 1em;
+}
+
+.box_body .box {
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+}
+
+.box_body .box_body {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    box-shadow: none;
+}
+
+.box_body .box_body > .wrap {
+    padding: 0;
+}
+
+.box_body .box_body .media {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    box-shadow: none;
+}
+
+.box_body .box_body .media > .wrap {
+    padding: 0;
+}
+
+.box_body .box_body .media .item_media {
+    box-shadow: none;
+}
+
+.box_body .box .head_tab {
+    display: none;
+}
+
+.box .page_nav {
+    padding: 10px 14px 0;
+}
+
+.sb-container-tabs .page_tab_bar_holder {
+    border: medium none;
+}
+
+.sb-widget-block h1 {
+    font-size: 20px;
+    font-weight: lighter;
+}
+
+.sb-container-tabs {
+    position: absolute;
+    right: 5px;
+    top: -22px;
+    z-index: 10;
+}
+
+.sb-widget-block .item:first-child {
+    margin-top: 0;
+}
+
+.sb-widget-block .item:last-child {
+    margin-bottom: 0;
+}
+
+#content > .block {
+    background: #080808 none repeat scroll 0 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 1) inset, 0 0 0 rgba(0, 0, 0, 1) inset, 0 2px 0 rgba(255, 255, 255, 0.06);
+    margin: 10px 0;
+}
+
+.sb-widget-block .list_item:last-child {
+    margin-bottom: 0;
+}
+
+.features.dark .overlay {
+    background: rgba(0, 0, 0, 0.5) none repeat scroll 0 0;
+}
+
+.features.dark.one {
+    background: rgba(0, 0, 0, 0) url("{$jrMaestro_img_url}/bg1.jpg") no-repeat fixed center center / cover  ;
+}
+
+.features.dark.two {
+    background: rgba(0, 0, 0, 0) url("{$jrMaestro_img_url}/bg2.jpg") no-repeat fixed center center / cover  ;
+}
+
+.features.dark.three {
+    background: rgba(0, 0, 0, 0) url("{$jrMaestro_img_url}/bg3.jpg") no-repeat fixed center center / cover  ;
+}
+
+.features.dark.four {
+    background: rgba(0, 0, 0, 0) url("{$jrMaestro_img_url}/bg4.jpg") no-repeat fixed center center / cover  ;
+}
+
+.features.dark.five {
+    background: rgba(0, 0, 0, 0) url("{$jrMaestro_img_url}/bg5.jpg") no-repeat fixed center center / cover  ;
+}
+
+.no-items {
+    padding: 60px 1em;
+    text-align: center;
+}
+
+.table {
+    display: table;
+    width: 100%;
+}
+
+.table-row {
+    display: table-row;
+}
+
+.table-cell {
+    display: table-cell;
+    vertical-align: middle;
+}

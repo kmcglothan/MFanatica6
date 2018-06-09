@@ -1,0 +1,237 @@
+html {
+    background-color: #666666;
+}
+
+a {
+    color: #fff;
+    cursor: pointer;
+    text-decoration: none;
+}
+section {
+    color: #aaa;
+}
+
+section#profile {
+    background: #111111 none repeat scroll 0 0;
+    box-shadow: 0 0 2px #000;
+}
+
+#profile_menu {
+    background: #111111 none repeat scroll 0 0;
+}
+
+#horizontal a {
+    color: #eeeeee;
+}
+
+#horizontal li:hover {
+    border-bottom: 1px solid tan;
+    color: #ffffff;
+}
+
+#horizontal .active > a {
+    color: tan;
+}
+
+.menu_banner ul ul {
+    background: #111111 none repeat scroll 0 0;
+    box-shadow: 2px 2px 8px #000000;;
+}
+
+.menu_banner ul#submenu > li {
+    border-bottom: 1px solid #111111;
+    border-top: 1px solid #222222;
+}
+
+#submenu > li:hover a {
+    color: #5588CC;
+}
+
+.title {
+    color: #ffffff;
+    background-color: #111111;
+    border-bottom: 1px solid #000000;
+}
+
+.title h1 {
+    color: tan;
+}
+
+.breadcrumbs > a {
+    color: #FFFFFF;
+}
+
+.profile_data span {
+    color: #ffffff;
+}
+
+.profile_data {
+    color: tan;
+}
+
+.profile_information, .bio, .followers, .profile_body {
+    border-top: 1px solid #222222;
+}
+
+.sprite_icon {
+    background-image: linear-gradient(#ccc, #aaa);
+    border: medium none;
+    box-shadow: 0 0 2px #181818;
+    vertical-align:top;
+}
+
+.menu_banner.clearfix {
+    border-bottom: 1px solid #000000;
+    border-top: 1px solid #222222;
+}
+
+.stat_entry_box {
+    background-image: linear-gradient(#444, #222);
+    border: 1px solid #000;
+    color: #ffffff;
+}
+
+.profile_hoverimage .sprite_icon {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+}
+
+.item, .profile_body .action_item_holder {
+    background: #111111 none repeat scroll 0 0;
+    border-bottom: 1px solid #000000;
+    border-top: 1px solid #222222;
+}
+
+.tag_name_box {
+    background-color: #333333;
+    border-color: #222222;
+}
+
+#profile .head {
+    border-bottom: 1px solid #000000;
+    color: #ffffff;
+}
+
+.profile_body .block_content > .block {
+    border-top: 1px solid #444444;
+}
+
+div.jqcloud a {
+    color: #ffdd99;
+}
+
+.profile_body {
+    color: #eee;
+}
+
+.profile_body .action_item_holder:first-child {
+    border-top: medium none;
+}
+
+.profile_body .action_item_holder:hover {
+    background: #181818 none repeat scroll 0 0;
+}
+
+
+.block .block_content .block {
+    border-top: 1px solid #444444;
+}
+
+.profile_body .block > .block_content > .p10 {
+    border-top: 1px solid #444444;
+    border-bottom: 1px solid #222222;
+}
+
+.profile_body a {
+    color: #fff;
+}
+
+.profile_body .jr_audio_player_dark div.jp-audio, .profile_body .jr_audio_player_dark div.jp-video {
+    border: 1px solid #111111;
+}
+
+.profile_body .jr_audio_player_dark div.jp-playlist li {
+    border-bottom: 1px solid #000;
+    border-top: 1px solid #222;
+}
+
+#profile .videos .head {
+    color: #fff;
+    font-size: 20px;
+}
+
+.detail_box .wrap > .row {
+    border-bottom: 1px solid #000000;
+}
+
+.videos > .wrap > .row:first-child {
+    border-top: 1px solid #222222;
+}
+
+.jrVideoPro_player {
+    box-shadow: 0 0 10px #000;
+}
+
+.action_item_shared {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+}
+
+.info_c {
+    color: #fff;
+}
+
+.detail_box .text_right, .detail_box .text_right a {
+    color: #FFFFFF;
+}
+section.detail_box {
+    color: #aaa;
+}
+
+select#profile_select_menu {
+    background: #080808 none repeat scroll 0 0;
+    border: 1px solid #333333;
+    color: white;
+}
+
+.sortable {
+    border-bottom: 1px solid #000;
+}
+
+.add_to_cart_section {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    border-radius: 6px;
+    box-shadow: none;
+    display: inline-block;
+    padding:0;
+    margin:0;
+}
+
+.add_to_cart_price {
+    top:5px;
+    color:#FFFFFF;
+}
+
+.paypal_buy_now_section {
+    box-shadow:none;
+    padding:0;
+    margin:0;
+}
+.paypal_buy_now_section img {
+    padding-top:4px;
+}
+
+.paypal_buy_now_price {
+    top: 3px;
+    padding-right:10px;
+}
+
+.cart-section {
+    display: inline-block;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.cart-price {
+    top:5px;
+    color: #FFFFFF;
+}

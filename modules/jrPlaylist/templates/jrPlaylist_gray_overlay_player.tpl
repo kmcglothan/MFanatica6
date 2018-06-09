@@ -54,7 +54,7 @@
                         </ul>
                     </div>
                     <div class="jp-video-play">
-                        <a class="jp-video-play-icon" tabindex="1">{jrCore_lang module="jrVideo" id="1" default="play"}</a>
+                        <a class="jp-video-play-icon" tabindex="{jrCore_next_tabindex}">{jrCore_lang module="jrVideo" id="1" default="play"}</a>
                     </div>
                     <div class="jp-interface">
                         {if jrCore_is_mobile_device()}
@@ -77,15 +77,15 @@
 
                         <div class="jp-controls-holder">
                             <ul class="jp-controls">
-                                <li><a class="jp-play" tabindex="1" title="{jrCore_lang module="jrPlaylist" id="23" default="play"}"></a></li>
-                                <li><a class="jp-pause" tabindex="1" title="{jrCore_lang module="jrPlaylist" id="24" default="pause"}"></a></li>
-                                <li style="margin-left:5px;"><a class="jp-previous" tabindex="1" title="{jrCore_lang module="jrPlaylist" id="22" default="previous"}" style="margin-top:0;"></a></li>
-                                <li><a class="jp-next" tabindex="1" title="{jrCore_lang module="jrPlaylist" id="25" default="next"}" style="margin-top:0;"></a></li>
+                                <li><a class="jp-play" tabindex="{jrCore_next_tabindex}" title="{jrCore_lang module="jrPlaylist" id="23" default="play"}"></a></li>
+                                <li><a class="jp-pause" tabindex="{jrCore_next_tabindex}" title="{jrCore_lang module="jrPlaylist" id="24" default="pause"}"></a></li>
+                                <li style="margin-left:5px;"><a class="jp-previous" tabindex="{jrCore_next_tabindex}" title="{jrCore_lang module="jrPlaylist" id="22" default="previous"}" style="margin-top:0;"></a></li>
+                                <li><a class="jp-next" tabindex="{jrCore_next_tabindex}" title="{jrCore_lang module="jrPlaylist" id="25" default="next"}" style="margin-top:0;"></a></li>
                             </ul>
                             {if !jrCore_is_mobile_device()}
                                 <ul class="jp-controls" style="width: 16px;margin-right:6px;margin-left:5px;">
-                                    <li><a class="jp-mute" tabindex="1" title="{jrCore_lang module="jrPlaylist" id="27" default="mute"}"></a></li>
-                                    <li><a class="jp-unmute" tabindex="1" title="{jrCore_lang module="jrPlaylist" id="28" default="unmute"}"></a></li>
+                                    <li><a class="jp-mute" tabindex="{jrCore_next_tabindex}" title="{jrCore_lang module="jrPlaylist" id="27" default="mute"}"></a></li>
+                                    <li><a class="jp-unmute" tabindex="{jrCore_next_tabindex}" title="{jrCore_lang module="jrPlaylist" id="28" default="unmute"}"></a></li>
                                 </ul>
                                 <div class="jp-volume-bar">
                                     <div class="jp-volume-bar-value"></div>
@@ -96,16 +96,16 @@
                             <div class="jp-right-controls">
                                 <ul class="jp-toggles">
                                     {if isset($item.module_url) && ($item.module_url == 'uploaded_video' || $item.module_url == 'video')}
-                                        <li><a class="jp-full-screen" tabindex="1" title="{jrCore_lang module="jrPlaylist" id="30" default="full screen"}"></a></li>
-                                        <li><a class="jp-restore-screen" tabindex="1" title="{jrCore_lang module="jrPlaylist" id="31" default="restore screen"}"></a></li>
-                                        <li><a class="jp-shuffle" tabindex="1" title="{jrCore_lang module="jrPlaylist" id="32" default="shuffle"}"></a></li>
-                                        <li><a class="jp-shuffle-off" tabindex="1" title="{jrCore_lang module="jrPlaylist" id="33" default="shuffle off"}"></a></li>
+                                        <li><a class="jp-full-screen" tabindex="{jrCore_next_tabindex}" title="{jrCore_lang module="jrPlaylist" id="30" default="full screen"}"></a></li>
+                                        <li><a class="jp-restore-screen" tabindex="{jrCore_next_tabindex}" title="{jrCore_lang module="jrPlaylist" id="31" default="restore screen"}"></a></li>
+                                        <li><a class="jp-shuffle" tabindex="{jrCore_next_tabindex}" title="{jrCore_lang module="jrPlaylist" id="32" default="shuffle"}"></a></li>
+                                        <li><a class="jp-shuffle-off" tabindex="{jrCore_next_tabindex}" title="{jrCore_lang module="jrPlaylist" id="33" default="shuffle off"}"></a></li>
                                     {/if}
                                     {if isset($item.module_url) && ($item.module_url == 'uploaded_audio' || $item.module_url == 'audio')}
-                                        <li><a class="jp-shuffle" tabindex="1" title="{jrCore_lang module="jrPlaylist" id="32" default="shuffle"}"></a></li>
-                                        <li><a class="jp-shuffle-off" tabindex="1" title="{jrCore_lang module="jrPlaylist" id="33" default="shuffle off"}"></a></li>
-                                        <li><a class="jp-repeat" tabindex="1" title="{jrCore_lang module="jrPlaylist" id="34" default="repeat"}"></a></li>
-                                        <li><a class="jp-repeat-off" tabindex="1" title="{jrCore_lang module="jrPlaylist" id="35" default="repeat off"}"></a></li>
+                                        <li><a class="jp-shuffle" tabindex="{jrCore_next_tabindex}" title="{jrCore_lang module="jrPlaylist" id="32" default="shuffle"}"></a></li>
+                                        <li><a class="jp-shuffle-off" tabindex="{jrCore_next_tabindex}" title="{jrCore_lang module="jrPlaylist" id="33" default="shuffle off"}"></a></li>
+                                        <li><a class="jp-repeat" tabindex="{jrCore_next_tabindex}" title="{jrCore_lang module="jrPlaylist" id="34" default="repeat"}"></a></li>
+                                        <li><a class="jp-repeat-off" tabindex="{jrCore_next_tabindex}" title="{jrCore_lang module="jrPlaylist" id="35" default="repeat off"}"></a></li>
                                     {/if}
                                 </ul>
                             </div>

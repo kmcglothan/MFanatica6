@@ -1,7 +1,29 @@
 Video Module Changelog
 
+Version 2.0.2:
+ - Change: Modified item_list.tpl so video title fit in the section better
+ - Bug Fix: Download button could show on video items that were part of a paid bundle
+
+Version 2.0.1:
+ - Change: Updated to work with new Profile Limits module features
+ - Bug Fix: Typo in language file
+ - Bug Fix: Profile owners can now download their own video items
+
+Version 2.0.0:
+ - New: Better CPU utilization in mutiple CPU systems when selecting Conversion Priority
+ - New: Support added for "HDV Video File" videos with .m2t extension
+ - New: Improved support for very large video file uploads (2+ Gigabytes)
+ - New: Updated with full MP4 support for both desktop and mobile browsers
+ - New: "Verify Video Files" tool to verify that the proper MP4 and/or FLV video files are present
+ - New: Updated to work with version 1.2.1 of the RSS Feed Reader module
+ - Change: Video Site Builder Widget now shows all videos loaded on the site for admin to pick from
+ - Change: Updated number of FFMpeg threads to use based on Conversion Priority Global Config setting
+ - Change: item_index_meta.tpl added to add social media tags for list page
+ - Change: Video Player templates updated to work more consistently between browsers
+ - Change: pressing the "tab" key now moves better through forms and the video player
+
 Version 1.5.2:
-  - New: stand alone embed player added for use in twitter card feature provided by Meta Tag Manager
+ - New: stand alone embed player added for use in Twitter card feature provided by Meta Tag Manager
 
 Version 1.5.1:
  - Bug Fix: "Create Album" button showing "Video" as hover text instead of "Create Album"

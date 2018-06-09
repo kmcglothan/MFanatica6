@@ -2,8 +2,7 @@
 /**
  * Jamroom FoxyCart eCommerce module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2017 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *

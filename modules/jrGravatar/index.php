@@ -2,7 +2,7 @@
 /**
  * Jamroom Gravatar Images module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -49,7 +49,7 @@ function view_jrGravatar_gimg($_post, $_user, $_conf)
     if (!isset($_post['_1']) || strlen($_post['_1']) !== 36) {
         jrCore_notice('Error', 'invalid image');
     }
-    $img = jrCore_get_module_cache_dir('jrImage') . '/' . $_conf['jrImage_active_cache_dir'] . '/' . substr($_post['_1'], 0, 2) . '/' . $_post['_1'];
+    $img = jrCore_get_module_cache_dir('jrImage') . '/' . $_conf['jrImage_active_cache_dir'] . '/jrGravatar/' . substr($_post['_1'], 0, 2) . '/' . $_post['_1'];
     if (!is_file($img)) {
         jrCore_notice('Error', 'invalid image - not found');
     }

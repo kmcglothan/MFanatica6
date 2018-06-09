@@ -2,7 +2,7 @@
 /**
  * Jamroom Email Support module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -52,7 +52,7 @@ function jrMailer_db_schema()
         "t_cnt SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0'",
         "UNIQUE t_min (t_min)"
     );
-    jrCore_db_verify_table('jrMailer', 'throttle', $_tmp);
+    jrCore_db_verify_table('jrMailer', 'throttle', $_tmp, 'InnoDB');
 
     // Campaign
     $_tmp = array(
@@ -61,7 +61,7 @@ function jrMailer_db_schema()
         "c_unique VARCHAR(64) NOT NULL DEFAULT ''",
         "c_created INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "c_updated INT(11) UNSIGNED NOT NULL DEFAULT '0'",
-        "c_title VARCHAR(256) NOT NULL DEFAULT ''",
+        "c_title VARCHAR(255) NOT NULL DEFAULT ''",
         "c_sent INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "c_unsub INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "c_bounce INT(11) UNSIGNED NOT NULL DEFAULT '0'",
@@ -69,7 +69,7 @@ function jrMailer_db_schema()
         "UNIQUE c_unique_idx (c_module, c_unique)",
         "INDEX c_unique (c_unique)"
     );
-    jrCore_db_verify_table('jrMailer', 'campaign', $_tmp);
+    jrCore_db_verify_table('jrMailer', 'campaign', $_tmp, 'InnoDB');
 
     // Open Tracking
     $_tmp = array(
@@ -85,28 +85,27 @@ function jrMailer_db_schema()
         "t_city VARCHAR(64) NOT NULL DEFAULT ''",
         "t_unsub TINYINT(1) NOT NULL DEFAULT '0'",
         "t_agent VARCHAR(512) NOT NULL DEFAULT ''",
-        "t_info VARCHAR(256) NOT NULL DEFAULT ''",
-        "t_infou INT(11) UNSIGNED NOT NULL DEFAULT '0'",
+        "t_info VARCHAR(255) NOT NULL DEFAULT ''",
         "UNIQUE t_id_unique (t_cid, t_uid)",
         "INDEX t_uid (t_uid)",
         "INDEX t_time (t_time)",
         "INDEX t_ip (t_ip)",
+        "INDEX t_lat (t_lat)",
         "INDEX t_country (t_country)",
         "INDEX t_region (t_region)",
         "INDEX t_city (t_city)",
-        "INDEX t_unsub (t_unsub)",
-        "INDEX t_infou (t_infou)"
+        "INDEX t_unsub (t_unsub)"
     );
-    jrCore_db_verify_table('jrMailer', 'track', $_tmp);
+    jrCore_db_verify_table('jrMailer', 'track', $_tmp, 'InnoDB');
 
     // URL Click Tracking
     $_tmp = array(
         "url_id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
         "url_cid INT(11) UNSIGNED NOT NULL DEFAULT '0'",
-        "url_uri VARCHAR(256) NOT NULL DEFAULT ''",
+        "url_uri VARCHAR(244) NOT NULL DEFAULT ''",
         "UNIQUE url_unique_idx (url_cid, url_uri)"
     );
-    jrCore_db_verify_table('jrMailer', 'url', $_tmp);
+    jrCore_db_verify_table('jrMailer', 'url', $_tmp, 'InnoDB');
 
     // URL Click Tracking
     $_tmp = array(
@@ -120,7 +119,7 @@ function jrMailer_db_schema()
         "INDEX click_campaign_id (click_campaign_id)",
         "INDEX click_user_id (click_user_id)"
     );
-    jrCore_db_verify_table('jrMailer', 'click', $_tmp);
+    jrCore_db_verify_table('jrMailer', 'click', $_tmp, 'InnoDB');
 
     // Unsubscribe
     $_tmp = array(
@@ -130,7 +129,7 @@ function jrMailer_db_schema()
         "UNIQUE u_uid (u_uid, u_cid)",
         "INDEX u_time (u_time)"
     );
-    jrCore_db_verify_table('jrMailer', 'unsubscribe', $_tmp);
+    jrCore_db_verify_table('jrMailer', 'unsubscribe', $_tmp, 'InnoDB');
 
     return true;
 }

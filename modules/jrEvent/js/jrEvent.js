@@ -16,7 +16,7 @@ function jrEventAttend(event_id)
         url: url,
         success: function(_msg) {
             if (typeof _msg.error != "undefined") {
-                alert(_msg.error);
+                jrCore_alert(_msg.error);
             }
             else {
                 window.location.reload();
@@ -24,7 +24,7 @@ function jrEventAttend(event_id)
             return true;
         },
         error: function() {
-            alert('a system level error was encountered submitting the request - please try again');
+            jrCore_alert('a system level error was encountered submitting the request - please try again');
             return false;
         }
     });

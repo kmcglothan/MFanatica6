@@ -2,7 +2,7 @@
 /**
  * Jamroom Simple Chat module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -55,6 +55,7 @@ function jrChat_db_schema()
         "room_private TINYINT(1) UNSIGNED NOT NULL DEFAULT '0'",
         "room_public TINYINT(1) UNSIGNED NOT NULL DEFAULT '0'",
         "INDEX room_user_id (room_user_id)",
+        "INDEX room_title (room_title)",
         "INDEX room_public (room_public)"
     );
     jrCore_db_verify_table('jrChat', 'room', $_tmp, 'InnoDB');
@@ -63,6 +64,7 @@ function jrChat_db_schema()
         "slot_id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
         "slot_room_id INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "slot_user_id INT(11) UNSIGNED NOT NULL DEFAULT '0'",
+        "slot_last_id INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "slot_blocked TINYINT(1) UNSIGNED NOT NULL DEFAULT '0'",
         "UNIQUE slot_id_unique (slot_room_id, slot_user_id)",
         "INDEX slot_user_id (slot_user_id)",

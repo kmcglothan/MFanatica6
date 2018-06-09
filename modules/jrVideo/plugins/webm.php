@@ -2,7 +2,7 @@
 /**
  * Jamroom Video module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -39,7 +39,14 @@
 // make sure we are not being called directly
 defined('APP_DIR') or exit();
 
-function jrVideo_webm_decode($input_file,$_options,$error_file)
+/**
+ * Decode an input file
+ * @param string $input_file
+ * @param array $_options
+ * @param string $error_file
+ * @return mixed
+ */
+function jrVideo_webm_decode($input_file, $_options, $error_file)
 {
     return $input_file;
 }

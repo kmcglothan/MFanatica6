@@ -1,0 +1,63 @@
+Audio Pro skin changelog
+
+Version 1.0.14:
+ - Bug Fix: Modified footer.tpl to update social links to work with a full profile URL or just the profile name.
+
+Version 1.0.13
+ - Change: Fixed mobile menu cart link. Modified header.tpl, menu_side.tpl and jrPayment_view_cart_button.tpl
+
+Version 1.0.12
+ - Bug Fix: CSS fox for ul and ol indents and list styles
+ - Bug Fix: Fixed ul padding and margin in player.css
+ - Change: Moved new payment module view cart icon to main menu.
+ - Bug Fix: Profile following link now working correctly (Needs Follower module V1.5.5 or above)
+
+Version 1.0.11
+ - New: Added cart-price class for Payment module. Modified templates: profile.css profile_dark.css
+ - Change: Adjusted PayPal price. Modified temkplate: acp.css
+ - Change: pressing tab to move between fields in forms has been improved
+ - Bug Fix: Fixed PayPal button alignment issue. Modified Templates: profile.css and profile_dark.css
+
+Version 1.0.10
+ - Bug Fix: Can now optionally delete the uploaded profile header image
+ - Bug Fix: User birthdays may be incorrectly displayed
+
+Version 1.0.9:
+ - Change: Added more padding to the top of the mobile side menu
+
+Version 1.0.8:
+ - Bug Fix: Mobile menu had inconsistent behavior
+ - Bug Fix: removed ajax from chart.tpl
+
+Version 1.0.7:
+ - Bug Fix: link from profile side bar to followers not working
+ - Bug Fix: removed ajax from chart.tpl
+
+Version 1.0.6:
+ - New: Added social network icons to footer
+ - New: Added added chart.tpl for top 200 audio files
+ - Change: Improved 30 day chart to support direction icon
+ - Bug Fix: Removed soundcloud support from chart. jrSeamless does not support charts
+ - Bug Fix: Profile menu would behave erratically when resizing page
+
+Version 1.0.5:
+ - Change: Removed option_img_pass class from acp.css
+ - Bug Fix: Register button in index_featured.tpl was not linked to the user signup form.
+ - Bug Fix: Fixed language ID for profile edit icon. Modified profile_header.tpl
+ - Bug Fix: Fixed TinyMCE editor height issue. modified acp.css file.
+
+Version 1.0.4:
+ - Bug Fix: Removed extra body closing tag causing chat room errors.
+
+Version 1.0.3:
+ - New: Added chat.css file.
+ - Bug Fix: Added ilogo class to header.css so profile custom logos do not bleed over the header div.
+
+Version 1.0.2:
+ - New: Added index page SoundCloud support
+
+Version 1.0.1:
+ - Bug Fix: added in missing ajax-loader.gif
+
+Version 1.0.0:
+ - New: Initial Release

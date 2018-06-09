@@ -2,8 +2,7 @@
 /**
  * Jamroom Group Mailer module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2017 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -33,7 +32,7 @@
  * not permitted to limit liability and therefore such limitations
  * may not apply to you.
  *
- * Jamroom 5 jrGroupMailer module - language strings
+ * Jamroom jrGroupMailer module - language strings
  * @copyright 2003 - 2012 by The Jamroom Network - All Rights Reserved
  */
 

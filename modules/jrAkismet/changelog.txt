@@ -1,5 +1,11 @@
 Spam Blocker module changelog
 
+Version 1.2.1:
+ - Change: Updated spam_check module feature to work with a wider range of modules
+
+Version 1.2.0:
+ - New: modules can register for Akismet Spam Checking using the "spam_check" module feature
+
 Version 1.1.4:
  - Bug Fix: Better detection of when content contains actual HTML versus URL scan items
 

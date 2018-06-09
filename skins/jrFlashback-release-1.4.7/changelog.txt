@@ -1,0 +1,244 @@
+Flashback Skin changelog
+
+Version 1.4.7
+ - Change: Replaced all instances of onclick window.location to jrCore_window_location function. Modified templates:
+            index_blogs.tpl, terms_of_service.tpl and privacy_policy.tpl.
+
+Version 1.4.6
+ - New: Added default menu for SiteBuilder. Modified header_menu_desktop.tpl and header_menu_mobile.tpl
+ - Bug Fix: Modified footer.tpl to update social links to work with a full profile URL or just the profile name.
+
+Version 1.4.5
+ - Change: Moved new payment module view cart icon to main menu.
+ - Change: Updated profile Followers section to have a view all link. Modified profile_footer.tpl
+
+Version 1.4.4:
+ - Change: Added check for tablet so mobile menu shows. Modified templates: header.tpl, header_menu_mobile.tpl and footer.tpl
+
+Version 1.4.3:
+ - Change: Fixed padding for chat by line that overlapped the chat text.
+
+Version 1.4.2
+ - New: Added language entries in the en-US.php file for the who is online update.
+ - Change: profile_menu.tpl adjusted to match module version to allow for System Tips to work
+ - Bug Fix: Updated side.tpl to check for logged in users to show the who is online list.
+
+Version 1.4.1:
+ - New: Added chat CSS file for the new chat module.
+ - Change: Changed scroll up to use an icon instead of an image. Templates modified: footer.css, footer.tpl
+
+Version 1.4.0:
+ - New: Page View Count to Artists and Members row template for the "Top" lists.
+ - Change: CSS Updates to line up form elements better in the ACP
+ - Change: Updated profile templates and CSS files to accommodate new video player
+ - Change: Updated CSS files to fix attach file button.
+ - Change: Removed jrSearch_search_results.tpl file from skin directory.
+ - Change: Removed bottom positioning for share this checkbox on timeline form.
+ - Change: Fixed featured profile id variable.
+ - New: Added YouTube and Pinterest social links and images to the footer template.
+
+Version 1.3.5:
+ - Bug Fix: Fixed URL for Google link in the footer.tpl
+
+Version 1.3.4:
+ - Change: Changed footer contact link to a mailto link if the custom from module is not active.
+ - New: Added social icons to the footer
+ - New: Google Ads controlled by skin config settings.
+
+Version 1.3.3:
+ - Bug Fix: Fixed layout on pages with side by side images.
+
+Version 1.3.2:
+ - Bug Fix: Fixed the menu button to be on the same line as the logo image and still work on mobile devices.
+
+Version 1.3.1:
+ - Bug Fix: Added a check for the private notes module around the contact us link.
+ - Template Files:
+   ------------------------------------------------------
+    Modified: footer.tpl
+   ------------------------------------------------------
+
+Version 1.3.0:
+ - New: Added 3 small calendars to the events page.
+ - Change: Replaced chart plays variable with the chart_count variable.
+ - Template Files:
+   ------------------------------------------------------
+    Modified: events.tpl, music_chart_row.tpl,
+              video_chart_row.tpl
+   ------------------------------------------------------
+
+Version 1.2.9:
+ - Change: Updated slide menu to new version
+ - Moved logo down on mobile view.
+ - Template Files Modified:
+   ------------------------------------------------------
+    header.tpl          footer.tpl
+   ------------------------------------------------------
+ - New Version of Javascript file:
+   ------------------------------------------------------
+    contrib/slidebars/slidebars.min.js
+   ------------------------------------------------------
+
+Version 1.2.8:
+ - New: Profile custom logo support
+ - Template Files Modified:
+   ------------------------------------------------------
+    header.tpl
+   ------------------------------------------------------
+
+Version 1.2.7:
+ - Bug Fix: Fixed recently rated box on the profile page
+
+Version 1.2.6:
+ - Bug Fix: Fixed music and video lists to show PayPal button if being used instead of FoxyCart.
+ - Template Files Modified/Added:
+   ------------------------------------------------------
+    music_row.tpl               music_chart_row.tpl
+    videos_row.tpl              video_chart_row.tpl
+   ------------------------------------------------------
+
+Version 1.2.5:
+ - New: Added skin language link to ACP > Skin Settings drop down menu.
+ - PHP Files Modified/Added:
+   ------------------------------------------------------
+    en-US.php
+   ------------------------------------------------------
+ - Template Files Modified/Added:
+   ------------------------------------------------------
+    header_menu_mobile.tpl          header_menu_desktop.tpl
+   ------------------------------------------------------
+
+Version 1.2.4:
+ - Change: Changed main menu to look more fluid.
+ - New: New mobile menu.
+ - New: Added a skin config option for the Events page pagebreak.
+ - New: New scroll to top function.
+ - Bug Fix: Fixed side comments to not have a horizontal scroll.
+ - Change: Fixed debug log and php error log bottom margin and background color.
+ - Change: Fixed front page blog limit and added a pagebreak skin config for the blogs/archive page.
+ - Bug Fix: Fixed layout issues on all pages.
+ - JS Files Modified/Added:
+   ------------------------------------------------------
+    jrFlashback.js                  contrib/slidebars/slidebars.min.js
+   ------------------------------------------------------
+ - PHP Files Modified/Added:
+   ------------------------------------------------------
+    config.php                      en-US.php
+   ------------------------------------------------------
+ - CSS Files Modified/Added:
+   ------------------------------------------------------
+    core_admin_log.css              core_menu.css
+    core_site.css                   core_profile.css
+    core_forum.css                  poll.css
+    mobile_core.css
+   ------------------------------------------------------
+ - Template Files Modified/Added:
+   ------------------------------------------------------
+    header.tpl                      side_comments.tpl
+    events.tp                       blogs.tpl
+    index_blogs.tpl                 galleries.tpl
+    galleries_row.tpl               footer.tpl
+    profile_menu_mobile.tpl         header_menu_mobile.tpl
+    header_menu_desktop.tpl
+   ------------------------------------------------------
+ - Image Files Modified/Added:
+   ------------------------------------------------------
+    menu.png
+   ------------------------------------------------------
+
+Version 1.2.3:
+ - Fixed: Featured Artist section wasn't showing the profiles entered in the skin config.
+ - Fixed: Index blog section wasn't allowing for multiple ID's from the skin config.
+ - File Modified:
+   ------------------------------------------------------
+    config.php              index.tpl
+   ------------------------------------------------------
+
+Version 1.2.2:
+ - New: Added a Jamroom 180x150 banner instead of using the skins icon in the 180x150 Ad space.
+ - File Modified:
+   ------------------------------------------------------
+    side.tpl
+   ------------------------------------------------------
+
+Version 1.2.1:
+ - Change: Centered profile image on the profile page for mobile devices when logged out.
+ - File Modified:
+   ------------------------------------------------------
+    profile_header.tpl
+   ------------------------------------------------------
+
+Version 1.2.0:
+ - Change: Centered profile image on the profile page for mobile devices.
+ - Change: Changed profile name layout for mobile devices.
+ - New: Added System Updates link to the ACP drop down menu.
+ - File Modified:
+   ------------------------------------------------------
+    mobile_core.css             profile_header.tpl
+    en-US.php                   header.tpl
+   ------------------------------------------------------
+
+Version 1.1.12:
+ - New: Added more editable sections skins CSS admin panel area.
+
+Version 1.1.11:
+ - Update to use smarty3 syntax for javascript wrappers
+
+Version 1.1.10:
+ - Change: Updated page-table-jumper style.
+ - File Modified:
+   ------------------------------------------------------
+    core_table.css
+   ------------------------------------------------------
+
+Version 1.1.9:
+ - Change: Updated all skin images to use jrCore_image function instead of img tags.
+ - Change: Added a check on the profile page to see if the jrFollower module is active.
+ - Templates Modified:
+   ------------------------------------------------------
+    blogs.tpl               community_songs.tpl
+    header.tpl              index_blogs.tpl
+    index_channel.tpl       index_radio.tpl
+    music_chart_row.tpl     music_row.tpl
+    side.tpl                song_chart_row.tpl
+    video_chart_row.tpl     profile_header.tpl
+   ------------------------------------------------------
+
+Version 1.1.8:
+ - Change: updated CSS for new actions styles.
+    ------------------------------------------------------
+    CSS File Modified: core_action.css
+    ------------------------------------------------------
+
+Version 1.1.7:
+ - Bug Fix: Gallery URLs could point to incorrect gallery if multiple galleries had the same name
+ - Change: update to use new Title Support in ACP
+
+Version 1.1.6:
+ - Updated CSS files to fix action text colors: core_profile.css, core_action.css
+
+Version 1.1.5:
+ - Updated CSS urls to allow for override by image upload override in the ACP
+
+Version 1.1.4:
+ - Fixed Dasboard link from not showing to site admins: header.tpl, profile_header.tpl
+
+Version 1.1.3:
+ - Fixed events row displaying different link url's for the same event: side_comments.tpl
+ - Updated mobile CSS styles: mobile_core.css
+
+Version 1.1.2:
+ - Fixed Skin Settings link in the header.tpl file to use the active skin variable.
+
+Version 1.1.1:
+ - New: Added download button if price isn't set and download block is turned off.
+
+Version 1.1.0:
+ - Design updates
+
+Version 1.0.2:
+ - New: Added User Online Status to profile page
+
+Version 1.0.0:
+ - Adding new Changelog
+ - Initial Release

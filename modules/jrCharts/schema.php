@@ -51,6 +51,6 @@ function jrCharts_db_schema()
         "UNIQUE chart_unique (chart_date, chart_field)",
         "INDEX chart_field (chart_field)"
     );
-    jrCore_db_verify_table('jrCharts', 'history', $_tmp);
+    jrCore_db_verify_table('jrCharts', 'history', $_tmp, 'InnoDB');
     return true;
 }

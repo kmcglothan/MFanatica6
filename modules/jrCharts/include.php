@@ -47,7 +47,7 @@ function jrCharts_meta()
     $_tmp = array(
         'name'        => 'Advanced Charts',
         'url'         => 'charts',
-        'version'     => '1.0.8',
+        'version'     => '1.0.9',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Add Charting of counts over time to Item Lists',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/274/advanced-charts',
@@ -73,6 +73,9 @@ function jrCharts_init()
     // Delete bad history entries
     jrCore_register_event_listener('jrCore', 'verify_module', 'jrCharts_verify_module_listener');
 
+    // System resets
+    jrCore_register_event_listener('jrDeveloper', 'reset_system', 'jrCharts_reset_system_listener');
+
     // Register our tools
     jrCore_register_module_feature('jrCore', 'tool_view', 'jrCharts', 'get_fields', array('Chart Fields', 'View DataStore fields that can be charted in your system'));
     jrCore_register_module_feature('jrCore', 'javascript', 'jrCharts', true);
@@ -90,6 +93,23 @@ function jrCharts_init()
 //---------------------------------------------------------
 // EVENT LISTENERS
 //---------------------------------------------------------
+
+/**
+ * Cleanup schema on system reset
+ * @param $_data array Array of information from trigger
+ * @param $_user array Current user
+ * @param $_conf array Global Config
+ * @param $_args array additional parameters passed in by trigger caller
+ * @param $event string Triggered Event name
+ * @return array
+ */
+function jrCharts_reset_system_listener($_data, $_user, $_conf, $_args, $event)
+{
+    $tbl = jrCore_db_table_name('jrCharts', 'history');
+    jrCore_db_query("TRUNCATE TABLE {$tbl}");
+    jrCore_db_query("OPTIMIZE TABLE {$tbl}");
+    return $_data;
+}
 
 /**
  * Fix bad count values in history

@@ -43,7 +43,7 @@
                             y = item.datapoint[1];
                         }
                         else {
-                            y = item.datapoint[1].toFixed(3);
+                            y = item.datapoint[1].toFixed({$precision});
                         }
                         if ($(xy).length == 0) {
                             $(tu).html(x +': '+ y).css({ top: item.pageY-38, left: item.pageX-30 }).fadeIn(150);

@@ -1,5 +1,11 @@
 Quota Terms of Service changelog
 
+Version 1.1.0:
+ - New: Updated to prevent user from skipping terms of service agreement by entering a URL directly in the browser
+
+Version 1.0.5:
+ - New: The "Login Direct Page" set in the user module is now respected after agreement to the terms of service
+
 Version 1.0.4:
  - New: adding an event that fires when the Terms of Serivce have been agreed to
 

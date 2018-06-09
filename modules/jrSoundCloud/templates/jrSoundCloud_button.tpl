@@ -50,8 +50,8 @@ $(document).ready(function(){
         <div class="jp-type-single">
             <div class="jp-gui jp-interface">
                 <ul class="jp-controls">
-                    <li><a href="javascript:" class="jp-play" tabindex="1"><img src="{$play_i}" alt="{$play}" title="{$play}" onmouseover="$(this).attr('src','{$play_h}');" onmouseout="$(this).attr('src','{$play_i}');"></a></li>
-                    <li><a href="javascript:" class="jp-pause" tabindex="1"><img src="{$pause_i}" alt="{$pause}" title="{$pause}" onmouseover="$(this).attr('src','{$pause_h}');" onmouseout="$(this).attr('src','{$pause_i}');"></a></li>
+                    <li><a href="javascript:" class="jp-play" tabindex="{jrCore_next_tabindex}"><img src="{$play_i}" alt="{$play}" title="{$play}" onmouseover="$(this).attr('src','{$play_h}');" onmouseout="$(this).attr('src','{$play_i}');"></a></li>
+                    <li><a href="javascript:" class="jp-pause" tabindex="{jrCore_next_tabindex}"><img src="{$pause_i}" alt="{$pause}" title="{$pause}" onmouseover="$(this).attr('src','{$pause_h}');" onmouseout="$(this).attr('src','{$pause_i}');"></a></li>
                 </ul>
             </div>
             <div class="jp-no-solution">

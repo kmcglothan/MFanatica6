@@ -2,7 +2,7 @@
 /**
  * Jamroom DB and System Backup module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -41,6 +41,9 @@
 // make sure we are not being called directly
 defined('APP_DIR') or exit();
 
+use /** @noinspection PhpUndefinedClassInspection */
+    Aws\S3\S3Client;
+
 /**
  * meta
  */
@@ -49,12 +52,12 @@ function jrBackup_meta()
     $_tmp = array(
         'name'        => 'DB and System Backup',
         'url'         => 'backup',
-        'version'     => '1.4.6',
+        'version'     => '2.0.4',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
-        'description' => 'Daily system backup to Amazon S3 and Hourly database backups',
+        'description' => 'Daily and Hourly database and system backups to Amazon S3',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/1510/db-and-system-backup',
         'category'    => 'tools',
-        'requires'    => 'jrCore:6.0.0',
+        'requires'    => 'jrCore:6.0.0,jrAwsSDK',
         'license'     => 'mpl',
         'priority'    => 255, // LOW load priority (we want other listeners to run first)
     );
@@ -70,6 +73,9 @@ function jrBackup_init()
     jrCore_register_event_listener('jrCore', 'daily_maintenance', 'jrBackup_daily_maintenance_listener');
     jrCore_register_event_listener('jrCore', 'hourly_maintenance', 'jrBackup_hourly_maintenance_listener');
     jrCore_register_event_listener('jrCore', 'system_check', 'jrBackup_system_check_listener');
+
+    // When a profile is deleted, we delete the backup set for that profile
+    jrCore_register_event_listener('jrProfile', 'delete_profile', 'jrBackup_delete_profile_listener');
 
     // Tools
     jrCore_register_module_feature('jrCore', 'tool_view', 'jrBackup', 'snapshots', array('Hourly Backup Browser', 'Browse hourly backups of database tables that can be restored'));
@@ -89,6 +95,7 @@ function jrBackup_init()
     // Backup worker
     jrCore_register_queue_worker('jrBackup', 'daily_backup', 'jrBackup_daily_backup_worker', 0, 1, 82800);
     jrCore_register_queue_worker('jrBackup', 'hourly_backup', 'jrBackup_hourly_backup_worker', 0, 1, 3540);
+    jrCore_register_queue_worker('jrBackup', 'delete_profile_backup', 'jrBackup_delete_profile_backup_worker', 0, 1, 900);
     return true;
 }
 
@@ -116,15 +123,7 @@ function jrBackup_daily_backup_worker($_queue)
         }
 
         // Next do profiles
-        $_sc = array(
-            'skip_triggers'       => true,
-            'ignore_pending'      => true,
-            'privacy_check'       => false,
-            'quota_check'         => false,
-            'return_item_id_only' => true,
-            'limit'               => 10000000
-        );
-        $_rt = jrCore_db_search_items('jrProfile', $_sc);
+        $_rt = jrCore_db_get_all_key_values('jrProfile', '_profile_id');
         if ($_rt && is_array($_rt)) {
             foreach ($_rt as $pid) {
                 jrBackup_backup_profile_media($pid);
@@ -178,9 +177,44 @@ function jrBackup_hourly_backup_worker($_queue)
     return true;
 }
 
+/**
+ * Delete profile data from S3 when profile is deleted locally
+ * @param array $_queue The queue entry the worker will receive
+ * @return bool
+ */
+function jrBackup_delete_profile_backup_worker($_queue)
+{
+    global $_conf;
+    if (jrCore_checktype($_queue['profile_id'], 'number_nz')) {
+        $pid = (int) $_queue['profile_id'];
+        $pfx = jrCore_get_media_directory($pid, FORCE_LOCAL);
+        $pfx = str_replace(APP_DIR . '/data/', '', $pfx);
+        $con = jrBackup_S3_connect();
+        $con->deleteMatchingObjects($_conf['jrBackup_bucket'], "{$pfx}/");
+    }
+    return true;
+}
+
 //-------------------
 // EVENT LISTENERS
 //-------------------
+
+/**
+ * Delete profile backup when profile is deleted
+ * @param $_data array incoming data array
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return array
+ */
+function jrBackup_delete_profile_listener($_data, $_user, $_conf, $_args, $event)
+{
+    if (jrBackup_is_s3_configured()) {
+        jrCore_queue_create('jrBackup', 'delete_profile_backup', array('profile_id' => $_data['_item_id']));
+    }
+    return $_data;
+}
 
 /**
  * Check mysql and mysqldump binaries
@@ -220,6 +254,7 @@ function jrBackup_system_check_listener($_data, $_user, $_conf, $_args, $event)
         $dat[3]['title'] = $_args['fail'];
         $dat[4]['title'] = 'mysql binary is not executable';
     }
+
     if ($mys = jrBackup_get_mysqldump_binary()) {
         ob_start();
         system("{$mys} -V >{$tmp} 2>&1", $ret);
@@ -242,8 +277,22 @@ function jrBackup_system_check_listener($_data, $_user, $_conf, $_args, $event)
         $dat[4]['title'] = 'MySQL Tools configured correctly for backups';
     }
     $dat[3]['class'] = 'center';
-
     jrCore_page_table_row($dat);
+    unlink($tmp);
+
+    // Make sure the AWS SDK module is active
+    if (!jrCore_module_is_active('jrAwsSDK')) {
+        $dat             = array();
+        $dat[1]['title'] = 'AWS SDK Module';
+        $dat[1]['class'] = 'center';
+        $dat[2]['title'] = 'active';
+        $dat[2]['class'] = 'center';
+        $dat[3]['title'] = $_args['fail'];
+        $dat[3]['class'] = 'center';
+        $dat[4]['title'] = 'The AWS SDK Module must be installed and active';
+        jrCore_page_table_row($dat);
+    }
+
     return $_data;
 }
 
@@ -259,7 +308,7 @@ function jrBackup_system_check_listener($_data, $_user, $_conf, $_args, $event)
 function jrBackup_daily_maintenance_listener($_data, $_user, $_conf, $_args, $event)
 {
     if (isset($_conf['jrBackup_enabled']) && $_conf['jrBackup_enabled'] == 'on' && jrBackup_is_s3_configured()) {
-        jrCore_queue_create('jrBackup', 'daily_backup', array('backup' => true), 900);
+        jrCore_queue_create('jrBackup', 'daily_backup', array('backup' => true), 900, null, 1);
     }
     return $_data;
 }
@@ -276,7 +325,7 @@ function jrBackup_daily_maintenance_listener($_data, $_user, $_conf, $_args, $ev
 function jrBackup_hourly_maintenance_listener($_data, $_user, $_conf, $_args, $event)
 {
     if (isset($_conf['jrBackup_hourly']) && $_conf['jrBackup_hourly'] == 'on') {
-        jrCore_queue_create('jrBackup', 'hourly_backup', array('backup' => true), 600);
+        jrCore_queue_create('jrBackup', 'hourly_backup', array('backup' => true), 600, null, 1);
     }
     return $_data;
 }
@@ -284,6 +333,31 @@ function jrBackup_hourly_maintenance_listener($_data, $_user, $_conf, $_args, $e
 //-------------------
 // FUNCTIONS
 //-------------------
+
+/**
+ * Setup an S3 Client connect object
+ * @return mixed
+ */
+function jrBackup_S3_connect()
+{
+    global $_conf;
+    // Bring in AWS SDK
+    if (!class_exists('S3Client')) {
+        require_once APP_DIR . '/modules/jrAwsSDK/contrib/aws/aws-autoloader.php';
+    }
+    try {
+        /** @noinspection PhpUndefinedClassInspection */
+        $cf = S3Client::factory(array(
+            'key'    => $_conf['jrBackup_access_key'],
+            'secret' => $_conf['jrBackup_secret_key']
+        ));
+        return $cf;
+    }
+        /** @noinspection PhpUndefinedClassInspection */
+    catch (Aws\S3\Exception\S3Exception $e) {
+        return false;
+    }
+}
 
 /**
  * Get full path of working mysql binary
@@ -414,11 +488,9 @@ function jrBackup_snapshot_tables($modal = false)
         $now = strftime('%Y%m%d%H%M');
         foreach ($_rt as $tbl) {
 
-            // Some tables we do NOT backup
+            // Some tables we do not need to backup
             $tbl = reset($tbl);
             switch ($tbl) {
-                case 'jr_jrcore_log':
-                case 'jr_jrcore_log_debug':
                 case 'jr_jrcore_cache':
                 case 'jr_jrcore_form_session':
                 case 'jr_jrcore_modal':
@@ -455,6 +527,9 @@ function jrBackup_is_s3_configured()
     elseif (!isset($_conf['jrBackup_bucket']{0})) {
         return false;
     }
+    elseif (!jrCore_module_is_active('jrAwsSDK')) {
+        return false;
+    }
     return true;
 }
 
@@ -466,33 +541,42 @@ function jrBackup_remove_old_files()
 {
     global $_conf;
     @ini_set('memory_limit', '1024M');
-    require_once APP_DIR . "/modules/jrBackup/contrib/S3/S3.php";
-    S3::setAuth($_conf['jrBackup_access_key'], $_conf['jrBackup_secret_key']);
-    $_fl = S3::getBucket($_conf['jrBackup_bucket']);
+
     $_rt = array();
     $old = (time() - (8 * 86400));
-    if (is_array($_fl)) {
-        foreach ($_fl as $file => $_inf) {
-            // table.date.sql
-            // modules.date.[zip|tar]
-            // skins.date.[zip|tar]
-            if (substr_count($_inf['name'], '.') === 2) {
-                list(, $date,) = explode('.', $_inf['name'], 3);
-                if (strlen($date) === 8 && strpos($date, '2') === 0) {
+    $con = jrBackup_S3_connect();
+    foreach (array('jr_', 'modules.', 'skins.') as $pfx) {
+        try {
+            $_files = $con->listObjects(array(
+                'Bucket' => $_conf['jrBackup_bucket'],
+                'Prefix' => $pfx
+            ));
+        }
+            /** @noinspection PhpUndefinedClassInspection */
+        catch (Aws\S3\Exception\S3Exception $e) {
+            // No SQL files
+            continue;
+        }
+        /** @noinspection PhpUndefinedMethodInspection */
+        $_files = $_files->toArray();
+        if ($_files && isset($_files['Contents']) && is_array($_files['Contents'])) {
+            foreach ($_files['Contents'] as $_file) {
+                if (strpos($_file['Key'], '.sql')) {
+                    list(, $date,) = explode('.', $_file['Key'], 3);
                     $y = substr($date, 0, 4);
                     $m = substr($date, 4, 2);
                     $d = substr($date, 6, 2);
                     $e = strtotime("{$m}/{$d}/{$y}");
                     if ($e && $e < $old) {
-                        jrBackup_delete_s3_file($_inf['name']);
-                        $_rt[] = $_inf['name'];
+                        jrBackup_delete_s3_file($_file['Key']);
+                        $_rt[] = $_file['Key'];
                     }
                 }
             }
         }
-        if (count($_rt) > 0) {
-            jrCore_logger('INF', "DB backup succesfully deleted " . count($_rt) . " outdated backup files", $_rt);
-        }
+    }
+    if (count($_rt) > 0) {
+        jrCore_logger('INF', "DB backup succesfully deleted " . count($_rt) . " outdated backup files", $_rt);
     }
     return true;
 }
@@ -577,8 +661,18 @@ function jrBackup_table_export($table, $output_file = null, $compress = false)
         $fil = "{$fil}.gz";
         $add = ' | gzip';
     }
+    // Some tables we can dump just the structure for
+    $xtr = '';
+    switch ($table) {
+        case 'jr_jrcore_cache':
+        case 'jr_jrcore_form_session':
+        case 'jr_jrcore_modal':
+        case 'jr_jrcore_play_key':
+            $xtr = ' --no-data';
+            break;
+    }
     ob_start();
-    system("{$mysqldump} --user=" . escapeshellarg($_conf['jrCore_db_user']) . " --password=" . escapeshellarg($_conf['jrCore_db_pass']) . " --compact --lock-tables=false --single-transaction --extended-insert --add-drop-table --quick " . escapeshellarg($_conf['jrCore_db_name']) . " {$table}{$add} >{$fil}", $ret);
+    system("{$mysqldump}{$xtr} --user=" . escapeshellarg($_conf['jrCore_db_user']) . " --password=" . escapeshellarg($_conf['jrCore_db_pass']) . " --compact --lock-tables=false --single-transaction --extended-insert --add-drop-table --quick " . escapeshellarg($_conf['jrCore_db_name']) . " {$table}{$add} >{$fil}", $ret);
     ob_end_clean();
     if (is_file($fil)) {
         return $fil;
@@ -622,13 +716,20 @@ function jrBackup_table_import($table, $file)
 function jrBackup_delete_s3_file($remote_name)
 {
     global $_conf;
-    if (!jrBackup_is_s3_configured()) {
-        jrCore_logger('CRI', "AWS is not configured properly - unable to backup profile");
+    $cf = jrBackup_S3_connect();
+    try {
+        $cf->deleteObject(array(
+            'Bucket' => $_conf['jrBackup_bucket'],
+            'Key'    => $remote_name
+        ));
+    }
+        /** @noinspection PhpUndefinedClassInspection */
+    catch (Aws\S3\Exception\S3Exception $e) {
+        // Unable to delete file on S3
+        jrCore_logger('CRI', "Backup: error deleting file from S3: " . basename($remote_name) . ', ' . $e->getMessage(), $e);
         return false;
     }
-    require_once APP_DIR . "/modules/jrBackup/contrib/S3/S3.php";
-    S3::setAuth($_conf['jrBackup_access_key'], $_conf['jrBackup_secret_key']);
-    return S3::deleteObject($_conf['jrBackup_bucket'], $remote_name);
+    return true;
 }
 
 /**
@@ -640,26 +741,39 @@ function jrBackup_delete_s3_file($remote_name)
 function jrBackup_copy_file_to_s3($local_file, $remote_name)
 {
     global $_conf;
-    if (!jrBackup_is_s3_configured()) {
-        jrCore_logger('CRI', "AWS is not configured properly - unable to backup profile");
+    $cf = jrBackup_S3_connect();
+    try {
+        $cf->putObject(array(
+            'ACL'        => 'private',
+            'SourceFile' => $local_file,
+            'Bucket'     => $_conf['jrBackup_bucket'],
+            'Key'        => $remote_name
+        ));
+    }
+        /** @noinspection PhpUndefinedClassInspection */
+    catch (Aws\S3\Exception\S3Exception $e) {
+        // Unable to upload the file to S3
+        jrCore_logger('CRI', "Backup: error uploading file to S3: " . basename($remote_name) . ', ' . $e->getMessage(), $e);
         return false;
     }
-    require_once APP_DIR . "/modules/jrBackup/contrib/S3/S3.php";
-    S3::setAuth($_conf['jrBackup_access_key'], $_conf['jrBackup_secret_key']);
-    return S3::putObject(S3::inputFile($local_file, false), $_conf['jrBackup_bucket'], $remote_name, S3::ACL_PRIVATE, array(), array(), S3::STORAGE_CLASS_RRS);
+    return true;
 }
 
 /**
  * Backup modules and skins to S3
+ * @param bool $modal
  * @return bool
  */
-function jrBackup_backup_modules_and_skins()
+function jrBackup_backup_modules_and_skins($modal = false)
 {
     $dat = strftime('%Y%m%d');
     $old = strftime('%Y%m%d', (time() - (8 * 86400)));
     $cdr = jrCore_get_module_cache_dir('jrBackup');
 
     // First do modules
+    if ($modal) {
+        jrCore_form_modal_notice('update', "building module file list for backup...");
+    }
     $cwd = getcwd();
     $_fl = array();
     foreach (jrCore_get_directory_files(APP_DIR . '/modules') as $file => $ignore) {
@@ -668,10 +782,22 @@ function jrBackup_backup_modules_and_skins()
     chdir(APP_DIR . '/modules');
     jrCore_create_tar_archive("{$cdr}/modules.{$dat}.tar", $_fl);
     chdir($cwd);
+    if ($modal) {
+        jrCore_form_modal_notice('update', "created " . jrCore_format_size(filesize("{$cdr}/modules.{$dat}.tar")) . " modules.{$dat}.tar containing " . jrCore_number_format(count($_fl)) . ' files');
+    }
 
+    if ($modal) {
+        jrCore_form_modal_notice('update', "copying modules.{$dat}.tar to S3...");
+    }
     jrBackup_copy_file_to_s3("{$cdr}/modules.{$dat}.tar", "modules.{$dat}.tar");
+    if ($modal) {
+        jrCore_form_modal_notice('update', "modules.{$dat}.tar successfully coped to S3");
+    }
 
     // Next do skins
+    if ($modal) {
+        jrCore_form_modal_notice('update', "building skin file list for backup...");
+    }
     $_fl = array();
     foreach (jrCore_get_directory_files(APP_DIR . '/skins') as $file => $ignore) {
         $_fl[] = str_replace(APP_DIR . '/skins/', '', $file);
@@ -679,8 +805,18 @@ function jrBackup_backup_modules_and_skins()
     chdir(APP_DIR . '/skins');
     jrCore_create_tar_archive("{$cdr}/skins.{$dat}.tar", $_fl);
     chdir($cwd);
+    if ($modal) {
+        jrCore_form_modal_notice('update', "created " . jrCore_format_size(filesize("{$cdr}/skins.{$dat}.tar")) . " skins.{$dat}.tar containing " . jrCore_number_format(count($_fl)) . ' files');
+    }
 
+    if ($modal) {
+        jrCore_form_modal_notice('update', "copying skins.{$dat}.tar to S3...");
+    }
     jrBackup_copy_file_to_s3("{$cdr}/skins.{$dat}.tar", "skins.{$dat}.tar");
+    if ($modal) {
+        jrCore_form_modal_notice('update', "skins.{$dat}.tar successfully coped to S3");
+        jrCore_form_modal_notice('update', "deleting expired S3 backups for {$old}");
+    }
 
     // Delete old ones on S3
     jrBackup_delete_s3_file("modules.{$old}.tar");
@@ -701,13 +837,20 @@ function jrBackup_backup_modules_and_skins()
 function jrBackup_copy_s3_to_file($remote_name, $local_file)
 {
     global $_conf;
-    if (!jrBackup_is_s3_configured()) {
-        jrCore_logger('CRI', "AWS is not configured properly - unable to copy file");
+    $cf = jrBackup_S3_connect();
+    try {
+        $cf->getObject(array(
+            'Bucket' => $_conf['jrBackup_bucket'],
+            'Key'    => $remote_name,
+            'SaveAs' => $local_file
+        ));
+    }
+        /** @noinspection PhpUndefinedClassInspection */
+    catch (Aws\S3\Exception\S3Exception $e) {
+        jrCore_logger('CRI', "Backup: error downloading file from S3: {$remote_name}, " . $e->getMessage(), $e);
         return false;
     }
-    require_once APP_DIR . "/modules/jrBackup/contrib/S3/S3.php";
-    S3::setAuth($_conf['jrBackup_access_key'], $_conf['jrBackup_secret_key']);
-    return S3::getObject($_conf['jrBackup_bucket'], $remote_name, $local_file);
+    return true;
 }
 
 /**
@@ -723,13 +866,13 @@ function jrBackup_backup_profile_media($profile_id)
     $cnt = 0;
     $cdr = jrCore_get_media_directory($profile_id, FORCE_LOCAL);
     $_fl = jrCore_get_directory_files($cdr);
-    if (isset($_fl) && is_array($_fl)) {
+    if ($_fl && is_array($_fl)) {
         // Next - grab existing backup info
         $_s3 = jrBackup_get_profile_bucket_files($profile_id);
         foreach ($_fl as $file => $fname) {
             // See if we need to upload this file
             $rname = str_replace(APP_DIR . '/data/', '', $file);
-            if (!is_array($_s3) || !isset($_s3[$rname]) || $_s3[$rname]['size'] != filesize($file)) {
+            if (!is_array($_s3) || !isset($_s3[$rname]) || $_s3[$rname]['Size'] != filesize($file)) {
                 jrBackup_copy_file_to_s3($file, $rname);
             }
             $cnt++;
@@ -746,15 +889,32 @@ function jrBackup_backup_profile_media($profile_id)
 function jrBackup_get_profile_bucket_files($profile_id)
 {
     global $_conf;
-    if (!jrBackup_is_s3_configured()) {
-        jrCore_logger('CRI', "AWS is not configured properly - unable to list files for profile");
+    $pfx = jrCore_get_media_directory($profile_id, FORCE_LOCAL);
+    $pfx = str_replace(APP_DIR . '/data/', '', $pfx);
+    $con = jrBackup_S3_connect();
+    try {
+        $_files = $con->listObjects(array(
+            'Bucket' => $_conf['jrBackup_bucket'],
+            'Prefix' => $pfx . '/'
+        ));
+    }
+        /** @noinspection PhpUndefinedClassInspection */
+    catch (Aws\S3\Exception\S3Exception $e) {
+        // No files for profile
         return false;
     }
-    require_once APP_DIR . "/modules/jrBackup/contrib/S3/S3.php";
-    $cdr = jrCore_get_media_directory($profile_id, FORCE_LOCAL);
-    $pfx = str_replace(APP_DIR . '/data/', '', $cdr);
-    S3::setAuth($_conf['jrBackup_access_key'], $_conf['jrBackup_secret_key']);
-    return S3::getBucket($_conf['jrBackup_bucket'], $pfx . '/');
+    if ($_files) {
+        /** @noinspection PhpUndefinedMethodInspection */
+        $_files = $_files->toArray();
+        if (is_array($_files) && isset($_files['Contents'])) {
+            $_fl = array();
+            foreach ($_files['Contents'] as $f) {
+                $_fl["{$f['Key']}"] = $f;
+            }
+            return $_fl;
+        }
+    }
+    return false;
 }
 
 /**
@@ -764,25 +924,27 @@ function jrBackup_get_profile_bucket_files($profile_id)
  */
 function jrBackup_restore_profile_media($profile_id)
 {
+    global $_conf;
     if (!jrCore_checktype($profile_id, 'number_nz')) {
         return false;
     }
-    if (!isset($_conf['jrCore_file_perms'])) {
-        $_conf['jrCore_file_perms'] = 0644;
-    }
     $cnt = 0;
-    // get list of files in backup S3 bucket
-    $_s3 = jrBackup_get_profile_bucket_files($profile_id);
-    if (isset($_s3) && is_array($_s3)) {
-        // [media/1/1/jrYouTube_22_youtube_file.pdf] => Array
-        //    [name] => media/1/1/jrYouTube_22_youtube_file.pdf
-        //    [time] => 1375462634
-        //    [size] => 88876
-        //    [hash] => 3144362f61b17a7417a962748b08cbe6
-        foreach ($_s3 as $_inf) {
-            $lname = APP_DIR . "/data/{$_inf['name']}";
-            if (!is_file($lname) || filesize($lname) != $_inf['size']) {
-                jrBackup_copy_s3_to_file($_inf['name'], $lname);
+
+    // get list of files in backup S3 bucket for profile
+    $_files = jrBackup_get_profile_bucket_files($profile_id);
+    if ($_files && is_array($_files)) {
+        // [modules.20171229.tar] => Array
+        // (
+        //    [Key] => modules.20171229.tar
+        //    [LastModified] => 2017-12-29T20:32:10.000Z
+        //    [ETag] => "bcd087d65dd7f0a42e9862ad7982fb91"
+        //    [Size] => 180686848
+        //    [StorageClass] => STANDARD
+        // )
+        foreach ($_files as $_file) {
+            $lname = APP_DIR . "/data/{$_file['Key']}";
+            if (!is_file($lname) || filesize($lname) != $_file['Size']) {
+                jrBackup_copy_s3_to_file($_file['Key'], $lname);
                 chmod($lname, $_conf['jrCore_file_perms']);
             }
             $cnt++;

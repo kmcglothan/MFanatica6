@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -120,6 +120,23 @@ function test_jrCore_checktype()
         'me+plussign@somewhere.net'                => true,
         '"quote"@example.com'                      => true,
         "\"Attacker\\' -Param2 -Param3\"@test.com" => false
+    );
+    $num = 1;
+    foreach ($_ch as $string => $result) {
+        jrUnitTest_init_test("Checktype {$chk} test " . $num);
+        $tmp = jrCore_checktype($string, $chk);
+        if ($tmp != $result) {
+            jrUnitTest_exit_with_error('incorrect result');
+        }
+        $num++;
+    }
+
+    // url
+    $chk = 'url';
+    $_ch = array(
+        'htt://whatever.com'                                                                                                                                                   => false,
+        'http://www.whatever.com'                                                                                                                                              => true,
+        'https://www.googleapis.com/youtube/v3/search?channelId=UCCMSNyHCcSvdYyUuV3FXRCQ&part=snippet,id&key=AIzaSyA8ZNBVP9kcH3XFnU0FiNxEakZWX17hxak&order=date&maxResults=50' => true
     );
     $num = 1;
     foreach ($_ch as $string => $result) {

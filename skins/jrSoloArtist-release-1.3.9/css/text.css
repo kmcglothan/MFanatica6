@@ -1,0 +1,128 @@
+/*
+ * Jamroom 5 SoloArtist CSS
+ * Copyright 2003-2011 by Talldude Networks, LLC.
+ * @author Brian Johnson - brian@talldude.net
+ */
+
+/* @title Rank */
+/* @help This is the ranking number */
+.rank {
+    text-align: center;
+	font-weight:bold;
+	font-size:24px;
+    padding:3px;
+    color:#606060;
+}
+
+/* @title Normal */
+/* @help This is the regular body text */
+.normal {
+	font-size:12px;
+    color:#606060;
+}
+/* @title Hilited */
+/* @help This is the hilite text */
+.hilite {
+	font-size:12px;
+	font-weight:bold;
+    color:#920B0C;
+}
+/* @title Hilited 2 */
+/* @help This is the hilite2 text */
+.hilite2 {
+	font-size:12px;
+    color:#CCC;
+}
+/* @title Media Title */
+/* @help This is the Media Title text. */
+.media_title {
+    color:#FFF;
+	text-transform:capitalize;
+	font-size:12px;
+	font-weight:bold;
+}
+/* @title Media Title Link */
+/* @help This is the Media Title link text */
+.media_title a {
+    color:#D61D1E;
+    text-decoration:none;
+}
+/* @title Media Title Hover */
+/* @help This is the Media Title hover text */
+.media_title a:hover {
+    color:#606060;
+    text-decoration:none;
+}
+/* Tag Cloud fonts */
+
+div.jqcloud {
+    font-family:Verdana,sans-serif;
+    font-size: 10px;
+    line-height: normal;
+}
+
+div.jqcloud a {
+    font-size: inherit;
+    text-decoration: none;
+}
+
+div.jqcloud span.w10 { font-size: 550%; }
+div.jqcloud span.w9 { font-size: 500%; }
+div.jqcloud span.w8 { font-size: 450%; }
+div.jqcloud span.w7 { font-size: 400%; }
+div.jqcloud span.w6 { font-size: 350%; }
+div.jqcloud span.w5 { font-size: 300%; }
+div.jqcloud span.w4 { font-size: 250%; }
+div.jqcloud span.w3 { font-size: 200%; }
+div.jqcloud span.w2 { font-size: 150%; }
+div.jqcloud span.w1 { font-size: 100%; }
+
+/* Tag Cloud colors */
+
+div.jqcloud { color: #ffe4e1; }
+div.jqcloud a { color: inherit; }
+div.jqcloud a:hover { color: #606060; }
+div.jqcloud a:hover { color: #606060; }
+div.jqcloud span.w10 { color: #ff0000; }
+div.jqcloud span.w9 { color: #ff0000; }
+div.jqcloud span.w8 { color: #ff0000; }
+div.jqcloud span.w7 { color: #920b0c; }
+div.jqcloud span.w6 { color: #d80b0c; }
+div.jqcloud span.w5 { color: #e50b0c; }
+div.jqcloud span.w4 { color: #ef0b0c; }
+div.jqcloud span.w3 { color: #ca0b0c; }
+div.jqcloud span.w2 { color: #b00b0c; }
+div.jqcloud span.w1 { color: #ba0b0c; }
+
+.tag_name_box {
+    float:left;
+    background-color:#000;
+    border-width:1px;
+    border-color:#920B0C;
+    border-style:solid;
+    border-radius:4px;
+    padding:3px 9px;
+    margin:6px 6px 0 0;
+    font-size:12px;
+    text-transform:uppercase;
+}
+.tag_name_box a {
+    color:#FFF;
+    text-decoration:none;
+}
+.tag_name_box a:hover {
+    color:#606060;
+    text-decoration:none;
+}
+.tag_name_box:hover {
+    background-color:#000;
+}
+#tag_cloud {
+    background-color: #920B0C;
+    color:#FFF;
+    border-radius:5px; /* @ignore */
+}
+#tag_cloud:hover {
+    background-color: #606060;
+    color:#FFF;
+}

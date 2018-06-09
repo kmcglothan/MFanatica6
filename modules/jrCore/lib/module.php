@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -44,6 +44,149 @@
 defined('APP_DIR') or exit();
 
 /**
+ * Load the local data/config/config.php file and set some defaults
+ * @param bool $reload
+ * @return bool
+ */
+function jrCore_load_config_file_and_defaults($reload = false)
+{
+    global $_conf;
+    if ($reload) {
+        clearstatcache();
+        if (function_exists('opcache_invalidate')) {
+            opcache_invalidate(APP_DIR . '/data/config/config.php');
+        }
+        $_conf = array();
+    }
+    // Bring in local config
+    if (!@require APP_DIR . '/data/config/config.php') {
+        if (is_file(APP_DIR . '/install.php')) {
+            header("Location: " . jrCore_get_base_url() . "/install.php");
+            exit;
+        }
+        jrCore_notice('ERROR', "unable to open config.php");
+        exit;
+    }
+
+    // Some core config
+    $_conf['jrCore_base_url'] = (isset($_conf['jrCore_base_url']{1})) ? rtrim($_conf['jrCore_base_url'], '/') : jrCore_get_base_url();
+    $_conf['jrCore_base_dir'] = APP_DIR;
+
+    // Check for SSL...
+    if (strpos($_conf['jrCore_base_url'], 'http:') === 0 && !empty($_SERVER['HTTPS'])) {
+        $_conf['jrCore_base_url'] = 'https://' . substr($_conf['jrCore_base_url'], 7);
+    }
+
+    // Set core directory and file permissions
+    if (!isset($_conf['jrCore_dir_perms'])) {
+        $_conf['jrCore_dir_perms']  = 0755;
+        $_conf['jrCore_file_perms'] = 0644;
+    }
+
+    // We have to set a default cache seconds here as the DB $_conf is NOT loaded yet!
+    if (!isset($_conf['jrCore_default_cache_seconds'])) {
+        $_conf['jrCore_default_cache_seconds'] = 3600;
+    }
+
+    // Do we have a custom config based on the incoming HOST_NAME?
+    // [HTTP_HOST] => brian.jamroom.net
+    $_conf['jrCore_custom_domain_loaded'] = false;
+    if (!empty($_conf['jrCore_multi_domain']) && $_conf['jrCore_multi_domain'] == 'on' && !empty($_SERVER['HTTP_HOST'])) {
+        $hst = trim($_SERVER['HTTP_HOST']);
+        $dir = jrCore_str_to_lower(str_ireplace('www.', '', substr($hst, 0, 1)));
+        if (is_file(APP_DIR . "/data/domains/{$dir}/{$hst}/config/config.php")) {
+            if (!@require APP_DIR . "/data/domains/{$dir}/{$hst}/config/config.php") {
+                jrCore_notice('ERROR', "error opening custom domain config.php");
+                exit;
+            }
+            $_conf['jrCore_custom_domain_loaded'] = $hst;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Initialize $_conf, $_mods and $_urls
+ * @return bool
+ */
+function jrCore_init_conf_mods_and_urls()
+{
+    global $_conf, $_mods, $_urls;
+    // Get modules
+    $tbl   = jrCore_db_table_name('jrCore', 'module');
+    $req   = "SELECT * FROM {$tbl} ORDER BY module_priority ASC";
+    $_mods = jrCore_db_query($req, 'module_directory');
+    if (!$_mods || !is_array($_mods)) {
+        jrCore_notice('Error', "unable to initialize modules - verify installation");
+    }
+
+    // Get settings
+    $tbl = jrCore_db_table_name('jrCore', 'setting');
+    if (is_array($_conf) && isset($_conf['jrCore_active_skin']{1})) {
+        $add = "`module` = '{$_conf['jrCore_active_skin']}'";
+    }
+    else {
+        $add = "`module` = (SELECT `value` FROM {$tbl} WHERE `module` = 'jrCore' AND `name` = 'active_skin')";
+    }
+    $req = "SELECT CONCAT_WS('_', `module`, `name`) AS k, `value` AS v FROM {$tbl} WHERE (`module` IN('" . implode("','", array_keys($_mods)) . "') OR {$add})";
+    $_cf = jrCore_db_query($req, 'k', false, 'v');
+    if (!$_cf || !is_array($_cf)) {
+        jrCore_notice('Error', "unable to initialize settings - verify installation");
+    }
+
+    $_back = $_conf;
+    $_conf = array_merge($_conf, $_cf);
+    // Are we changing skin using config.php?
+    if (isset($_back['jrCore_active_skin'])) {
+        $_conf['jrCore_active_skin'] = $_back['jrCore_active_skin'];
+    }
+    $_conf['jrCore_default_cache_seconds'] = $_cf['jrCore_default_cache_seconds'];
+    unset($_back, $_cf);
+
+    $_ina = array();
+    foreach ($_mods as $k => $v) {
+        $_urls["{$v['module_url']}"] = $k;
+        if ($k != 'jrCore') {
+            // jrCore is already included ;)
+            // If this module is NOT active, we add it to our inactive list of modules
+            // so we can check in the next loop down any module dependencies
+            if ($v['module_active'] != '1') {
+                $_ina[$k] = 1;
+            }
+            else {
+                // Error redirect here for users that simply try to delete a module
+                // by removing the module directory BEFORE removing the module from the DB!
+                if ((@include_once APP_DIR . "/modules/{$k}/include.php") === false) {
+                    // Bad module
+                    unset($_mods[$k], $_urls["{$v['module_url']}"]);
+                }
+            }
+        }
+    }
+
+    // init active modules
+    foreach ($_mods as $k => $v) {
+        if ($k != 'jrCore' && $v['module_active'] == '1') {
+            if (isset($v['requires']{0})) {
+                // We have a module that depends on another module to be active
+                foreach (explode(',', trim($v['requires'])) as $req_mod) {
+                    if (isset($_ina[$req_mod])) {
+                        continue 2;
+                    }
+                }
+            }
+            $func = "{$k}_init";
+            if (function_exists($func)) {
+                $func();
+            }
+            $_mods[$k]['module_initialized'] = 1;
+        }
+    }
+    return true;
+}
+
+/**
  * Get meta data for a module
  * @param string $module module string module name
  * @return mixed returns metadata/key if found, false if not
@@ -63,7 +206,7 @@ function jrCore_module_meta_data($module)
         }
     }
     $_tmp = $func();
-    if (isset($_tmp) && is_array($_tmp)) {
+    if ($_tmp && is_array($_tmp)) {
         return $_tmp;
     }
     return false;
@@ -88,9 +231,7 @@ function jrCore_module_is_active($module)
 function jrCore_run_module_function($func)
 {
     if (function_exists($func)) {
-        if (func_num_args() > 0) {
-            return call_user_func_array($func, array_slice(func_get_args(), 1));
-        }
+        return call_user_func_array($func, array_slice(func_get_args(), 1));
     }
     return false;
 }
@@ -184,8 +325,10 @@ function jrCore_validate_module_schema($mod)
     if (!jrCore_get_flag($key)) {
 
         if (is_file(APP_DIR . "/modules/{$mod}/schema.php")) {
-            require_once APP_DIR . "/modules/{$mod}/schema.php";
             $func = "{$mod}_db_schema";
+            if (!function_exists($func)) {
+                require_once APP_DIR . "/modules/{$mod}/schema.php";
+            }
             if (function_exists($func)) {
                 $func();
             }
@@ -209,6 +352,26 @@ function jrCore_validate_module_schema($mod)
 }
 
 /**
+ * Validate a module config.php file
+ * @param string $mod
+ * @return bool
+ */
+function jrCore_validate_module_config($mod)
+{
+    // config
+    if (is_file(APP_DIR . "/modules/{$mod}/config.php")) {
+        $func = "{$mod}_config";
+        if (!function_exists($func)) {
+            require_once APP_DIR . "/modules/{$mod}/config.php";
+        }
+        if (function_exists($func)) {
+            $func();
+        }
+    }
+    return true;
+}
+
+/**
  * Check for and install new modules
  * @return bool Returns true
  */
@@ -217,7 +380,7 @@ function jrCore_install_new_modules()
     global $_mods, $_urls;
     // We need to also go through the file system and look for modules
     // that are not installed and set them up in inactive state
-    $reload = false;
+    $_new = array();
 
     if ($h = opendir(APP_DIR . '/modules')) {
         while (($file = readdir($h)) !== false) {
@@ -225,14 +388,14 @@ function jrCore_install_new_modules()
                 continue;
             }
             if (!isset($_mods[$file]) && is_file(APP_DIR . "/modules/{$file}/include.php")) {
-                jrCore_verify_module($file);
-                $reload = true;
+                jrCore_verify_module($file, null, true);
+                $_new[] = jrCore_db_escape($file);
             }
         }
     }
-    if ($reload) {
+    if (count($_new) > 0) {
         $tbl = jrCore_db_table_name('jrCore', 'module');
-        $req = "SELECT * FROM {$tbl} ORDER BY FIELD(module_directory,'jrCore') ASC, module_priority ASC";
+        $req = "SELECT * FROM {$tbl} WHERE module_directory IN ('" . implode("','", $_new) . "')";
         $_rt = jrCore_db_query($req, 'NUMERIC');
         if ($_rt && is_array($_rt)) {
             // Include...
@@ -251,9 +414,11 @@ function jrCore_install_new_modules()
  * Verify a module is installed properly
  * @param string $module Module to verify
  * @param string $version Version to verify
+ * @param bool $db_only
+ * @param bool $install_mod set to FALSE to not run install.php scripts
  * @return bool Returns true
  */
-function jrCore_verify_module($module, $version = null)
+function jrCore_verify_module($module, $version = null, $db_only = false, $install_mod = true)
 {
     global $_mods;
     @ini_set('memory_limit', '512M');
@@ -278,9 +443,10 @@ function jrCore_verify_module($module, $version = null)
         jrCore_logger('CRI', "invalid module: {$module} - required meta function does not exist");
         return false;
     }
-
     // Make sure our Core schema is updated first if not done yet
-    jrCore_validate_module_schema('jrCore');
+    if (!$db_only) {
+        jrCore_validate_module_schema('jrCore');
+    }
 
     $_mod = $func();
     if (!is_null($version) && substr_count($version, '.') === 2) {
@@ -302,7 +468,7 @@ function jrCore_verify_module($module, $version = null)
     // Setup module in module table
     $pri = (isset($_mod['priority'])) ? intval($_mod['priority']) : 100;
     $mod = jrCore_db_escape($module);
-    $ver = jrCore_db_escape($_mod['version']);
+    $ver = jrCore_get_local_module_version($module);
     $dev = jrCore_db_escape(substr($_mod['developer'], 0, 128));
     $nam = jrCore_db_escape(substr($_mod['name'], 0, 256));
     $dsc = jrCore_db_escape(substr($_mod['description'], 0, 1024));
@@ -412,24 +578,27 @@ function jrCore_verify_module($module, $version = null)
         jrCore_set_flag('verify_module_state', 'installed');
     }
 
+    // Are we only setting this module up in the DB?  This will be TRUE for modules
+    // that are NOT installed in the system yet - we want to get them into the DB so
+    // they show in the mod list - they will have the schema validated when activated
+    if ($db_only) {
+        return true;
+    }
+
     // schema
     jrCore_validate_module_schema($module);
 
     // config
-    if (is_file(APP_DIR . "/modules/{$module}/config.php")) {
-        require_once APP_DIR . "/modules/{$module}/config.php";
-        $func = "{$module}_config";
-        if (function_exists($func)) {
-            $func();
-        }
-    }
+    jrCore_validate_module_config($module);
 
     // quota
     $_quota = jrCore_get_registered_module_features('jrCore', 'quota_support');
     if (isset($_quota[$module]) || is_file(APP_DIR . "/modules/{$module}/quota.php")) {
         if (is_file(APP_DIR . "/modules/{$module}/quota.php")) {
-            require_once APP_DIR . "/modules/{$module}/quota.php";
             $func = "{$module}_quota_config";
+            if (!function_exists($func)) {
+                require_once APP_DIR . "/modules/{$module}/quota.php";
+            }
             if (function_exists($func)) {
                 $func();
             }
@@ -518,29 +687,6 @@ function jrCore_verify_module($module, $version = null)
             );
             jrProfile_register_quota_setting($module, $_tmp);
         }
-
-        // See if we have other modules registering settings for this module's Quota settings
-        foreach ($_mods as $qmod => $_inf) {
-            if (is_file(APP_DIR . "/modules/{$qmod}/quota.php")) {
-                $func = "{$qmod}_global_quota_config";
-                if (!function_exists($func)) {
-                    require_once APP_DIR . "/modules/{$qmod}/quota.php";
-                }
-                if (function_exists($func)) {
-                    $func();
-                }
-            }
-        }
-        // See if we got anything...
-        $_tmp = jrCore_get_flag('jrprofile_register_global_quota_setting');
-        if ($_tmp) {
-            foreach ($_tmp as $_fields) {
-                foreach ($_fields as $k => $_fld) {
-                    $_fld['order'] = ($k + 3);
-                    jrProfile_register_quota_setting($module, $_fld);
-                }
-            }
-        }
     }
 
     // lang strings
@@ -570,18 +716,23 @@ function jrCore_verify_module($module, $version = null)
         }
 
         // See if this module has a custom installer
-        if (is_file(APP_DIR . "/modules/{$module}/install.php")) {
-            require_once APP_DIR . "/modules/{$module}/install.php";
+        if ($install_mod && is_file(APP_DIR . "/modules/{$module}/install.php")) {
             $func = "{$module}_install";
+            if (!function_exists($func)) {
+                require_once APP_DIR . "/modules/{$module}/install.php";
+            }
             if (function_exists($func)) {
                 $func();
             }
         }
     }
+
     // Not doing an install - verify
     elseif (is_file(APP_DIR . "/modules/{$module}/verify.php")) {
-        require_once APP_DIR . "/modules/{$module}/verify.php";
         $func = "{$module}_verify";
+        if (!function_exists($func)) {
+            require_once APP_DIR . "/modules/{$module}/verify.php";
+        }
         if (function_exists($func)) {
             $func();
         }
@@ -590,31 +741,28 @@ function jrCore_verify_module($module, $version = null)
     // check for exported form fields in the custom_form_fields.json file.
     if (is_file(APP_DIR . "/modules/{$module}/custom_form_fields.json")) {
         $_txt = file_get_contents(APP_DIR . "/modules/{$module}/custom_form_fields.json");
-        if (isset($_txt) && jrCore_checktype($_txt, 'json')) {
-            $_fields = json_decode($_txt, true);
+        if (jrCore_checktype($_txt, 'json')) {
             // add Form Designer fields to db
-            if (isset($_fields) && is_array($_fields)) {
+            if ($_fields = json_decode($_txt, true)) {
                 $tbl = jrCore_db_table_name('jrCore', 'form');
                 foreach ($_fields as $view => $_row) {
-                    if (isset($_row) && is_array($_row)) {
+                    if (is_array($_row)) {
                         foreach ($_row as $_col) {
                             // update create
-                            $req1 = "SELECT * FROM {$tbl} WHERE `module` = '{$module}' AND `view` = '{$view}' AND `name` = '{$_col['name']}'";
-                            $_rt  = jrCore_db_query($req1, 'SINGLE');
-                            if (!is_array($_rt)) {
+                            $req = "SELECT * FROM {$tbl} WHERE `module` = '{$module}' AND `view` = '{$view}' AND `name` = '{$_col['name']}'";
+                            $_rt = jrCore_db_query($req, 'SINGLE');
+                            if (!$_rt || !is_array($_rt)) {
                                 // insert
-                                $fields = false;
-                                $values = false;
+                                $fields = array();
+                                $values = array();
                                 foreach ($_col as $k => $v) {
                                     $fields[] = "`" . jrCore_db_escape($k) . "`";
                                     $values[] = "'" . jrCore_db_escape($v) . "'";
                                 }
                                 $fields = implode(",", $fields);
                                 $values = implode(",", $values);
-                                if (isset($fields) && isset($values)) {
-                                    $req = "INSERT INTO {$tbl} ({$fields}) VALUES ({$values})";
-                                    jrCore_db_query($req);
-                                }
+                                $req    = "INSERT INTO {$tbl} ({$fields}) VALUES ({$values})";
+                                jrCore_db_query($req);
                             }
                         }
                     }
@@ -630,17 +778,124 @@ function jrCore_verify_module($module, $version = null)
 }
 
 /**
+ * Get the version number for a local module
+ * @param $mod string module
+ * @return bool|string
+ */
+function jrCore_get_local_module_version($mod)
+{
+    global $_mods;
+    clearstatcache();
+    // Get version ON DISK if we can
+    $vers = false;
+    $_mta = @file(APP_DIR . "/modules/{$mod}/include.php");
+    if ($_mta && is_array($_mta)) {
+        $meta = false;
+        foreach ($_mta as $line) {
+            if (strpos(' ' . $line, "function") && strpos($line, '_meta()')) {
+                $meta = true;
+                continue;
+            }
+            if ($meta) {
+                $line = trim(trim(str_replace(array('"', "'"), '', $line)), ',');
+                $mkey = jrCore_string_field($line, 1);
+                switch ($mkey) {
+                    case 'version':
+                        list(, $text) = explode('=>', $line);
+                        if (isset($text) && strlen(trim($text)) > 0) {
+                            $vers = trim($text);
+                            break 2;
+                        }
+                        break;
+                }
+            }
+        }
+    }
+    return ($vers) ? $vers : $_mods[$mod]['module_version'];
+}
+
+/**
+ * Delete a module from the system
+ * @param string $module
+ * @return bool|string
+ */
+function jrCore_delete_module($module)
+{
+    // There are some modules we cannot delete
+    switch ($module) {
+        case 'jrCore':
+        case 'jrUser':
+        case 'jrProfile':
+        case 'jrImage':
+        case 'jrMailer':
+            return "error: {$module} cannot be deleted - it is a required core module";
+            break;
+    }
+
+    // Remove cache directory
+    $cdr = jrCore_get_module_cache_dir($module);
+    jrCore_delete_dir_contents($cdr);
+    rmdir($cdr);
+
+    // Delete from modules table
+    $mod = jrCore_db_escape($module);
+    $tbl = jrCore_db_table_name('jrCore', 'module');
+    $req = "DELETE FROM {$tbl} WHERE module_directory = '{$mod}' LIMIT 1";
+    jrCore_db_query($req);
+
+    // Cleanup all directories
+    $_dirs = glob(APP_DIR . "/modules/{$module}*");
+    if ($_dirs && is_array($_dirs) && count($_dirs) > 0) {
+        foreach ($_dirs as $dir) {
+            $nam = basename($dir);
+            if ($nam == $module || strpos($nam, "{$module}-release-") === 0) {
+                if (is_link($dir)) {
+                    unlink($dir);  // OK
+                }
+                elseif (is_dir($dir)) {
+                    if (jrCore_delete_dir_contents($dir, false)) {
+                        rmdir($dir);
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
+/**
+ * Get the "base" cache directory
+ * @return string
+ */
+function jrCore_get_base_cache_dir()
+{
+    global $_conf;
+    if (!empty($_conf['jrCore_base_cache_dir'])) {
+        $cdir = $_conf['jrCore_base_cache_dir'];
+    }
+    else {
+        $cdir = APP_DIR . '/data/cache';
+    }
+    if (!is_dir($cdir)) {
+        if (!jrCore_create_directory($cdir)) {
+            jrCore_logger('CRI', "jrCore_get_base_cache_dir: unable to create base cache directory: " . $cdir);
+        }
+    }
+    return jrCore_trigger_event('jrCore', 'get_base_cache_dir', $cdir);
+}
+
+/**
  * Get unique Cache directory for a module
  * @param string $module Module to get Cache Directory for
  * @return string Returns a unique, persisted cache directory for a module
  */
 function jrCore_get_module_cache_dir($module)
 {
-    global $_conf;
-    $cdir = APP_DIR . "/data/cache/{$module}";
+    $cdir = jrCore_get_base_cache_dir() . '/' . $module;
     if (!is_dir($cdir)) {
-        @mkdir($cdir, $_conf['jrCore_dir_perms']) or jrCore_logger('CRI', "jrCore_get_module_cache_dir: unable to create cache directory: {$module}");
-        @chmod($cdir, $_conf['jrCore_dir_perms']);
+        if (!jrCore_create_directory($cdir)) {
+            jrCore_logger('CRI', "jrCore_get_module_cache_dir: unable to create cache directory: {$module}");
+        }
     }
     return $cdir;
 }
@@ -649,7 +904,7 @@ function jrCore_get_module_cache_dir($module)
  * @ignore
  * @param string $module Module
  * @param string $index Unique Registered module index
- * @param string $_options Javascript file
+ * @param array $_options
  * @return array
  */
 function jrCore_enable_external_css($module, $index, $_options)
@@ -674,7 +929,7 @@ function jrCore_enable_external_css($module, $index, $_options)
  * @ignore
  * @param string $module Module
  * @param string $index Unique Registered module index
- * @param string $_options Javascript file
+ * @param array $_options
  * @return array
  */
 function jrCore_enable_external_javascript($module, $index, $_options)

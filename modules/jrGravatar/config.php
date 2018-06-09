@@ -2,7 +2,7 @@
 /**
  * Jamroom Gravatar Images module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -77,7 +77,7 @@ function jrGravatar_config()
         'default'  => 'off',
         'validate' => 'onoff',
         'label'    => 'use local cache',
-        'help'     => 'If this option is checked, the gravatar images for Users and Profiles will be cached and served from the lcoal web server',
+        'help'     => 'If this option is checked, the gravatar images for Users and Profiles will be cached and served from the local web server',
         'order'    => 3
     );
     jrCore_register_setting('jrGravatar', $_tmp);

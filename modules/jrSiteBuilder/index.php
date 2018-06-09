@@ -2,7 +2,7 @@
 /**
  * Jamroom Site Builder module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -512,10 +512,8 @@ function view_jrSiteBuilder_modify_menu_item_save($_post, $_user, $_conf)
     $tbl = jrCore_db_table_name('jrSiteBuilder', 'menu');
     $req = "UPDATE {$tbl} SET menu_title = '" . jrCore_db_escape($_post['t']) . "' WHERE menu_id = '{$mid}' LIMIT 1";
     jrCore_db_query($req);
-    usleep(50000);
     jrCore_form_delete_session();
     jrCore_delete_all_cache_entries();
-    jrCore_delete_cache('jrSiteBuilder', 'sb-menu');
     jrCore_json_response(array('OK' => 1));
 }
 
@@ -560,7 +558,6 @@ function view_jrSiteBuilder_create_menu_item_save($_post, $_user, $_conf)
     $ttl = jrCore_db_escape($_post['t']);
     $req = "INSERT INTO {$tbl} (menu_updated, menu_parent_id, menu_order, menu_title, menu_url) VALUES (UNIX_TIMESTAMP(), '{$pid}', '{$ord}', '{$ttl}', '{$url}')";
     $iid = jrCore_db_query($req, 'INSERT_ID');
-    sleep(1);
     jrCore_form_delete_session();
     jrCore_delete_all_cache_entries();
     jrCore_json_response(array('id' => $iid));
@@ -849,14 +846,16 @@ function view_jrSiteBuilder_delete_page_save($_post, $_user, $_conf)
     if (isset($_post['id']) && jrCore_checktype($_post['id'], 'number_nz')) {
 
         // Remove Page
+        $pid = (int) $_post['id'];
         $tbl = jrCore_db_table_name('jrSiteBuilder', 'page');
-        $req = "DELETE FROM {$tbl} WHERE page_id = '{$_post['id']}' LIMIT 1";
+        $req = "DELETE FROM {$tbl} WHERE page_id = {$pid} LIMIT 1";
         jrCore_db_query($req);
 
         // Remove Widgets
         $tbl = jrCore_db_table_name('jrSiteBuilder', 'widget');
-        $req = "DELETE FROM {$tbl} WHERE widget_page_id = '{$_post['id']}'";
+        $req = "DELETE FROM {$tbl} WHERE widget_page_id = {$pid}";
         jrCore_db_query($req);
+
         jrCore_delete_all_cache_entries('jrSiteBuilder');
         jrCore_json_response(array('OK' => 1));
     }
@@ -1343,7 +1342,7 @@ function view_jrSiteBuilder_modify_widget_form_save($_post, $_user, $_conf)
     if (function_exists($fnc)) {
         $_sv = $fnc($_post);
         // We need to test the title and make sure it does not cause any Smarty errors
-        if (jrSiteBuilder_template_code_contains_errors($_post['widget_title'])) {
+        if (isset($_post['widget_title']) && strlen($_post['widget_title']) > 0 && jrSiteBuilder_template_code_contains_errors($_post['widget_title'])) {
             jrCore_set_form_notice('error', 'There is a Smarty syntax error in your TITLE - please fix and try again');
             jrCore_form_result();
         }
@@ -1632,7 +1631,7 @@ function view_jrSiteBuilder_browser($_post, $_user, $_conf)
             );
             $layout          = jrCore_parse_template('page_layout_icon.tpl', $_rep, 'jrSiteBuilder');
             $dat[4]['title'] = $layout;
-            $dat[5]['title'] = jrCore_page_button("d{$_p['page_id']}", 'delete', "if(confirm('Are you sure you want to delete this page?')){ jrSiteBuilder_browse_delete_page('{$_p['page_id']}') }");
+            $dat[5]['title'] = jrCore_page_button("d{$_p['page_id']}", 'delete', "jrCore_confirm('Delete this page?','Are you sure you want to delete this page?',function(){ jrSiteBuilder_browse_delete_page('{$_p['page_id']}') } )");
             jrCore_page_table_row($dat);
         }
         jrCore_page_table_pager($_rt);
@@ -1781,17 +1780,10 @@ function view_jrSiteBuilder_preview_template($_post, $_user, $_conf)
     }
 
     // We need to test this template and make sure it does not cause any Smarty errors
-    $cdr = jrCore_get_module_cache_dir('jrCore');
-    $nam = time() . ".tpl";
-    jrCore_write_to_file("{$cdr}/{$nam}", $_rep['tpl']);
-    $url = jrCore_get_module_url('jrCore');
-    $out = jrCore_load_url("{$_conf['jrCore_base_url']}/{$url}/test_template/{$nam}");
-    if (isset($out) && strlen($out) > 1 && (strpos($out, 'error:') === 0 || stristr($out, 'fatal error'))) {
-        unlink("{$cdr}/{$nam}");
-        return '<div class="page_notice warning">There is an error in your template, it can\'t be displayed.</div>';
+    $err = jrCore_test_template_for_errors('jrSiteBuilder', $_rep['tpl']);
+    if ($err && strpos($err, 'error') === 0) {
+        return '<div class="page_notice warning">There are syntax errors in your template that prevent it from being displayed</div>';
     }
-    unlink("{$cdr}/{$nam}");
-
     return jrCore_parse_template('preview_template.tpl', $_rep, 'jrSiteBuilder');
 }
 
@@ -1906,7 +1898,7 @@ function view_jrSiteBuilder_export($_post, $_user, $_conf)
 
     $btn = false;
     if ($_mds && is_array($_mds) && count($_mds) > 0) {
-        $btn = jrCore_page_button('del', 'delete all backup files', "if(confirm('Are you sure you want to delete all the existing backup files that have been created?')) { jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/delete_all_export') }");
+        $btn = jrCore_page_button('del', 'delete all backup files', "jrCore_confirm('Delete All Backup Files?', 'Are you sure you want to delete all existing backup files?',function(){ jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/delete_all_export')})");
     }
     jrCore_page_banner('Backup Packages', $btn);
 
@@ -2285,10 +2277,11 @@ function view_jrSiteBuilder_package_import_save($_post, $_user, $_conf)
         jrCore_location('referrer');
     }
 
+    $_data = false;
     if (jrCore_checktype($_json, 'json')) {
         $_data = json_decode($_json, true);
     }
-    if (!isset($_data['pages']) || !is_array($_data['pages'])) {
+    if (!$_data || !isset($_data['pages']) || !is_array($_data['pages'])) {
         jrCore_form_delete_session();
         jrCore_form_modal_notice('error', "error: The file did not contain an array of pages, menus and widgets.");
         jrCore_form_modal_notice('complete', 'No data found in the file');
@@ -2320,7 +2313,6 @@ function view_jrSiteBuilder_package_import_save($_post, $_user, $_conf)
             jrCore_form_modal_notice('update', "updating page: " . $page['_page']['page_uri']);
             $req = "UPDATE {$tblp} SET
                       page_updated  = '" . jrCore_db_escape($page['_page']['page_updated']) . "',
-                      page_enabled  = '" . jrCore_db_escape($page['_page']['page_enabled']) . "',
                       page_uri      = '" . jrCore_db_escape($page['_page']['page_uri']) . "',
                       page_title    = '" . jrCore_db_escape($page['_page']['page_title']) . "',
                       page_groups   = '" . jrCore_db_escape($page['_page']['page_groups']) . "',
@@ -2334,8 +2326,8 @@ function view_jrSiteBuilder_package_import_save($_post, $_user, $_conf)
         else {
             // insert
             jrCore_form_modal_notice('update', "importing page: " . $page['_page']['page_uri']);
-            $req = "INSERT INTO {$tblp} (page_updated, page_enabled, page_uri, page_title, page_groups, page_active, page_layout, page_settings, page_head)
-                    VALUES ('" . jrCore_db_escape($page['_page']['page_updated']) . "', '" . jrCore_db_escape($page['_page']['page_enabled']) . "', '" . jrCore_db_escape($page['_page']['page_uri']) . "', '" . jrCore_db_escape($page['_page']['page_title']) . "', '" . jrCore_db_escape($page['_page']['page_groups']) . "', '" . jrCore_db_escape($page['_page']['page_active']) . "', '" . jrCore_db_escape($page['_page']['page_layout']) . "', '" . jrCore_db_escape($page['_page']['page_settings']) . "', '" . jrCore_db_escape($page['_page']['page_head']) . "')";
+            $req = "INSERT INTO {$tblp} (page_updated, page_uri, page_title, page_groups, page_active, page_layout, page_settings, page_head)
+                    VALUES ('" . jrCore_db_escape($page['_page']['page_updated']) . "', '" . jrCore_db_escape($page['_page']['page_uri']) . "', '" . jrCore_db_escape($page['_page']['page_title']) . "', '" . jrCore_db_escape($page['_page']['page_groups']) . "', '" . jrCore_db_escape($page['_page']['page_active']) . "', '" . jrCore_db_escape($page['_page']['page_layout']) . "', '" . jrCore_db_escape($page['_page']['page_settings']) . "', '" . jrCore_db_escape($page['_page']['page_head']) . "')";
             jrCore_db_query($req);
         }
 

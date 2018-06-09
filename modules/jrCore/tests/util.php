@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -227,9 +227,9 @@ function test_jrCore_util()
 
     // jrCore_get_current_url()
     $_urls = array(
-        '/one=one'                         => '/one=one',
-        '?one=one'                         => '?one=one',
-        '/one=one/two=two'                 => '/one=one/two=two',
+        '/one=one'                          => '/one=one',
+        '?one=one'                          => '?one=one',
+        '/one=one/two=two'                  => '/one=one/two=two',
         '/one=one/two);alert(1=jrElastic2"' => '/one=one/two)'
     );
     foreach ($_urls as $url => $back) {
@@ -242,14 +242,14 @@ function test_jrCore_util()
 
     // jrCore_url_string()
     $_urls = array(
-        'test_one'          => 'test-one',
-        'test-TWO'          => 'test-two',
-        'will%it%break'     => 'willitbreak',
-        'öldü'              => 'oldu',
-        'test%25test'       => 'testtest',
-        'test test'         => 'test-test',
-        'ﬁ'                 => 'fi',
-        'testing İ and ı'   => 'testing-i-and-i',
+        'test_one'        => 'test-one',
+        'test-TWO'        => 'test-two',
+        'will%it%break'   => 'willitbreak',
+        'öldü'            => 'oldu',
+        'test%25test'     => 'testtest',
+        'test test'       => 'test-test',
+        'ﬁ'               => 'fi',
+        'testing İ and ı' => 'testing-i-and-i',
         'Do you like 合気道' => 'do-you-like-%E5%90%88%E6%B0%97%E9%81%93',
         '合気道-20'          => '%E5%90%88%E6%B0%97%E9%81%93-20'
     );
@@ -258,6 +258,36 @@ function test_jrCore_util()
         $new = jrCore_url_string($url);
         if ($new != $good) {
             jrUnitTest_exit_with_error("failed: {$new}");
+        }
+    }
+
+    // jrCore_string_to_url()
+    $_urls = array(
+        'http://jamroom.net/brian'                         => 1,
+        'http://jamroom.net/@brian'                        => 1,
+        'http://jamroom.net/brian/audio?p=1'               => 1,
+        'http://jamroom.net/brian/audio/p=1'               => 1,
+        'http://jamroom.net/brian/audio/p=1&t=2'           => 1,
+        'http://jamroom.net/brian/audio/p=1/t[]=1/t[]=2'   => 1,
+        'http://jamroom.net/brian/audio#fragment'          => 1,
+        'http://jamroom.net/ზურა.პაპიძე'                   => 1,
+        '<img src="http://somewhere.com/leave/alone">'     => 0,
+        "<img src='http://somewhere.com/leave/alone'>"     => 0,
+        "\n<img src='http://somewhere.com/leave/alone'>"   => 0,
+        "\n<img src='http://somewhere.com/leave/alone'>\n" => 0,
+        "<img src='http://somewhere.com/leave/alone'>\n"   => 0,
+    );
+    foreach ($_urls as $url => $change) {
+        jrUnitTest_init_test('String to URL: ' . jrCore_entity_string($url));
+        $new = jrCore_string_to_url($url);
+        if ($change == 1) {
+            $tmp = "<a href=\"{$url}\" target=\"_blank\" rel=\"nofollow\">{$url}</a>";
+        }
+        else {
+            $tmp = $url;
+        }
+        if ($new != $tmp) {
+            jrUnitTest_exit_with_error();
         }
     }
 

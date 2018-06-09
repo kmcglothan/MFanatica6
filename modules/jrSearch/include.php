@@ -2,7 +2,7 @@
 /**
  * Jamroom Search module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -49,7 +49,7 @@ function jrSearch_meta()
     $_tmp = array(
         'name'        => 'Search',
         'url'         => 'search',
-        'version'     => '1.6.6',
+        'version'     => '2.0.4',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Site Wide Search plus search system for registered modules',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/950/search',
@@ -75,11 +75,14 @@ function jrSearch_init()
     jrCore_register_event_listener('jrCore', 'db_update_item', 'jrSearch_db_update_item_listener');
     jrCore_register_event_listener('jrCore', 'db_delete_item', 'jrSearch_db_delete_item_listener');
 
+    // System reset listener
+    jrCore_register_event_listener('jrDeveloper', 'reset_system', 'jrSearch_reset_system_listener');
+
     // Our re-index tool
-    jrCore_register_module_feature('jrCore', 'tool_view', 'jrSearch', 'rebuild', array('Rebuild Index', 'Rebuild the Search Index'));
+    jrCore_register_module_feature('jrCore', 'tool_view', 'jrSearch', 'rebuild', array('Rebuild Indexes', 'Rebuild Search Indexes'));
 
     // Our index creator/worker
-    jrCore_register_queue_worker('jrSearch', 'search_index', 'jrSearch_search_index_worker', 0, 2);
+    jrCore_register_queue_worker('jrSearch', 'search_index', 'jrSearch_search_index_worker', 0, 4, 14400);
 
     // Site Builder widgets
     jrCore_register_module_feature('jrSiteBuilder', 'widget', 'jrSearch', 'widget_search', 'Site Search');
@@ -175,58 +178,87 @@ function jrSearch_search_index_worker($_queue)
 {
     $mod = $_queue['module'];
 
-    // Has the module told us what fields to index?
-    $_fl = jrSearch_get_module_index_fields($mod);
-    if ($_fl) {
+    if (isset($_queue['action']) && $_queue['action'] == 'delete') {
 
-        $key = '_item_id';
-        switch ($mod) {
-            case 'jrProfile':
-                $key = '_profile_id';
-                break;
-            case 'jrUser':
-                $key = '_user_id';
-                break;
-        }
+        // We're _removing_ a module from the index
+        jrSearch_delete_index_table_for_module($mod);
 
-        // Get items and add to index
-        $cnt = 0;
-        $off = 0;
-        $_ky = array($key);
-        $_ky = array_merge(array_keys($_fl), $_ky);
-        while (true) {
+        $tbl = jrCore_db_table_name('jrSearch', 'fulltext');
+        $req = "DELETE FROM {$tbl} WHERE s_module = '{$mod}'";
+        jrCore_db_query($req);
 
-            $_rt = array(
-                'search'        => array(
-                    "_item_id > {$off}"
-                ),
-                'skip_triggers' => true,
-                'return_keys'   => $_ky,
-                'limit'         => 250
-            );
-            $_rt = jrCore_db_search_items($mod, $_rt);
-            if ($_rt && is_array($_rt) && isset($_rt['_items'])) {
-                $_in = array();
-                foreach ($_rt['_items'] as $_v) {
+    }
+    else {
 
-                    $off = (int) $_v[$key];
-                    if ($_tm = jrSearch_get_insert_items($mod, $off, $_v, $_fl)) {
-                        foreach ($_tm as $add) {
-                            $_in[] = $add;
-                        }
+        // Has the module told us what fields to index?
+        $_fl = jrSearch_get_module_index_fields($mod);
+        if ($_fl) {
+
+            $key = '_item_id';
+            switch ($mod) {
+                case 'jrProfile':
+                    $key = '_profile_id';
+                    break;
+                case 'jrUser':
+                    $key = '_user_id';
+                    break;
+            }
+
+            // Get items and add to index
+            $cnt = 0;
+            $off = 0;
+            $_ky = array($key);
+            $_ky = array_merge(array_keys($_fl), $_ky);
+            while (true) {
+
+                $_rt = array(
+                    'search'        => array(
+                        "_item_id > {$off}"
+                    ),
+                    'skip_triggers' => true,
+                    'privacy_check' => false,
+                    'return_keys'   => $_ky,
+                    'cache_seconds' => 0,
+                    'limit'         => 500
+                );
+                $_rt = jrCore_db_search_items($mod, $_rt);
+                if ($_rt && is_array($_rt) && isset($_rt['_items'])) {
+                    $_in = array();
+                    $_md = false;
+                    if (jrSearch_module_has_dedicated_index($mod)) {
+                        $_md = array();
                     }
-                    $cnt++;
+                    foreach ($_rt['_items'] as $_v) {
 
+                        $off = (int) $_v[$key];
+                        if ($_tm = jrSearch_get_insert_items($mod, $off, $_v, $_fl)) {
+                            foreach ($_tm as $add) {
+                                $_in[] = $add;
+                            }
+                        }
+                        if (is_array($_md)) {
+                            if ($_tm = jrSearch_get_insert_items($mod, $off, $_v, $_fl, false)) {
+                                foreach ($_tm as $add) {
+                                    $_md[] = $add;
+                                }
+                            }
+                        }
+                        $cnt++;
+
+                    }
+                    if (count($_in) > 0) {
+                        jrSearch_insert_global_search_rows($_in);
+                    }
+                    if ($_md && count($_md) > 0) {
+                        jrSearch_insert_module_search_rows($mod, $_md);
+                    }
+                    if ($cnt < 500) {
+                        break;
+                    }
                 }
-                if (count($_in) > 0) {
-                    jrSearch_insert_search_rows($_in);
-                }
-                if ($cnt < 250) {
+                else {
                     break;
                 }
-            }
-            else {
-                break;
             }
         }
     }
@@ -236,6 +268,33 @@ function jrSearch_search_index_worker($_queue)
 //------------------------
 // EVENT LISTENERS
 //------------------------
+
+/**
+ * System Reset listener
+ * @param $_data array incoming data array
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return array
+ */
+function jrSearch_reset_system_listener($_data, $_user, $_conf, $_args, $event)
+{
+    global $_mods;
+    $tbl = jrCore_db_table_name('jrSearch', 'fulltext');
+    jrCore_db_query("TRUNCATE TABLE {$tbl}");
+    jrCore_db_query("OPTIMIZE TABLE {$tbl}");
+    foreach ($_mods as $mod => $_inf) {
+        if (jrCore_is_datastore_module($mod) && jrSearch_module_has_dedicated_index($mod)) {
+            if (jrCore_db_table_exists('jrSearch', "fulltext_{$mod}")) {
+                $tbl = jrCore_db_table_name('jrSearch', "fulltext_{$mod}");
+                jrCore_db_query("TRUNCATE TABLE {$tbl}");
+                jrCore_db_query("OPTIMIZE TABLE {$tbl}");
+            }
+        }
+    }
+    return $_data;
+}
 
 /**
  * Add Text fields to full text search
@@ -253,7 +312,15 @@ function jrSearch_db_create_item_listener($_data, $_user, $_conf, $_args, $event
     if ($_fl) {
         $_in = jrSearch_get_insert_items($_args['module'], $_args['_item_id'], $_data, $_fl);
         if ($_in && is_array($_in)) {
-            jrSearch_insert_search_rows($_in);
+            jrSearch_insert_global_search_rows($_in);
+
+            // Does this module have it's own dedicated search index?
+            if (jrSearch_module_has_dedicated_index($_args['module'])) {
+                $_in = jrSearch_get_insert_items($_args['module'], $_args['_item_id'], $_data, $_fl, false);
+                if ($_in && is_array($_in)) {
+                    jrSearch_insert_module_search_rows($_args['module'], $_in);
+                }
+            }
         }
     }
     return $_data;
@@ -273,12 +340,44 @@ function jrSearch_db_update_item_listener($_data, $_user, $_conf, $_args, $event
     // Get our index fields
     $_fl = jrSearch_get_module_index_fields($_args['module']);
     if ($_fl) {
-        $_it = jrCore_db_get_item($_args['module'], $_args['_item_id'], true);
-        if ($_it && is_array($_it)) {
-            $_it = array_merge($_it, $_data);
-            $_in = jrSearch_get_insert_items($_args['module'], $_args['_item_id'], $_it, $_fl);
-            if ($_in && is_array($_in)) {
-                jrSearch_insert_search_rows($_in);
+
+        // Are we missing any fields in our update?
+        $update = false;
+        foreach ($_fl as $field => $weight) {
+            if (!isset($_data[$field])) {
+                $update = true;
+                break;
+            }
+        }
+        // When we get an item UPDATE we only get the keys that are
+        // changing - we need to get ALL the $_fl keys for this item
+        // and merge in the changes
+        if ($update) {
+            if ($_ex = jrCore_db_get_item($_args['module'], $_args['_item_id'], true)) {
+                foreach ($_fl as $field => $weight) {
+                    if (!isset($_data[$field]) && isset($_ex[$field])) {
+                        $_data[$field] = $_ex[$field];
+                    }
+                }
+            }
+        }
+
+        // First - delete item from existing indexes
+        jrSearch_delete_item_from_indexes($_args['module'], $_args['_item_id']);
+
+        // Get new list of search words
+        $_in = jrSearch_get_insert_items($_args['module'], $_args['_item_id'], $_data, $_fl);
+        if ($_in && is_array($_in)) {
+
+
+            jrSearch_insert_global_search_rows($_in);
+
+            // Does this module have it's own dedicated search index?
+            if (jrSearch_module_has_dedicated_index($_args['module'])) {
+                $_in = jrSearch_get_insert_items($_args['module'], $_args['_item_id'], $_data, $_fl, false);
+                if ($_in && is_array($_in)) {
+                    jrSearch_insert_module_search_rows($_args['module'], $_in);
+                }
             }
         }
     }
@@ -296,9 +395,7 @@ function jrSearch_db_update_item_listener($_data, $_user, $_conf, $_args, $event
  */
 function jrSearch_db_delete_item_listener($_data, $_user, $_conf, $_args, $event)
 {
-    $tbl = jrCore_db_table_name('jrSearch', 'fulltext');
-    $req = "DELETE FROM {$tbl} WHERE `s_module` = '{$_args['module']}' AND `s_id` = '{$_args['_item_id']}'";
-    jrCore_db_query($req);
+    jrSearch_delete_item_from_indexes($_args['module'], $_args['_item_id']);
     return $_data;
 }
 
@@ -314,7 +411,7 @@ function jrSearch_db_delete_item_listener($_data, $_user, $_conf, $_args, $event
 function jrSearch_db_search_params_listener($_data, $_user, $_conf, $_args, $event)
 {
     global $_urls, $_post;
-    if (isset($_post['module_url']) && isset($_post['ss']) && strlen($_post['ss']) >= 3 && isset($_SESSION['jr-search-fields'])) {
+    if (isset($_post['module_url']) && isset($_post['ss']) && strlen($_post['ss']) > 0) {
 
         // See if this is from a profile or the site
         if (!isset($_urls["{$_post['module_url']}"])) {
@@ -347,7 +444,11 @@ function jrSearch_db_search_params_listener($_data, $_user, $_conf, $_args, $eve
                 $use_like = true;
                 if (strlen($_post['ss']) >= $len) {
 
-                    $_rt = jrSearch_get_matching_ids_from_full_text_index($mod, $_post['ss']);
+                    $limit = 1000;
+                    if (isset($_conf['jrSearch_match_limit']) && jrCore_checktype(intval($_conf['jrSearch_match_limit']), 'number_nz')) {
+                        $limit = (int) $_conf['jrSearch_match_limit'];
+                    }
+                    $_rt = jrSearch_get_matching_ids_from_full_text_index($mod, $_post['ss'], 0, $limit);
                     if ($_rt && is_array($_rt)) {
                         $use_like = false;
                     }
@@ -366,8 +467,14 @@ function jrSearch_db_search_params_listener($_data, $_user, $_conf, $_args, $eve
                 // Fall through - we either are too short or don't have full text enabled
                 if ($use_like) {
                     $sst = jrCore_db_escape(str_replace('"', '', $_post['ss']));
-                    $tbl = jrCore_db_table_name('jrSearch', 'fulltext');
-                    $req = "SELECT `s_id` AS i FROM {$tbl} WHERE `s_module` = '{$mod}' AND `s_text` LIKE '%{$sst}%'";
+                    if (jrSearch_module_has_dedicated_index($mod)) {
+                        $tbl = jrCore_db_table_name('jrSearch', "fulltext_{$mod}");
+                        $req = "SELECT `s_id` AS i FROM {$tbl} WHERE `s_text` LIKE '%{$sst}%'";
+                    }
+                    else {
+                        $tbl = jrCore_db_table_name('jrSearch', 'fulltext');
+                        $req = "SELECT `s_id` AS i FROM {$tbl} WHERE `s_text` LIKE '%{$sst}%' AND `s_module` = '{$mod}'";
+                    }
                     $_rt = jrCore_db_query($req, 'i', false, 'i');
                 }
 
@@ -434,6 +541,41 @@ function jrSearch_db_search_params_listener($_data, $_user, $_conf, $_args, $eve
         }
 
     }
+    else {
+
+        // Are we asking for any full_text searches?
+        if (isset($_data['search']) && is_array($_data['search'])) {
+            if ($_fl = jrSearch_get_module_index_fields($_args['module'])) {
+                foreach ($_data['search'] as $k => $v) {
+                    if (stripos($v, 'full_text')) {
+                        list($field, , $ss) = explode(' ', $v, 3);
+                        if (isset($_fl[$field])) {
+                            $limit = 100;
+                            $break = 10;
+                            if (isset($_data['page']) && jrCore_checktype($_data['page'], 'number_nz')) {
+                                $page = (int) $_data['page'];
+                                if (isset($_data['simplepagebreak'])) {
+                                    $break = (int) $_data['simplepagebreak'];
+                                }
+                                elseif (isset($_data['pagebreak'])) {
+                                    $break = (int) $_data['pagebreak'];
+                                }
+                                $limit = ($page * $break);
+                            }
+                            if ($_ids = jrSearch_get_matching_ids_from_full_text_index($_args['module'], $ss, 0, $limit)) {
+                                $_data['search'][$k] = '_item_id in ' . implode(',', $_ids);
+                            }
+                            else {
+                                // We have no matches - set no match condition
+                                $_data['search'] = array('_item_id < 0');
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
     return $_data;
 }
 
@@ -449,7 +591,7 @@ function jrSearch_db_search_params_listener($_data, $_user, $_conf, $_args, $eve
  * @param int $limit
  * @return array|bool
  */
-function jrSearch_get_matching_ids_from_full_text_index($module, $search_string, $offset = 0, $limit = 1000)
+function jrSearch_get_matching_ids_from_full_text_index($module, $search_string, $offset = 0, $limit = 10000)
 {
     global $_conf;
 
@@ -457,6 +599,29 @@ function jrSearch_get_matching_ids_from_full_text_index($module, $search_string,
     // http://dev.mysql.com/doc/refman/5.1/en/fulltext-boolean.html
     // http://dev.mysql.com/doc/refman/5.1/en/fulltext-natural-language.html
     $nat = true;
+
+    // Are we looking for an exact match (quotes)?
+    if (strpos($search_string, '"') === 0 || strpos($search_string, "'") === 0) {
+
+        $sst = jrCore_db_escape(str_replace(array('"', "'"), '', $search_string));
+        if (jrSearch_module_has_dedicated_index($module)) {
+            $tbl = jrCore_db_table_name('jrSearch', "fulltext_{$module}");
+            $req = "SELECT `s_id` AS i, `s_mod` AS s FROM {$tbl} WHERE `s_text` LIKE '%{$sst}%'";
+        }
+        else {
+            $tbl = jrCore_db_table_name('jrSearch', 'fulltext');
+            $req = "SELECT `s_id` AS i, `s_mod` AS s FROM {$tbl} WHERE `s_module` = '" . jrCore_db_escape($module) . "' AND `s_text` LIKE '%{$sst}%'";
+        }
+        $_ss = jrCore_db_query($req, 'i', false, 's');
+        if ($_ss && is_array($_ss)) {
+            // These results are coming out un-ordered - order
+            arsort($_ss, SORT_NUMERIC);
+            $_ss = array_keys($_ss);
+            return array_slice($_ss, $offset, $limit);
+        }
+        return false;
+    }
+
     $_mt = explode(' ', $search_string);
     if (stripos($search_string, ' AND ') || stripos($search_string, ' OR ') || stripos($search_string, ' NOT ')) {
         // apple and pine not pineapple
@@ -499,7 +664,6 @@ function jrSearch_get_matching_ids_from_full_text_index($module, $search_string,
             switch ($char) {
                 case '+';
                 case '-';
-                case '"';
                 case '~';
                     $nat = false;
                     break 2;
@@ -528,8 +692,14 @@ function jrSearch_get_matching_ids_from_full_text_index($module, $search_string,
     }
 
     $sst = jrCore_db_escape($search_string);
-    $tbl = jrCore_db_table_name('jrSearch', 'fulltext');
-    $req = "SELECT `s_id` AS i, (MATCH(`s_text`) AGAINST('{$sst}' {$smd}) * `s_mod`) AS s FROM {$tbl} WHERE `s_module` = '" . jrCore_db_escape($module) . "' AND MATCH(`s_text`) AGAINST('{$sst}' {$smd})";
+    if (jrSearch_module_has_dedicated_index($module)) {
+        $tbl = jrCore_db_table_name('jrSearch', "fulltext_{$module}");
+        $req = "SELECT `s_id` AS i, (MATCH(`s_text`) AGAINST('{$sst}' {$smd}) * `s_mod`) AS s FROM {$tbl} WHERE MATCH(`s_text`) AGAINST('{$sst}' {$smd})";
+    }
+    else {
+        $tbl = jrCore_db_table_name('jrSearch', 'fulltext');
+        $req = "SELECT `s_id` AS i, (MATCH(`s_text`) AGAINST('{$sst}' {$smd}) * `s_mod`) AS s FROM {$tbl} WHERE MATCH(`s_text`) AGAINST('{$sst}' {$smd}) AND `s_module` = '" . jrCore_db_escape($module) . "'";
+    }
     $_ss = jrCore_db_query($req, 'i', false, 's');
     if ($_ss && is_array($_ss)) {
         // These results are coming out un-ordered - order
@@ -556,15 +726,119 @@ function jrSearch_get_ft_min_word_length()
 }
 
 /**
- * Insert Rows into the Full Text Search table
+ * Insert Rows into the Global Full Text Search table
  * @param $_in array insert rows
  * @return bool
  */
-function jrSearch_insert_search_rows($_in)
+function jrSearch_insert_global_search_rows($_in)
 {
+    // Insert into global search index
     $tbl = jrCore_db_table_name('jrSearch', 'fulltext');
     $req = "INSERT INTO {$tbl} (`s_module`, `s_id`, `s_mod`, `s_text`) VALUES " . implode(',', $_in) . " ON DUPLICATE KEY UPDATE `s_text` = VALUES(`s_text`)";
     jrCore_db_query($req, null, false, null, false, null, false);
+    return true;
+}
+
+/**
+ * Insert Rows into the Module Full Text Search table
+ * @param $module string
+ * @param $_in array insert rows
+ * @return bool
+ */
+function jrSearch_insert_module_search_rows($module, $_in)
+{
+    // Insert into global search index
+    $tbl = jrCore_db_table_name('jrSearch', "fulltext_{$module}");
+    $req = "INSERT INTO {$tbl} (`s_id`, `s_mod`, `s_text`) VALUES " . implode(',', $_in) . " ON DUPLICATE KEY UPDATE `s_text` = VALUES(`s_text`)";
+    jrCore_db_query($req, null, false, null, false, null, false);
+    return true;
+}
+
+/**
+ * Delete a single item from the search indexes
+ * @param string $module
+ * @param int $item_id
+ * @return bool
+ */
+function jrSearch_delete_item_from_indexes($module, $item_id)
+{
+    // Delete from global index
+    $tbl = jrCore_db_table_name('jrSearch', 'fulltext');
+    $req = "DELETE FROM {$tbl} WHERE `s_module` = '{$module}' AND `s_id` = '{$item_id}'";
+    jrCore_db_query($req);
+
+    // Check for dedicated module index
+    if (jrSearch_module_has_dedicated_index($module)) {
+        $tbl = jrCore_db_table_name('jrSearch', "fulltext_{$module}");
+        $req = "DELETE FROM {$tbl} WHERE `s_id` = '{$item_id}'";
+        jrCore_db_query($req);
+    }
+    return true;
+}
+
+/**
+ * Returns TRUE if a module has a dedicated index table
+ * @param string $module
+ * @return bool
+ */
+function jrSearch_module_has_dedicated_index($module)
+{
+    global $_conf;
+    if (!jrSearch_is_disabled_module($module) && isset($_conf['jrSearch_dedicated']) && strpos(' ,' . $_conf['jrSearch_dedicated'] . ',', ",{$module},")) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Create a new dedicated full text index table for a module
+ * @param string $module
+ * @return bool
+ */
+function jrSearch_create_index_table_for_module($module)
+{
+    // Full text search
+    $_tmp = array(
+        "s_id INT(11) UNSIGNED NOT NULL DEFAULT '0'",
+        "s_mod TINYINT(1) UNSIGNED NOT NULL DEFAULT '1'",
+        "s_text TEXT NOT NULL",
+        "UNIQUE s_unique (s_id, s_mod)",
+        "FULLTEXT s_text (s_text)"
+    );
+    // NOTE: MySQL 5.6+ and MariaDB can use InnoDB
+    $_db = jrCore_db_query("SHOW VARIABLES WHERE Variable_name = 'version'", 'SINGLE');
+    if ($_db && is_array($_db) && isset($_db['Value'])) {
+        $ver = $_db['Value'];
+    }
+    else {
+        $msi = jrCore_db_connect();
+        $ver = mysqli_get_server_info($msi);
+    }
+    if (strpos($ver, '-')) {
+        list($ver,) = explode('-', $ver);
+    }
+    $engine = 'MyISAM';
+    if (version_compare($ver, '5.6.4', '>=')) {
+        // We should be able to use InnoDB here - double check
+        $_ft = jrCore_db_query("SHOW VARIABLES LIKE '%nnodb_optimize_fulltext%'", 'SINGLE');
+        if ($_ft && is_array($_ft)) {
+            $engine = 'InnoDB';
+        }
+    }
+    return jrCore_db_verify_table('jrSearch', "fulltext_{$module}", $_tmp, $engine);
+}
+
+/**
+ * Delete a dedicated index table for a module
+ * @param string $module
+ * @return bool
+ */
+function jrSearch_delete_index_table_for_module($module)
+{
+    $tbl = jrCore_db_table_name('jrSearch', "fulltext_{$module}");
+    $req = "DROP TABLE IF EXISTS {$tbl}";
+    jrCore_db_query($req);
+    jrCore_logger('INF', "successfully removed dedicated search index for module: {$module}");
     return true;
 }
 
@@ -594,14 +868,31 @@ function jrSearch_is_excluded_module($mod)
 }
 
 /**
+ * Return TRUE if a module has been disabled from search in Global Config
+ * @param string $mod module to check
+ * @return bool
+ */
+function jrSearch_is_disabled_module($mod)
+{
+    global $_conf;
+    if (isset($_conf['jrSearch_disabled']) && strlen($_conf['jrSearch_disabled']) > 1) {
+        if (strpos(" ," . $_conf['jrSearch_disabled'] . ',', ",{$mod},")) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * Get insert rows for MySQL full text search
  * @param $mod string Module
  * @param $item_id int Item ID
  * @param $_item array Item info
  * @param $_fields array fields to index
+ * @param $global_index bool set to FALSE for module specific index
  * @return array|bool
  */
-function jrSearch_get_insert_items($mod, $item_id, $_item, $_fields)
+function jrSearch_get_insert_items($mod, $item_id, $_item, $_fields, $global_index = true)
 {
     $_vl = array();
     foreach ($_fields as $fld => $weight) {
@@ -617,7 +908,13 @@ function jrSearch_get_insert_items($mod, $item_id, $_item, $_fields)
         foreach ($_vl as $w => $t) {
             $t = trim(preg_replace('!\s+!', ' ', str_replace(array("\n", "\r"), ' ', strip_tags($t))));
             if (strlen($t) > 0) {
-                $_in[] = "('{$mod}',{$item_id},'{$w}','" . jrCore_db_escape(jrCore_strip_emoji(mb_substr($t, 0, 16384), false)) . "')";
+                $t = jrCore_db_escape(jrCore_strip_emoji(mb_substr($t, 0, 16384), false));
+                if ($global_index) {
+                    $_in[] = "('{$mod}',{$item_id},'{$w}','{$t}')";
+                }
+                else {
+                    $_in[] = "({$item_id},'{$w}','{$t}')";
+                }
             }
         }
         if (count($_in) > 0) {
@@ -671,7 +968,7 @@ function jrSearch_get_module_index_fields($module)
 
     // Has the module told us what fields to index?
     $_tm = jrCore_get_registered_module_features('jrSearch', 'fulltext_search_fields');
-    if (isset($_tm[$module]) && is_array($_tm[$module])) {
+    if ($_tm && isset($_tm[$module]) && is_array($_tm[$module])) {
         foreach ($_tm[$module] as $fld => $weight) {
             $_fn[$fld] = $weight;
         }
@@ -767,18 +1064,18 @@ function jrSearch_get_index_title_from_item($_item)
  */
 function jrSearch_get_search_modules()
 {
-    // See what modules are listening for us
     global $_mods;
     $_ot = array();
-    $_tm = jrCore_get_registered_module_features('jrSearch', 'fulltext_search_fields');
-    if ($_tm && is_array($_tm)) {
-        foreach ($_tm as $module => $_inf) {
-            if (isset($_mods[$module]['module_name'])) {
-                $_ot[$module] = $_mods[$module]['module_name'];
-            }
+    foreach ($_mods as $mod => $_inf) {
+        if (jrCore_is_datastore_module($mod) && !jrSearch_is_excluded_module($mod) && is_file(APP_DIR . "/modules/{$mod}/templates/item_list.tpl")) {
+            $_ot[$mod] = $_inf['module_name'];
         }
     }
-    return (count($_ot) > 0) ? $_ot : false;
+    if (count($_ot) > 0) {
+        natcasesort($_ot);
+        return $_ot;
+    }
+    return false;
 }
 
 //------------------------
@@ -1044,14 +1341,19 @@ function smarty_function_jrSearch_module_form($params, $smarty)
             jrCore_smarty_missing_error('module');
         }
     }
+    if (jrProfile_is_profile_view()) {
+        if ($_pr = jrCore_get_flag('jrprofile_active_profile_data')) {
+            if (!isset($_pr["profile_{$params['module']}_item_count"]) || $_pr["profile_{$params['module']}_item_count"] === 0) {
+                // No items = no searching
+                return '';
+            }
+        }
+    }
     if (!isset($params['template'])) {
         $params['template'] = 'search_module_form.tpl';
     }
     if (!isset($params['fields']) || strlen($params['fields']) === 0) {
         $params['fields'] = 'all';
-    }
-    if (!isset($_post['ss']) || strlen($_post['ss']) === 0) {
-        $_SESSION['jr-search-fields'] = $params['fields'];
     }
 
     // We can get additional params for our jrCore_db_search_items

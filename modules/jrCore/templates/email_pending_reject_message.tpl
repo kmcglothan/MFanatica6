@@ -11,6 +11,5 @@ Message:
 {$reject_message}
 {/if}
 
-Please take a moment to fix these issues - it will be reviewed
-again once the required changes have been made.
+Please take a moment to fix these issues - it will be reviewed again once the required changes have been made.
 

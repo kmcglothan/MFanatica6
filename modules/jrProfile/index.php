@@ -2,7 +2,7 @@
 /**
  * Jamroom Profiles module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -400,6 +400,13 @@ function view_jrProfile_create_save($_post, $_user, $_conf)
     }
     else {
         $uid = $_user['_user_id'];
+        // This is a power user - add to user_active_profile_ids
+        $_pr = array();
+        if (isset($_SESSION['user_linked_profile_ids']) && strlen($_SESSION['user_linked_profile_ids']) > 0) {
+            $_pr = explode(',', $_SESSION['user_linked_profile_ids']);
+        }
+        $_pr[]                               = $pid;
+        $_SESSION['user_linked_profile_ids'] = implode(',', $_pr);
     }
 
     // Update with new profile id
@@ -569,7 +576,11 @@ function view_jrProfile_settings($_post, $_user, $_conf)
     $_ln = jrUser_load_lang_strings();
 
     if ($_profile['_profile_id'] != jrUser_get_profile_home_key('_profile_id')) {
-        jrCore_set_form_notice('notice', "{$_ln['jrProfile'][35]} <strong>{$_profile['profile_name']}</strong>", false);
+        $notice = "{$_ln['jrProfile'][35]} <strong>{$_profile['profile_name']}</strong>";
+        if (jrUser_is_admin()) {
+            $notice .= "<br>Profile Created: " . jrCore_format_time($_profile['_created']);
+        }
+        jrCore_set_form_notice('notice', $notice, false);
     }
     if (!isset($_profile['profile_active']) || $_profile['profile_active'] != '1') {
         if (!isset($_post['hl'])) {
@@ -637,13 +648,13 @@ function view_jrProfile_settings($_post, $_user, $_conf)
 
     // Profile Name
     $_tmp = array(
-        'name'      => 'profile_name',
-        'label'     => 9,
-        'help'      => 10,
-        'type'      => 'text',
-        'required'  => true,
-        'min'       => 1,
-        'validate'  => 'printable'
+        'name'     => 'profile_name',
+        'label'    => 9,
+        'help'     => 10,
+        'type'     => 'text',
+        'required' => true,
+        'min'      => 1,
+        'validate' => 'printable'
     );
     jrCore_form_field_create($_tmp);
 
@@ -705,12 +716,12 @@ function view_jrProfile_settings($_post, $_user, $_conf)
 
     // Bio
     $_tmp = array(
-        'name'      => 'profile_bio',
-        'label'     => 21,
-        'help'      => 22,
-        'type'      => 'editor',
-        'validate'  => 'allowed_html',
-        'required'  => false
+        'name'     => 'profile_bio',
+        'label'    => 21,
+        'help'     => 22,
+        'type'     => 'editor',
+        'validate' => 'allowed_html',
+        'required' => false
     );
     jrCore_form_field_create($_tmp);
 
@@ -907,6 +918,14 @@ function view_jrProfile_settings_save($_post, $_user, $_conf)
     $_data                    = jrCore_form_get_save_data('jrProfile', 'settings', $_post);
 
     if (isset($_data['profile_name']) && strlen($_data['profile_name']) > 0) {
+
+        // Make sure we have a good profile_name
+        if (strpos(' ' . $_data['profile_name'], '>') || strpos(' ' . $_data['profile_name'], '<') || stripos(' ' . $_data['profile_name'], 'script')) {
+            jrCore_set_form_notice('error', 47);
+            jrCore_form_field_hilight('profile_name');
+            jrCore_form_result();
+        }
+
         // Custom profile url checking
         if ((jrUser_is_admin() || (isset($_user['quota_jrProfile_url_changes']) && $_user['quota_jrProfile_url_changes'] == 'on')) && isset($_data['profile_url']) && strlen($_data['profile_url']) > 0) {
             $profile_url = jrCore_url_string($_data['profile_url']);
@@ -941,7 +960,7 @@ function view_jrProfile_settings_save($_post, $_user, $_conf)
     jrCore_db_update_item('jrProfile', $_profile['_profile_id'], $_data);
 
     // Update Quota Counts for quotas if we are changing
-    if (isset($_post['profile_quota_id']) && $_post['profile_quota_id'] != $_profile['profile_quota_id']) {
+    if (jrUser_is_admin() && isset($_post['profile_quota_id']) && $_post['profile_quota_id'] != $_profile['profile_quota_id']) {
         // Update counts in both Quotas
         jrProfile_increment_quota_profile_count($_post['profile_quota_id']);
         jrProfile_decrement_quota_profile_count($_profile['profile_quota_id']);
@@ -968,11 +987,15 @@ function view_jrProfile_settings_save($_post, $_user, $_conf)
         }
     }
 
-    // If we have updated our OWN profile, then we need to update home URL
+    // If we have updated our OWN profile, then we need to update home keys
     if ($_profile['_profile_id'] == jrUser_get_profile_home_key('_profile_id')) {
         jrUser_save_profile_home_keys();
+        jrUser_session_sync($_user['_user_id']);
     }
     jrCore_form_delete_session();
+
+    // Send out profile updated trigger
+    jrCore_trigger_event('jrProfile', 'profile_updated', $_profile, $_data);
 
     // If this is an admin from the browser...
     if (jrUser_is_admin() && isset($_post['from_browser']) && jrCore_checktype($_post['from_browser'], 'url')) {
@@ -1538,13 +1561,15 @@ function view_jrProfile_quota_compare($_post, $_user, $_conf)
     $allowed = jrCore_get_option_image('pass');
     $blocked = jrCore_get_option_image('fail');
 
+    $width           = round(100 / count($_quotas), 2);
     $dat             = array();
     $dat[1]['title'] = '';
     $dat[1]['class'] = 'page_section_header';
+    $dat[1]['width'] = "{$width}%";
     $i               = 3;
     foreach ($_quotas as $id => $_q) {
         $dat[$i]['title'] = $_q['name'];
-        $dat[$i]['class'] = '" style="white-space: normal';
+        $dat[$i]['class'] = '" style="white-space:normal;width:' . $width . '%';
         $i++;
     }
     jrCore_page_table_header($dat);
@@ -1552,12 +1577,14 @@ function view_jrProfile_quota_compare($_post, $_user, $_conf)
     // Signup
     $dat             = array();
     $dat[1]['title'] = 'Allows Signup';
+    $dat[1]['width'] = "{$width}%";
     $i               = 3;
     $murl            = jrCore_get_module_url('jrUser');
     foreach ($_quotas as $id => $_q) {
         $btn              = ($_q['quota_jrUser_allow_signups'] == 'on') ? $allowed : $blocked;
         $dat[$i]['title'] = '<a href="' . $_conf['jrCore_base_url'] . '/' . $murl . '/admin/quota/id=' . $id . '/hl[]=allow_signups/hl[]=id">' . $btn . '</a>';
         $dat[$i]['class'] = 'center';
+        $dat[$i]['width'] = "{$width}%";
         $i++;
     }
     jrCore_page_table_row($dat);
@@ -1617,8 +1644,11 @@ function view_jrProfile_disk_usage_report($_post, $_user, $_conf)
     $pid = (int) $_post['_1'];
     $_pr = jrCore_db_get_item('jrProfile', $pid, true);
     $nam = $_pr['profile_url'];
-    if (strlen($_pr['profile_url']) > 50) {
-        $nam = substr($_pr['profile_url'], 0, 47) . '...';
+    if (strpos(' ' . $nam, '%')) {
+        $nam = rawurldecode($nam);
+    }
+    if (mb_strlen($nam) > 50) {
+        $nam = mb_substr($nam, 0, 47) . '...';
     }
     jrCore_page_banner("disk usage report: <span style=\"text-transform:none\">@{$nam}</span>", $button);
     if (!isset($_pr['profile_disk_usage']) || $_pr['profile_disk_usage'] == 0) {
@@ -1645,16 +1675,22 @@ function view_jrProfile_disk_usage_report($_post, $_user, $_conf)
     // Get files
     $_fl = jrCore_get_media_files($pid);
     if ($_fl && is_array($_fl)) {
-        $_tt = array('jrCore' => array(0,0));
+        $_tt = array('jrCore' => array(0, 0));
         foreach ($_fl as $_file) {
             if (!strpos($_file['name'], '/rb_')) {
                 $name = basename($_file['name']);
                 list($mod,) = explode('_', $name, 2);
-                if (!isset($_tt[$mod])) {
-                    $_tt[$mod] = array(0,0);
+                if (isset($_mods[$mod])) {
+                    if (!isset($_tt[$mod])) {
+                        $_tt[$mod] = array(0, 0);
+                    }
+                    $_tt[$mod][0] += $_file['size'];
+                    $_tt[$mod][1]++;
                 }
-                $_tt[$mod][0] += $_file['size'];
-                $_tt[$mod][1]++;
+                else {
+                    $_tt['???'][0] += $_file['size'];
+                    $_tt['???'][1]++;
+                }
             }
             else {
                 $_tt['jrCore'][0] += $_file['size'];
@@ -1664,10 +1700,15 @@ function view_jrProfile_disk_usage_report($_post, $_user, $_conf)
         if (count($_tt) > 0) {
             arsort($_tt);
             foreach ($_tt as $mod => $_s) {
-                if (isset($_mods[$mod]) && $_s[1] > 0) {
+                if ($_s[0] > 0) {
                     $dat             = array();
                     $dat[0]['title'] = jrCore_get_module_icon_html($mod, 32);
-                    $dat[1]['title'] = $_mods[$mod]['module_name'];
+                    if (isset($_mods[$mod]) && $_s[1] > 0) {
+                        $dat[1]['title'] = $_mods[$mod]['module_name'];
+                    }
+                    else {
+                        $dat[1]['title'] = $mod;
+                    }
                     $dat[2]['title'] = jrCore_number_format($_s[1]);
                     $dat[2]['class'] = 'center';
                     $dat[3]['title'] = jrCore_format_size($_s[0]);

@@ -46,7 +46,7 @@ function jrPayPal_meta()
     $_tmp = array(
         'name'        => 'PayPal Buy It Now',
         'url'         => 'paypal',
-        'version'     => '1.1.4',
+        'version'     => '1.1.6',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Profile sales of audio, video and file items via a PayPal Buy It Now button',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/1987/paypal-buy-it-now',
@@ -186,6 +186,12 @@ function jrPayPal_form_display_listener($_data, $_user, $_conf, $_args, $event)
     if (jrCore_module_is_active('jrFoxyCart') && isset($_user['quota_jrFoxyCart_active']) && $_user['quota_jrFoxyCart_active'] == 'on') {
         return $_data;
     }
+
+    // If Payments module is active
+    if (jrCore_module_is_active('jrPayment') && isset($_user['quota_jrPayment_allowed']) && $_user['quota_jrPayment_allowed'] == 'on') {
+        return $_data;
+    }
+
     switch ($_post['module']) {
 
         case 'jrProfile':
@@ -411,11 +417,12 @@ function smarty_function_jrPayPal_buy_now_button($params, $smarty)
     $tmp = new stdClass();
     $img = smarty_function_jrCore_image($_pr, $tmp);
     $out = '<div class="sprite_icon paypal_buy_now_section">';
-    $out .= '<a id="' . $iid . '" href="' . $url . '"><span class="add_to_cart_price paypal_buy_now_price">' . $params['item']["{$pfx}_file_item_price"] . '</span>';
+    $out .= '<a id="' . $iid . '" href="' . $url . '"><span class="paypal_buy_now_price">' . $params['item']["{$pfx}_file_item_price"] . '</span>';
     $out .= $img . '</a>';
     $out .= '</div>';
 
     if (!empty($params['assign'])) {
+        /** @noinspection PhpUndefinedMethodInspection */
         $smarty->assign($params['assign'], $out);
         return '';
     }

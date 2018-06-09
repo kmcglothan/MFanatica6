@@ -2,7 +2,7 @@
 /**
  * Jamroom Graph Support module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -49,7 +49,7 @@ function jrGraph_meta()
     $_tmp = array(
         'name'        => 'Graph Support',
         'url'         => 'graph',
-        'version'     => '1.1.0',
+        'version'     => '1.1.1',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Support for creating and displaying line, point and bar graphs',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2862/graph-core',
@@ -218,10 +218,11 @@ function jrGraph_generate($module, $name, $params = null)
 
     $_rp = array(
         '_sets'     => array(),
-        'xaxis'     => array(),
-        'yaxis'     => array(),
         'clickable' => 0,
         'hoverable' => 0,
+        'xaxis'     => (isset($_dt['xaxis']) && is_array($_dt['xaxis'])) ? $_dt['xaxis'] : array(),
+        'yaxis'     => (isset($_dt['yaxis']) && is_array($_dt['yaxis'])) ? $_dt['yaxis'] : array(),
+        'precision' => (isset($_dt['precision'])) ? intval($_dt['precision']) : 3,
         'unique_id' => 't' . jrCore_create_unique_string(6),
         'height'    => (isset($_dt['height'])) ? $_dt['height'] : (isset($params['height'])) ? $params['height'] : '350px',
         'width'     => (isset($_dt['width'])) ? $_dt['width'] : (isset($params['width'])) ? $params['width'] : '100%',
@@ -241,7 +242,7 @@ function jrGraph_generate($module, $name, $params = null)
             $_rp['_sets'][$k] = array();
             if (isset($_set['_data']) && is_array($_set['_data'])) {
                 $_rp['_sets'][$k]['data'] = array();
-                if ($params['fill'] == 1) {
+                if (isset($params['fill']) && $params['fill'] == 1) {
                     if (!isset($params['unit'])) {
                         $params['unit'] = 'days';
                     }

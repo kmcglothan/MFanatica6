@@ -1,5 +1,9 @@
 FoxyCart eCommerce module changelog
 
+Version 1.5.4:
+- Bug Fix: Payout "complete" could adjust balances for profiles missing a payout email address
+- Bug Fix: Payout could mark profiles as being paid out when not selected
+
 Version 1.5.3:
  - New: Additional options added to "Payment Clears" Global Config option
 

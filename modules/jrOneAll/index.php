@@ -2,7 +2,7 @@
 /**
  * Jamroom OneAll Social module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -160,6 +160,120 @@ function view_jrOneAll_signup($_post, $_user, $_conf)
 }
 
 //------------------------------
+// log_browser
+//------------------------------
+function view_jrOneAll_log_browser($_post, $_user, $_conf)
+{
+    jrUser_session_require_login();
+    jrUser_master_only();
+
+    if (!isset($_post['p']) || !jrCore_checktype($_post['p'], 'number_nz')) {
+        $_post['p'] = 1;
+    }
+
+    $tbl = jrCore_db_table_name('jrOneAll', 'api_log');
+    if (isset($_post['search_string']) && strlen($_post['search_string']) > 0) {
+        $req = "SELECT * FROM {$tbl} WHERE log_text LIKE '%" . jrCore_db_escape($_post['search_string']) . "%' ORDER BY log_created DESC";
+    }
+    else {
+        $req = "SELECT * FROM {$tbl} ORDER BY log_created DESC";
+    }
+    $_rt = jrCore_db_paged_query($req, $_post['p'], 12, 'NUMERIC');
+
+    jrCore_page_include_admin_menu();
+    jrCore_page_admin_tabs('jrOneAll');
+    jrCore_page_banner('API log browser');
+    jrCore_get_form_notice();
+    jrCore_page_search('search', "{$_conf['jrCore_base_url']}/{$_post['module_url']}/log_browser");
+
+    $dat             = array();
+    $dat[1]['title'] = 'date';
+    $dat[1]['width'] = '15%;';
+    $dat[2]['title'] = 'command';
+    $dat[2]['width'] = '75%;';
+    $dat[3]['title'] = 'result';
+    $dat[3]['width'] = '10%;';
+    $dat[4]['title'] = 'response';
+    $dat[4]['width'] = '5%;';
+    jrCore_page_table_header($dat);
+
+    if ($_rt && is_array($_rt) && isset($_rt['_items'])) {
+        foreach ($_rt['_items'] as $k => $i) {
+            $dat             = array();
+            $dat[1]['title'] = jrCore_format_time($i['log_created']);
+            $dat[1]['class'] = 'center';
+            $dat[2]['title'] = $i['log_command'];
+            if (strpos($i['log_text'], '200 OK')) {
+                $dat[3]['title'] = 'success';
+                $dat[3]['class'] = 'center success';
+            }
+            else {
+                $dat[3]['title'] = 'error';
+                $dat[3]['class'] = 'center error';
+            }
+            $dat[4]['title'] = jrCore_page_button("oneall-api-text-{$k}", 'detail', "popwin('{$_conf['jrCore_base_url']}/{$_post['module_url']}/log_info/{$i['log_id']}','log info',900,600,'yes');");
+            jrCore_page_table_row($dat);
+        }
+    }
+    else {
+        $dat = array();
+        if (isset($_post['search_string']) && strlen($_post['search_string']) > 0) {
+            $dat[1]['title'] = '<p>There are no API connection logs that match your search condition</p>';
+        }
+        else {
+            $dat[1]['title'] = '<p>There are no API connection logs</p>';
+        }
+        $dat[1]['class'] = 'center';
+        jrCore_page_table_row($dat);
+    }
+    jrCore_page_table_pager($_rt);
+    jrCore_page_table_footer();
+    jrCore_page_display();
+}
+
+//------------------------------
+// log_info
+//------------------------------
+function view_jrOneAll_log_info($_post, $_user, $_conf)
+{
+    jrUser_master_only();
+    jrCore_page_set_meta_header_only();
+    $button = jrCore_page_button('close', 'close', 'self.close();');
+    jrCore_page_banner('API connection info', $button);
+    if (!isset($_post['_1']) || !jrCore_checktype($_post['_1'], 'number_nz')) {
+        jrCore_notice_page('error', 'invalid log id');
+    }
+    $tbl = jrCore_db_table_name('jrOneAll', 'api_log');
+    $req = "SELECT log_text FROM {$tbl} WHERE log_id = '{$_post['_1']}' LIMIT 1";
+    $_rt = jrCore_db_query($req, 'SINGLE');
+    if (!$_rt || !is_array($_rt)) {
+        jrCore_notice_page('error', 'invalid log id - not found in db');
+    }
+    $_rt = json_decode($_rt['log_text'], true);
+
+    $dat             = array();
+    $dat[1]['title'] = 'Key';
+    $dat[1]['width'] = '10%';
+    $dat[2]['title'] = 'Value';
+    $dat[2]['width'] = '90%';
+    jrCore_page_table_header($dat);
+
+    $dat             = array();
+    $dat[1]['title'] = 'Response&nbsp;Data';
+    $dat[2]['title'] = '<div class="fixed-width">' . str_replace(',', ', ', jrCore_entity_string(print_r($_rt['results'], true))) . '</div>';
+    jrCore_page_table_row($dat);
+
+    $dat             = array();
+    $dat[1]['title'] = 'Response&nbsp;Headers';
+    $dat[2]['title'] = '<div class="fixed-width">' . str_replace(',', ', ', jrCore_entity_string(print_r($_rt['headers'], true))) . '</div>';
+    jrCore_page_table_row($dat);
+
+    jrCore_page_table_footer();
+    jrCore_page_close_button();
+    jrCore_page_display();
+}
+
+//------------------------------
 // connections
 //------------------------------
 function view_jrOneAll_connections($_post, $_user, $_conf)
@@ -184,7 +298,7 @@ function view_jrOneAll_connections($_post, $_user, $_conf)
     if ($_rt && isset($_rt['_items'])) {
         $_ky = array('_user_id', 'user_name', 'user_email', 'user_group', 'user_image_time');
         $_tm = jrCore_db_get_multiple_items('jrUser', array_keys($_rt['_items']), $_ky);
-        if (isset($_tm) && is_array($_tm)) {
+        if ($_tm && is_array($_tm)) {
             foreach ($_tm as $_inf) {
                 $_nm["{$_inf['_user_id']}"] = $_inf;
             }
@@ -230,7 +344,12 @@ function view_jrOneAll_connections($_post, $_user, $_conf)
             $dat[1]['title'] = jrImage_get_image_src('jrUser', 'user_image', $user_id, 'xsmall', $_im);
             $dat[1]['class'] = 'center';
             $dat[2]['title'] = $_inf['user_name'] . '<br><small>' . $_inf['user_email'] . '</small>';
-            $dat[3]['title'] = '<img src="' . $_conf['jrCore_base_url'] . '/' . $u . '/img/module/jrOneAll/' . $_rt['_items'][$user_id]['provider'] . '.png" width="32" height="32" alt="' . $_rt['_items'][$user_id]['provider'] . '">';
+            if (is_file(APP_DIR . "/modules/jrOneAll/img/{$_rt['_items'][$user_id]['provider']}.png")) {
+                $dat[3]['title'] = '<img src="' . $_conf['jrCore_base_url'] . '/' . $u . '/img/module/jrOneAll/' . $_rt['_items'][$user_id]['provider'] . '.png" width="32" height="32" alt="' . $_rt['_items'][$user_id]['provider'] . '">';
+            }
+            else {
+                $dat[3]['title'] = '<img src="' . $_conf['jrCore_base_url'] . '/modules/jrOneAll/icon.png" width="32" height="32" alt="' . $_rt['_items'][$user_id]['provider'] . '">';
+            }
             $dat[4]['title'] = ucwords($_rt['_items'][$user_id]['provider']);
             if (isset($_rt['_items'][$user_id]['data'])) {
                 $_us = json_decode($_rt['_items'][$user_id]['data'], true);
@@ -274,8 +393,13 @@ function view_jrOneAll_connections($_post, $_user, $_conf)
         }
     }
     else {
-        $dat             = array();
-        $dat[1]['title'] = '<p>There are no users that have created social connections</p>';
+        $dat = array();
+        if (isset($_post['search_string']) && strlen($_post['search_string']) > 0) {
+            $dat[1]['title'] = '<p>There are no social connections that match your search condition</p>';
+        }
+        else {
+            $dat[1]['title'] = '<p>There are no users that have created social connections</p>';
+        }
         $dat[1]['class'] = 'center';
         jrCore_page_table_row($dat);
     }
@@ -646,6 +770,7 @@ function view_jrOneAll_provider_error_delete($_post, $_user, $_conf)
 //------------------------------
 function view_jrOneAll_link_callback($_post, $_user, $_conf)
 {
+    jrUser_session_require_login();
     // [oa_action] => social_link
     // [oa_social_login_token] => 1481c1d9-eab9-45fb-bda5-642db7337609
     // [connection_token] => 1481c1d9-eab9-45fb-bda5-642db7337609
@@ -717,249 +842,299 @@ function view_jrOneAll_callback($_post, $_user, $_conf)
     if (isset($_post['connection_token']{10})) {
 
         // Get JSON info about this connection token
-        $_data = jrOneAll_api_call("connections/{$_post['connection_token']}.json");
-        $_bkup = $_data;
+        if ($_data = jrOneAll_api_call("connections/{$_post['connection_token']}.json")) {
 
-        // check for existing user
-        if (isset($_data['response']['result']['data']['user']['user_token']) && (isset($_data['response']['result']['status']['flag']) && $_data['response']['result']['status']['flag'] == 'success')) {
+            // Save a backup
+            $_bkup = $_data;
 
-            // Identity Token - uniquely identified this user -> provider link up
-            $ctk = jrCore_db_escape($_data['response']['result']['data']['user']['identity']['identity_token']);
+            // check for existing user
+            if (isset($_data['response']['result']['data']['user']['user_token']) && (isset($_data['response']['result']['status']['flag']) && $_data['response']['result']['status']['flag'] == 'success')) {
 
-            // User Token - uniquely identifies this user across all providers
-            $tkn = jrCore_db_escape($_data['response']['result']['data']['user']['user_token']);
+                // Identity Token - uniquely identified this user -> provider link up
+                $ctk = jrCore_db_escape($_data['response']['result']['data']['user']['identity']['identity_token']);
 
-            // Our user info comes in as the "identity" array
-            $_us = $_data['response']['result']['data']['user']['identity'];
-            $prv = jrCore_db_escape($_us['provider']);
+                // User Token - uniquely identifies this user across all providers
+                $tkn = jrCore_db_escape($_data['response']['result']['data']['user']['user_token']);
 
-            // Find this user link in our system
-            $tbl = jrCore_db_table_name('jrOneAll', 'link');
-            $req = "SELECT * FROM {$tbl} WHERE user_token = '{$tkn}'";
-            $_rt = jrCore_db_query($req, 'NUMERIC');
+                // Our user info comes in as the "identity" array
+                $_us = $_data['response']['result']['data']['user']['identity'];
+                $prv = jrCore_db_escape($_us['provider']);
 
-            // See if this is linked to a valid user account - if not, we are
-            // going to remove it and let a new user account be linked up
-            if ($_rt && is_array($_rt)) {
-                $tot = count($_rt);
-                foreach ($_rt as $v) {
-                    $_ua = jrCore_db_get_item('jrUser', $v['user_id'], true);
-                    if (!$_us || !is_array($_ua)) {
-                        // bad user_id (i.e. deleted) - fix it
-                        $req = "DELETE FROM {$tbl} WHERE user_id = '{$v['user_id']}'";
-                        jrCore_db_query($req);
-                        $tot--;
-                    }
-                }
-                if ($tot === 0) {
-                    // Found no existing accounts to link up - delete and recreate
-                    $_rt = false;
-                }
-            }
+                // Find this user link in our system
+                $tbl = jrCore_db_table_name('jrOneAll', 'link');
+                $req = "SELECT * FROM {$tbl} WHERE user_token = '{$tkn}'";
+                $_rt = jrCore_db_query($req, 'NUMERIC');
 
-            // Now we don't want to create a new account for this user if the
-            // User Token already exists in our database - so we need to find
-            // out if we have to create a new entry for this User -> Provider
-            // Link Up or if it already exists
-
-            // New User Account
-            if (!is_array($_rt) && !jrUser_is_logged_in()) {
-
-                // Load up default lang strings
-                $url = jrCore_get_module_url('jrUser');
-                $_ln = jrUser_load_lang_strings();
-
-                // First up - get email
-                $email = '';
-                if (isset($_us['emails']) && is_array($_us['emails'])) {
-                    // Try to get a validated email
-                    foreach ($_us['emails'] as $_eml) {
-                        $email = $_eml['value'];
-                        if (isset($_eml['is_verified']) && $_eml['is_verified'] == '1') {
-                            // We found our first validate email
-                            break;
+                // See if this is linked to a valid user account - if not, we are
+                // going to remove it and let a new user account be linked up
+                if ($_rt && is_array($_rt)) {
+                    $tot = count($_rt);
+                    foreach ($_rt as $v) {
+                        $_ua = jrCore_db_get_item('jrUser', $v['user_id'], true);
+                        if (!$_us || !is_array($_ua)) {
+                            // bad user_id (i.e. deleted) - fix it
+                            $req = "DELETE FROM {$tbl} WHERE user_id = '{$v['user_id']}'";
+                            jrCore_db_query($req);
+                            $tot--;
                         }
                     }
+                    if ($tot === 0) {
+                        // Found no existing accounts to link up - delete and recreate
+                        $_rt = false;
+                    }
                 }
 
-                // Check for email already existing on an account
-                if (jrCore_checktype($email, 'email')) {
-                    $_eu = jrCore_db_get_item_by_key('jrUser', 'user_email', $email);
-                    if ($_eu && is_array($_eu)) {
-                        // We already have a user using this email - redirect to login
-                        jrCore_set_form_notice('error', $_ln['jrOneAll'][31], false);
+                // Now we don't want to create a new account for this user if the
+                // User Token already exists in our database - so we need to find
+                // out if we have to create a new entry for this User -> Provider
+                // Link Up or if it already exists
+
+                // New User Account
+                if (!is_array($_rt) && !jrUser_is_logged_in()) {
+
+                    // Load up default lang strings
+                    $url = jrCore_get_module_url('jrUser');
+                    $_ln = jrUser_load_lang_strings();
+
+                    // First up - get email
+                    $verified = false;
+                    $email    = '';
+                    if (isset($_us['emails']) && is_array($_us['emails'])) {
+                        // Try to get a validated email
+                        foreach ($_us['emails'] as $_eml) {
+                            $email = $_eml['value'];
+                            if (isset($_eml['is_verified']) && $_eml['is_verified'] == '1') {
+                                // We found our first validate email
+                                $verified = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Check for email already existing on an account
+                    if (jrCore_checktype($email, 'email')) {
+                        $_eu = jrCore_db_get_item_by_key('jrUser', 'user_email', $email);
+                        if ($_eu && is_array($_eu)) {
+                            // We already have a user using this email - are we relinking?
+                            // Note: OneAll includes is_verified for email addresses
+                            if (!$verified || (isset($_conf['jrOneAll_link_existing']) && $_conf['jrOneAll_link_existing'] == 'off')) {
+                                jrCore_set_form_notice('error', $_ln['jrOneAll'][31], false);
+                                jrCore_location("{$_conf['jrCore_base_url']}/{$url}/login");
+                            }
+                            else {
+
+                                // This is a verified email address coming in on a new social connection
+                                // Update user account with new info and continue
+                                $uid   = (int) $_eu['_user_id'];
+                                $_data = array(
+                                    'user_validated'  => 1,
+                                    'user_jrOneAll'   => 1,
+                                    'user_last_login' => 'UNIX_TIMESTAMP()'
+                                );
+                                if (jrCore_db_update_item('jrUser', $uid, $_data)) {
+                                    // Save provider linkup
+                                    $tbl = jrCore_db_table_name('jrOneAll', 'link');
+                                    $req = "INSERT INTO {$tbl} (user_id, updated, provider, token, user_token, shared, data)
+                                            VALUES('{$uid}', UNIX_TIMESTAMP(), '{$prv}', '{$ctk}', '{$tkn}', 0, '" . jrCore_db_escape(json_encode($_bkup)) . "')
+                                            ON DUPLICATE KEY UPDATE `token` = '{$ctk}', `user_token` = '{$tkn}', `updated` = UNIX_TIMESTAMP()";
+                                    jrCore_db_query($req, 'INSERT_ID');
+
+                                    // Get User account info
+                                    if ($_usr = jrUser_get_user_session_data($uid)) {
+
+                                        // Reload User account - start session
+                                        global $_user;
+                                        $_SESSION = $_usr;
+                                        /** @noinspection PhpUnusedLocalVariableInspection */
+                                        $_user = $_SESSION; // Leave this here!
+
+                                        // Startup session with user info
+                                        $_SESSION = jrCore_trigger_event('jrUser', 'login_success', $_SESSION);
+
+                                        // Show them success
+                                        jrCore_logger('INF', "{$_data['user_name']} has validated their account via {$prv} and logged in");
+
+                                        // Do we have auto login turned on?
+                                        if (isset($_conf['jrUser_autologin']) && intval($_conf['jrUser_autologin']) > 1) {
+                                            jrUser_session_set_login_cookie($_user['_user_id']);
+                                        }
+
+                                        // Redirect  to profile...
+                                        jrCore_location("{$_conf['jrCore_base_url']}/{$_usr['profile_url']}");
+
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // When requiring a social login we must get a valid email address
+                    elseif (isset($_conf['jrOneAll_require_social']) && $_conf['jrOneAll_require_social'] == 'on') {
+                        jrCore_set_form_notice('error', $_ln['jrOneAll'][28], false);
                         jrCore_location("{$_conf['jrCore_base_url']}/{$url}/login");
                     }
-                }
-                // When requiring a social login we must get a valid email address
-                elseif (isset($_conf['jrOneAll_require_social']) && $_conf['jrOneAll_require_social'] == 'on') {
-                    jrCore_set_form_notice('error', $_ln['jrOneAll'][28], false);
-                    jrCore_location("{$_conf['jrCore_base_url']}/{$url}/login");
-                }
 
-                // We have either a new user or an existing user using the social login for the first time
-                // Check for an existing username - if we find it, and it has the same email address
-                if (isset($_us['preferredUsername']) && strlen($_us['preferredUsername']) > 0) {
-                    $user_name = $_us['preferredUsername'];
-                }
-                elseif (isset($_us['displayName']) && strlen($_us['displayName']) > 0) {
-                    $user_name = $_us['displayName'];
-                }
-                elseif (isset($_us['name']['formatted']) && strlen($_us['name']['formatted']) > 0) {
-                    $user_name = $_us['name']['formatted'];
-                }
-                elseif (isset($_us['profileUrl']) && strlen($_us['profileUrl']) > 0) {
-                    $utmp      = explode('/', $_us['profileUrl']);
-                    $user_name = end($utmp);
-                }
-                elseif (isset($_us['accounts'][0]['username']) && strlen($_us['accounts'][0]['username']) > 0) {
-                    $user_name = $_us['accounts'][0]['username'];
-                }
-                elseif (strpos($email, '@')) {
-                    list($user_name,) = explode('@', $email);
-                }
-                else {
-                    // Hopefully we never get here
-                    $user_name = mt_rand(11111, 99999);
-                }
-                if (!jrCore_checktype($user_name, 'printable')) {
-                    $user_name = jrCore_url_string($user_name);
-                }
-                $_eu = jrCore_db_get_item_by_key('jrUser', 'user_name', $user_name);
-
-                // Existing Local account with same name
-                $new = false;
-                if ($_eu && is_array($_eu)) {
-                    // Looks like someone else already has used this name - set it to a
-                    // different variation and notify them at the end
-                    $user_name .= mt_rand(1111, 9999);
-                    $new = true;
-                }
-
-                // Create new User Account
-                $iter = jrCore_get_advanced_setting('jrUser', 'password_iterations', 12);
-                $text = substr(md5(microtime()), 5, 8);
-                require APP_DIR . '/modules/jrUser/contrib/phpass/PasswordHash.php';
-                $hash = new PasswordHash($iter, false);
-                $pass = $hash->HashPassword($text);
-
-                $_data = array(
-                    'user_name'          => $user_name,
-                    'user_email'         => $email,
-                    'user_password'      => $pass,
-                    'user_temp_password' => 1,
-                    'user_group'         => 'user',
-                    'user_language'      => (isset($_post['user_language']{0})) ? $_post['user_language'] : $_conf['jrUser_default_language'],
-                    'user_active'        => 1,
-                    'user_validate'      => md5(microtime()),
-                    'user_validated'     => 1,
-                    'user_jrOneAll'      => 1,
-                    'user_last_login'    => 'UNIX_TIMESTAMP()'
-                );
-
-                // If our email or user name are BANNED, we flag
-                // this user account as needing admin validation
-                $banned = false;
-                if (jrCore_module_is_active('jrBanned')) {
-                    if (jrCore_run_module_function('jrBanned_is_banned', 'name', $user_name)) {
-                        $_data['user_active'] = 0;
-                        $banned               = true;
+                    // We have either a new user or an existing user using the social login for the first time
+                    // Check for an existing username - if we find it, and it has the same email address
+                    if (isset($_us['preferredUsername']) && strlen($_us['preferredUsername']) > 0) {
+                        $user_name = $_us['preferredUsername'];
                     }
-                    elseif (jrCore_run_module_function('jrBanned_is_banned', 'email', $email)) {
-                        $_data['user_active'] = 0;
-                        $banned               = true;
+                    elseif (isset($_us['displayName']) && strlen($_us['displayName']) > 0) {
+                        $user_name = $_us['displayName'];
                     }
-                }
+                    elseif (isset($_us['name']['formatted']) && strlen($_us['name']['formatted']) > 0) {
+                        $user_name = $_us['name']['formatted'];
+                    }
+                    elseif (isset($_us['profileUrl']) && strlen($_us['profileUrl']) > 0) {
+                        $utmp      = explode('/', $_us['profileUrl']);
+                        $user_name = end($utmp);
+                    }
+                    elseif (isset($_us['accounts'][0]['username']) && strlen($_us['accounts'][0]['username']) > 0) {
+                        $user_name = $_us['accounts'][0]['username'];
+                    }
+                    elseif (strpos($email, '@')) {
+                        list($user_name,) = explode('@', $email);
+                    }
+                    else {
+                        // Hopefully we never get here
+                        $user_name = mt_rand(11111, 99999);
+                    }
+                    if (!jrCore_checktype($user_name, 'printable')) {
+                        $user_name = jrCore_url_string($user_name);
+                    }
+                    $_eu = jrCore_db_get_item_by_key('jrUser', 'user_name', $user_name);
 
-                $uid = jrCore_db_create_item('jrUser', $_data);
-                if (!$uid || !jrCore_checktype($uid, 'number_nz')) {
-                    jrCore_page_notice('error', 'An error was encountered creating your user account - please try again');
-                }
+                    // Existing Local account with same name
+                    $new = false;
+                    if ($_eu && is_array($_eu)) {
+                        // Looks like someone else already has used this name - set it to a
+                        // different variation and notify them at the end
+                        $user_name .= mt_rand(1111, 9999);
+                        $new       = true;
+                    }
 
-                // update user account with correct _user_id value
-                $_temp = array();
-                $_core = array(
-                    '_user_id' => $uid
-                );
-                // Update account just created with proper user_id...
-                jrCore_db_update_item('jrUser', $uid, $_temp, $_core);
+                    // Create new User Account
+                    $text = substr(md5(microtime()), 5, 8);
+                    $pass = jrUser_get_password_hash($text);
 
-                // User account is created - send out trigger so any listening
-                // modules can do their work for this new user
-                // Profile will be created here
-                $_data['_user_id'] = $uid;
+                    $_data = array(
+                        'user_name'          => $user_name,
+                        'user_email'         => $email,
+                        'user_password'      => $pass,
+                        'user_temp_password' => 1,
+                        'user_group'         => 'user',
+                        'user_language'      => (isset($_post['user_language']{0})) ? $_post['user_language'] : $_conf['jrUser_default_language'],
+                        'user_active'        => 1,
+                        'user_validate'      => md5(microtime()),
+                        'user_validated'     => 1,
+                        'user_jrOneAll'      => 1,
+                        'user_last_login'    => 'UNIX_TIMESTAMP()'
+                    );
 
-                // Figure out quota_id
-                if (isset($_COOKIE['signup_quota_id']) && jrCore_checktype($_COOKIE['signup_quota_id'], 'number_nz')) {
-                    $_post['quota_id'] = (int) $_COOKIE['signup_quota_id'];
-                    unset($_COOKIE['signup_quota_id']);
-                }
-
-                $_pi = jrCore_trigger_event('jrUser', 'signup_created', $_post, $_data);
-
-                // Save provider linkup
-                $req = "INSERT INTO {$tbl} (user_id,updated,provider,token,user_token,shared,data)
-                        VALUES('{$uid}',UNIX_TIMESTAMP(),'{$prv}','{$ctk}','{$tkn}',0,'" . jrCore_db_escape(json_encode($_bkup)) . "')";
-                jrCore_db_query($req, 'INSERT_ID');
-
-                if (!$banned && isset($_pi['signup_method']) && $_pi['signup_method'] != 'admin') {
-                    // Send them a welcome email if we allow password changes
-                    if (!isset($_conf['jrOneAll_require_social']) || $_conf['jrOneAll_require_social'] != 'on') {
-                        $_rp = array(
-                            'system_name'      => $_conf['jrCore_system_name'],
-                            'jamroom_url'      => $_conf['jrCore_base_url'],
-                            'provider'         => $prv,
-                            'user_name'        => $user_name,
-                            'user_pass'        => $text,
-                            'user_email'       => $email,
-                            'user_account_url' => "{$_conf['jrCore_base_url']}/" . jrCore_get_module_url('jrUser') . "/account"
-                        );
-                        list($sub, $msg) = jrCore_parse_email_templates('jrOneAll', 'password', $_rp);
-                        if (isset($email) && jrCore_checktype($email, 'email')) {
-                            jrCore_logger('INF', "notifying new OneAll user of their password info: {$email}", $_rp);
-                            jrCore_send_email($email, $sub, $msg);
+                    // If our email or user name are BANNED, we flag
+                    // this user account as needing admin validation
+                    $banned = false;
+                    if (jrCore_module_is_active('jrBanned')) {
+                        if (jrCore_run_module_function('jrBanned_is_banned', 'name', $user_name)) {
+                            $_data['user_active'] = 0;
+                            $banned               = true;
                         }
-                        elseif (jrCore_module_is_active('jrPrivateNote')) {
-                            // Send user system PN
-                            // Send it from the system user
-                            jrPrivateNote_send_note($uid, 0, $sub, $msg);
+                        elseif (jrCore_run_module_function('jrBanned_is_banned', 'email', $email)) {
+                            $_data['user_active'] = 0;
+                            $banned               = true;
                         }
                     }
-                }
 
-                // Get User account (now with profile info)
-                $_usr = jrCore_db_get_item('jrUser', $uid, false, true);
+                    $uid = jrCore_db_create_item('jrUser', $_data);
+                    if (!$uid || !jrCore_checktype($uid, 'number_nz')) {
+                        jrCore_notice_page('error', 'An error was encountered creating your user account - please try again');
+                    }
 
-                // Next - let's see if we have an image for this user
-                if (isset($_us['photos']) && is_array($_us['photos'])) {
-                    // The last picture in the set will be the largest
-                    $_photo = end($_us['photos']);
-                    if ($_photo && is_array($_photo) && isset($_photo['value']) && jrCore_checktype($_photo['value'], 'url')) {
+                    // update user account with correct _user_id value
+                    $_temp = array();
+                    $_core = array(
+                        '_user_id' => $uid
+                    );
+                    // Update account just created with proper user_id...
+                    jrCore_db_update_item('jrUser', $uid, $_temp, $_core);
 
-                        // Download the file locally and use it as both our Account and Profile photo
-                        $cdir = jrCore_get_module_cache_dir('jrOneAll');
-                        $file = "{$cdir}/{$uid}_user_image";
-                        if (jrCore_download_file($_photo['value'], $file)) {
+                    // User account is created - send out trigger so any listening
+                    // modules can do their work for this new user
+                    // Profile will be created here
+                    $_data['_user_id'] = $uid;
 
-                            // Is this a valid image?
-                            $_im = getimagesize($file);
-                            if ($_im && is_array($_im)) {
-                                // Are we configured for minimum image width?
-                                $minw = jrCore_get_advanced_setting('jrImage', 'minimum_width', 0);
-                                if ($minw == 0 || $_im[0] >= $minw) {
-                                    $_img = jrCore_save_media_file('jrUser', $file, $_usr['_profile_id'], $uid);
-                                    if ($_img && is_array($_img)) {
-                                        $_usr       = array_merge($_usr, $_img);
-                                        $user_image = jrCore_get_media_file_path('jrUser', 'user_image', $_usr);
-                                        if (is_file($user_image)) {
-                                            $ext = jrCore_file_extension($user_image);
-                                            $nam = "{$_usr['_profile_id']}_profile_image";
-                                            if (jrCore_copy_media_file($_usr['_profile_id'], $user_image, $nam)) {
-                                                $dir = dirname($user_image);
-                                                jrCore_write_to_file("{$dir}/{$nam}.tmp", "profile_image.{$ext}");
-                                                jrCore_save_media_file('jrProfile', "{$dir}/{$nam}", $_usr['_profile_id'], $_usr['_profile_id']);
-                                                unlink("{$dir}/{$nam}");
-                                                unlink("{$dir}/{$nam}.tmp");
+                    // Figure out quota_id
+                    if (isset($_COOKIE['signup_quota_id']) && jrCore_checktype($_COOKIE['signup_quota_id'], 'number_nz')) {
+                        $_post['quota_id'] = (int) $_COOKIE['signup_quota_id'];
+                        unset($_COOKIE['signup_quota_id']);
+                    }
+
+                    $_pi = jrCore_trigger_event('jrUser', 'signup_created', $_post, $_data);
+
+                    // Save provider linkup
+                    $tbl = jrCore_db_table_name('jrOneAll', 'link');
+                    $req = "INSERT INTO {$tbl} (user_id, updated, provider, token, user_token, shared, data)
+                            VALUES('{$uid}', UNIX_TIMESTAMP(), '{$prv}', '{$ctk}', '{$tkn}', 0, '" . jrCore_db_escape(json_encode($_bkup)) . "')";
+                    jrCore_db_query($req);
+
+                    if (!$banned && isset($_pi['signup_method']) && $_pi['signup_method'] != 'admin') {
+                        // Send them a welcome email if we allow password changes
+                        if (!isset($_conf['jrOneAll_require_social']) || $_conf['jrOneAll_require_social'] != 'on') {
+                            $_rp = array(
+                                'system_name'      => $_conf['jrCore_system_name'],
+                                'jamroom_url'      => $_conf['jrCore_base_url'],
+                                'provider'         => $prv,
+                                'user_name'        => $user_name,
+                                'user_pass'        => $text,
+                                'user_email'       => $email,
+                                'user_account_url' => "{$_conf['jrCore_base_url']}/" . jrCore_get_module_url('jrUser') . "/account"
+                            );
+                            list($sub, $msg) = jrCore_parse_email_templates('jrOneAll', 'password', $_rp);
+                            if (isset($email) && jrCore_checktype($email, 'email')) {
+                                jrCore_logger('INF', "notifying new OneAll user of their password info: {$email}", $_rp);
+                                jrCore_send_email($email, $sub, $msg);
+                            }
+                            elseif (jrCore_module_is_active('jrPrivateNote')) {
+                                // Send user system PN
+                                // Send it from the system user
+                                jrPrivateNote_send_note($uid, 0, $sub, $msg);
+                            }
+                        }
+                    }
+
+                    // Get User account (now with profile info)
+                    $_usr = jrUser_get_user_session_data($uid);
+
+                    // Next - let's see if we have an image for this user
+                    if (isset($_us['photos']) && is_array($_us['photos'])) {
+                        // The last picture in the set will be the largest
+                        $_photo = end($_us['photos']);
+                        if ($_photo && is_array($_photo) && isset($_photo['value']) && jrCore_checktype($_photo['value'], 'url')) {
+
+                            // Download the file locally and use it as both our Account and Profile photo
+                            $cdir = jrCore_get_module_cache_dir('jrOneAll');
+                            $file = "{$cdir}/{$uid}_user_image";
+                            if (jrCore_download_file($_photo['value'], $file)) {
+
+                                // Is this a valid image?
+                                $_im = getimagesize($file);
+                                if ($_im && is_array($_im)) {
+                                    // Are we configured for minimum image width?
+                                    $minw = jrCore_get_advanced_setting('jrImage', 'minimum_width', 0);
+                                    if ($minw == 0 || $_im[0] >= $minw) {
+                                        $_img = jrCore_save_media_file('jrUser', $file, $_usr['_profile_id'], $uid);
+                                        if ($_img && is_array($_img)) {
+                                            $_usr       = array_merge($_usr, $_img);
+                                            $user_image = jrCore_get_media_file_path('jrUser', 'user_image', $_usr);
+                                            if (is_file($user_image)) {
+                                                $ext = jrCore_file_extension($user_image);
+                                                $nam = "{$_usr['_profile_id']}_profile_image";
+                                                if (jrCore_copy_media_file($_usr['_profile_id'], $user_image, $nam)) {
+                                                    $dir = dirname($user_image);
+                                                    jrCore_write_to_file("{$dir}/{$nam}.tmp", "profile_image.{$ext}");
+                                                    jrCore_save_media_file('jrProfile', "{$dir}/{$nam}", $_usr['_profile_id'], $_usr['_profile_id']);
+                                                    unlink("{$dir}/{$nam}");
+                                                    unlink("{$dir}/{$nam}.tmp");
+                                                }
                                             }
                                         }
                                     }
@@ -967,101 +1142,123 @@ function view_jrOneAll_callback($_post, $_user, $_conf)
                             }
                         }
                     }
-                }
 
-                // Check if we are doing ADMIN validation on sign ups in this quota - if so, notify admins
-                if ($banned || (isset($_pi['signup_method']) && $_pi['signup_method'] == 'admin')) {
-                    $_dt = array(
-                        'user_active'    => 0,
-                        'user_validated' => 0
-                    );
-                    jrCore_db_update_item('jrUser', $uid, $_dt);
-                    $_data['signup_method'] = $_pi['signup_method'];
-                    if (isset($_conf['jrUser_signup_notify']) && $_conf['jrUser_signup_notify'] == 'on') {
-                        $_ad = jrUser_get_admin_user_ids();
-                        if ($_ad && is_array($_ad)) {
-                            $_data['system_name']     = $_conf['jrCore_system_name'];
-                            $_data['ip_address']      = jrCore_get_ip();
-                            $_data['new_profile_url'] = "{$_conf['jrCore_base_url']}/" . rawurldecode(jrCore_url_string($_data['user_name']));
-                            jrCore_logger('INF', "notifying admin users of new OneAll signup", $_data);
-                            list($sub, $msg) = jrCore_parse_email_templates('jrUser', 'notify_signup', $_data);
-                            foreach ($_ad as $uid) {
-                                jrUser_notify($uid, 0, 'jrUser', 'signup_notify', $sub, $msg);
+                    // Check if we are doing ADMIN validation on sign ups in this quota - if so, notify admins
+                    if ($banned || (isset($_pi['signup_method']) && $_pi['signup_method'] == 'admin')) {
+                        $_dt = array(
+                            'user_active'    => 0,
+                            'user_validated' => 0
+                        );
+                        jrCore_db_update_item('jrUser', $uid, $_dt);
+                        $_data['signup_method'] = $_pi['signup_method'];
+                        if (isset($_conf['jrUser_signup_notify']) && $_conf['jrUser_signup_notify'] == 'on') {
+                            $_ad = jrUser_get_admin_user_ids();
+                            if ($_ad && is_array($_ad)) {
+                                $_data['system_name']     = $_conf['jrCore_system_name'];
+                                $_data['ip_address']      = jrCore_get_ip();
+                                $_data['new_profile_url'] = "{$_conf['jrCore_base_url']}/" . rawurldecode(jrCore_url_string($_data['user_name']));
+                                jrCore_logger('INF', "notifying admin users of new OneAll signup", $_data);
+                                list($sub, $msg) = jrCore_parse_email_templates('jrUser', 'notify_signup', $_data);
+                                foreach ($_ad as $uid) {
+                                    jrUser_notify($uid, 0, 'jrUser', 'signup_notify', $sub, $msg);
+                                }
                             }
                         }
+
+                        // Show them success
+                        jrCore_logger('INF', "{$_data['user_name']} has validated their account via {$prv} and is pending approval");
+                        jrCore_notice_page('success', $_ln['jrUser'][105], $_conf['jrCore_base_url'], $_ln['jrOneAll'][32], false);
+                        return true;
                     }
 
+                    // Reload User account - start session
+                    global $_user;
+                    $_SESSION = $_usr;
+                    /** @noinspection PhpUnusedLocalVariableInspection */
+                    $_user = $_SESSION; // Leave this here!
+
+                    // let modules know signup is activated
+                    jrCore_trigger_event('jrUser', 'signup_activated', $_SESSION);
+
+                    // Startup session with user info
+                    $_SESSION = jrCore_trigger_event('jrUser', 'login_success', $_SESSION);
+
                     // Show them success
-                    jrCore_logger('INF', "{$_data['user_name']} has validated their account via {$prv} and is pending approval");
-                    jrCore_notice_page('success', $_ln['jrUser'][105], $_conf['jrCore_base_url'], $_ln['jrOneAll'][32], false);
+                    jrCore_logger('INF', "{$_data['user_name']} has validated their account via {$prv} and logged in");
+
+                    // Redirect them to their new account section so they can fill in
+                    // any missing information that we may not have received
+                    if (strlen($email) === 0) {
+                        $_lng = jrUser_load_lang_strings();
+                        jrCore_set_form_notice('error', $_lng['jrOneAll'][30], false);
+                        jrCore_form_field_hilight('user_email');
+                        if (is_numeric($_data['user_name'])) {
+                            jrCore_form_field_hilight('user_name');
+                        }
+                    }
+                    elseif ($new) {
+                        $_lng = jrUser_load_lang_strings();
+                        jrCore_set_form_notice('error', $_lng['jrOneAll'][26], false);
+                        jrCore_form_field_hilight('user_name');
+                    }
+
+                    // If we are only using social login, no need to redirect to their account
+                    if (isset($_conf['jrOneAll_require_social']) && $_conf['jrOneAll_require_social'] == 'on') {
+                        jrCore_location("{$_conf['jrCore_base_url']}/" . jrCore_url_string($_data['user_name']));
+                    }
+                    jrCore_set_form_notice('error', $_ln['jrOneAll'][29]);
+                    jrCore_form_field_hilight('user_passwd1');
+                    jrCore_form_field_hilight('user_passwd2');
+
+                    // Do we have auto login turned on?
+                    if (isset($_conf['jrUser_autologin']) && intval($_conf['jrUser_autologin']) > 1) {
+                        jrUser_session_set_login_cookie($_user['_user_id']);
+                    }
+                    jrCore_location("{$_conf['jrCore_base_url']}/{$url}/account");
                     return true;
                 }
 
-                // Reload User account - start session
-                global $_user;
-                $_SESSION = $_usr;
-                /** @noinspection PhpUnusedLocalVariableInspection */
-                $_user = $_SESSION; // Leave this here!
+                // Existing User coming in on an existing or new Connection Token
+                $_rt = reset($_rt);
+                $req = "INSERT INTO {$tbl} (user_id,updated,provider,token,user_token,shared,data)
+                        VALUES('{$_rt['user_id']}',UNIX_TIMESTAMP(),'{$prv}','{$ctk}','{$tkn}','0','" . jrCore_db_escape(json_encode($_bkup)) . "')
+                        ON DUPLICATE KEY UPDATE `updated` = UNIX_TIMESTAMP(), `token` = '{$ctk}', `data` = VALUES(`data`)";
+                jrCore_db_query($req);
 
-                // let modules know signup is activated
-                jrCore_trigger_event('jrUser', 'signup_activated', $_SESSION);
-
-                // Startup session with user info
-                $_SESSION = jrCore_trigger_event('jrUser', 'login_success', $_SESSION);
-
-                // Show them success
-                jrCore_logger('INF', "{$_data['user_name']} has validated their account via {$prv} and logged in");
-
-                // Redirect them to their new account section so they can fill in
-                // any missing information that we may not have received
-                if (strlen($email) === 0) {
-                    $_lng = jrUser_load_lang_strings();
-                    jrCore_set_form_notice('error', $_lng['jrOneAll'][30], false);
-                    jrCore_form_field_hilight('user_email');
-                    if (is_numeric($_data['user_name'])) {
-                        jrCore_form_field_hilight('user_name');
-                    }
+                // See if this user is active
+                $_us = jrUser_get_user_session_data($_rt['user_id']);
+                if (!$_us || is_array($_us) && isset($_us['user_validated']) && $_us['user_validated'] == 0) {
+                    $_ln = jrUser_load_lang_strings();
+                    jrCore_notice_page('success', $_ln['jrUser'][105], $_conf['jrCore_base_url'], $_ln['jrOneAll'][32], false);
                 }
-                elseif ($new) {
-                    $_lng = jrUser_load_lang_strings();
-                    jrCore_set_form_notice('error', $_lng['jrOneAll'][26], false);
-                    jrCore_form_field_hilight('user_name');
+                // Make sure account is active
+                if (!isset($_us['user_active']) || $_us['user_active'] != '1') {
+                    $_ln = jrUser_load_lang_strings();
+                    jrCore_notice_page('error', $_ln['jrUser'][29], $_conf['jrCore_base_url'], $_ln['jrOneAll'][32], false);
+                }
+                $_SESSION = $_us;
+                if (isset($_conf['jrUser_autologin']) && intval($_conf['jrUser_autologin']) > 1) {
+                    jrUser_session_set_login_cookie($_rt['user_id']);
                 }
 
-                // If we are only using social login, no need to redirect to their account
-                if (isset($_conf['jrOneAll_require_social']) && $_conf['jrOneAll_require_social'] == 'on') {
-                    jrCore_location("{$_conf['jrCore_base_url']}/" . jrCore_url_string($_data['user_name']));
-                }
-                jrCore_set_form_notice('error', $_ln['jrOneAll'][29]);
-                jrCore_form_field_hilight('user_passwd1');
-                jrCore_form_field_hilight('user_passwd2');
-                jrCore_location("{$_conf['jrCore_base_url']}/{$url}/account");
+                // Remove forgot entries
+                jrUser_delete_forgot_password_entries($_rt['user_id']);
+
+                jrCore_location("{$_conf['jrCore_base_url']}/{$_SESSION['profile_url']}");
                 return true;
+
             }
 
-            // Existing User coming in on an existing or new Connection Token
-            $_rt = reset($_rt);
-            $req = "INSERT INTO {$tbl} (user_id,updated,provider,token,user_token,shared,data)
-                    VALUES('{$_rt['user_id']}',UNIX_TIMESTAMP(),'{$prv}','{$ctk}','{$tkn}','0','" . jrCore_db_escape(json_encode($_bkup)) . "')
-                    ON DUPLICATE KEY UPDATE `updated` = UNIX_TIMESTAMP(), `token` = '{$ctk}', `data` = VALUES(`data`)";
-            jrCore_db_query($req);
-
-            // See if this user is active
-            $_us = jrCore_db_get_item('jrUser', $_rt['user_id'], false, true);
-            if (!$_us || is_array($_us) && isset($_us['user_validated']) && $_us['user_validated'] == 0) {
-                $_ln = jrUser_load_lang_strings();
-                jrCore_notice_page('success', $_ln['jrUser'][105], $_conf['jrCore_base_url'], $_ln['jrOneAll'][32], false);
+            // If we fall through to here it means the JSON response from one all was invalid
+            if (isset($_bkup['response']['result']['status']['info']) && stripos($_bkup['response']['result']['status']['info'], 'did not authenticate')) {
+                // This user did not authenticate properly - no error
+                return false;
             }
-            $_SESSION = $_us;
-            jrCore_location("{$_conf['jrCore_base_url']}/{$_SESSION['profile_url']}");
-            return true;
 
+            jrCore_logger('CRI', "invalid JSON response from OneAll", $_bkup);
+            jrCore_notice_page('error', 'An error was encountered intializing your social connection - please try again shortly. (2)');
+            return false;
         }
-
-        // If we fall through to here it means the JSON response from one all was invalid
-        jrCore_logger('CRI', "invalid JSON response from OneAll", $_bkup);
-        jrCore_notice_page('error', 'An error was encountered intializing your social connection - please try again shortly. (2)');
-        return false;
     }
 
     jrCore_logger('CRI', "invalid token response from OneAll", $_post);

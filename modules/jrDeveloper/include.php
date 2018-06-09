@@ -2,7 +2,7 @@
 /**
  * Jamroom Developer Tools module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -49,7 +49,7 @@ function jrDeveloper_meta()
     $_tmp = array(
         'name'        => 'Developer Tools',
         'url'         => 'developer',
-        'version'     => '1.4.4',
+        'version'     => '1.5.2',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Developer tools for working with modules and skins',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/932/developer-tools',
@@ -68,6 +68,7 @@ function jrDeveloper_init()
     global $_conf;
     jrCore_register_module_feature('jrCore', 'javascript', 'jrDeveloper', 'jrDeveloper.js', 'admin');
     jrCore_register_module_feature('jrCore', 'tool_view', 'jrDeveloper', "{$_conf['jrCore_base_url']}/modules/jrDeveloper/adminer.php", array('Database Admin', 'Browse your Database Tables - <b>carefully!</b>'));
+    jrCore_register_module_feature('jrCore', 'tool_view', 'jrDeveloper', "{$_conf['jrCore_base_url']}/modules/jrDeveloper/apc.php", array('Memory Cache Admin', 'View the local Memory Cache statistics and usage'));
     jrCore_register_module_feature('jrCore', 'tool_view', 'jrDeveloper', 'clone_skin', array('Clone Skin', 'Save a copy of an existing skin to a new name'));
     if (isset($_conf['jrDeveloper_developer_prefix']{1}) && isset($_conf['jrDeveloper_developer_name']{1})) {
         jrCore_register_module_feature('jrCore', 'tool_view', 'jrDeveloper', 'package_module', array('Package Module', 'Create a Module ZIP Package that can be uploaded to the Jamroom Marketplace'));
@@ -84,6 +85,8 @@ function jrDeveloper_init()
     // Loader listeners
     jrCore_register_event_listener('jrCore', 'process_init', 'jrDeveloper_process_init_listener');
     jrCore_register_event_listener('jrCore', 'parsed_template', 'jrDeveloper_parsed_template_listener');
+    jrCore_register_event_listener('jrCore', 'db_query_init', 'jrDeveloper_db_query_init_listener');
+    jrCore_register_event_listener('jrCore', 'db_query_exit', 'jrDeveloper_db_query_exit_listener');
 
     // We have an event trigger
     jrCore_register_event_trigger('jrDeveloper', 'reset_system', 'Fired when the Reset System tool is run');
@@ -298,7 +301,7 @@ function jrDeveloper_add_license_header($type, $name, $file, $license)
             $open = true;
             continue;
         }
-        elseif ($open && strpos(trim($line), '/**') === 0) {
+        elseif ($open && strpos(trim($line), '/*') === 0) {
             $open = false;
             continue;
         }
@@ -312,6 +315,67 @@ function jrDeveloper_add_license_header($type, $name, $file, $license)
 //----------------------
 
 /**
+ * Track SQL query counts for performance
+ * @param array $_data incoming data array from jrCore_save_media_file()
+ * @param array $_user current user info
+ * @param array $_conf Global config
+ * @param array $_args additional info about the module
+ * @param string $event Event Trigger name
+ * @return array
+ */
+function jrDeveloper_db_query_init_listener($_data, $_user, $_conf, $_args, $event)
+{
+    // Are we keeping track of slow SQL query calls?
+    if (isset($_conf['jrDeveloper_enable_query_counts']) && $_conf['jrDeveloper_enable_query_counts'] == 'on' && jrCore_local_cache_is_enabled()) {
+        $now = explode(' ', microtime());
+        $now = ($now[1] + $now[0]);
+        jrCore_set_flag('jrdeveloper_query_init', $now);
+    }
+    return $_data;
+}
+
+/**
+ * Track SQL query duration for performance
+ * @param array $_data incoming data array from jrCore_save_media_file()
+ * @param array $_user current user info
+ * @param array $_conf Global config
+ * @param array $_args additional info about the module
+ * @param string $event Event Trigger name
+ * @return array
+ */
+function jrDeveloper_db_query_exit_listener($_data, $_user, $_conf, $_args, $event)
+{
+    // Are we keeping track of slow SQL query calls?
+    if ($beg = jrCore_get_flag('jrdeveloper_query_init')) {
+        $now = explode(' ', microtime());
+        $now = ($now[1] + $now[0]);
+        $end = ($now - $beg) * 1000;
+        $end = round($end);
+        if ($end > 0 && strpos(PHP_VERSION, '5.3') !== 0 && strpos($_args[0], 'SELECT') === 0) {
+            if ($_tr = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10)) {
+                if (isset($_tr[0])) {
+                    $_fn = false;
+                    foreach ($_tr as $v) {
+                        if (!strpos($v['file'], 'jrCore/lib')) {
+                            $_fn = $v;
+                            break;
+                        }
+                    }
+                    if ($_fn) {
+                        $key  = md5($_args[0]);
+                        $file = str_replace(APP_DIR . '/', '', $_fn['file']);
+                        apcu_inc("c:{$key}:{$file}:{$_fn['line']}", 1);
+                        apcu_inc("d:{$key}", $end);
+                    }
+                }
+            }
+        }
+        jrCore_delete_flag('jrdeveloper_query_init');
+    }
+    return $_data;
+}
+
+/**
  * Add Template name as HTML comments if enabled
  * @param array $_data incoming data array from jrCore_save_media_file()
  * @param array $_user current user info
@@ -323,20 +387,18 @@ function jrDeveloper_add_license_header($type, $name, $file, $license)
 function jrDeveloper_parsed_template_listener($_data, $_user, $_conf, $_args, $event)
 {
     // Turn on error logging if developer mode is on
-    if (jrCore_is_developer_mode()) {
-        if (isset($_conf['jrDeveloper_template_debug']) && $_conf['jrDeveloper_template_debug'] == 'on') {
-            switch ($_args['jr_template']) {
-                // Some template cause issues if we put HTML comments inside
-                case 'form_editor.tpl':
-                case 'login_check.tpl':
-                    break;
-                default:
-                    if (strpos($_args['jr_template_full_path'], 'string:') !== 0 && strpos($_args['jr_template'], 'email_') !== 0 && !strpos(' ' . $_args['jr_template'], 'rss')) {
-                        $tpl   = "{$_args['jr_template_directory']}/{$_args['jr_template']}";
-                        $_data = "<!-- BEGIN {$tpl} -->\n{$_data}\n<!-- END {$tpl} -->\n";
-                    }
-                    break;
-            }
+    if (isset($_conf['jrDeveloper_template_debug']) && $_conf['jrDeveloper_template_debug'] == 'on') {
+        switch ($_args['jr_template']) {
+            // Some template cause issues if we put HTML comments inside
+            case 'form_editor.tpl':
+            case 'login_check.tpl':
+                break;
+            default:
+                if (strpos($_args['jr_template_full_path'], 'string:') !== 0 && strpos($_args['jr_template'], 'email_') !== 0 && !strpos(' ' . $_args['jr_template'], 'rss')) {
+                    $tpl   = "{$_args['jr_template_directory']}/{$_args['jr_template']}";
+                    $_data = "<!-- BEGIN {$tpl} -->\n{$_data}\n<!-- END {$tpl} -->\n";
+                }
+                break;
         }
     }
     return $_data;

@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -43,11 +43,6 @@
 // make sure we are not being called directly
 defined('APP_DIR') or exit();
 
-// Constants
-define('HIGH_PRIORITY_QUEUE', 1);
-define('NORMAL_PRIORITY_QUEUE', 5);
-define('LOW_PRIORITY_QUEUE', 9);
-
 //-----------------------------------------
 // FEATURE registration
 //-----------------------------------------
@@ -57,8 +52,8 @@ define('LOW_PRIORITY_QUEUE', 9);
  * @param string $module The Module that provides the feature
  * @param string $feature The Feature name
  * @param string $r_module The module that wants to use the feature
- * @param string $r_feature The unique setting
- * @param mixed $_options Parameters for the feature
+ * @param string $r_feature The unique name/key for the setting
+ * @param mixed $_options optional parameters for the feature
  * @return bool
  */
 function jrCore_register_module_feature($module, $feature, $r_module, $r_feature, $_options = true)
@@ -165,7 +160,13 @@ function jrCore_set_cookie($name, $content, $expires = 10)
  */
 function jrCore_get_cookie($name)
 {
-    return (isset($_COOKIE[$name])) ? json_decode($_COOKIE[$name], true) : false;
+    if (isset($_COOKIE[$name])) {
+        if (!$_val = json_decode($_COOKIE[$name], true)) {
+            return $_COOKIE[$name];
+        }
+        return $_val;
+    }
+    return false;
 }
 
 /**
@@ -227,7 +228,7 @@ function jrCore_get_module_jumper($name, $selected, $onchange, $_modules = null)
         foreach ($_mds as $dir => $name) {
             $murl = jrCore_get_module_url($dir);
             if ($dir == $selected) {
-                $html .= '<option value="' . $murl . '" selected="selected"> ' . $name . "</option>\n";
+                $html .= '<option value="' . $murl . '" selected> ' . $name . "</option>\n";
             }
             else {
                 $html .= '<option value="' . $murl . '"> ' . $name . "</option>\n";
@@ -245,24 +246,12 @@ function jrCore_get_module_jumper($name, $selected, $onchange, $_modules = null)
  */
 function jrCore_get_base_url()
 {
-    $url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') ? 'https://' : 'http://';
-    $add = '';
-    if (substr(trim($_SERVER['REQUEST_URI']), -1) == '/') {
-        $add = '.';
+    $protocol = jrCore_get_server_protocol();
+    $protocol = $protocol . '://';
+    if (isset($_SERVER['HTTP_HOST'])) {
+        return $protocol . rtrim($_SERVER['HTTP_HOST'], '/');
     }
-    if (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] != '80') {
-        $url .= $_SERVER['SERVER_NAME'] . ':' . $_SERVER['SERVER_PORT'] . dirname($_SERVER['REQUEST_URI'] . $add);
-    }
-    else {
-        $url .= $_SERVER['SERVER_NAME'] . dirname($_SERVER['REQUEST_URI'] . $add);
-    }
-    $url = rtrim($url, '/');
-    if (isset($_REQUEST['_uri']) && strlen($_REQUEST['_uri']) > 0) {
-        if (strpos($_REQUEST['_uri'], '/')) {
-            $url = str_replace("/" . dirname($_REQUEST['_uri']), '', $url);
-        }
-    }
-    return $url;
+    return $protocol . rtrim($_SERVER['SERVER_NAME'], '/');
 }
 
 /**
@@ -320,19 +309,17 @@ function jrCore_str_to_upper($str)
 function jrCore_get_current_url()
 {
     global $_conf;
+    $hst = (!empty($_SERVER['HTTP_HOST'])) ? $_SERVER['HTTP_HOST'] : $_conf['jrCore_base_url'];
+    $dir = (!empty($_SERVER['PHP_SELF']) && strpos($_SERVER['PHP_SELF'], 'router.php') && strpos($_SERVER['PHP_SELF'], '/modules/') !== 0) ? substr($_SERVER['PHP_SELF'], 0, strpos($_SERVER['PHP_SELF'], '/modules/')) : '';
     $uri = (isset($_REQUEST['_uri'])) ? trim($_REQUEST['_uri']) : '';
-    if (!strpos($_conf['jrCore_base_url'], $_SERVER['HTTP_HOST'])) {
-        // Is this a mapped domain?
-        if ($_dm = jrCore_get_flag('jrCustomDomain_requested_domain')) {
-            if ($_dm['map_domain'] == $_SERVER['HTTP_HOST']) {
-                return (($_dm['map_ssl'] == 'on') ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . $uri;
-            }
-        }
-    }
     if (isset($uri{1}) && strpos($uri, '/') !== 0) {
         $uri = "/{$uri}";
     }
-    return rtrim($_conf['jrCore_base_url'], '/') . $uri;
+    $pfx = 'http://';
+    if (!empty($_SERVER['HTTPS'])) {
+        $pfx = 'https://';
+    }
+    return jrCore_trigger_event('jrCore', 'get_current_url', $pfx . rtrim($hst, '/') . $dir . $uri);
 }
 
 /**
@@ -342,10 +329,23 @@ function jrCore_get_current_url()
 function jrCore_get_local_referrer()
 {
     global $_conf;
+    $ref = $_conf['jrCore_base_url'];
     if (isset($_SERVER['HTTP_REFERER']) && basename($_SERVER['SCRIPT_FILENAME']) == 'router.php') {
-        return $_SERVER['HTTP_REFERER'];
+        if (strpos($_SERVER['HTTP_REFERER'], $_conf['jrCore_base_url']) === 0) {
+            // this is a local request
+            $ref = $_SERVER['HTTP_REFERER'];
+        }
+        else {
+            // Is this a mapped domain?
+            if ($_dm = jrCore_get_flag('jrCustomDomain_requested_domain')) {
+                if (strpos($_SERVER['HTTP_REFERER'], $_dm['map_domain']) === 0) {
+                    // This is a mapped domain - we're good
+                    $ref = $_SERVER['HTTP_REFERER'];
+                }
+            }
+        }
     }
-    return $_conf['jrCore_base_url'];
+    return jrCore_trigger_event('jrCore', 'get_local_referrer', $ref);
 }
 
 /**
@@ -354,16 +354,40 @@ function jrCore_get_local_referrer()
  */
 function jrCore_is_local_referrer()
 {
+    if (!isset($_SESSION['jruser_save_location'])) {
+        $_SESSION['jruser_save_location'] = jrCore_get_local_referrer();
+    }
+    return $_SESSION['jruser_save_location'];
+}
+
+/**
+ * Return TRUE if given URL is either the master URL or a valid URL as defined by a module
+ * @param string $url
+ * @return bool
+ */
+function jrCore_is_local_url($url)
+{
     global $_conf;
-    if (isset($_SESSION['jruser_save_location'])) {
-        return $_SESSION['jruser_save_location'];
+    if (strpos($url, $_conf['jrCore_base_url']) === 0) {
+        return true;
     }
-    $url = jrCore_get_local_referrer();
-    if (isset($url) && strpos($url, "{$_conf['jrCore_base_url']}/") === 0) {
-        $_SESSION['jruser_save_location'] = $url;
-        return $url;
+    // If we don't match, see if it is an SSL/non-SSL issue
+    $_rep = array('https://', 'http://');
+    $tmp1 = str_replace($_rep, '', $url);
+    $tmp2 = str_replace($_rep, '', $_conf['jrCore_base_url']);
+    if (strpos($tmp1, $tmp2) === 0) {
+        return true;
     }
-    return 'referrer';
+    $_dat = array(
+        'url'           => $url,
+        'url_no_scheme' => $tmp1,
+        'is_valid'      => 0
+    );
+    $_dat = jrCore_trigger_event('jrCore', 'is_local_url', $_dat);
+    if ($_dat && is_array($_dat) && isset($_dat['is_valid']) && $_dat['is_valid'] == 1) {
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -393,6 +417,15 @@ function jrCore_is_developer_mode()
 {
     global $_conf;
     return (isset($_conf['jrDeveloper_developer_mode']) && $_conf['jrDeveloper_developer_mode'] == 'on' && jrCore_module_is_active('jrDeveloper')) ? true : false;
+}
+
+/**
+ * Return true if client has detached from process
+ * @return mixed
+ */
+function jrCore_client_is_detached()
+{
+    return jrCore_get_flag('jrcore_client_is_detached');
 }
 
 /**
@@ -462,7 +495,7 @@ function jrCore_parse_url($uri = null, $cache = true)
     }
     $_out = array();
     if (is_null($uri)) {
-        $uri  = (isset($_REQUEST['_uri'])) ? $_REQUEST['_uri'] : '';
+        $uri  = (isset($_REQUEST['_uri'])) ? $_REQUEST['_uri'] : '/';
         $curl = urldecode(str_replace(array('%2B', '%26'), array('+', '___AMP'), $_SERVER['REQUEST_URI']));
     }
     else {
@@ -470,7 +503,7 @@ function jrCore_parse_url($uri = null, $cache = true)
     }
 
     // Get everything cleaned up and into $_post
-    if (isset($uri{0})) {
+    if ($uri != '/' && isset($uri{0})) {
 
         $_REQUEST['_uri'] = substr($curl, strpos($curl, '/' . $uri));
         // If we are NOT in an upload, make sure we strip out some URL params
@@ -538,12 +571,15 @@ function jrCore_parse_url($uri = null, $cache = true)
             }
         }
     }
+    else {
+        $_REQUEST['_uri'] = '/';
+    }
     // Lastly, check for an AJAX request
     $_SERVER['jr_is_ajax_request'] = 0;
     if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '__ajax')) {
         $_SERVER['jr_is_ajax_request'] = 1;
     }
-    if (isset($_out) && is_array($_out)) {
+    if (is_array($_out)) {
         if (!isset($_REQUEST) || !is_array($_REQUEST)) {
             $_REQUEST = array();
         }
@@ -578,7 +614,6 @@ function jrCore_location($url, $process_exit = true)
     if (isset($_SESSION)) {
         session_write_close();
     }
-    jrCore_db_close();
     $_tmp = jrCore_get_flag('jrcore_set_custom_header');
     if ($_tmp && is_array($_tmp)) {
         foreach ($_tmp as $header) {
@@ -601,8 +636,9 @@ function jrCore_location($url, $process_exit = true)
     jrCore_send_response_and_detach($_out);
     if ($process_exit) {
         jrCore_trigger_event('jrCore', 'process_exit', $_REQUEST);
-        jrCore_db_close();
+        jrCore_trigger_event('jrCore', 'process_done', $_REQUEST);
     }
+    jrCore_db_close();
     exit;
 }
 
@@ -612,14 +648,19 @@ function jrCore_location($url, $process_exit = true)
  * @param string $txt Text string to log
  * @param mixed $debug Additional debug information associated with the log entry
  * @param bool $include_user Include logging User Name in text
+ * @param string $ip_address use IP Address instead of detected IP address
  * @return bool
  */
-function jrCore_logger($pri, $txt, $debug = null, $include_user = true)
+function jrCore_logger($pri, $txt, $debug = null, $include_user = true, $ip_address = null)
 {
+    if (jrCore_get_flag('jrCore_suppress_activity_log')) {
+        // Activity Logging is suppressed in this process
+        return true;
+    }
     global $_user;
     $pri = strtolower($pri);
     $usr = '';
-    if ($include_user) {
+    if ($include_user && strpos($txt, '[') !== 0) {
         if ($include_user === true) {
             $tmp = jrCore_get_flag('jrcore_logger_system_user_active'); // Log as SYSTEM user in all queue workers
             if ($tmp) {
@@ -637,7 +678,10 @@ function jrCore_logger($pri, $txt, $debug = null, $include_user = true)
         }
     }
     else {
-        $uip = (isset($_SERVER['SERVER_ADDR'])) ? $_SERVER['SERVER_ADDR'] : jrCore_get_ip();
+        $uip = jrCore_get_ip();
+    }
+    if (!is_null($ip_address)) {
+        $uip = $ip_address;
     }
 
     // trigger
@@ -661,11 +705,11 @@ function jrCore_logger($pri, $txt, $debug = null, $include_user = true)
     }
 
     $tbl = jrCore_db_table_name('jrCore', 'log');
-    $req = "INSERT INTO {$tbl} (log_created, log_priority, log_ip, log_text) VALUES (UNIX_TIMESTAMP(), '{$pri}', '" . jrCore_db_escape($uip) . "', '" . jrCore_db_escape($usr . $txt) . "')";
-    $lid = jrCore_db_query($req, 'INSERT_ID');
-
-    // See if we are saving debug info
-    if (!is_null($debug)) {
+    if (is_null($debug)) {
+        $req = "INSERT INTO {$tbl} (log_created, log_priority, log_ip, log_text) VALUES (UNIX_TIMESTAMP(), '{$pri}', '" . jrCore_db_escape($uip) . "', '" . jrCore_db_escape($usr . $txt) . "')";
+        jrCore_db_query($req, null, false, null, false, null, false);
+    }
+    else {
         if (is_array($debug) || is_object($debug)) {
             $debug = print_r($debug, true);
         }
@@ -676,14 +720,30 @@ function jrCore_logger($pri, $txt, $debug = null, $include_user = true)
         $sav = jrCore_db_escape(jrCore_strip_emoji($debug, false));
         $mem = memory_get_usage(true);
         $uri = (isset($_REQUEST['_uri'])) ? jrCore_db_escape(substr($_REQUEST['_uri'], 0, 255)) : '/';
-        $tbl = jrCore_db_table_name('jrCore', 'log_debug');
-        $req = "INSERT INTO {$tbl} (log_log_id, log_url, log_memory, log_data) VALUES ('{$lid}', '{$uri}', '{$mem}', '{$sav}') ON DUPLICATE KEY UPDATE log_url = VALUES(log_url), log_memory = '{$mem}', log_data = '{$sav}'";
-        jrCore_db_query($req);
+
+        $tb2 = jrCore_db_table_name('jrCore', 'log_debug');
+        $_rq = array(
+            "INSERT INTO {$tbl} (log_created, log_priority, log_ip, log_text) VALUES (UNIX_TIMESTAMP(), '{$pri}', '" . jrCore_db_escape($uip) . "', '" . jrCore_db_escape($usr . $txt) . "')",
+            "INSERT INTO {$tb2} (log_log_id, log_url, log_memory, log_data) VALUES (LAST_INSERT_ID(), '{$uri}', '{$mem}', '{$sav}') ON DUPLICATE KEY UPDATE log_url = VALUES(log_url), log_memory = '{$mem}', log_data = VALUES(log_data)"
+        );
+        jrCore_db_multi_select($_rq, false, false);
     }
-    elseif (jrCore_checktype($lid, 'number_nz')) {
-        $tbl = jrCore_db_table_name('jrCore', 'log_debug');
-        $req = "DELETE FROM {$tbl} WHERE log_log_id = '{$lid}'";
-        jrCore_db_query($req);
+    return true;
+}
+
+/**
+ * Purge the Activity log according to Purge Activity Logs global config
+ * @return int
+ */
+function jrCore_purge_activity_logs()
+{
+    global $_conf;
+    if (isset($_conf['jrCore_purge_log_days']) && jrCore_checktype($_conf['jrCore_purge_log_days'], 'number_nz')) {
+        $dys = intval($_conf['jrCore_purge_log_days']);
+        $tb1 = jrCore_db_table_name('jrCore', 'log');
+        $tb2 = jrCore_db_table_name('jrCore', 'log_debug');
+        $req = "DELETE {$tb1}, {$tb2} FROM {$tb1} LEFT JOIN {$tb2} ON ({$tb2}.log_log_id = {$tb1}.log_id) WHERE {$tb1}.log_created < (UNIX_TIMESTAMP() - ({$dys} * 86400))";
+        return jrCore_db_query($req, 'COUNT', false, null, false);
     }
     return true;
 }
@@ -732,6 +792,7 @@ function jrCore_strip_emoji($string, $replace = true)
                 }
             }
         }
+        jrCore_delete_flag('jrCore_strip_emoji');
         return jrCore_strip_non_utf8($string);
     }
     return $string;
@@ -775,15 +836,28 @@ function jrCore_is_ajax_request()
 
 /**
  * Find if a request is for a VIEW (template, view, etc) and NOT an Ajax, IMG or CSS/JS request
+ * @note use of $_REQUEST since $_post may not be built at time of function call
  * @return bool
  */
 function jrCore_is_view_request()
 {
-    // $_post may not have been populated when this is called, so we use $REQUEST directly here
     if ((isset($_REQUEST['_uri']) && (strpos($_REQUEST['_uri'], '_v=') || strpos($_REQUEST['_uri'], '/image/') || strpos($_REQUEST['_uri'], '/img/') || strpos($_REQUEST['_uri'], '/icon_css/')))) {
         return false;
     }
     return true;
+}
+
+/**
+ * Return TRUE if current request is an image request
+ * @note use of $_REQUEST since $_post may not be built at time of function call
+ * @return bool
+ */
+function jrCore_is_image_request()
+{
+    if (isset($_REQUEST['_uri']) && (strpos($_REQUEST['_uri'], '/image/') || strpos($_REQUEST['_uri'], '/img/'))) {
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -795,7 +869,7 @@ function jrCore_string_to_url($string)
 {
     // replace links with click able version
     if (strpos(' ' . $string, 'http')) {
-        $string = preg_replace('`([^"])(http[s]*://[^.]+\.[@a-zA-Z0-9-,:\./\_\?\%\#\&\=\;\~\!\+\]\[]+)`i', '\1<a href="\2" target="_blank">\2</a>\3', ' ' . $string);
+        $string = preg_replace('`([^"\'])(http[s]?://[^.]+\.[@\p{L}\p{N}-,:\./\_\?\%\#\&\=\;\~\!\+\]\[]+)`iu', '\1<a href="\2" target="_blank" rel="nofollow">\2</a>', ' ' . $string);
         return substr($string, 1);
     }
     return $string;
@@ -805,15 +879,16 @@ function jrCore_string_to_url($string)
  * Download a file from a remote site by URL
  * @param string $remote_url Remote File URL
  * @param string $local_file Local file to save data to
- * @param int $timeout How many seconds to allow for file download before failing
+ * @param int $max_download_time How many seconds to allow for file download before failing
  * @param int $port Remote Port to create socket connection to.
  * @param string $username HTTP Basic Authentication User Name
  * @param string $password HTTP Basic Authentication Password
  * @param string $agent Browser Agent to appear as
  * @param bool $log_error Set to FALSE to prevent Activity Log error if an error is encountered
+ * @param bool $ssl_verify set to TRUE to force SSL verification
  * @return bool Returns true if file is downloaded, false on error
  */
-function jrCore_download_file($remote_url, $local_file, $timeout = 120, $port = 80, $username = null, $password = null, $agent = null, $log_error = true)
+function jrCore_download_file($remote_url, $local_file, $max_download_time = 120, $port = 80, $username = null, $password = null, $agent = null, $log_error = true, $ssl_verify = false)
 {
     if (!jrCore_checktype($remote_url, 'url')) {
         jrCore_logger('CRI', "jrCore_download_file: invalid URL received: {$remote_url}");
@@ -831,43 +906,45 @@ function jrCore_download_file($remote_url, $local_file, $timeout = 120, $port = 
     if ($port === 80 && strpos($remote_url, 'https:') === 0) {
         $port = 443;
     }
-    $local = fopen($local_file, 'wb');
-    $_opts = array(
-        CURLOPT_USERAGENT      => $agent,
-        CURLOPT_URL            => $remote_url, // File we are downloading
-        CURLOPT_PORT           => (int) $port,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => intval($timeout),
-        CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_FILE           => $local
-    );
-    if (!stristr(' ' . PHP_OS, 'darwin')) {
-        $_opts[CURLOPT_SSL_VERIFYHOST] = false;
-        $_opts[CURLOPT_SSL_VERIFYPEER] = false;
-    }
-    // Check for HTTP Basic Authentication
-    if (!is_null($username) && !is_null($password)) {
-        $_opts[CURLOPT_USERPWD] = $username . ':' . $password;
-    }
-    $ch = curl_init();
-    if (curl_setopt_array($ch, $_opts)) {
-        curl_exec($ch);
-        $err = curl_errno($ch);
-        fclose($local);
-        if (!isset($err) || $err === 0) {
+    if ($local = fopen($local_file, 'wb')) {
+        $_opts = array(
+            CURLOPT_USERAGENT      => $agent,
+            CURLOPT_URL            => $remote_url, // File we are downloading
+            CURLOPT_PORT           => (int) $port,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => intval($max_download_time),
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_FILE           => $local,
+            CURLOPT_HEADERFUNCTION => 'jrCore_save_load_url_response_headers'
+        );
+        if (!$ssl_verify) {
+            $_opts[CURLOPT_SSL_VERIFYHOST] = false;
+            $_opts[CURLOPT_SSL_VERIFYPEER] = false;
+        }
+        // Check for HTTP Basic Authentication
+        if (!is_null($username) && !is_null($password)) {
+            $_opts[CURLOPT_USERPWD] = $username . ':' . $password;
+        }
+        $ch = curl_init();
+        if (curl_setopt_array($ch, $_opts)) {
+            curl_exec($ch);
+            $err = curl_errno($ch);
+            fclose($local);
+            if (!isset($err) || $err === 0) {
+                curl_close($ch);
+                return true;
+            }
+            $errmsg = curl_error($ch);
             curl_close($ch);
-            return true;
+            if ($log_error) {
+                jrCore_logger('CRI', "jrCore_download_file: {$remote_url} returned error #{$err} ({$errmsg})");
+            }
+            return false;
         }
-        $errmsg = curl_error($ch);
+        fclose($local);
         curl_close($ch);
-        if ($log_error) {
-            jrCore_logger('CRI', "jrCore_download_file: {$remote_url} returned error #{$err} ({$errmsg})");
-        }
-        return false;
     }
-    fclose($local);
-    curl_close($ch);
     return false;
 }
 
@@ -906,18 +983,19 @@ function jrCore_get_load_url_response_headers()
 /**
  * Get contents of a remote URL
  * @param string $url Url to load
- * @param array $_vars URI variables for URL
+ * @param mixed $_vars URI variables for URL
  * @param string $method URL method (POST or GET)
  * @param int $port Remote Port to create socket connection to.
  * @param string $username HTTP Basic Authentication User Name
  * @param string $password HTTP Basic Authentication Password
  * @param bool $log_error Set to false to prevent error logging on failed URL load
- * @param int $timeout Timeout in seconds for connection and data
+ * @param int $max_transfer_time Time in seconds to allow for data transfer
  * @param string $agent Browser Agent to appear as
  * @param bool $uploads set to TRUE to allow @file_uploads
+ * @param bool $ssl_verify set to TRUE to verify SSL certificate
  * @return string Returns value of loaded URL, or false on failure
  */
-function jrCore_load_url($url, $_vars = null, $method = 'GET', $port = 80, $username = null, $password = null, $log_error = true, $timeout = 20, $agent = null, $uploads = false)
+function jrCore_load_url($url, $_vars = null, $method = 'GET', $port = 80, $username = null, $password = null, $log_error = true, $max_transfer_time = 30, $agent = null, $uploads = false, $ssl_verify = false)
 {
     if (!jrCore_checktype($url, 'url')) {
         $_rs = array(
@@ -925,7 +1003,9 @@ function jrCore_load_url($url, $_vars = null, $method = 'GET', $port = 80, $user
             'referrer' => jrCore_get_local_referrer()
         );
         jrCore_logger('CRI', "jrCore_load_url: invalid URL received: {$url}", $_rs);
+        return false;
     }
+    jrCore_delete_flag('jrcore_load_url_response_headers');
     // Our user agent
     if (is_null($agent)) {
         $_temp = jrCore_module_meta_data('jrCore');
@@ -943,15 +1023,15 @@ function jrCore_load_url($url, $_vars = null, $method = 'GET', $port = 80, $user
         CURLOPT_FRESH_CONNECT  => true,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FORBID_REUSE   => true,
-        CURLOPT_CONNECTTIMEOUT => intval($timeout),
-        CURLOPT_TIMEOUT        => intval($timeout),
+        CURLOPT_TIMEOUT        => intval($max_transfer_time),
+        CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_VERBOSE        => false,
         CURLOPT_FAILONERROR    => false,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_MAXREDIRS      => 3,
         CURLOPT_HEADERFUNCTION => 'jrCore_save_load_url_response_headers'
     );
-    if (!stristr(' ' . PHP_OS, 'darwin')) {
+    if (!$ssl_verify) {
         $_opts[CURLOPT_SSL_VERIFYHOST] = false;
         $_opts[CURLOPT_SSL_VERIFYPEER] = false;
     }
@@ -1039,7 +1119,16 @@ function jrCore_load_url($url, $_vars = null, $method = 'GET', $port = 80, $user
         $errmsg = curl_error($ch);
         if ($log_error) {
             $rcd = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            jrCore_logger('CRI', "jrCore_load_url: {$url} returned code {$rcd} - error #{$err} ({$errmsg})", $_vars);
+            if (!is_array($_vars)) {
+                $_vars = array('_vars' => $_vars);
+            }
+            $_vars['url']        = $url;
+            $_vars['error_code'] = $rcd;
+            $_vars['error_text'] = $errmsg;
+            if (strlen($url) > 128) {
+                $url = substr($url, 0, 128) . '...';
+            }
+            jrCore_logger('CRI', "jrCore_load_url error: {$url}", $_vars);
         }
     }
     else {
@@ -1061,7 +1150,6 @@ function jrCore_load_url($url, $_vars = null, $method = 'GET', $port = 80, $user
 function jrCore_load_multiple_urls($_urls, $agent = null, $sleep = 10000)
 {
     $_ch   = array();
-    $_rt   = array();
     $_temp = jrCore_module_meta_data('jrCore');
     if (is_null($agent)) {
         $agent = 'Jamroom v' . $_temp['version'];
@@ -1069,10 +1157,10 @@ function jrCore_load_multiple_urls($_urls, $agent = null, $sleep = 10000)
     $crl = curl_multi_init();
     foreach ($_urls as $k => $_url) {
         if (!isset($_url['url']) || !jrCore_checktype($_url['url'], 'url')) {
-            $_rt[$k] = "error: invalid URL: {$_url['url']}";
-            unset($_urls[$k]);
+            return false;
         }
-        $timeout = (isset($_url['timeout']) && jrCore_checktype($_url['timeout'], 'number_nz')) ? intval($_url['timeout']) : 20;
+        $transfer_timeout = (isset($_url['timeout']) && jrCore_checktype($_url['timeout'], 'number_nz')) ? intval($_url['timeout']) : 30;
+        $connect_timeout  = (isset($_url['connect_timeout']) && jrCore_checktype($_url['connect_timeout'], 'number_nz')) ? intval($_url['connect_timeout']) : 10;
         if (isset($_url['port']) && jrCore_checktype($_url['port'], 'number_nz')) {
             $port = intval($_url['port']);
         }
@@ -1088,19 +1176,35 @@ function jrCore_load_multiple_urls($_urls, $agent = null, $sleep = 10000)
             CURLOPT_FRESH_CONNECT  => true,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FORBID_REUSE   => true,
-            CURLOPT_CONNECTTIMEOUT => $timeout,
-            CURLOPT_TIMEOUT        => $timeout,
+            CURLOPT_TIMEOUT        => $transfer_timeout,
+            CURLOPT_CONNECTTIMEOUT => $connect_timeout,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS      => 3,
             CURLOPT_VERBOSE        => false,
             CURLOPT_FAILONERROR    => false
         );
-        if (!stristr(' ' . PHP_OS, 'darwin')) {
+        if (!isset($_url['ssl_verify']) || $_url['ssl_verify'] == false) {
             $_opts[CURLOPT_SSL_VERIFYHOST] = false;
             $_opts[CURLOPT_SSL_VERIFYPEER] = false;
         }
         if (version_compare(PHP_VERSION, '5.5.0') >= 0) {
-            $_opts[CURLOPT_SAFE_UPLOAD] = true;
+            if (!isset($_url['uploads']) || $_urls['uploads'] === false) {
+                $_opts[CURLOPT_SAFE_UPLOAD] = true;
+            }
+            else {
+                // Are we uploading any files?
+                if (function_exists('curl_file_create') && isset($_url['_data']) && is_array($_url['_data'])) {
+                    foreach ($_url['_data'] as $fk => $fv) {
+                        if (strpos($fv, '@') === 0) {
+                            $file = substr($fv, 1);
+                            if (file_exists($file)) {
+                                $mime               = jrCore_mime_type($file);
+                                $_url['_data'][$fk] = curl_file_create($file, $mime, basename($file));
+                            }
+                        }
+                    }
+                }
+            }
         }
         // Check for HTTP Basic Authentication
         if (isset($_url['username']) && strlen($_url['username']) > 0 && isset($_url['password']) && strlen($_url['password']) > 0) {
@@ -1143,11 +1247,12 @@ function jrCore_load_multiple_urls($_urls, $agent = null, $sleep = 10000)
 
 /**
  * Load queued URLs for processing
- * @param $_urls array array of URLs to run
- * @param $workers int Number of simultaneous URLs to work
+ * @param array $_urls array of URLs to run
+ * @param int $workers Number of simultaneous URLs to work
+ * @param bool $ssl_verify set to TRUE to force SSL certificate validation
  * @return mixed
  */
-function jrCore_load_queued_urls($_urls, $workers)
+function jrCore_load_queued_urls($_urls, $workers, $ssl_verify = false)
 {
     $curl = curl_multi_init();
     $_opt = array(
@@ -1159,7 +1264,7 @@ function jrCore_load_queued_urls($_urls, $workers)
         CURLOPT_VERBOSE        => false,
         CURLOPT_FAILONERROR    => false
     );
-    if (!stristr(' ' . PHP_OS, 'darwin')) {
+    if (!$ssl_verify) {
         $_opt[CURLOPT_SSL_VERIFYHOST] = false;
         $_opt[CURLOPT_SSL_VERIFYPEER] = false;
     }
@@ -1180,6 +1285,7 @@ function jrCore_load_queued_urls($_urls, $workers)
         'success' => array()
     );
     do {
+        /** @noinspection PhpStatementHasEmptyBodyInspection */
         while (($exec = curl_multi_exec($curl, $running)) == CURLM_CALL_MULTI_PERFORM) ;
         if ($exec != CURLM_OK) {
             break;
@@ -1218,10 +1324,11 @@ function jrCore_load_queued_urls($_urls, $workers)
 /**
  * Strip unsafe HTML tags from a string (recursive)
  * @param mixed $string String or Array to strip tags from
- * @param array $_allowed comma separated list of allowed HTML tags
+ * @param string $_allowed comma separated list of allowed HTML tags
+ * @param bool $strip_embed set to TRUE to strip [jrEmbed] tags
  * @return mixed
  */
-function jrCore_strip_html($string, $_allowed = null)
+function jrCore_strip_html($string, $_allowed = null, $strip_embed = false)
 {
     global $_conf;
 
@@ -1232,7 +1339,16 @@ function jrCore_strip_html($string, $_allowed = null)
     }
     else {
 
-        if (strlen($string) === 0 || !strpos(' ' . $string, '<')) {
+        if (strlen($string) === 0) {
+            return $string;
+        }
+
+        if ($strip_embed && strpos(' ' . $string, '[jrEmbed')) {
+            // We have embed codes in this string - strip
+            $string = preg_replace('/\[jrEmbed[^\]]+\]/', '', $string);
+        }
+
+        if (!strpos(' ' . $string, '<')) {
             // No HTML in string
             return $string;
         }
@@ -1277,7 +1393,7 @@ function jrCore_strip_html($string, $_allowed = null)
         $_xtr       = array();
         $trusted    = false;
         $safe_embed = false;
-        if (strlen($_allowed) > 0 && !is_null($_allowed)) {
+        if (!is_null($_allowed) && strlen($_allowed) > 0) {
             $_all = explode(',', $_allowed);
             $_att = array();
             $_tmp = array();
@@ -1548,6 +1664,7 @@ function jrCore_stripslashes($data)
 
 /**
  * Get IP Address of a viewer
+ * @NOTE: DO NOT USE fdebug() in this function!
  * @return string Returns IP Address.
  */
 function jrCore_get_ip()
@@ -1582,7 +1699,7 @@ function jrCore_get_ip()
         elseif (isset($_SERVER['HTTP_CLIENT_IP'])) {
             $real_ip = $_SERVER['HTTP_CLIENT_IP'];
         }
-        elseif (isset($_SERVER['REMOTE_ADDR'])) {
+        else {
             $real_ip = $_SERVER['REMOTE_ADDR'];
         }
     }
@@ -1655,7 +1772,7 @@ function debug()
         echo $out;
     }
     else {
-        $out = str_replace("\n", '<br>', $out);
+        $out = str_replace("\n", '<br>', jrCore_entity_string($out));
         echo '<style>.jrCore_debug { font-family: Monaco, "Courier New", Courier, monospace; font-size: 11px; font-weight: normal; text-transform: none; text-align: left; }</style><pre class="jrCore_debug">' . $out . '</pre>';
     }
     return true;
@@ -1742,33 +1859,43 @@ function jrCore_get_debug_output($_args)
     $now = $now[1] + $now[0];
 
     // Have we run before?
-    $beg = jrCore_get_flag('fdebug_start_time');
-    if (!$beg) {
-        jrCore_set_flag('fdebug_start_time', $now);
-        $dif = 0;
-    }
-    else {
-        $dif = round(($now - $beg), 3);
-    }
+    $beg = jrCore_get_flag('jrcore_process_start_time');
+    $dif = round(($now - $beg), 3);
     $mem = jrCore_format_size(memory_get_usage(true));
     $fmt = date('c');
     $out = '';
     $usr = (isset($_user['user_name']{1})) ? "-(user: {$_user['user_name']})" : '';
-    $rqm = (isset($_SERVER['REQUEST_METHOD'])) ? $_SERVER['REQUEST_METHOD'] . ' ' : '';
-    $uri = '/';
-    if (isset($_REQUEST['_uri'])) {
-        $uri = $_REQUEST['_uri'];
-    }
+    $url = jrCore_get_current_url();
     foreach ($_args as $arg) {
-        $out .= "\n({$fmt}.{$msc} : {$dif})-(mem: {$mem})-(pid: " . getmypid() . ")-(ip: {$uip}){$usr}-(uri: {$rqm}{$uri})\n";
+        $out .= PHP_EOL . "({$fmt}.{$msc} : {$dif})-(mem: {$mem})-(pid: " . getmypid() . ")-(ip: {$uip}){$usr}-(url: {$url})" . PHP_EOL;
         if (is_array($arg) || is_object($arg)) {
             $out .= print_r($arg, true);
         }
         else {
-            $out .= "|{$arg}|\n";
+            $out .= "|{$arg}|" . PHP_EOL;
         }
     }
     return $out;
+}
+
+/**
+ * Create a directory if needed and verify Core permissions
+ * @param string $dir
+ * @param bool $recursive
+ * @return bool
+ */
+function jrCore_create_directory($dir, $recursive = false)
+{
+    global $_conf;
+    if (!is_dir($dir)) {
+        if (!@mkdir($dir, $_conf['jrCore_dir_perms'], $recursive)) {
+            return false;
+        }
+    }
+    else {
+        @chmod($dir, $_conf['jrCore_dir_perms']);
+    }
+    return true;
 }
 
 /**
@@ -1785,7 +1912,7 @@ function jrCore_copy_dir_recursive($source, $destination, $_replace = null)
         return false;
     }
     if (!is_dir($destination)) {
-        mkdir($destination, $_conf['jrCore_dir_perms']);
+        jrCore_create_directory($destination, true);
     }
     $f = opendir($source);
     if ($f) {
@@ -1887,12 +2014,12 @@ function jrCore_delete_dir_contents($dir, $cache_check = true, $safe_seconds = 0
                 if ($secs) {
                     $_tmp = stat("{$dir}/{$file}");
                     if (isset($_tmp['mtime']) && $_tmp['mtime'] < $secs) {
-                        unlink("{$dir}/{$file}");
+                        unlink("{$dir}/{$file}");  // OK
                         $cnt++;
                     }
                 }
                 else {
-                    unlink("{$dir}/{$file}");
+                    unlink("{$dir}/{$file}");  // OK
                     $cnt++;
                 }
             }
@@ -2017,6 +2144,30 @@ function jrCore_write_to_file($file, $data = null, $mode = 'overwrite')
 }
 
 /**
+ * Copy a file in chunks to use less memory
+ * @param string $source_path
+ * @param string $target_path
+ * @param int $chunk_size
+ * @return bool
+ */
+function jrCore_chunked_copy($source_path, $target_path, $chunk_size = 16)
+{
+    $ck = (intval($chunk_size) * 1048576);
+    if (!$fs = fopen($source_path, 'rb')) {
+        return false;
+    }
+    if (!$ft = fopen($target_path, 'w')) {
+        return false;
+    }
+    while (!feof($fs)) {
+        fwrite($ft, fread($fs, $ck));
+    }
+    fclose($fs);
+    fclose($ft);
+    return true;
+}
+
+/**
  * Get file extension from a file
  * Returns file extension in lower case!
  * @param string $file file string file name to return extension for
@@ -2047,24 +2198,38 @@ function jrCore_file_extension($file)
 function jrCore_file_extension_from_mime_type($type)
 {
     $ext = false;
-    if (isset($type) && strpos($type, '/') && is_readable('/etc/mime.types')) {
-        $_mim = jrCore_get_flag('jrcore_loaded_mime_types');
-        if (!$_mim) {
-            $_mim = file('/etc/mime.types');
-            jrCore_set_flag('jrcore_loaded_mime_types', $_mim);
-        }
-        foreach ($_mim as $line) {
-            if (strpos($line, $type) === 0) {
-                $ext = trim(jrCore_string_field($line, 'NF'));
-                if (isset($ext) && $ext != $type) {
-                    switch ($ext) {
-                        case 'jpe':
-                        case 'jpeg':
-                        case 'jfif':
-                            $ext = 'jpg';
-                            break;
+    // Some quick ones...
+    switch ($type) {
+        case 'image/jpeg':
+            $ext = 'jpg';
+            break;
+        case 'image/png':
+            $ext = 'png';
+            break;
+        case 'image/gif':
+            $ext = 'gif';
+            break;
+    }
+    if (!$ext) {
+        if (strpos($type, '/') && is_readable('/etc/mime.types')) {
+            $_mim = jrCore_get_flag('jrcore_loaded_mime_types');
+            if (!$_mim) {
+                $_mim = file('/etc/mime.types');
+                jrCore_set_flag('jrcore_loaded_mime_types', $_mim);
+            }
+            foreach ($_mim as $line) {
+                if (strpos($line, $type) === 0) {
+                    $ext = trim(jrCore_string_field($line, 'NF'));
+                    if (isset($ext) && $ext != $type) {
+                        switch ($ext) {
+                            case 'jpe':
+                            case 'jpeg':
+                            case 'jfif':
+                                $ext = 'jpg';
+                                break;
+                        }
+                        break;
                     }
-                    break;
                 }
             }
         }
@@ -2367,13 +2532,35 @@ function jrCore_format_time($timestamp, $date_only = false, $format = null, $adj
         $diff = date('Y', $time) - date('Y', $timestamp);
         return sprintf($diff > 1 ? "%s {$_lang['jrCore'][63]}" : $_lang['jrCore'][64], $diff);
     }
-
-    $lang = 'en_US';
+    $lang = (isset($_conf['jrUser_default_language'])) ? $_conf['jrUser_default_language'] : 'en_US';
     if (jrUser_is_logged_in() && isset($_user['user_language']{1})) {
         $lang = str_replace('-', '_', $_user['user_language']);
     }
-    setlocale(LC_TIME, $lang);
+    setlocale(LC_TIME, $lang . '.UTF-8');
     return gmstrftime($format, $timestamp);
+}
+
+/**
+ * Get all installed locales on server
+ * @return array|bool
+ */
+function jrCore_get_installed_locales()
+{
+    $_lc = false;
+    ob_start();
+    @system('locale -a', $ret);
+    $out = ob_get_contents();
+    ob_end_clean();
+    if ($out && strlen($out) > 5) {
+        $_lc = array();
+        foreach (explode("\n", $out) as $l) {
+            if (stripos($l, 'UTF')) {
+                $k       = str_ireplace(array('.utf8', '.UTF-8'), '', str_replace('_', '-', $l));
+                $_lc[$k] = $l;
+            }
+        }
+    }
+    return $_lc;
 }
 
 /**
@@ -2434,9 +2621,9 @@ function jrCore_get_max_allowed_upload($quota_max = 0)
     $php_umax = (int) ini_get('upload_max_filesize');
     $val      = ($php_pmax > $php_umax) ? $php_umax : $php_pmax;
 
-    // For our progress meter we must use the following logic to arrive at our
-    // max allowed upload size: Use 1/4 memory_limit, and if $val is smaller use that
-    $php_mmax = ceil(intval(str_replace('M', '', ini_get('memory_limit'))) / 4);
+    // For handling large file uploads we must use the following logic to arrive at our
+    // max allowed upload size: Use 1/2 memory_limit, and if $val is smaller use that
+    $php_mmax = ceil(intval(str_replace('M', '', ini_get('memory_limit'))) / 2);
     $val      = ($php_mmax > $val) ? $val : $php_mmax;
     $val      = ($val * 1048576);
 
@@ -2455,7 +2642,7 @@ function jrCore_get_upload_sizes()
 {
     $s_max = (int) jrCore_get_max_allowed_upload(false);
     $_qmem = array();
-    $_memr = array(1, 2, 4, 8, 16, 24, 32, 48, 64, 72, 96, 100, 128, 160, 200, 256, 300, 350, 384, 400, 500, 512, 600, 640, 700, 768, 800, 896, 1000, 1024);
+    $_memr = array(1, 2, 4, 8, 16, 24, 32, 48, 64, 72, 96, 100, 128, 160, 200, 256, 300, 350, 384, 400, 500, 512, 600, 640, 700, 768, 800, 896, 1000, 1024, 1536, 2048, 3072, 4096);
     foreach ($_memr as $m) {
         $v = $m * 1048576;
         if ($v < $s_max) {
@@ -2479,9 +2666,11 @@ function jrCore_is_profile_referrer($default = 'referrer')
         // Is this a mapped domain?
         return jrCore_get_local_referrer();
     }
-    elseif (jrUser_is_logged_in() && $url = jrUser_get_saved_url_location($_user['_user_id'])) {
-        jrCore_set_flag('jrcore_is_profile_referrer', 1);
-        return $url;
+    elseif (jrUser_is_logged_in()) {
+        if ($url = jrUser_get_saved_url_location($_user['_user_id'])) {
+            jrCore_set_flag('jrcore_is_profile_referrer', 1);
+            return $url;
+        }
     }
     $url = jrCore_get_local_referrer();
     if (isset($_user['profile_url']) && strpos($url, "{$_conf['jrCore_base_url']}/{$_user['profile_url']}") === 0) {
@@ -2562,6 +2751,11 @@ function jrCore_money_format($amount, $format = null)
 function jrCore_get_server_os()
 {
     $sos = @php_uname();
+    // Are we 64 or 32 bit?
+    $bit = 32;
+    if (stripos($sos, 'x86_64')) {
+        $bit = 64;
+    }
     // macOS | Mac OS X
     if (stristr(PHP_OS, 'darwin')) {
         ob_start();
@@ -2595,7 +2789,7 @@ function jrCore_get_server_os()
             }
         }
     }
-    return $sos;
+    return $sos . ' ' . $bit . 'bit';
 }
 
 /**
@@ -3012,8 +3206,8 @@ function jrCore_create_zip_file($file, $_files)
 
 /**
  * ZIP files in a given array and "stream" the resulting ZIP to the browser
- * @param $name string Name of ZIP file to send
- * @param $_files array Array of files to send
+ * @param string $name Name of ZIP file to send
+ * @param array $_files Array of files to send
  * @return bool
  */
 function jrCore_stream_zip($name, $_files)
@@ -3023,7 +3217,12 @@ function jrCore_stream_zip($name, $_files)
     $tmp = jrCore_get_module_cache_dir('jrCore');
     // Send out our ZIP stream
     require_once APP_DIR . "/modules/jrCore/contrib/zip/ZipStream.php";
-    $zip = new ZipStream($name);
+    try {
+        $zip = new ZipStream($name);
+    }
+    catch (Exception $e) {
+        return false;
+    }
     $cnt = 0;
     foreach ($_files as $filename => $filepath) {
         if (is_file($filepath)) {
@@ -3068,7 +3267,7 @@ function jrCore_send_download_file($file)
     while ($bytes_sent < $size) {
         fseek($handle, $bytes_sent);
         // Read 1 megabyte at a time...
-        $buffer = fread($handle, 1048576);
+        $buffer     = fread($handle, 1048576);
         $bytes_sent += strlen($buffer);
         echo $buffer;
         flush();
@@ -3099,7 +3298,7 @@ function jrCore_array_split($array, $size)
     for ($px = 0; $px < $size; $px++) {
         $incr       = ($px < $partrem) ? $partlen + 1 : $partlen;
         $split[$px] = array_slice($array, $mark, $incr);
-        $mark += $incr;
+        $mark       += $incr;
     }
     return $split;
 }
@@ -3169,4 +3368,58 @@ function jrCore_get_acp_skins()
 function jrCore_escape_single_quote_string($str)
 {
     return addcslashes($str, "'\\");
+}
+
+/**
+ * Create a new Global Lock
+ * @param string $module
+ * @param string $key
+ * @param int $expire_seconds
+ * @return bool
+ */
+function jrCore_create_global_lock($module, $key, $expire_seconds)
+{
+    $unq = jrCore_db_escape("{$module}/{$key}");
+    $exp = (int) $expire_seconds;
+    $tbl = jrCore_db_table_name('jrCore', 'global_lock');
+    $req = "INSERT IGNORE INTO {$tbl} (lock_unique, lock_expires) VALUES ('{$unq}', (UNIX_TIMESTAMP() + {$exp}))";
+    $lid = jrCore_db_query($req, 'INSERT_ID');
+    return ($lid && $lid > 0) ? true : false;
+}
+
+/**
+ * Delete a global lock
+ * @param string $module
+ * @param string $key
+ * @return bool
+ */
+function jrCore_delete_global_lock($module, $key)
+{
+    $unq = jrCore_db_escape("{$module}/{$key}");
+    $tbl = jrCore_db_table_name('jrCore', 'global_lock');
+    $req = "DELETE FROM {$tbl} WHERE lock_unique = '{$unq}'";
+    jrCore_db_query($req);
+    return true;
+}
+
+/**
+ * Delete expired global locks
+ * @param bool $log_message
+ * @return int
+ */
+function jrCore_delete_expired_global_locks($log_message = true)
+{
+    $tbl = jrCore_db_table_name('jrCore', 'global_lock');
+    $req = "SELECT * FROM {$tbl} WHERE lock_expires < UNIX_TIMESTAMP()";
+    $_rt = jrCore_db_query($req, 'lock_id', false, 'lock_unique');
+    if ($_rt && is_array($_rt)) {
+        $req = "DELETE FROM {$tbl} WHERE lock_id IN(" . implode(',', array_keys($_rt)) . ')';
+        jrCore_db_query($req);
+        $cnt = count($_rt);
+        if ($log_message) {
+            jrCore_logger('MAJ', "deleted {$cnt} expired global locks that had not been removed", $_rt);
+        }
+        return $cnt;
+    }
+    return 0;
 }

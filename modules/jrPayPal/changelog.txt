@@ -1,5 +1,11 @@
 PayPal Buy It Now module changelog
 
+Version 1.1.6:
+ - Change: Updated to work in conjunction with new Payments module
+
+Version 1.1.5:
+ - Change: Removed add_to_cart class that is not needed
+
 Version 1.1.4:
  - Change: Updated module icon
 

@@ -1,5 +1,18 @@
 Playlist Module Changelog
 
+Version 1.1.8:
+ - Bug Fix: item_detail.tpl updated to allow ACP override of module item_playlist.tpl files
+
+Version 1.1.7:
+ - New: item_index_help.tpl file added to show instructions on how to use the profile module
+
+Version 1.1.6:
+ - Change: item_index_meta.tpl added to add social media tags for list page
+ - Change: stand alone playlist updates to work with some skins
+
+Version 1.1.5:
+ - Change: pressing tab to move between fields in forms has been improved
+
 Version 1.1.4:
  - Bug Fix: Existing playlists may not show correctly to admin users on some profiles
 

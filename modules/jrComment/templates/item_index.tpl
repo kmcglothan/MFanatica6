@@ -40,9 +40,9 @@
 
 <div class="block">
     <div class="title">
-        <h1>{jrCore_lang module="jrComment" id="11" default="Comments"}</h1>
+        <h1>{jrCore_lang module="jrComment" id=11 default="Comments"}</h1>
     </div>
     <div class="block_content">
-        {jrCore_list module="jrComment" search="_profile_id = {$_profile_id}" order_by="_item_id desc" pagebreak="10" page=$_post.p pager=true template=$row_tpl}
+        {jrCore_list module="jrComment" search="_profile_id = {$_profile_id}" order_by="_item_id desc" pagebreak=10 page=$_post.p pager=true template=$row_tpl}
     </div>
 </div>

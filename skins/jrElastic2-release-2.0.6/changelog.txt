@@ -1,0 +1,34 @@
+Elastic 2 Skin changelog
+
+Version 2.0.7
+ - Bug Fix: Menu hides during page load
+
+Version 2.0.6:
+ - Change: Added check to social links to see if a full URL was entered in the skin settings. Modified footer.tpl.
+ - Bug Fix: Changed $_conf.jrCore_system_url to $_conf.jrCore_system_name in footer.tpl
+
+Version 2.0.5:
+ - Change: modified header.tpl, footer.tpl and profile_footer.tpl to exclude tables from showing mobile menu
+ - Bug Fix: Added correct social images so they show in the skin footer.
+ - Change: Fixed mobile menu cart link.
+
+Version 2.0.4:
+ - Change: Moved new payment module view cart icon to main menu
+ - Bug Fix: Footer links were not showing because they used the wrong variable
+ - Bug Fix: Footer social network icons could show if URL set to "#"
+ - Bug Fix: Profile following link now working correctly (requires Followers module 1.5.5 or newer)
+ - Bug Fix: profile_ids setting was hard coded to profile_id 1
+
+Version 2.0.3:
+ - Bug Fix: Mobile footer could cover submit button - modified override_mobile.css and site.css files
+ - Bug Fix: User birthdays may be incorrectly displayed
+ - Bug Fix: Missing index page login form language strings
+
+Version 2.0.2:
+ - Bug Fix: Mobile menu had inconsistent behavior
+
+Version 2.0.1:
+ - Bug Fix: Profile menu would at erratically when resizing window
+
+Version 2.0.0:
+ - Initial Release

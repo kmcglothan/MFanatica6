@@ -1,5 +1,8 @@
 Chained Select module changelog
 
+Version 1.1.5:
+ - Bug Fix: Chained Select fields in Form Designer set to "required" could be saved without a selection
+
 Version 1.1.4:
  - Bug Fix: Ordering for chanined select Form Designer fields not displaying in correct position
 

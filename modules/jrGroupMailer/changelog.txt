@@ -1,5 +1,14 @@
 Group Mailer Changelog
 
+Version 1.1.3:
+ - Bug Fix: Group Mailer emails not being sent on JR6.1
+
+Version 1.1.2:
+ - Bug Fix: Group Mailer button was showing in Item Button config for incorrect modules
+
+Version 1.1.1:
+ - New: Link to group added by default to new messages
+
 Version 1.1.0:
  - New: Site admins can now email members of any group
  - Bug Fix: Send group email button could show on groups not owned

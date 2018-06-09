@@ -1,5 +1,8 @@
 Graph Support module change log
 
+Version 1.1.1:
+ - New: Support for "precision" parameter to set decimal point precision
+
 Version 1.1.0:
  - New: "pointRadius" graph config option can now be set to "0" (zero)
  - New: "zerofill" graph option for filling in missing data points in graph data set

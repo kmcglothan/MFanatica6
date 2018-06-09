@@ -2,7 +2,7 @@
 /**
  * Jamroom Photo Albums module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -46,7 +46,7 @@ function jrPhotoAlbum_meta()
     $_tmp = array(
         'name'        => 'Photo Albums',
         'url'         => 'photoalbum',
-        'version'     => '1.0.14',
+        'version'     => '1.0.18',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Create photo albums from images in the Image Galleries or Flickr modules',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2928/photo-albums',

@@ -46,7 +46,7 @@ function jrLaunch_meta()
     $_tmp = array(
         'name'        => 'Beta Launch Page',
         'url'         => 'launch',
-        'version'     => '1.2.1',
+        'version'     => '1.2.2',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Create a Beta Signup page for users to signup pre-launch',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2953/beta-launch-page',

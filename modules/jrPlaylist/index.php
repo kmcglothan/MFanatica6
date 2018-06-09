@@ -2,7 +2,7 @@
 /**
  * Jamroom Playlists module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -361,9 +361,14 @@ function view_jrPlaylist_add_save($_post, $_user, $_conf)
             // $aid will be the INSERT_ID (_item_id) of the created item
             $aid = jrCore_db_create_item('jrPlaylist', $_rt, $_cr);
             if (!$aid) {
+                $_debug = array(
+                    '$_rt' => $_rt,
+                    '$_cr' => $_cr
+                );
+                jrCore_logger('MAJ', 'Unable to save new playlist. jrCore_db_create_item failed', $_debug );
                 $response = array(
                     'success'     => false,
-                    'success_msg' => 'Error: Could not save to the database'
+                    'success_msg' => 'Error: Unable to save new playlist - please try again'
                 );
             }
             else {

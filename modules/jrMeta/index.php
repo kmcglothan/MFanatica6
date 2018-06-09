@@ -67,7 +67,8 @@ function view_jrMeta_browse($_post, $_user, $_conf)
 
     // Tag location
     $_loc = array(
-        's' => 'site pages',
+        'a' => 'all pages',
+        's' => 'skin pages',
         'p' => 'profile pages',
         'i' => 'item detail pages'
     );
@@ -182,7 +183,7 @@ function view_jrMeta_browse($_post, $_user, $_conf)
     $_tmp = array(
         'name'     => 'tag_location',
         'label'    => 'tag location',
-        'help'     => 'Select the pages this new Meta Tag will appear on:<br><br><strong>Site Pages</strong> - these meta tags will be present in all site (skin) pages.<br><br><strong>Profile Pages</strong> - valid profile variables can be used in the content - i.e. {$profile_name}, {$profile_url}, etc.<br><br><strong>Item Detail Pages</strong> - valid item AND profile variables can be used in the content - i.e. {$item_title}, {$item_title_url}, etc.<br><br><strong>Skin Template</strong> - selecting a specific Skin Template allows you to override any default Site Pages meta tags and have specific Meta Tags for the selected template.',
+        'help'     => 'Select the pages this new Meta Tag will appear on:<br><br><strong>All Pages</strong> - these meta tags will appear in all pages.<br><br><strong>Site Pages</strong> - these meta tags will appear in all skin (template) pages.<br><br><strong>Profile Pages</strong> - valid profile variables can be used in the content - i.e. {$profile_name}, {$profile_url}, etc.<br><br><strong>Item Detail Pages</strong> - valid item AND profile variables can be used in the content - i.e. {$item_title}, {$item_title_url}, etc.<br><br><strong>Skin Template</strong> - selecting a specific Skin Template allows you to override any default Site Pages meta tags and have specific Meta Tags for the selected template.',
         'type'     => 'select',
         'options'  => $_loc,
         'required' => true
@@ -292,7 +293,8 @@ function view_jrMeta_update($_post, $_user, $_conf)
 
     // Tag location
     $_loc = array(
-        's' => 'site pages',
+        'a' => 'all pages',
+        's' => 'skin pages',
         'p' => 'profile pages',
         'i' => 'item detail pages'
     );
@@ -349,7 +351,7 @@ function view_jrMeta_update($_post, $_user, $_conf)
     $_tmp = array(
         'name'     => 'tag_location',
         'label'    => 'tag location',
-        'help'     => 'Select the location this new Meta Tag will appear - on site pages, on profile pages, or on item detail pages.<br><br><strong>Profile Pages</strong> - valid profile variable can be used in the content - i.e. {$profile_name}, {$profile_url}, etc.<br><br><strong>Item Detail Pages</strong> - valid item AND profile variables can be used in the content - i.e. {$item_title}, {$item_title_url}, etc.',
+        'help'     => 'Select the pages this Meta Tag will appear on:<br><br><strong>All Pages</strong> - these meta tags will appear in all pages.<br><br><strong>Site Pages</strong> - these meta tags will appear in all skin (template) pages.<br><br><strong>Profile Pages</strong> - valid profile variables can be used in the content - i.e. {$profile_name}, {$profile_url}, etc.<br><br><strong>Item Detail Pages</strong> - valid item AND profile variables can be used in the content - i.e. {$item_title}, {$item_title_url}, etc.<br><br><strong>Skin Template</strong> - selecting a specific Skin Template allows you to override any default Site Pages meta tags and have specific Meta Tags for the selected template.',
         'type'     => 'select',
         'options'  => $_loc,
         'value'    => $_tg['l'],

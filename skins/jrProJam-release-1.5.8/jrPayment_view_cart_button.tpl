@@ -1,0 +1,25 @@
+{if jrCore_is_mobile_device() || jrCore_is_tablet_device()}
+    <li>
+        <a onclick="jrPayment_view_cart()">
+            {jrCore_lang module="jrPayment" id=6 default="cart" assign="ct"}
+            {if $item_count > 0}
+                {jrCore_lang skin=$_conf.jrCore_active_skin id="184" default="Items In Your Cart" assign="iic"}
+                <div id="payment-view-cart-button" title="Items In Your Cart - {$item_count}">{$ct} <span title="Items In Your Cart - {$item_count}">({$item_count})</span></div>
+            {else}
+                <div id="payment-view-cart-button" title="Items In Your Cart - {$item_count}">{$ct} <span></span></div>
+            {/if}
+        </a>
+    </li>
+{else}
+    <li>
+        <a onclick="jrPayment_view_cart()">
+            {jrCore_lang module="jrPayment" id=6 default="cart" assign="ct"}
+            {if $item_count > 0}
+                {jrCore_lang skin=$_conf.jrCore_active_skin id="184" default="Items In Your Cart" assign="iic"}
+                <div id="payment-view-cart-button">{jrCore_image image="cart.png" alt=$ct title="Items In Your Cart - {$item_count}"} <span title="Items In Your Cart - {$item_count}">({$item_count})</span></div>
+            {else}
+                <div id="payment-view-cart-button">{jrCore_image image="cart.png" alt=$ct} <span></span></div>
+            {/if}
+        </a>
+    </li>
+{/if}

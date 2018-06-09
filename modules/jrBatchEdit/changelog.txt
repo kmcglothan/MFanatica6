@@ -1,5 +1,8 @@
 Batch Item Editor module changelog
 
+Version 1.0.11:
+ - Bug Fix: ; found in the code that should have been a :
+
 Version 1.0.10:
  - Bug Fix: some fields with "_url" in them were not being shown as changeable in the editor
 

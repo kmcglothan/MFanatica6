@@ -2,7 +2,7 @@
 /**
  * Jamroom Profiles module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -89,3 +89,6 @@ $lang[43] = 'Only numbers, letters, - or _';
 $lang[44] = 'If you would like to use a different profile URL, enter it here.';
 $lang[45] = 'The specified profile url is already being used - please try another.';
 $lang[46] = 'This profile has exceeded the maximum number of items of this type and it is currently unavailable.<br>Please check back later.';
+$lang[47] = 'Invalid Profile Name - please enter a valid profile name';
+$lang[48] = "You haven't created any %1 items yet!";
+$lang[49] = 'Click the &quot;+&quot; button to get started';

@@ -1,5 +1,36 @@
 User Profiles module change log
 
+Version 1.7.2:
+ - Bug Fix: {jrProfile_disable_*} functions may not work correctly when template is cached
+
+Version 1.7.1:
+ - New: Profile data is passed to the Spam Blocker module (if enabled) for spam checking
+
+Version 1.7.0:
+ - New: "click + to get started" message will show to Profile owners on empty item index
+ - Bug Fix: "profile_id" jrCore_list parameter may not work in mixed private/non-private result set
+
+Version 1.6.6:
+ - Change: Profile names can no longer contain < or > characters
+ - Change: Profile items that exceed the amount allowed in the Quota will now show a "not found" page
+ - Bug Fix: Profile owners not seeing all items if Hard Limit is set for Quota Limit Type
+
+Version 1.6.5:
+ - Bug Fix: New profiles created by Power Users are not usable until logging out and back in again
+
+Version 1.6.4:
+ - New: "profile_updated" event triggered when a profile's settings are saved
+ - Bug Fix: Possible SQL Error for profile with changed profile URL trying to load a "like" detail page
+
+Version 1.6.3:
+ - Change: Profile disk report no longer shows modules for profile using 0 disk space
+
+Version 1.6.2:
+ - New: Profile disk usage report updated to report files that belong to unknown/deleted modules
+ - Bug Fix: Max items on profile not being enforced
+ - Bug Fix: "invalid search criteria" warning could appear in the activity log when a profile was viewed
+ - Bug Fix: Profile pulse data not being removed when Developer Tools "Reset System" tool is run
+
 Version 1.6.1:
  - New: User -> Profile links are now validated if "repair modules" is checked in Integrity Check
 

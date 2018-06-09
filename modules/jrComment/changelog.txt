@@ -1,5 +1,32 @@
 User Comments module change log
 
+Version 2.0.4:
+ - Bug Fix: Comment notification not sending to all owners when profile owner comments on their own item
+
+Version 2.0.3:
+ - Bug Fix: File Attachment allowed size when modifying a comment could be different than on create
+
+Version 2.0.2:
+ - Bug Fix: Comment image attachments may not be viewable in some instances
+
+Version 2.0.1:
+ - Bug Fix: Modifying an existing comment may not reset cache correctly
+
+Version 2.0.0:
+ - New: Performance improvements for sites with a very large number of comments
+ - Bug Fix: Incorrect $comment_url template variable could be returned for some comments
+
+Version 1.9.7:
+ - Bug Fix: Deleting multiple comments is not resetting cache so delete appears to fail
+ - Bug Fix: non-admin users are unable to see existing file uploads when editing their comment
+
+Version 1.9.6:
+ - Bug Fix: Using the editor with comments adds extra line breaks
+
+Version 1.9.5:
+ - New: Comment attachments can be added or deleted from the comment update form
+ - Bug Fix: Deleting comments with "Save Threads" disabled not properly decrementing comment count
+
 Version 1.9.4:
  - New: "ignore_threading" jrCore_list option to bypass threading for comment lists
 

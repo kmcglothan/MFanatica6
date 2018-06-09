@@ -1,0 +1,112 @@
+.form_button {
+    color:#0099FF;
+    text-decoration:none;
+    text-transform:capitalize;
+    font:bold 11px Verdana,sans-serif;
+    padding:5px 5px 6px 5px !important;
+    margin:1px 5px 3px 5px;
+    background:#F2F2F2;
+    border:solid 1px #DEDEDE;
+    cursor:pointer;
+}
+input.form_button:focus {
+    border: 1px solid #DEDEDE;
+    background-color: #FFF;
+    color:#666;
+}
+.form_button:hover {
+    background-color:#FFF;
+    color:#FF6633;
+}
+.form_button_disabled {
+    background:#F2F2F2;
+    color:#999;
+    border:solid 1px #DEDEDE;
+}
+.form_button_disabled:hover {
+    color:#666;
+}
+.form_button a, .form_button_anchor a, .form_button_anchor:hover a {
+    text-decoration:none;
+}
+
+.upload_button {
+    margin:2px -2px 2px 2px !important;
+    min-height: initial;
+}
+
+.follow_button {
+    color:#0099FF;
+    text-decoration:none;
+    text-transform:capitalize;
+    font-weight:bold;
+    font-size:12px;
+    line-height:24px;
+    height:24px;
+    padding:0 6px;
+    margin:0 2px;
+    vertical-align:middle;
+    border:solid 1px #DEDEDE;
+}
+.follow {
+    cursor:pointer;
+    color:#0099FF;
+    background:#F2F2F2;
+    border:1px solid #DEDEDE;
+}
+.follow:hover {
+    cursor:pointer;
+    color:#FF6633;
+    background:#FFF;
+    border:1px solid #DEDEDE;
+}
+.following {
+    cursor:pointer;
+    color:#99CC00;
+    background:#FFF;
+    border:1px solid #DEDEDE;
+}
+.following:hover {
+    cursor:pointer;
+    color:#0099FF;
+    background:#F2F2F2;
+    border:1px solid #DEDEDE;
+}
+.follow_pending {
+    background:#F2F2F2;
+    color:#FF6633;
+    border:1px solid #DEDEDE;
+}
+#follow_indicator {
+    display:none;
+}
+
+.sprite_icon {
+    display:inline-block;
+    border:1px solid #000;
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#FFFFFF', endColorstr='#CCCCCC'); /* for IE */
+    background: #CCCCCC;  /* @ignore */
+    background: -moz-linear-gradient(#FFFFFF, #CCCCCC);  /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#FFFFFF), to(#CCCCCC));  /* @ignore */
+    background: -webkit-linear-gradient(#FFFFFF, #CCCCCC);  /* @ignore */
+    background: -o-linear-gradient(#FFFFFF, #CCCCCC);  /* @ignore */
+    background: -ms-linear-gradient(#FFFFFF, #CCCCCC);  /* @ignore */
+    background: linear-gradient(#FFFFFF, #CCCCCC);  /* @ignore */
+    border-radius:5px;
+    cursor:pointer;
+    margin:0;
+    vertical-align:middle;
+}
+.sprite_icon:hover {
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#cccccc', endColorstr='#FFF'); /* for IE */
+    background: #FFFFFF;  /* @ignore */
+    background: -moz-linear-gradient(#CCCCCC, #FFFFFF);  /* @ignore */
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#CCCCCC), to(#FFFFFF));  /* @ignore */
+    background: -webkit-linear-gradient(#CCCCCC, #FFFFFF);  /* @ignore */
+    background: -o-linear-gradient(#CCCCCC, #FFFFFF);  /* @ignore */
+    background: -ms-linear-gradient(#CCCCCC, #FFFFFF);  /* @ignore */
+    background: linear-gradient(#CCCCCC, #FFFFFF);  /* @ignore */
+}
+.sprite_icon_hilighted {
+    background: #99CC00;
+}

@@ -1,5 +1,11 @@
 Seamless module changelog
 
+Version 1.1.13:
+ - Bug Fix: Seamless list widget could use incorrect value on PHP 7.0+ installs
+
+Version 1.1.12:
+ - Bug Fix: Random order_by not working correctly
+
 Version 1.1.11:
  - Bug Fix: Ajax pager not working in Site Builder
 

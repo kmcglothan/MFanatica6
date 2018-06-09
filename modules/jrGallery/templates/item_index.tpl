@@ -26,7 +26,8 @@
             <div class="block">
 
                 <div class="gallery_lightbox">
-                    <a href="{$jamroom_url}/{$murl}/image/gallery_image/{$_items[0]._item_id}/1280" data-lightbox="images" title="{$item.gallery_caption|default:$item.gallery_image_name|jrGallery_title_name:$item.gallery_caption}">{jrCore_icon icon="search2"}&nbsp;&nbsp;<h3>{jrCore_lang module="jrGallery" id="37" default="View images in Lightbox"}</h3></a>
+                    {jrGallery_get_gallery_image_title item=$_items[0] assign="gtitle"}
+                    <a href="{$jamroom_url}/{$murl}/image/gallery_image/{$_items[0]._item_id}/1280" data-lightbox="images" title="{$item.gallery_caption|default:$gtitle}">{jrCore_icon icon="search2"}&nbsp;&nbsp;<h3>{jrCore_lang module="jrGallery" id="37" default="View images in Lightbox"}</h3></a>
                 </div>
 
                 <div style="clear:both"></div>
@@ -61,7 +62,8 @@
 
                             </div>
                             <div class="center mb10">
-                                <a href="{jrGallery_get_gallery_image_url item=$item}" title="{$item.gallery_alt_text}" class="bold">{if isset($item.gallery_image_title) && strlen($item.gallery_image_title) > 0}{$item.gallery_image_title|truncate:25:"...":false}{else}{$item.gallery_image_name|truncate:25:"...":true}{/if}</a><br>
+                                {jrGallery_get_gallery_image_title item=$item assign="gtitle"}
+                                <a href="{jrGallery_get_gallery_image_url item=$item}" title="{$item.gallery_alt_text}" class="bold">{$gtitle|truncate:25:"...":true}</a><br>
                                 <a href="{$jamroom_url}/{$item.profile_url}/{$murl}/{$item.gallery_title_url}/all" class="media_title">{$item.gallery_title}</a>
                             </div>
                         </div>

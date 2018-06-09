@@ -1,5 +1,17 @@
 PhotoAlbum Module Changelog
 
+Version 1.0.18:
+ - Change: Add photo popup now shows albums in the same order as they are listed on the profile page
+
+Version 1.0.17:
+ - New: item_index_help.tpl file added to show instructions on how to use the profile module
+
+Version 1.0.16:
+ - Change: item_index_meta.tpl added to add social media tags for list page
+
+Version 1.0.15:
+ - New: Added item_detail_meta.tpl for social media meta tags
+
 Version 1.0.14:
  - Bug Fix: Photo Albums may not show correctly to admin users when viewing some profile image galleries
 

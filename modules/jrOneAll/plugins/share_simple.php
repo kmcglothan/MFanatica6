@@ -2,7 +2,7 @@
 /**
  * Jamroom OneAll Social module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -69,17 +69,17 @@ function plugin_jrOneAll_share_simple($_queue)
     // )
 
     // We are going to see if we have a listener for this module
+    $_us = array();
     if ($_tmp && is_array($_tmp)) {
-        $_users = array();
         if (isset($_queue['action_data']) && is_array($_queue['action_data'])) {
             $_queue['action_data'] = json_encode($_queue['action_data']);
         }
+        if (isset($_queue['user_id']) && jrCore_checktype($_queue['user_id'], 'number_nz')) {
+            $_us = jrCore_db_get_item('jrUser', $_queue['user_id']);
+        }
         foreach ($_tmp as $listener) {
             if (strpos($listener, $_queue['action_module']) === 0) {
-                if (!isset($_users["{$_queue['user_id']}"])) {
-                    $_users["{$_queue['user_id']}"] = jrCore_db_get_item('jrUser', $_queue['user_id']);
-                }
-                $_txt = $listener($_queue, $_users["{$_queue['user_id']}"], $_conf, $_json, 'network_share_text');
+                $_txt = $listener($_queue, $_us, $_conf, $_json, 'network_share_text');
                 if ($_txt && is_array($_txt) && isset($_txt['text'])) {
                     $_json['request']['message']['parts']['text'] = array(
                         'body' => $_txt['text']
@@ -101,13 +101,23 @@ function plugin_jrOneAll_share_simple($_queue)
             'body' => jrCore_strip_html($_queue['action_text'])
         );
         // link: url, name, caption, description
-        $_us                                          = jrCore_db_get_item('jrUser', $_queue['user_id']);
-        $url                                          = jrCore_get_module_url('jrAction');
-        $_json['request']['message']['parts']['link'] = array(
-            'url'     => "{$_conf['jrCore_base_url']}/{$_us['profile_url']}/{$url}/{$_queue['item_id']}",
-            'name'    => "@{$_us['profile_url']}",
-            'caption' => $_us['profile_name']
-        );
+        if ($_it = jrCore_db_get_item($_queue['action_module'], $_queue['item_id'])) {
+            $pfx = jrCore_db_get_prefix($_queue['action_module']);
+            $url = jrCore_get_module_url('jrAction');
+            $ttl = '';
+            if (isset($_it["{$pfx}_title_url"])) {
+                $ttl = '/' . $_it["{$pfx}_title_url"];
+            }
+            $_json['request']['message']['parts']['link'] = array(
+                'url'     => "{$_conf['jrCore_base_url']}/{$_it['profile_url']}/{$url}/{$_queue['item_id']}{$ttl}",
+                'name'    => "@{$_it['profile_url']}",
+                'caption' => $_it['profile_name']
+            );
+        }
+        else {
+            // Could not get item...
+            return true;
+        }
     }
     if (!isset($_json['request']['message']['parts']['text'])) {
         // No text to share

@@ -4,8 +4,7 @@
 
 {$follower_profile_url}
 
-You can view or delete this follower by clicking the following URL
-(or cut and paste it into your browser):
+You can view or delete this follower by clicking the following URL (or cut and paste it into your browser):
 
 {$follower_browse_url}
 

@@ -1,0 +1,16 @@
+Proxima Memcache changelog
+
+Version 1.1.0:
+ - Change: Removed registered Cache functions - only used now for Proxima Sessions
+
+Version 1.0.3:
+ - Bug Fix: Deleting a user session may not remove actual cached object
+
+Version 1.0.2:
+ - Bug Fix: System Check was searching for "Memcache" class instead of "Memcached"
+
+Version 1.0.1:
+ - Change: Updated buttons to use jrCore_window_location instead of wondow.location
+
+Version 1.0.0:
+ - Initial Release

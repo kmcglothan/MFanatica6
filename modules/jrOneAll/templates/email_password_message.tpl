@@ -1,7 +1,6 @@
-Thank you for creating your account!  Since you created your
-account by linking up with {$provider}, we've created you a
-new temporary password that you can use to log into the
-system without relying on {$provider} (although you can always
+Thank you for creating your account!
+
+You created your account by linking up with {$provider}, so we've created you a new temporary password that you can use to log into the system without relying on {$provider} (although you can always
 log in using {$provider} too):
 
 user: {$user_name}

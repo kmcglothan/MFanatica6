@@ -2,7 +2,7 @@
 /**
  * Jamroom Documentation module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -53,6 +53,6 @@ function jrDocs_db_schema()
         "chapter_order INT(11) UNSIGNED NOT NULL DEFAULT '100'",
         "UNIQUE chapter_key (chapter_profile_id, chapter_category_url)"
     );
-    jrCore_db_verify_table('jrDocs', 'chapter', $_tmp);
+    jrCore_db_verify_table('jrDocs', 'chapter', $_tmp, 'InnoDB');
     return true;
 }

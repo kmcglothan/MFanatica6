@@ -29,7 +29,7 @@
                 <div class="item error">{jrCore_lang module="jrDocs" id="62" default="There were no topics found that matched your search term"}</div>
             {/if}
             <form id="doc_search_form" method="get" action="{$jamroom_url}/{$profile_url}/{$murl}/contents">
-                <input type="text" id="doc_search_text" name="search_string" value="{$search_string_value}" class="form_text form_search_text" tabindex="1" onkeypress="if (event && event.keyCode == 13 && this.value.length > 0) { jrDocs_search_submit(); }"><br><br>
+                <input type="text" id="doc_search_text" name="search_string" value="{$search_string_value}" class="form_text form_search_text" tabindex="{jrCore_next_tabindex}" onkeypress="if (event && event.keyCode == 13 && this.value.length > 0) { jrDocs_search_submit(); }"><br><br>
                 <img id="form_submit_indicator" src="{$jamroom_url}/skins/{$_conf.jrCore_active_skin}/img/submit.gif" width="24" height="24" alt="{jrCore_lang module="jrCore" id="73" default="working..."}"><input type="button" id="doc_search_submit" class="form_button" value="search" tabindex="2" onclick="jrDocs_search_submit();">
             </form>
         </div>
@@ -81,6 +81,9 @@
         .highlight_admin h3,
         .highlight_admin h4 {
             background-color: #fff2bf;
+        }
+        .highlight_master a {
+            background-color: #cbcbcb;
         }
         .sortable {
             margin: auto;

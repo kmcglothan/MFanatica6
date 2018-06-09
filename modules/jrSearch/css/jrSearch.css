@@ -13,3 +13,7 @@
     width: 50%;
     font-style: italic;
 }
+
+.jrsearch_reorder_item {
+    text-transform: capitalize;
+}

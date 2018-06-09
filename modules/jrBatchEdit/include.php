@@ -1,9 +1,8 @@
 <?php
 /**
- * Jamroom 5 Batch Item Editor module
+ * Jamroom Batch Item Editor module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2017 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -50,7 +49,7 @@ function jrBatchEdit_meta()
     $_tmp = array(
         'name'        => 'Batch Item Editor',
         'url'         => 'batchedit',
-        'version'     => '1.0.10',
+        'version'     => '1.0.11',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Easily edit DataStore items in batches',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2922/batch-item-editor',
@@ -68,7 +67,7 @@ function jrBatchEdit_init()
 {
     // include
     jrCore_register_module_feature('jrCore', 'css', 'jrBatchEdit', 'jrBatchEdit.css');
-    jrCore_register_module_feature('jrCore', 'javascript', 'jrBatchEdit', 'jrBatchEdit.js');
+    jrCore_register_module_feature('jrCore', 'javascript', 'jrBatchEdit', 'jrBatchEdit.js', 'admin');
 
     // Core magic views
     jrCore_register_module_feature('jrCore', 'magic_view', 'jrBatchEdit', 'batch', 'view_jrBatchEdit_batch');

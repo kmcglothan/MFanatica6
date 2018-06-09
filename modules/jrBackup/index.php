@@ -2,7 +2,7 @@
 /**
  * Jamroom DB and System Backup module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -211,7 +211,7 @@ function view_jrBackup_snapshot_restore($_post, $_user, $_conf)
     jrCore_page_include_admin_menu();
     jrCore_page_admin_tabs('jrBackup');
 
-    $tmp  = jrCore_page_button('cancel', 'cancel', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/snapshots')");
+    $tmp = jrCore_page_button('cancel', 'cancel', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/snapshots')");
     $tmp .= jrCore_page_button('all', 'restore all', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/snapshot_restore_table/{$_post['_1']}/all')");
     jrCore_page_banner('Backup Table Browser', $tmp);
 
@@ -236,7 +236,7 @@ function view_jrBackup_snapshot_restore($_post, $_user, $_conf)
 
         $_new = array();
         foreach ($_mods as $mod => $_inf) {
-            $new = strtolower($mod);
+            $new        = strtolower($mod);
             $_new[$new] = $_inf;
         }
 
@@ -256,7 +256,7 @@ function view_jrBackup_snapshot_restore($_post, $_user, $_conf)
                         continue 2;
                         break;
                     default:
-                        list(, $mod, ) = explode('_', $tbl, 3);
+                        list(, $mod,) = explode('_', $tbl, 3);
                         if (!isset($_new[$mod])) {
                             continue 2;
                         }
@@ -266,7 +266,7 @@ function view_jrBackup_snapshot_restore($_post, $_user, $_conf)
                 $dat[1]['title'] = '<input type="checkbox" class="form_checkbox table_checkbox" name="' . $tbl . '">';
 
                 // What module is this table from?
-                list(, $mod, ) = explode('_', $tbl, 3);
+                list(, $mod,) = explode('_', $tbl, 3);
                 $dat[2]['title'] = jrCore_get_module_icon_html($_new[$mod]['module_directory'], 24);
                 $dat[3]['title'] = $_new[$mod]['module_name'];
                 $dat[4]['title'] = $tbl;
@@ -361,7 +361,7 @@ function view_jrBackup_snapshot_restore_table($_post, $_user, $_conf)
         $_tmp = array(
             'name'    => 'tables',
             'label'   => 'restore selected tables',
-            'help'    => 'Check this option to restore all tables in the backup set',
+            'help'    => 'If you would like to restore specific tables in this backup set, check them here',
             'type'    => 'optionlist',
             'options' => $_opt,
             'value'   => $_opt
@@ -517,7 +517,7 @@ function view_jrBackup_backup_save($_post, $_user, $_conf)
         $tbl = jrCore_db_table_name('jrProfile', 'item');
         $req = "SELECT `_item_id` FROM {$tbl}";
         $_rt = jrCore_db_query($req, 'NUMERIC');
-        if (isset($_rt) && is_array($_rt)) {
+        if ($_rt && is_array($_rt)) {
             foreach ($_rt as $_id) {
                 jrCore_form_modal_notice('update', "backing up media for profile_id: {$_id['_item_id']}");
                 jrBackup_backup_profile_media($_id['_item_id']);
@@ -531,7 +531,7 @@ function view_jrBackup_backup_save($_post, $_user, $_conf)
 
         // Next do profiles
         jrCore_form_modal_notice('update', "backing up modules and skins...");
-        if (jrBackup_backup_modules_and_skins()) {
+        if (jrBackup_backup_modules_and_skins(true)) {
             jrCore_form_modal_notice('update', "successfully backed up modules and skins");
         }
     }
@@ -556,22 +556,42 @@ function view_jrBackup_restore($_post, $_user, $_conf)
         jrCore_set_form_notice('error', 'Your AWS Settings are not configured properly to perform a system restore');
     }
 
-    // Get dates we are backed up for
-    require_once APP_DIR . "/modules/jrBackup/contrib/S3/S3.php";
-    $pfx = 'modules.';
-    S3::setAuth($_conf['jrBackup_access_key'], $_conf['jrBackup_secret_key']);
-    $_dy = S3::getBucket($_conf['jrBackup_bucket'], $pfx);
-    // [modules.20130925.tar] => Array
-    //    (
-    //        [name] => modules.20130925.zip
-    //        [time] => 1380114746
-    //        [size] => 14557968
-    //        [hash] => cd95f900394ef5ab22b501cc30788262
-    //    )
+    $_fl = array();
+    $con = jrBackup_S3_connect();
+    try {
+        $_files = $con->listObjects(array(
+            'Bucket' => $_conf['jrBackup_bucket'],
+            'Prefix' => 'modules.'
+        ));
+    }
+        /** @noinspection PhpUndefinedClassInspection */
+    catch (Aws\S3\Exception\S3Exception $e) {
+        // No files for profile
+        return false;
+    }
+    if ($_files) {
+        /** @noinspection PhpUndefinedMethodInspection */
+        $_files = $_files->toArray();
+        if (is_array($_files) && isset($_files['Contents'])) {
+            foreach ($_files['Contents'] as $f) {
+                $_fl["{$f['Key']}"] = $f;
+            }
+        }
+    }
+
+    // [modules.20171229.tar] => Array
+    // (
+    //    [Key] => modules.20171229.tar
+    //    [LastModified] => 2017-12-29T20:32:10.000Z
+    //    [ETag] => "bcd087d65dd7f0a42e9862ad7982fb91"
+    //    [Size] => 180686848
+    //    [StorageClass] => STANDARD
+    // )
+
     $_dt = array();
-    if (is_array($_dy)) {
-        foreach ($_dy as $file => $_inf) {
-            $date       = substr($file, 8, 8);
+    if (count($_fl) > 0) {
+        foreach ($_fl as $file => $_inf) {
+            $date       = substr($_inf['Key'], 8, 8);
             $_dt[$date] = substr($date, 0, 4) . '/' . substr($date, 4, 2) . '/' . substr($date, 6, 2);
         }
         krsort($_dt, SORT_NUMERIC);
@@ -581,7 +601,6 @@ function view_jrBackup_restore($_post, $_user, $_conf)
     }
     jrCore_page_banner("System Restore");
     jrCore_get_form_notice();
-
 
     // Form init
     $_tmp = array(
@@ -601,7 +620,7 @@ function view_jrBackup_restore($_post, $_user, $_conf)
     $_tmp = array(
         'name'     => 'restore_tables',
         'label'    => 'restore entire database',
-        'help'     => 'Check this box to restore all your database tables from the specified backup.',
+        'help'     => 'Check this box to restore all your database tables from the selected backup.',
         'type'     => 'checkbox',
         'value'    => 'off',
         'validate' => 'onoff'
@@ -738,14 +757,28 @@ function view_jrBackup_restore_save($_post, $_user, $_conf)
 
         // Get all tables for the date from S3
         jrCore_form_modal_notice('update', "restoring all DB tables - retrieving table info from S3...");
-        require_once APP_DIR . "/modules/jrBackup/contrib/S3/S3.php";
-        S3::setAuth($_conf['jrBackup_access_key'], $_conf['jrBackup_secret_key']);
-        $_dy = S3::getBucket($_conf['jrBackup_bucket']);
+
         $_rt = array();
-        if (is_array($_dy)) {
-            foreach ($_dy as $file => $_inf) {
-                if (strpos($_inf['name'], "{$dat}.sql")) {
-                    $_rt[] = $_inf['name'];
+        $con = jrBackup_S3_connect();
+        try {
+            $_files = $con->listObjects(array(
+                'Bucket' => $_conf['jrBackup_bucket'],
+                'Prefix' => 'jr_'
+            ));
+        }
+            /** @noinspection PhpUndefinedClassInspection */
+        catch (Aws\S3\Exception\S3Exception $e) {
+            // No files for profile
+            return false;
+        }
+        if ($_files) {
+            /** @noinspection PhpUndefinedMethodInspection */
+            $_files = $_files->toArray();
+            if (is_array($_files) && isset($_files['Contents'])) {
+                foreach ($_files['Contents'] as $f) {
+                    if (strpos($f['Key'], "{$dat}.sql")) {
+                        $_rt[] = $f['Key'];
+                    }
                 }
             }
         }

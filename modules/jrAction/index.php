@@ -2,7 +2,7 @@
 /**
  * Jamroom Timeline module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -103,6 +103,13 @@ function view_jrAction_share_msg($_post, $_user, $_conf)
     if (is_file(APP_DIR . "/modules/{$_post['_1']}/templates/item_share.tpl")) {
         $_temp['template'] = 'item_share.tpl';
     }
+
+    // Remove our list buttons for the share modal
+    if ($_tmp = jrCore_get_flag('jrcore_register_module_feature')) {
+        unset($_tmp['jrCore']['item_list_button']);
+        jrCore_set_flag('jrcore_register_module_feature', $_tmp);
+    }
+
     return jrCore_parse_template('item_share_modal.tpl', $_temp, 'jrAction');
 }
 

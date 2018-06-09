@@ -53,15 +53,18 @@ function profile_view_jrBlog_default($_profile, $_post, $_user, $_conf)
 
         // list all categories OR blog posts in a category
         case 'category':
-            $_sp = array(
-                'search'   => array(
+            $page = (isset($_post['p']) && jrCore_checktype($_post['p'], 'number_nz')) ? $_post['p'] : 1;
+            $_sp  = array(
+                'search'    => array(
                     "_profile_id = {$_profile['_profile_id']}",
                     'blog_publish_date < ' . time()
                 ),
-                'order_by' => array(
+                'order_by'  => array(
                     'blog_publish_date' => 'desc'
                 ),
-                'limit'    => 100
+                'pagebreak' => 10,
+                'page'      => $page,
+                'pager'     => true
             );
             // See if we have been given a specific category
             if (isset($_post['_2']) && strlen($_post['_2']) > 0 && $_post['_2'] !== 'default') {
@@ -74,7 +77,9 @@ function profile_view_jrBlog_default($_profile, $_post, $_user, $_conf)
             $_it = jrCore_db_search_items('jrBlog', $_sp);
             if ($_it && is_array($_it) && isset($_it['_items'])) {
                 $_profile = $_profile + $_it;
-                return jrCore_parse_template('item_list.tpl', $_profile, 'jrBlog');
+                $out  = jrCore_parse_template('item_list.tpl', $_profile, 'jrBlog');
+                $out .= jrCore_parse_template('list_pager.tpl', $_it, 'jrCore');
+                return $out;
             }
             break;
 

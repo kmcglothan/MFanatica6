@@ -1,4 +1,4 @@
-// Jamroom 5 Chained Select Module javascript
+// Jamroom Chained Select Module javascript
 // @copyright 2003-2014 by Talldude Networks LLC
 
 /**

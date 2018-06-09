@@ -2,7 +2,7 @@
 /**
  * Jamroom Image Support module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -49,14 +49,14 @@ function jrImage_meta()
     $_tmp = array(
         'name'        => 'Image Support',
         'url'         => 'image',
-        'version'     => '1.5.3',
+        'version'     => '2.0.9',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Core support for displaying, resizing and manipulating images',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2863/image-support',
         'category'    => 'core',
         'license'     => 'mpl',
         'priority'    => 1, // HIGHEST load priority
-        'requires'    => 'jrCore:6.0.0',
+        'requires'    => 'jrCore:6.1.0b1,jrSystemTools',
         'locked'      => true,
         'activate'    => true
     );
@@ -84,25 +84,23 @@ function jrImage_init()
     jrCore_register_module_feature('jrUser', 'skip_session', 'jrImage', 'img');
     jrCore_register_module_feature('jrUser', 'skip_session', 'jrImage', 'default_img');
 
-    // We're going to listen to the "save_media_file" event
-    // so we can add image specific fields to the item
+    // We're going to listen to the "save_media_file" event so we can add image specific fields to the item
     jrCore_register_event_listener('jrCore', 'save_media_file', 'jrImage_save_media_file_listener');
     jrCore_register_event_listener('jrCore', 'verify_module', 'jrImage_verify_module_listener');
 
     // We also provide a "require_image" parameter to the jrCore_db_search_item function
     jrCore_register_event_listener('jrCore', 'db_search_params', 'jrImage_db_search_params_listener');
-
-    // Once a day we cleanup old cache entries
-    jrCore_register_event_listener('jrCore', 'daily_maintenance', 'jrImage_daily_maintenance_listener');
-
-    // Make sure ImageMagick is working
-    jrCore_register_event_listener('jrCore', 'system_check', 'jrImage_system_check_listener');
+    jrCore_register_event_listener('jrCore', 'db_update_item', 'jrImage_db_update_item_listener');
+    jrCore_register_event_listener('jrCore', 'hourly_maintenance', 'jrImage_hourly_maintenance_listener');
+    jrCore_register_event_listener('jrCore', 'upload_saved', 'jrImage_upload_saved_listener');
 
     // Triggers
     jrCore_register_event_trigger('jrImage', 'img_src', 'Fired before returning image src parameter in jrImage_display');
     jrCore_register_event_trigger('jrImage', 'module_image', 'Fired with img src when showing a module image via the image/img view');
     jrCore_register_event_trigger('jrImage', 'skin_image', 'Fired with img src when showing a skin image via the image/img view');
     jrCore_register_event_trigger('jrImage', 'default_image', 'Fired before displaying the default image');
+    jrCore_register_event_trigger('jrImage', 'item_image_info', 'Fired with item information before displaying image');
+    jrCore_register_event_trigger('jrImage', 'get_allowed_image_widths', 'Fired with an array of allowed image widths');
 
     // Register our CSS
     jrCore_register_module_feature('jrCore', 'css', 'jrImage', 'jrImage.css');
@@ -111,15 +109,28 @@ function jrImage_init()
     jrCore_register_module_feature('jrCore', 'dashboard_panel', 'jrImage', 'image cache size', 'jrImage_dashboard_panels');
     jrCore_register_module_feature('jrCore', 'dashboard_panel', 'jrImage', 'cached image count', 'jrImage_dashboard_panels');
 
-    // Empty Image Cache Worker
-    jrCore_register_queue_worker('jrImage', 'clear_cache', 'jrImage_clear_cache_worker', 0, 1, 14400);
+    // Cache workers
+    jrCore_register_queue_worker('jrImage', 'clear_cache', 'jrImage_clear_cache_worker', 0, 1, 7200, HIGH_PRIORITY_QUEUE);
+    jrCore_register_queue_worker('jrImage', 'prune_cache', 'jrImage_prune_cache_worker', 0, 1, 3500, LOW_PRIORITY_QUEUE);
+    jrCore_register_queue_worker('jrImage', 'resize_animated', 'jrImage_resize_animated_worker', 0, 1, 900);
 
     return true;
 }
 
-//---------------------------------------------------------
+//---------------------------
 // QUEUE WORKER
-//---------------------------------------------------------
+//---------------------------
+
+/**
+ * Resize Animated GIF images
+ * @param array $_queue The queue entry the worker will receive
+ * @return bool
+ */
+function jrImage_resize_animated_worker($_queue)
+{
+    jrImage_resize_animated_gif($_queue['input_file'], $_queue['_image'], $_queue['_post'], $_queue['cache_file']);
+    return true;
+}
 
 /**
  * Clear Image Cache
@@ -129,7 +140,7 @@ function jrImage_init()
 function jrImage_clear_cache_worker($_queue)
 {
     $cdr = jrCore_get_module_cache_dir('jrImage');
-    $dir = $_queue['cache_dir'];
+    $dir = $_queue['old_cache_dir'];
     // Check for our old directory
     if (is_dir("{$cdr}/{$dir}")) {
         // Delete existing cache directory
@@ -139,9 +150,135 @@ function jrImage_clear_cache_worker($_queue)
     return true;
 }
 
-//---------------------------------------------------------
+/**
+ * Prune old entries in the image cache
+ * @param array $_queue
+ * @return mixed
+ */
+function jrImage_prune_cache_worker($_queue)
+{
+    global $_conf;
+    $days = (int) $_conf['jrImage_clean_days'];
+    if (isset($_queue['clean_days'])) {
+        $days = $_queue['clean_days'];
+    }
+    if ($days > 0) {
+
+        // Our cache directory is multi level:
+
+        // Profile cache directory structure:
+        // cache_dir/[0123]  <- first level is privacy
+        // cache_dir/[0123]/[0-9]+  <- next level is directory group
+        // cache_dir/[0123][/0-9]+/[0-9]+  <- next level is profile_id
+        // cache_dir/[0123][/0-9]+/[0-9]+/[module_dir]  <- next level is module directory
+        // cache_dir/[0123][/0-9]+/[0-9]+/[module_dir]/[0-9]+  <- final level is the item_id
+
+        // Cache image structure:
+        // cache_dir/[module_dir]  <- first level is module
+        // cache_dir/[module_dir]/[0-9]+  <- second level is directory group
+        // cache_dir/[module_dir]/[0-9]+/[0-9]*  <- last is item_id SYMBOLIC link to item_id directory in profile cache
+
+        $cdr = jrCore_get_module_cache_dir('jrImage') . "/{$_conf['jrImage_active_cache_dir']}";
+        if (!is_dir($cdr)) {
+            return true;
+        }
+
+        $dif = (int) ($days * 86400);
+        $old = (time() - $dif);
+
+        $c = 0;
+        $s = 0;
+        if ($f = opendir($cdr)) {
+            while (false !== ($dir1 = readdir($f))) {
+                // We only look in the module image cache dirs
+                if ($dir1 == '.' || $dir1 == '..' || is_numeric($dir1)) {
+                    continue;
+                }
+                if (is_dir("{$cdr}/{$dir1}")) {
+                    // dir1 will be like cache_dir/jrGallery
+                    if ($dir2 = @opendir("{$cdr}/{$dir1}")) {
+                        while (false !== ($grp = readdir($dir2))) {
+                            if ($grp == '.' || $grp == '..') {
+                                continue;
+                            }
+                            // $grp will be the item group directory
+                            if ($links = @opendir("{$cdr}/{$dir1}/{$grp}")) {
+                                while (false !== ($link = readdir($links))) {
+                                    if ($link == '.' || $link == '..') {
+                                        continue;
+                                    }
+                                    if (is_link("{$cdr}/{$dir1}/{$grp}/{$link}")) {
+                                        if ($_rt = jrImage_prune_image_symlink_dir("{$cdr}/{$dir1}/{$grp}/{$link}", $old)) {
+                                            $c += $_rt[0];
+                                            $s += $_rt[1];
+                                            // DO NOT set clean_max when running as a queue entry!
+                                            if (isset($_queue['clean_max']) && $c > $_queue['clean_max']) {
+                                                return $c;
+                                            }
+                                        }
+                                    }
+                                }
+                                closedir($links);
+                            }
+                        }
+                        closedir($dir2);
+                    }
+                }
+            }
+            closedir($f);
+        }
+
+        // DO NOT set clean_max when running as a queue entry!
+        if (isset($_queue['clean_max']) && $c > $_queue['clean_max']) {
+            return $c;
+        }
+
+    }
+
+    // We also need to remove any broken symbolic links
+    jrImage_delete_broken_cache_symlinks();
+    return true;
+}
+
+/**
+ * Prune images from an image cache directory that have not been accessed in $time
+ * @param string $link
+ * @param int $time
+ * @return array
+ */
+function jrImage_prune_image_symlink_dir($link, $time)
+{
+    // We return count of images removed + size
+    $_rt = array(0, 0);
+    if ($dir = realpath($link)) {
+        if ($dir && is_dir($dir)) {
+            // We now have the real path to this individual item's cache directory
+            if ($f = opendir($dir)) {
+                while (false !== ($img = readdir($f))) {
+                    if ($img == '.' || $img == '..') {
+                        continue;
+                    }
+                    if ($atime = fileatime("{$dir}/{$img}")) {
+                        if ($atime < $time) {
+                            $_rt[0]++;
+                            $_rt[1] += filesize("{$dir}/{$img}");
+                            unlink("{$dir}/{$img}");
+                        }
+                    }
+                }
+                closedir($f);
+            }
+        }
+    }
+    else {
+        unlink($link);
+    }
+    return $_rt;
+}
+
+//---------------------------
 // DASHBOARD
-//---------------------------------------------------------
+//---------------------------
 
 /**
  * User Profiles Dashboard Panels
@@ -165,7 +302,7 @@ function jrImage_dashboard_panels($panel)
                 if (is_dir($dir)) {
                     ob_start();
                     system("/usr/bin/du -sk {$dir} 2>/dev/null", $ret);
-                    $out = ob_get_clean();
+                    $out = (int) ob_get_clean();
                     $out *= 1024;
 
                     $kb = 1024;
@@ -203,7 +340,7 @@ function jrImage_dashboard_panels($panel)
                 $dir = "{$dir}/{$_conf['jrImage_active_cache_dir']}";
                 if (is_dir($dir)) {
                     ob_start();
-                    system("/usr/bin/find {$dir} -type f | wc -l 2>/dev/null", $ret);
+                    system("/usr/bin/find " . escapeshellarg($dir) . " -type f | wc -l 2>/dev/null", $ret);
                     $out = ob_get_clean();
                     $out = array(
                         'title' => jrCore_number_format(intval($out))
@@ -220,9 +357,160 @@ function jrImage_dashboard_panels($panel)
     return false;
 }
 
-//---------------------------------------------------------
-// IMAGE EVENT LISTENERS
-//---------------------------------------------------------
+//-------------------------
+// EVENT LISTENERS
+//-------------------------
+
+/**
+ * Enforce minimum image width if configured
+ * @param $_data array incoming data array
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return array
+ */
+function jrImage_upload_saved_listener($_data, $_user, $_conf, $_args, $event)
+{
+    // Make sure if uploaded file is an image, it's a valid image
+    if (isset($_data['file_extension']) && strlen($_data['file_extension']) > 0) {
+        $ext = strtolower($_data['file_extension']);
+        switch ($ext) {
+            case 'jpg':
+            case 'jpe':
+            case 'jpeg':
+            case 'jfif':
+            case 'jfi':
+            case 'png':
+            case 'gif':
+                $_im = getimagesize($_data['temp_name']);
+                if (!$_im || !is_array($_im)) {
+                    // This is NOT a valid image
+                    $_ln = jrUser_load_lang_strings();
+                    return array('error' => $_ln['jrImage'][5]);
+                }
+                // Are we configured for minimum image width?
+                if (!jrUser_is_admin() && isset($_conf['jrImage_minimum_width']) && jrCore_checktype($_conf['jrImage_minimum_width'], 'number_nz')) {
+                    if ($_im[0] < $_conf['jrImage_minimum_width']) {
+                        // This image is too small
+                        $_ln = jrUser_load_lang_strings();
+                        return array('error' => str_replace('%1', $_conf['jrImage_minimum_width'], $_ln['jrImage'][6]));
+                    }
+                }
+                switch ($ext) {
+                    case 'png':
+                    case 'gif':
+                        if (isset($_conf['jrImage_convert_to_jpg']) && $_conf['jrImage_convert_to_jpg'] == 'on') {
+                            $cnv = true;
+                            // If this is a transparent PNG, no conversion...
+                            if ($ext == 'png' && jrImage_is_alpha_png($_data['temp_name'])) {
+                                $cnv = false;
+                            }
+                            elseif ($ext == 'gif' && jrImage_is_animated_gif($_data['temp_name'])) {
+                                $cnv = false;
+                            }
+                            if ($cnv) {
+                                if ($ext == 'png') {
+                                    $src = @imagecreatefrompng($_data['temp_name']);
+                                }
+                                else {
+                                    $src = @imagecreatefromgif($_data['temp_name']);
+                                }
+                                if ($src) {
+                                    // Update to JPG and save new name
+                                    imagejpeg($src, $_data['temp_name'], 85);
+                                    imagedestroy($src);
+                                    jrCore_write_to_file("{$_data['temp_name']}.tmp", str_ireplace(".{$ext}", '.jpg', $_data['file_name']));
+                                }
+                            }
+                        }
+                        break;
+
+                    case 'jpg':
+                    case 'jpe':
+                    case 'jpeg':
+                    case 'jfi':
+                    case 'jfif':
+
+                        if (function_exists('exif_read_data')) {
+                            $_tmp = @exif_read_data($_data['temp_name']);
+                            if ($_tmp && is_array($_tmp) && isset($_tmp['Orientation'])) {
+                                switch (intval($_tmp['Orientation'])) {
+                                    case 0:
+                                    case 1:
+                                        // No change
+                                        $f = false;
+                                        $r = 0;
+                                        break;
+                                    case 2:
+                                        // Flip
+                                        $f = true;
+                                        $r = 0;
+                                        break;
+                                    case 3:
+                                        // Rotate Right 180 Degrees
+                                        $f = false;
+                                        $r = 180;
+                                        break;
+                                    case 4:
+                                        // Flip and Rotate Right 180 Degrees
+                                        $f = true;
+                                        $r = 180;
+                                        break;
+                                    case 5:
+                                        // Flip and Rotate Right 90 Degrees
+                                        $f = true;
+                                        $r = 270;
+                                        break;
+                                    case 6:
+                                        // Rotate Right 90 degrees
+                                        $f = false;
+                                        $r = 270;
+                                        break;
+                                    case 7:
+                                        // Flip and Rotate Right 270 degrees
+                                        $f = true;
+                                        $r = 90;
+                                        break;
+                                    case 8:
+                                        // Rotate Right 270 degrees
+                                        $f = false;
+                                        $r = 90;
+                                        break;
+                                    default:
+                                        $f = false;
+                                        $r = 0;
+                                        break;
+                                }
+                                if ($f || $r > 0) {
+                                    $src = imagecreatefromjpeg($_data['temp_name']);
+                                    $new = false;
+                                    if ($r > 0) {
+                                        // Rotate
+                                        $new = imagerotate($src, $r, 0);
+                                    }
+                                    if ($f) {
+                                        // Flip
+                                        if ($new) {
+                                            $new = imageflip($new, IMG_FLIP_VERTICAL);
+                                        }
+                                        else {
+                                            $new = imageflip($src, IMG_FLIP_VERTICAL);
+                                        }
+                                    }
+                                    imagejpeg($new, $_data['temp_name'], 85);
+                                    imagedestroy($src);
+                                    imagedestroy($new);
+                                }
+                            }
+                        }
+                        break;
+                }
+                break;
+        }
+    }
+    return $_data;
+}
 
 /**
  * Make sure our cache directory exists
@@ -239,54 +527,10 @@ function jrImage_verify_module_listener($_data, $_user, $_conf, $_args, $event)
     if (!is_dir("{$cdr}/{$_conf['jrImage_active_cache_dir']}")) {
         @mkdir("{$cdr}/{$_conf['jrImage_active_cache_dir']}", $_conf['jrCore_dir_perms'], true);
     }
-    return $_data;
-}
-
-/**
- * Make sure ImageMagick is working
- * @param $_data array incoming data array
- * @param $_user array current user info
- * @param $_conf array Global config
- * @param $_args array additional info about the module
- * @param $event string Event Trigger name
- * @return array
- */
-function jrImage_system_check_listener($_data, $_user, $_conf, $_args, $event)
-{
-    // Check for convert binary
-    $dat             = array();
-    $dat[1]['title'] = 'ImageMagick binary';
-    $dat[1]['class'] = 'center';
-    $dat[2]['title'] = 'executable';
-    $dat[2]['class'] = 'center';
-
-    $pass = jrCore_get_option_image('pass');
-    $fail = jrCore_get_option_image('fail');
-
-    $dir = jrCore_get_module_cache_dir('jrImage');
-    $tmp = tempnam($dir, 'system_check_');
-
-    if ($img = jrImage_check_imagick_install(false)) {
-        ob_start();
-        system("{$img} >{$tmp} 2>&1", $ret);
-        ob_end_clean();
-        if (is_file($tmp) && strpos(' ' . file_get_contents($tmp), 'Version: ImageMagick')) {
-            $dat[3]['title'] = $pass;
-            $dat[4]['title'] = 'Animated GIF images are supported';
-        }
-        else {
-            $dat[3]['title'] = $fail;
-            $dat[4]['title'] = "convert binary is not working:<br>" . $img;
-        }
-    }
     else {
-        $dat[3]['title'] = $fail;
-        $dat[4]['title'] = "unable to find ImageMagick /usr/bin/convert binary";
+        // Make sure permissions are correct
+        @chmod("{$cdr}/{$_conf['jrImage_active_cache_dir']}", $_conf['jrCore_dir_perms']);
     }
-    $dat[3]['class'] = 'center';
-    jrCore_page_table_row($dat);
-    unlink($tmp);
-
     return $_data;
 }
 
@@ -299,53 +543,10 @@ function jrImage_system_check_listener($_data, $_user, $_conf, $_args, $event)
  * @param $event string Event Trigger name
  * @return mixed
  */
-function jrImage_daily_maintenance_listener($_data, $_user, $_conf, $_args, $event)
+function jrImage_hourly_maintenance_listener($_data, $_user, $_conf, $_args, $event)
 {
     if (isset($_conf['jrImage_clean_days']) && jrCore_checktype($_conf['jrImage_clean_days'], 'number_nz')) {
-        $dif = (int) $_conf['jrImage_clean_days'];
-        if ($dif > 2) {
-            $tag = "{$dif} days";
-        }
-        else {
-            $tag = ($dif * 24) . ' hours';
-        }
-        $dif = ($dif * 86400);
-        // We will delete any cached image files that have not been accessed in the last day
-        $old = (time() - $dif);
-        $cdr = jrCore_get_module_cache_dir('jrImage') . "/{$_conf['jrImage_active_cache_dir']}";
-        if (!is_dir($cdr)) {
-            return true;
-        }
-        $c = 0;
-        $s = 0;
-        $f = opendir($cdr);
-        if ($f) {
-            while ($file = readdir($f)) {
-                if ($file == '.' || $file == '..') {
-                    continue;
-                }
-                if (is_dir("{$cdr}/{$file}")) {
-                    $d = opendir("{$cdr}/{$file}");
-                    if ($d) {
-                        while ($img = readdir($d)) {
-                            if (is_file("{$cdr}/{$file}/{$img}")) {
-                                $_tmp = stat("{$cdr}/{$file}/{$img}");
-                                if (isset($_tmp['atime']) && $_tmp['atime'] < $old) {
-                                    unlink("{$cdr}/{$file}/{$img}");
-                                    $c++;
-                                    $s += $_tmp['size'];
-                                }
-                            }
-                        }
-                        closedir($d);
-                    }
-                }
-            }
-            closedir($f);
-        }
-        if (isset($c) && $c > 0) {
-            jrCore_logger('INF', "deleted {$c} cached image files (total " . jrCore_format_size($s) . ") with no access in the last {$tag}");
-        }
+        jrCore_queue_create('jrImage', 'prune_cache', array('time' => time()), 30, null, 1);
     }
     return $_data;
 }
@@ -362,126 +563,8 @@ function jrImage_daily_maintenance_listener($_data, $_user, $_conf, $_args, $eve
 function jrImage_save_media_file_listener($_data, $_user, $_conf, $_args, $event)
 {
     // See if we are getting an image file upload...
-    if (!isset($_data["{$_args['file_name']}_extension"]) || !isset($_args['saved_file']) || !is_file($_args['saved_file'])) {
+    if (!isset($_data["{$_args['file_name']}_extension"]) || !isset($_args['_file']['tmp_name']) || !is_file($_args['_file']['tmp_name'])) {
         return $_data;
-    }
-    switch ($_data["{$_args['file_name']}_extension"]) {
-        // See if we are converting to JPG
-        case 'png':
-        case 'gif':
-            $pfx = $_args['file_name'];
-            if ($pfx && isset($_conf['jrImage_convert_to_jpg']) && $_conf['jrImage_convert_to_jpg'] == 'on') {
-
-                $cnv = true;
-                // If this is a transparent PNG, no conversion...
-                if ($_data["{$_args['file_name']}_extension"] == 'png' && jrImage_is_alpha_png($_args['saved_file'])) {
-                    $cnv = false;
-                }
-                elseif ($_data["{$_args['file_name']}_extension"] == 'gif' && jrImage_is_animated_gif($_args['saved_file'])) {
-                    $cnv = false;
-                }
-
-                if ($cnv) {
-                    $ext = $_data["{$pfx}_extension"];
-                    if ($ext == 'png') {
-                        $src = @imagecreatefrompng($_args['saved_file']);
-                    }
-                    else {
-                        $src = @imagecreatefromgif($_args['saved_file']);
-                    }
-                    if ($src) {
-                        $new = str_replace(".{$ext}", '.jpg', $_args['saved_file']);
-                        imagejpeg($src, $new, 85);
-                        imagedestroy($src);
-                        unlink($_args['saved_file']);
-                        $_args['saved_file']       = $new;
-                        $_data["{$pfx}_name"]      = str_replace(".{$ext}", '.jpg', $_data["{$pfx}_name"]);
-                        $_data["{$pfx}_size"]      = filesize($new);
-                        $_data["{$pfx}_type"]      = 'image/jpg';
-                        $_data["{$pfx}_extension"] = 'jpg';
-                    }
-                }
-            }
-            break;
-
-        // Check for EXIF orientation
-        case 'jpg':
-        case 'jpe':
-        case 'jpeg':
-        case 'jfif':
-            if (function_exists('exif_read_data')) {
-                $_tmp = @exif_read_data($_args['saved_file']);
-                if ($_tmp && is_array($_tmp) && isset($_tmp['Orientation'])) {
-                    switch (intval($_tmp['Orientation'])) {
-                        case 0:
-                        case 1:
-                            // No change
-                            $f = false;
-                            $r = 0;
-                            break;
-                        case 2:
-                            // Flip
-                            $f = true;
-                            $r = 0;
-                            break;
-                        case 3:
-                            // Rotate Right 180 Degrees
-                            $f = false;
-                            $r = 180;
-                            break;
-                        case 4:
-                            // Flip and Rotate Right 180 Degrees
-                            $f = true;
-                            $r = 180;
-                            break;
-                        case 5:
-                            // Flip and Rotate Right 90 Degrees
-                            $f = true;
-                            $r = 270;
-                            break;
-                        case 6:
-                            // Rotate Right 90 degrees
-                            $f = false;
-                            $r = 270;
-                            break;
-                        case 7:
-                            // Flip and Rotate Right 270 degrees
-                            $f = true;
-                            $r = 90;
-                            break;
-                        case 8:
-                            // Rotate Right 270 degrees
-                            $f = false;
-                            $r = 90;
-                            break;
-                        default:
-                            $f = false;
-                            $r = 0;
-                            break;
-                    }
-                    if ($f || $r > 0) {
-                        $src = imagecreatefromjpeg($_args['saved_file']);
-                        $new = false;
-                        if ($r > 0) {
-                            // Rotate
-                            $new = imagerotate($src, $r, 0);
-                        }
-                        if ($f) {
-                            // Flip
-                            if ($new) {
-                                $new = imageflip($new, IMG_FLIP_VERTICAL);
-                            }
-                            else {
-                                $new = imageflip($src, IMG_FLIP_VERTICAL);
-                            }
-                        }
-                        imagejpeg($new, $_args['saved_file'], 85);
-                        imagedestroy($src);
-                        imagedestroy($new);
-                    }
-                }
-            }
-            break;
     }
 
     // Add Width / Height
@@ -491,8 +574,9 @@ function jrImage_save_media_file_listener($_data, $_user, $_conf, $_args, $event
         case 'jpg':
         case 'jpe':
         case 'jpeg':
+        case 'jfi':
         case 'jfif':
-            $_tmp                                  = getimagesize($_args['saved_file']);
+            $_tmp                                  = getimagesize($_args['_file']['tmp_name']);
             $_data["{$_args['file_name']}_width"]  = (int) $_tmp[0];
             $_data["{$_args['file_name']}_height"] = (int) $_tmp[1];
             break;
@@ -542,38 +626,119 @@ function jrImage_db_search_params_listener($_data, $_user, $_conf, $_args, $even
     return $_data;
 }
 
-//---------------------------------------------------------
-// IMAGE FUNCTIONS
-//---------------------------------------------------------
+/**
+ * Reset profile image cache on privacy change
+ * @param $_data array incoming data array
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return array
+ */
+function jrImage_db_update_item_listener($_data, $_user, $_conf, $_args, $event)
+{
+    if (isset($_args['module']) && $_args['module'] == 'jrProfile' && isset($_args['_item_id']) && jrCore_checktype($_args['_item_id'], 'number_nz') && isset($_data['profile_private'])) {
+        // Is this profile changing their privacy setting? Reset profile image cache directories
+        if ($existing = jrCore_db_get_item_key('jrProfile', $_args['_item_id'], 'profile_private')) {
+            if (intval($existing) != intval($_data['profile_private'])) {
+                jrImage_delete_profile_image_cache_directory($_args['_item_id']);
+            }
+        }
+    }
+    return $_data;
+}
+
+//-------------------------
+// FUNCTIONS
+//-------------------------
 
 /**
- * Checks to be sure sure the "convert" imagick function is in place
- * @param $notice bool Set to false to prevent form notice being set if error
+ * Prune the local image cache to maintain free space
+ * @note requires jrImage_min_disk_free_megabytes $_conf var be set
  * @return bool
  */
-function jrImage_check_imagick_install($notice = true)
+function jrImage_maintain_free_disk_space()
 {
     global $_conf;
-    $magic = false;
-    if (isset($_conf['jrImage_convert_binary']{1})) {
-        $magic = $_conf['jrImage_convert_binary'];
-    }
-    else {
-        if (is_file('/usr/bin/convert')) {
-            $magic = '/usr/bin/convert';
+    if (isset($_conf['jrImage_min_disk_free_megabytes']) && jrCore_checktype($_conf['jrImage_min_disk_free_megabytes'], 'number_nz')) {
+
+        // Are we already running?
+        $cdr = jrCore_get_module_cache_dir('jrImage');
+        $lck = "{$cdr}/prune.lock";
+        if (is_file($lck)) {
+            // We have an existing lock file in place - is the process still running?
+            if (filemtime($lck) < (time() - 900)) {
+                // We have been running for over 15 minutes - kill if we can
+                if (function_exists('posix_kill')) {
+                    $pid = (int) file_get_contents($lck);
+                    if ($pid > 0) {
+                        posix_kill($pid, SIGTERM);
+                    }
+                }
+                unlink($lck);
+            }
+            else {
+                // Could still be running - check again on next run
+                return true;
+            }
         }
-        elseif (is_file('/usr/local/bin/convert')) {
-            $magic = '/usr/local/bin/convert';
+
+        // Are we running out of disk space?
+        $min_bytes = (int) $_conf['jrImage_min_disk_free_megabytes'];
+        $min_bytes = (($min_bytes * 1024) * 1024);
+        if ($free = disk_free_space(APP_DIR)) {
+
+            if ($free < $min_bytes) {
+
+                // We have less than 1 Gig free - cleanup
+                jrCore_write_to_file($lck, getmypid());
+
+                // How many days are we set to right now for clean?
+                $days = (int) $_conf['jrImage_clean_days'];
+                if ($days === 0) {
+                    // We are disabled for pruning - set to 1 day
+                    $days = 1;
+                }
+                elseif ($days === 1) {
+                    // We're already set for 1 day - drop to 12 hours
+                    $days = 0.5;
+                }
+                else {
+                    // we are full even though we've been running - reduce by a day
+                    $days--;
+                }
+                $_data = array(
+                    'clean_days' => $days,
+                    'clean_max'  => 2500
+                );
+                while (true) {
+                    $cnt = jrImage_prune_cache_worker($_data);
+                    if ($cnt > 0) {
+                        jrCore_logger('MAJ', "deleted " . jrCore_number_format($cnt) . " cached images to free up disk space");
+                        break;
+                    }
+                    // Reduce and try again
+                    $_data['clean_days'] = ($_data['clean_days'] * 0.75);
+                }
+                unlink($lck);
+
+            }
         }
     }
-    if (jrUser_is_master() && (!is_file($magic) || !is_executable($magic))) {
-        if ($notice) {
-            $show = jrCore_entity_string(str_replace(APP_DIR . '/', '', $magic));
-            jrCore_set_form_notice('error', 'The imagemagick binary: ' . $show . ' is not executable!  Set permissions on the file to 755 or 555.');
-        }
-        return false;
+    return true;
+}
+
+/**
+ * Return true if a file is an image
+ * @param string $file
+ * @return bool|int|string
+ */
+function jrImage_is_valid_image_file($file)
+{
+    if (function_exists('exif_imagetype')) {
+        return exif_imagetype($file);
     }
-    return $magic;
+    return (jrImage_is_image_file($file)) ? true : false;
 }
 
 /**
@@ -671,7 +836,7 @@ function jrImage_form_field_image_display($_field, $_att = null)
     // Check if JSON
     if (isset($_field['options']) && !is_array($_field['options']) && strlen($_field['options']) > 0) {
         $_tmp = explode("\n", $_field['options']);
-        if (isset($_tmp) && is_array($_tmp)) {
+        if ($_tmp && is_array($_tmp)) {
             foreach ($_tmp as $v) {
                 $v = trim($v);
                 if (strpos($v, '|')) {
@@ -691,7 +856,7 @@ function jrImage_form_field_image_display($_field, $_att = null)
 
         // See if we are allowing 1 or multiple images to be uploaded for this item
         $_im = array();
-        if (!isset($_field['multiple']) || (jrCore_checktype($_field['multiple'], 'number_nz') && $_field['multiple'] > 1)) {
+        if ((isset($_field['multiple']) && $_field['multiple']) || (isset($_field['multiple']) && jrCore_checktype($_field['multiple'], 'number_nz') && $_field['multiple'] > 1)) {
             // Get image fields
             foreach ($_field['value'] as $k => $v) {
                 if (strpos($k, "{$_field['name']}_") === 0 && strpos($k, '_size') && jrCore_checktype($v, 'number_nz')) {
@@ -730,16 +895,15 @@ function jrImage_form_field_image_display($_field, $_att = null)
                         break;
                 }
             }
-            $url = jrCore_get_module_url($mod);
+            $mrl = jrCore_get_module_url($mod);
             $iur = jrCore_get_module_url('jrImage');
-            $_sz = jrImage_get_allowed_image_widths();
-            $siz = (isset($_field['size'])) ? $_field['size'] : 'medium';
+            $siz = 'larger';
 
+            $plg = jrCore_get_active_media_system();
+            $fnc = "_{$plg}_media_get_image_url";
             foreach ($_im as $k => $_inf) {
 
                 // Create our image URL
-                $plg = jrCore_get_active_media_system();
-                $fnc = "_{$plg}_media_get_image_url";
                 if (function_exists($fnc)) {
                     // [module] => jrVideo
                     // [type] => video_image
@@ -758,19 +922,24 @@ function jrImage_form_field_image_display($_field, $_att = null)
                         'size'    => $siz,
                         '_v'      => $_inf['unique']
                     );
-                    $img_url = $fnc($_params, $_field['value']);
+                    $img_url = $fnc($_params);
+                    if (!$img_url) {
+                        // Default to local
+                        $img_url = "{$_conf['jrCore_base_url']}/{$mrl}/image/{$_inf['field']}/{$iid}/{$siz}/_v={$_inf['unique']}";
+                    }
                 }
                 else {
-                    $img_url = "{$_conf['jrCore_base_url']}/{$url}/image/{$_inf['field']}/{$iid}/{$siz}/_v={$_inf['unique']}";
+                    $img_url = "{$_conf['jrCore_base_url']}/{$mrl}/image/{$_inf['field']}/{$iid}/{$siz}/_v={$_inf['unique']}";
                 }
 
+                $url = "<img src=\"{$img_url}\" width=\"160\" alt=\"" . addslashes($_field['label']) . "\">";
                 if (isset($_field['image_delete']) && $_field['image_delete'] !== false) {
-                    $htm .= "<div class=\"image_update_display\" onmouseover=\"$('#d{$_inf['field']}').show()\" onmouseout=\"$('#d{$_inf['field']}').hide()\"><img src=\"{$img_url}\" width=\"" . intval($_sz[$siz]) . "\" alt=\"" . addslashes($_field['label']) . "\">";
                     $img = jrCore_get_sprite_html('close', 16);
-                    $htm .= "<div id=\"d{$_inf['field']}\" class=\"image_delete\"><a href=\"{$_conf['jrCore_base_url']}/{$iur}/delete/{$mod}/{$_inf['field']}/{$iid}/_v={$_inf['unique']}\" title=\"" . $_ln['jrImage'][2] . "\" onclick=\"jrCore_set_csrf_cookie('{$_conf['jrCore_base_url']}/{$iur}/delete/{$mod}/{$_inf['field']}/{$iid}/_v={$_inf['unique']}'); if(!confirm('" . addslashes($_ln['jrImage'][3]) . "')){ return false; }\">{$img}</a></div>";
+                    $htm .= "<div class=\"image_update_display\" onmouseover=\"$('#d{$_inf['field']}').show()\" onmouseout=\"$('#d{$_inf['field']}').hide()\">{$url}";
+                    $htm .= "<div id=\"d{$_inf['field']}\" class=\"image_delete\" onclick=\"jrCore_confirm('','" . addslashes($_ln['jrImage'][3]) . "',function() { jrCore_window_location('{$_conf['jrCore_base_url']}/{$iur}/delete/{$mod}/{$_inf['field']}/{$iid}') })\">{$img}</div>";
                 }
                 else {
-                    $htm .= "<div class=\"image_update_display\"><img src=\"{$img_url}\" width=\"" . intval($_sz[$siz]) . "\" alt=\"" . addslashes($_field['label']) . "\">";
+                    $htm .= "<div class=\"image_update_display\">{$url}";
                 }
                 $htm .= '</div>';
             }
@@ -818,7 +987,7 @@ function jrImage_form_field_image_display($_field, $_att = null)
 
 /**
  * Defines Form Designer field options
- * @return string
+ * @return array
  */
 function jrImage_form_field_image_form_designer_options()
 {
@@ -826,7 +995,6 @@ function jrImage_form_field_image_form_designer_options()
         'options_help'        => 'enter options ONE PER LINE, in the following format: <strong>multiple|true</strong>  OR <strong>multiple|5</strong> OR <strong>allowed|jpg,png,gif</strong>',
         'disable_validation'  => true,
         'disable_default'     => true,
-//        'disable_options'     => true,
         'disable_min_and_max' => true
     );
 }
@@ -900,7 +1068,7 @@ function jrImage_form_field_image_validate($_field, $_post, $e_msg)
 }
 
 /**
- * jrImage_get_allowed_image_widths()
+ * Return an array of allowed image widths
  * @return array Returns array of allowed image sizes
  */
 function jrImage_get_allowed_image_widths()
@@ -935,7 +1103,17 @@ function jrImage_get_allowed_image_widths()
     if (!isset($_conf['jrImage_block_original_size']) || $_conf['jrImage_block_original_size'] == 'off') {
         $_sz['original'] = 'original';
     }
-    return $_sz;
+
+    // Support by advanced key
+    if (isset($_conf['jrImage_custom_image_sizes']) && strlen($_conf['jrImage_custom_image_sizes']) > 0) {
+        foreach (explode(',', $_conf['jrImage_custom_image_sizes']) as $s) {
+            $s       = (int) $s;
+            $_sz[$s] = $s;
+        }
+    }
+
+    // Support by Event
+    return jrCore_trigger_event('jrImage', 'get_allowed_image_widths', $_sz);
 }
 
 /**
@@ -950,7 +1128,7 @@ function jrImage_get_allowed_image_widths()
 function jrImage_get_image_src($module, $field, $item_id, $size, $_args = null)
 {
     $params = array();
-    if (!is_null($_args)) {
+    if (is_array($_args)) {
         $params = $_args;
     }
     $params['module']  = $module;
@@ -962,68 +1140,232 @@ function jrImage_get_image_src($module, $field, $item_id, $size, $_args = null)
 }
 
 /**
+ * Get the active image cache directory
+ * @return string
+ */
+function jrImage_get_active_cache_directory()
+{
+    global $_conf;
+    return jrCore_get_module_cache_dir('jrImage') . '/' . $_conf['jrImage_active_cache_dir'];
+}
+
+/**
+ * Get an image cache key
+ * @param array $_post
+ * @return string
+ */
+function jrImage_get_cache_key($_post)
+{
+    return md5($_post['_uri']);
+}
+
+/**
+ * Clean broken cache symlinks
+ * @return bool
+ */
+function jrImage_delete_broken_cache_symlinks()
+{
+    if ($cdr = jrImage_get_active_cache_directory()) {
+        ob_start();
+        system('/usr/bin/find ' . escapeshellarg($cdr) . ' -type l ! -exec test -e {} \; -print 2>/dev/null');
+        $res = ob_get_clean();
+        if ($res && strlen($res) > 2) {
+            if ($res = explode("\n", $res)) {
+                foreach ($res as $link) {
+                    if (strpos($link, APP_DIR) === 0 && strlen(realpath($link)) === 0) {
+                        unlink($link);
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Get path to a cached image key if it exists
+ * @param string $module
+ * @param int $item_id
+ * @param string $key
+ * @return bool|string
+ */
+function jrImage_is_cached_image_key($module, $item_id, $key)
+{
+    $grp = _jrCore_local_media_get_directory_group($item_id);
+    $img = jrImage_get_active_cache_directory() . "/{$module}/{$grp}/{$item_id}/{$key}";
+    return (is_file($img)) ? $img : false;
+}
+
+/**
+ * Create the symlink cache directory for an image
+ * @param int $profile_id
+ * @param int $privacy
+ * @param string $module
+ * @param int $item_id
+ * @return string
+ */
+function jrImage_create_image_cache_symlink($profile_id, $privacy, $module, $item_id)
+{
+    global $_conf;
+    $iid = (int) $item_id;
+    $grp = _jrCore_local_media_get_directory_group($iid);
+    $cdr = jrImage_get_active_cache_directory();
+    $dir = "{$cdr}/{$module}/{$grp}";
+    if (!is_dir($dir)) {
+        @mkdir($dir, $_conf['jrCore_dir_perms'], true);
+    }
+    else {
+        chmod($dir, $_conf['jrCore_dir_perms']);
+    }
+    if (!is_link("{$dir}/{$iid}")) {
+        // Create symlink
+        $pid = (int) $profile_id;
+        $gr2 = _jrCore_local_media_get_directory_group($pid);
+        $prd = "{$privacy}/{$gr2}/{$pid}/{$module}/{$iid}";
+        if (!is_dir("{$cdr}/{$prd}")) {
+            mkdir("{$cdr}/{$prd}", $_conf['jrCore_dir_perms'], true);
+        }
+        else {
+            chmod("{$cdr}/{$prd}", $_conf['jrCore_dir_perms']);
+        }
+        $old = getcwd();
+        chdir($cdr);
+        symlink("../../{$prd}", "{$module}/{$grp}/{$iid}");
+        chdir($old);
+    }
+    return "{$dir}/{$iid}";
+}
+
+/**
+ * Get a profile's image cache directory
+ * @param int $profile_id
+ * @param string $privacy public|private|shared
+ * @param string $module
+ * @param int $item_id
+ * @return string
+ */
+function jrImage_create_profile_image_cache_directory($profile_id, $privacy, $module = null, $item_id = 0)
+{
+    global $_conf;
+    $pid = (int) $profile_id;
+    $grp = _jrCore_local_media_get_directory_group($pid);
+    if (is_null($module)) {
+        $dir = jrImage_get_active_cache_directory() . "/{$privacy}/{$grp}/{$pid}";
+    }
+    else {
+        if ($item_id > 0) {
+            $dir = jrImage_get_active_cache_directory() . "/{$privacy}/{$grp}/{$pid}/{$module}/{$item_id}";
+        }
+        else {
+            $dir = jrImage_get_active_cache_directory() . "/{$privacy}/{$grp}/{$pid}/{$module}";
+        }
+    }
+    if (!is_dir($dir)) {
+        @mkdir($dir, $_conf['jrCore_dir_perms'], true);
+    }
+    return $dir;
+}
+
+/**
+ * Verify that a profile's cache directory is in the correct privacy group
+ * @param int $profile_id
+ * @return bool
+ */
+function jrImage_delete_profile_image_cache_directory($profile_id)
+{
+    $cdr = jrImage_get_active_cache_directory();
+    if (is_dir($cdr)) {
+        $pid = (int) $profile_id;
+        $grp = _jrCore_local_media_get_directory_group($pid);
+        foreach (array(0, 1, 2, 3) as $p) {
+            if (is_dir("{$cdr}/{$p}/{$grp}/{$pid}")) {
+                jrCore_delete_dir_contents("{$cdr}/{$p}/{$grp}/{$pid}");
+                rmdir("{$cdr}/{$p}/{$grp}/{$pid}");
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Get profile information from image cache path
+ * @param string $img
+ * @return array
+ */
+function jrImage_get_profile_info_from_path($img)
+{
+    $_st = stat($img);
+    $cdr = jrImage_get_active_cache_directory();
+    $_im = str_replace("{$cdr}/", '', realpath($img));
+    $_im = explode('/', $_im);
+    // [0] => 1 - profile_private
+    // [1] => 1 - directory group
+    // [2] => 1 - profile_id
+    // [3] => jrGallery - module
+    // [4] => 149 - item_id
+    // [5] => 1e8c82840d9b6efcf98ee445298be925 - cached image
+    $tmp = jrCore_mime_type($img);
+    $_tm = array(
+        '_item_id'        => $_im[3],
+        '_profile_id'     => $_im[1],
+        'profile_private' => $_im[0],
+        'image_time'      => $_st['mtime'],
+        'image_name'      => basename($img),
+        'image_size'      => $_st['size'],
+        'image_type'      => $tmp,
+        'image_extension' => jrCore_file_extension_from_mime_type($tmp)
+    );
+    return $_tm;
+}
+
+/**
+ * Send a 304 Not Modified response for an image
+ * @param int $timestamp
+ * @param string $img
+ * @return bool
+ */
+function jrImage_send_not_modified($timestamp, $img)
+{
+    $ifs = false;
+    if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']{1})) {
+        $ifs = $_SERVER['HTTP_IF_MODIFIED_SINCE'];
+    }
+    elseif (function_exists('getenv')) {
+        $ifs = getenv('HTTP_IF_MODIFIED_SINCE');
+    }
+    if ($ifs && strtotime($ifs) == $timestamp) {
+        jrCore_set_custom_header("Last-Modified: " . gmdate('D, d M Y H:i:s \G\M\T', $timestamp));
+        jrCore_set_custom_header('Content-Disposition: inline; filename="' . basename($img) . '"');
+        jrCore_set_custom_header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + 86400000));
+        jrCore_set_custom_header('HTTP/1.1 304 Not Modified');
+        jrCore_send_response_and_detach(null, true);
+        exit;
+    }
+    return false;
+}
+
+/**
  * Display an image for a DataStore item
+ * @note Magic View
  * @param $_post array Params from jrCore_parse_url();
  * @param $_user array User information
  * @param $_conf array Global config
- * @return bool Returns true
+ * @example http://www.site.com/[module]/image/[field_name]/[item_id]/[size]
  */
 function jrImage_display_image($_post, $_user, $_conf)
 {
+    // Check for good Item ID
     jrUser_ignore_action();
-    // our URL will look like:
-    // http://www.site.com/module/image/image/5/small
     if (!isset($_post['_2']) || !is_numeric($_post['_2'])) {
         if (isset($_post['debug'])) {
             jrCore_notice('CRI', 'invalid media_id - must be valid media id');
         }
         jrImage_display_default_image($_post, $_conf);
     }
-    $_rt = jrCore_db_get_item($_post['module'], intval($_post['_2']));
-    if (!$_rt || !is_array($_rt)) {
-        if (isset($_post['debug'])) {
-            jrCore_notice('CRI', 'invalid media data  - data for id not found in DataStore');
-        }
-        jrImage_display_default_image($_post, $_conf);
-    }
 
-    // Privacy Checking for this profile
-    $priv = (isset($_rt['profile_private'])) ? $_rt['profile_private'] : 1;
-    if (isset($_rt['quota_jrProfile_privacy_changes']) && $_rt['quota_jrProfile_privacy_changes'] == 'off') {
-        $priv = (int) $_rt['quota_jrProfile_default_privacy'];
-    }
-
-    // 0 = Private
-    // 1 = Global
-    // 2 = Shared
-    // 3 = Shared but Visible in Search
-    switch ($priv) {
-        case '0':
-        case '2':
-        case '3':
-            // Don't change this - this needs to be global here
-            global $_user;
-            /** @noinspection PhpUnusedLocalVariableInspection */
-            $_user = jrUser_session_start(false); // DO NOT REMOVE
-            if (!jrUser_is_admin() && !jrProfile_privacy_check($_post['module'], $_rt['_profile_id'], $_rt['profile_private'])) {
-                // User does not have access to this profile - no image
-                if (isset($_post['debug'])) {
-                    jrCore_notice('CRI', 'privacy settings prevent access to this image');
-                }
-                jrImage_display_default_image($_post, $_conf);
-            }
-            break;
-    }
-
-    // Make sure database is correct
-    if (!isset($_rt["{$_post['_1']}_size"]) || $_rt["{$_post['_1']}_size"] < 1) {
-        if (isset($_post['debug'])) {
-            jrCore_notice('CRI', "invalid media data - size of media in DataStore is 0 bytes");
-        }
-        jrImage_display_default_image($_post, $_conf);
-    }
-
-    // See what size we are getting
+    // Must get a valid Size
     if (!isset($_post['_3'])) {
         $_post['_3'] = 'icon';
     }
@@ -1036,58 +1378,124 @@ function jrImage_display_image($_post, $_user, $_conf)
     }
     $_post['width'] = $_sz["{$_post['_3']}"];
 
-    // get resized/cached image for display
-    $_im = array(
-        'image_time'      => $_rt['_updated'],
-        'image_name'      => $_rt["{$_post['_1']}_name"],
-        'image_size'      => $_rt["{$_post['_1']}_size"],
-        'image_type'      => $_rt["{$_post['_1']}_type"],
-        'image_extension' => $_rt["{$_post['_1']}_extension"]
-    );
-    if (isset($_rt["{$_post['_1']}_width"])) {
-        $_im['image_width'] = $_rt["{$_post['_1']}_width"];
-    }
-    if (isset($_rt["{$_post['_1']}_height"])) {
-        $_im['image_height'] = $_rt["{$_post['_1']}_height"];
-    }
+    // Get cache key
+    $key = jrImage_get_cache_key($_post);
+    if ($img = jrImage_is_cached_image_key($_post['module'], $_post['_2'], $key)) {
 
-    $dir = jrCore_get_media_directory($_rt['_profile_id']);
-    $nam = "{$_post['module']}_{$_post['_2']}_{$_post['_1']}.{$_rt["{$_post['_1']}_extension"]}";
-
-    $ext = false;
-    switch ($_im['image_extension']) {
-        case 'jpg':
-        case 'jpe':
-        case 'jpeg':
-        case 'jfif':
-            $ext = 'jpg';
-            break;
-        case 'png':
-        case 'gif':
-            $ext = 'png';
-            break;
-    }
-
-    // See if this is a paid image
-    $_rt['watermark_image_price'] = 0;
-    if (isset($_rt['quota_jrImage_watermark']) && $_rt['quota_jrImage_watermark'] == 'on' && isset($_rt['quota_jrImage_watermark_sale_only']) && $_rt['quota_jrImage_watermark_sale_only'] == 'on' && $pfx = jrCore_db_get_prefix($_post['module'])) {
-        if (isset($_rt["{$pfx}_image_item_price"]) && $_rt["{$pfx}_image_item_price"] > 0) {
-            // We have a price and need a watermark
-            $_rt['watermark_image_price'] = $_rt["{$pfx}_image_item_price"];
+        // This image is cached - we can possibly bypass lookup
+        $_rt = jrImage_get_profile_info_from_path($img);
+        $prv = (isset($_rt['profile_private'])) ? $_rt['profile_private'] : 1;
+        if (isset($_rt['quota_jrProfile_privacy_changes']) && $_rt['quota_jrProfile_privacy_changes'] == 'off') {
+            $prv = (int) $_rt['quota_jrProfile_default_privacy'];
         }
+        $_im = array(
+            'image_time'      => $_rt['image_time'],
+            'image_name'      => $_rt['image_name'],
+            'image_size'      => $_rt['image_size'],
+            'image_type'      => $_rt['image_type'],
+            'image_extension' => $_rt['image_extension']
+        );
+
+    }
+    else {
+
+        // We have to setup the cache structure for this image
+        $_rt = jrCore_db_get_item($_post['module'], intval($_post['_2']));
+        if (!$_rt || !is_array($_rt)) {
+            if (isset($_post['debug'])) {
+                jrCore_notice('CRI', 'invalid media data - data for id not found in DataStore');
+            }
+            jrImage_display_default_image($_post, $_conf);
+        }
+        $prv = (isset($_rt['profile_private'])) ? $_rt['profile_private'] : 1;
+        if (isset($_rt['quota_jrProfile_privacy_changes']) && $_rt['quota_jrProfile_privacy_changes'] == 'off') {
+            $prv = (int) $_rt['quota_jrProfile_default_privacy'];
+        }
+        // We must have a valid image extension to show an image
+        if (!isset($_rt["{$_post['_1']}_extension"])) {
+            if (isset($_post['debug'])) {
+                jrCore_notice('CRI', 'invalid media data - extension for id not found in DataStore');
+            }
+            jrImage_display_default_image($_post, $_conf, $_rt);
+        }
+        $_im = array('image_time' => $_rt['_updated']);
+        foreach (array('name', 'size', 'type', 'extension', 'width', 'height') as $i) {
+            if (isset($_rt["{$_post['_1']}_{$i}"])) {
+                $_im["image_{$i}"] = $_rt["{$_post['_1']}_{$i}"];
+            }
+        }
+
+    }
+    $_rt['profile_private'] = $prv;
+
+    // Let other modules see what we are going to do
+    $_rt = jrCore_trigger_event('jrImage', 'item_image_info', $_rt);
+    if (isset($_rt['profile_private'])) {
+        $prv = $_rt['profile_private'];
     }
 
-    $key = '';
-    if (isset($_rt['quota_jrImage_watermark'])) {
-        $key = $_rt['quota_jrImage_watermark'] . '-' . $_rt['quota_jrImage_watermark_x_offset'] . '-' . $_rt['quota_jrImage_watermark_y_offset'] . '-' . $_rt['quota_jrImage_watermark_sale_only'] . '-' . $_rt['watermark_image_price'];
+    // Check for viewer access
+    // 0 = Private
+    // 1 = Global
+    // 2 = Shared
+    // 3 = Shared but Visible in Search
+    switch ($prv) {
+        case '0':
+        case '2':
+        case '3':
+            // Don't change this - this needs to be global here
+            global $_user;
+            /** @noinspection PhpUnusedLocalVariableInspection */
+            $_user = jrUser_session_start(false); // DO NOT REMOVE
+            if (!jrUser_is_admin() && !jrProfile_privacy_check($_post['module'], $_rt['_profile_id'], $prv)) {
+                // User does not have access to this profile - no image
+                if (isset($_post['debug'])) {
+                    jrCore_notice('CRI', 'privacy settings prevent access to this image');
+                }
+                jrImage_display_default_image($_post, $_conf);
+            }
+            break;
     }
+
     // Check for cache
-    $tim = false;
-    $pky = json_encode($_post) . $key;
-    $cid = md5("{$dir}/{$nam}-{$pky}-" . json_encode($_im));
-    $cdr = jrCore_get_module_cache_dir('jrImage') . "/{$_conf['jrImage_active_cache_dir']}/" . substr($cid, 0, 2);
-    if (is_file("{$cdr}/{$cid}.{$ext}")) {
-        $tim = filectime("{$cdr}/{$cid}.{$ext}");
+    if ($img) {
+        // We are cached..
+        jrImage_send_not_modified($_im['image_time'], $img);
+    }
+    else {
+
+        // Ensure master image is local for resize
+        jrCore_db_close();
+        $dir = jrCore_get_media_directory($_rt['_profile_id'], FORCE_LOCAL);
+        $nam = "{$_post['module']}_{$_post['_2']}_{$_post['_1']}.{$_rt["{$_post['_1']}_extension"]}";
+        jrCore_confirm_media_file_is_local($_rt['_profile_id'], $nam, "{$dir}/{$nam}");
+        if (!is_file("{$dir}/{$nam}")) {
+            if (isset($_post['debug'])) {
+                jrCore_notice('CRI', 'image file does not exist');
+            }
+            jrImage_display_default_image($_post, $_conf);
+        }
+        if (!jrImage_is_valid_image_file("{$dir}/{$nam}")) {
+            if (isset($_post['debug'])) {
+                jrCore_notice('CRI', 'image file is not a valid image');
+            }
+            jrImage_display_default_image($_post, $_conf);
+        }
+
+        // Make sure our profile cache directory exists
+        $prd = jrImage_create_profile_image_cache_directory($_rt['_profile_id'], $prv, $_post['module'], $_post['_2']);
+        jrImage_create_image_cache_symlink($_rt['_profile_id'], $prv, $_post['module'], $_post['_2']);
+
+        // Create our resized image and cache it
+        $img = "{$prd}/{$key}";
+        $img = jrImage_create_image("{$dir}/{$nam}", $_im, $_post, $_conf, $img, $_rt);
+        if (!$img || strpos($img, 'ERROR') === 0) {
+            if (isset($_post['debug'])) {
+                jrCore_notice('CRI', substr($img, 6));
+            }
+            jrImage_display_default_image($_post, $_conf);
+        }
+
     }
 
     // On PHP 7 systems session handling will set some default "no cache" headers that we
@@ -1097,91 +1505,79 @@ function jrImage_display_image($_post, $_user, $_conf)
     header_remove('Expires');
     header_remove('Pragma');
 
-    // Check for not modified
-    if ($tim > 0) {
-        $ifs = false;
-        if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']{1})) {
-            $ifs = $_SERVER['HTTP_IF_MODIFIED_SINCE'];
-        }
-        elseif (function_exists('getenv')) {
-            $ifs = getenv('HTTP_IF_MODIFIED_SINCE');
-        }
-        if ($ifs && strtotime($ifs) == $tim) {
-            $_tmp = jrCore_get_flag('jrcore_set_custom_header');
-            if ($_tmp && is_array($_tmp)) {
-                foreach ($_tmp as $header) {
-                    header($header);
-                }
-            }
-            header("Last-Modified: " . gmdate('D, d M Y H:i:s \G\M\T', $tim));
-            header('Content-Disposition: inline; filename="' . $_rt["{$_post['_1']}_name"] . '"');
-            header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + 86400000));
-            header('HTTP/1.1 304 Not Modified');
-            exit;
-        }
-    }
-
-    // Check that file exists
-    // Make sure file is actually there...
-    if (!jrCore_media_file_exists($_rt['_profile_id'], $nam)) {
-        if (isset($_post['debug'])) {
-            jrCore_notice('CRI', "invalid media file - not found");
-        }
-        jrImage_display_default_image($_post, $_conf);
-    }
-
-    // Create our resized image and cache it
-    $img = jrImage_create_image("{$dir}/{$nam}", $_im, $_post, $_conf, $_rt);
-
-    // Custom headers set by other modules
-    $_tmp = jrCore_get_flag('jrcore_set_custom_header');
-    if (isset($_tmp) && is_array($_tmp)) {
-        foreach ($_tmp as $header) {
-            header($header);
-        }
-    }
-
     // Get right mime type - sometimes it can be wrong when PHP is wrong
     switch ($_im['image_extension']) {
         case 'jpg':
         case 'jpe':
         case 'jpeg':
         case 'jfif':
-            header("Content-type: image/jpeg");
+            $mime = "image/jpeg";
             break;
         case 'png':
-            header("Content-type: image/png");
+            $mime = "image/png";
             break;
         case 'gif':
-            header("Content-type: image/gif");
+            $mime = "image/gif";
             break;
         default:
-            header("Content-type: {$_im['image_type']}");
+            $mime = $_im['image_type'];
             break;
     }
-    header("Last-Modified: " . gmdate('D, d M Y H:i:s \G\M\T', $_im['image_time']));
-    header('Content-Disposition: inline; filename="' . $_im['image_name'] . '"');
-    header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + 86400000));
-    echo file_get_contents($img);
-    session_write_close();
-    exit();
+
+    jrCore_set_custom_header("Last-Modified: " . gmdate('D, d M Y H:i:s \G\M\T', $_im['image_time']));
+    jrCore_set_custom_header("Content-Type: {$mime}");
+    jrCore_set_custom_header('Content-Disposition: inline; filename="' . $_im['image_name'] . '"');
+    jrCore_set_custom_header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + 86400000));
+    jrCore_send_response_and_detach(file_get_contents($img), true);
+    exit;
 }
 
 /**
  * Resize and image, maintaining aspect ratio
- * @param $input_file string Input file to resize
- * @param $output_file string Output file to create
- * @param $width int Width (in pixels) for new image
+ * @param string $input_file Input file to resize
+ * @param string $output_file Output file to create
+ * @param int $width Width (in pixels) for new image
+ * @param int $quality epeg quality
  * @return mixed
  */
-function jrImage_resize_image($input_file, $output_file, $width)
+function jrImage_resize_image($input_file, $output_file, $width, $quality = 80)
 {
     global $_conf;
     // Some resize options can use a lot of memory
     @ini_set('memory_limit', '256M');
     $_im = getimagesize($input_file);
+    if ($width == 'original') {
+        return $input_file;
+    }
     switch ($_im['mime']) {
         case 'image/jpeg':
+            // Can we use epeg?
+            if ($epeg = jrCore_get_tool_path('epeg')) {
+                // epeg will not enlarge an image
+                if ($_im[0] >= $width) {
+                    $bad = false;
+                    ob_start();
+                    system("{$epeg} --width=" . intval($width) . " --preserve --quality=" . intval($quality) . " {$input_file} {$output_file}.tmp");
+                    if ($f = fopen("{$output_file}.tmp", 'r')) {
+                        if ($d = fread($f, 512)) {
+                            fclose($f);
+                            if (strpos($d, 'Thumb::URI')) {
+                                // This image did NOT convert correctly
+                                $bad = true;
+                            }
+                        }
+
+                    }
+                    ob_end_clean();
+                    if (!$bad) {
+                        rename("{$output_file}.tmp", $output_file);
+                        return $output_file;
+                    }
+                    unlink("{$output_file}.tmp");
+                    unset($bad);
+                    // Fall through on a bad image resize from epeg to the PHP-GD resize functions
+                }
+            }
             $ext = 'jpg';
             $src = imagecreatefromjpeg($input_file);
             break;
@@ -1194,7 +1590,7 @@ function jrImage_resize_image($input_file, $output_file, $width)
             $src = imagecreatefromgif($input_file);
             break;
         default:
-            return 'ERROR: invalid image extension';
+            return 'ERROR: invalid image mime type';
             break;
     }
 
@@ -1240,7 +1636,11 @@ function jrImage_resize_image($input_file, $output_file, $width)
     }
     // resize image
     if ($ext == 'jpg') {
-        if (!jrImage_imagecopyresampled($new, $src, 0, 0, $src_x_offset, $src_y_offset, $width, $height, $src_width, $src_height)) {
+        $qal = 2;
+        if ($width <= 40) {
+            $qal = 1;
+        }
+        if (!jrImage_imagecopyresampled($new, $src, 0, 0, $src_x_offset, $src_y_offset, $width, $height, $src_width, $src_height, $qal)) {
             if (!imagecopyresized($new, $src, 0, 0, $src_x_offset, $src_y_offset, $width, $height, $src_width, $src_height)) {
                 imagedestroy($src);
                 return 'ERROR: unable to create new resized image';
@@ -1284,29 +1684,19 @@ function jrImage_resize_image($input_file, $output_file, $width)
 
 /**
  * Resize an animated GIF image
- * @param $input_file string Input Animated GIF file to resize
- * @param $_image array Image information
- * @param $_post array Params from jrCore_parse_url();
+ * @param string $input_file Input Animated GIF file to resize
+ * @param array $_image Image information
+ * @param array $_post
+ * @param string $cache_file
  * @return string
  */
-function jrImage_resize_animated_gif($input_file, $_image, $_post)
+function jrImage_resize_animated_gif($input_file, $_image, $_post, $cache_file)
 {
-    global $_conf;
-
     // Make sure our convert binary is good
-    if (!$img = jrImage_check_imagick_install(false)) {
+    if (!$convert = jrCore_get_tool_path('convert', 'jrImage')) {
         return false;
     }
-
-    $ext = 'gif';
-    $pky = json_encode($_post);
-    $cid = md5($input_file . "-{$pky}-" . json_encode($_image));
-    $cdr = jrCore_get_module_cache_dir('jrImage') . "/{$_conf['jrImage_active_cache_dir']}/" . substr($cid, 0, 2);
-    if (is_file("{$cdr}/{$cid}.{$ext}")) {
-        return "{$cdr}/{$cid}.{$ext}";
-    }
-
-    $cache_lock = "{$cdr}/{$cid}.{$ext}.lock";
+    $cache_lock = "{$cache_file}.lock";
     if (is_file($cache_lock)) {
         // We are in the middle of resizing - how long has it been?
         if (filemtime($cache_lock) < (time() - 180)) {
@@ -1318,12 +1708,6 @@ function jrImage_resize_animated_gif($input_file, $_image, $_post)
         }
     }
     touch($cache_lock);
-
-    // Make sure cache directory exists
-    if (!is_dir($cdr)) {
-        mkdir($cdr, $_conf['jrCore_dir_perms'], true);
-    }
-    $cache_file = "{$cdr}/{$cid}.{$ext}";
 
     //----------------------------------
     // Resize Image
@@ -1392,27 +1776,37 @@ function jrImage_resize_animated_gif($input_file, $_image, $_post)
     }
 
     // Use convert binary if we can
-    system("{$img} {$input_file} -coalesce {$cache_file}.tmp.gif");
-    system("{$img} -size {$src_width}x{$src_height} {$cache_file}.tmp.gif -resize {$new_width}x{$new_height}\! {$cache_file}");
+    system("{$convert} {$input_file} -coalesce {$cache_file}.tmp.gif");
+    if (is_file("{$cache_file}.tmp.gif")) {
+        system("{$convert} -size {$src_width}x{$src_height} {$cache_file}.tmp.gif -resize {$new_width}x{$new_height}\! {$cache_file}.tmp2.gif");
+        if (is_file("{$cache_file}.tmp2.gif")) {
+            if (!rename("{$cache_file}.tmp2.gif", $cache_file)) {
+                copy("{$cache_file}.tmp2.gif", $cache_file);
+                unlink("{$cache_file}.tmp2.gif");
+            }
+        }
+        unlink("{$cache_file}.tmp.gif");
+    }
     unlink($cache_lock);
     return $cache_file;
 }
 
 /**
  * Create a new image thumbnail from an existing master image
- * @param $input_file string Input file to resize
- * @param $_image array Image information
- * @param $_post array Params from jrCore_parse_url();
- * @param $_conf array Global config
- * @param $_data array full image information
+ * @param string $input_file Input file to resize
+ * @param array $_image Image information
+ * @param array $_post Params from jrCore_parse_url();
+ * @param array $_conf Global config
+ * @param string $cache_file if given file will be written to
+ * @param array $_data full image information
  * @return bool
  */
-function jrImage_create_image($input_file, $_image, $_post, $_conf, $_data = null)
+function jrImage_create_image($input_file, $_image, $_post, $_conf, $cache_file, $_data = null)
 {
     global $_conf;
 
     // Some resize options can use a lot of memory
-    @ini_set('memory_limit', '256M');
+    @ini_set('memory_limit', '512M');
 
     // $_image contains info about the ORIGINAL IMAGE
     // $_post contains our info about the NEW (resizing) image
@@ -1421,19 +1815,54 @@ function jrImage_create_image($input_file, $_image, $_post, $_conf, $_data = nul
         case 'jpe':
         case 'jpeg':
         case 'jfif':
+            // For a JPEG image, we have no filters/cropping, and we are
+            // maintaining aspect ratio, we can do a really quick resize
+            // using the epeg binary
+            if (!isset($_post['crop']) && (!isset($_post['_uri']) || !strpos($_post['_uri'], 'filter'))) {
+                // We're not cropping or filtering - check if watermarking is on for this quota
+                if (!isset($_data['quota_jrImage_watermark']) || $_data['quota_jrImage_watermark'] != 'on') {
+                    // Watermarking is not enabled
+                    return jrImage_resize_image($input_file, $cache_file, $_post['width']);
+                }
+                else {
+                    // If watermarking is enabled, but it is only for images that are for sale,
+                    // then we can skip this image if it is NOT for sale
+                    if (isset($_data['quota_jrImage_watermark_sale_only']) && $_data['quota_jrImage_watermark_sale_only'] == 'on') {
+                        if (!isset($_data["{$_post['_1']}_item_price"]) || $_data["{$_post['_1']}_item_price"] == 0) {
+                            // Watermarking is for for-sale images only, and this one is not for sale
+                            return jrImage_resize_image($input_file, $cache_file, $_post['width']);
+                        }
+                    }
+                }
+            }
             $ext = 'jpg';
             break;
         case 'png':
         case 'gif':
             if (jrImage_is_animated_gif($input_file)) {
-                // If this is LARGER than XX, resize
-                if (!isset($_post['width']) || $_post['width'] > 56) {
-                    if ($image = jrImage_resize_animated_gif($input_file, $_image, $_post)) {
-                        return $image;
-                    }
-                    // Fall through - no "convert" binary...
+
+                if (!isset($_conf['jrImage_resize_animated']) || $_conf['jrImage_resize_animated'] != 'on') {
+                    // We are not resizing animated GIF images
                     return $input_file;
                 }
+
+                // We are resizing - add to queue and return "in progress" image
+                $_queue = array(
+                    'input_file' => $input_file,
+                    '_image'     => $_image,
+                    '_post'      => $_post,
+                    'cache_file' => $cache_file
+                );
+                jrCore_queue_create('jrImage', 'resize_animated', $_queue);
+
+                // Return our "in progress" PNG
+                if (copy(APP_DIR . "/modules/jrImage/img/working.png", $cache_file)) {
+                    return $cache_file;
+                }
+
+                // Fall through - error so just show what is uploaded
+                return $input_file;
+
             }
             $ext = 'png';
             break;
@@ -1447,51 +1876,23 @@ function jrImage_create_image($input_file, $_image, $_post, $_conf, $_data = nul
 
     // Prep filters
     $_filter = false;
-    foreach ($_post as $k => $v) {
-        if (strpos($k, 'filter') === 0) {
-            if (!isset($_filter)) {
-                $_filter = array();
-            }
-            if (strpos($v, ',')) {
-                foreach (explode(',', $v) as $vv) {
-                    $_filter[] = trim($vv);
+    if (isset($_post['_uri']) && strpos($_post['_uri'], 'filter')) {
+        foreach ($_post as $k => $v) {
+            if (strpos($k, 'filter') === 0) {
+                if (!isset($_filter)) {
+                    $_filter = array();
                 }
-            }
-            else {
-                $_filter[] = $v;
-            }
-        }
-    }
-    $key = '';
-    if (isset($_data['quota_jrImage_watermark'])) {
-        $key = $_data['quota_jrImage_watermark'] . '-' . $_data['quota_jrImage_watermark_x_offset'] . '-' . $_data['quota_jrImage_watermark_y_offset'] . '-' . $_data['quota_jrImage_watermark_sale_only'] . '-' . $_data['watermark_image_price'];
-    }
-    // Check for cache
-    $pky = json_encode($_post) . $key;
-    $cid = md5($input_file . "-{$pky}-" . json_encode($_image));
-    $cdr = jrCore_get_module_cache_dir('jrImage') . "/{$_conf['jrImage_active_cache_dir']}/" . substr($cid, 0, 2);
-    if (is_file("{$cdr}/{$cid}.{$ext}")) {
-        // If this is NOT a png image, and we have a filter, our filter
-        // could have changed the format to PNG so check for that here
-        if ($ext != 'png' && is_array($_filter)) {
-            // see if filter has changed extension
-            foreach ($_filter as $filt) {
-                $_flt = explode(':', $filt);
-                $func = "jrImage_filter_{$_flt[0]}_extension";
-                if (function_exists($func)) {
-                    $ext = $func();
-                    break;
+                if (strpos($v, ',')) {
+                    foreach (explode(',', $v) as $vv) {
+                        $_filter[] = trim($vv);
+                    }
+                }
+                else {
+                    $_filter[] = $v;
                 }
             }
         }
-        return "{$cdr}/{$cid}.{$ext}";
     }
-
-    // Make sure cache directory exists
-    if (!is_dir($cdr)) {
-        mkdir($cdr, $_conf['jrCore_dir_perms'], true);
-    }
-    $cache_file = "{$cdr}/{$cid}.{$ext}";
 
     //----------------------------------
     // Load source image
@@ -1542,13 +1943,12 @@ function jrImage_create_image($input_file, $_image, $_post, $_conf, $_data = nul
     $hnd_x_offset = 0;
     $src_y_offset = 0;
     $src_x_offset = 0;
-    $new_width    = $_post['width'];
-    $new_height   = $_post['width'];
     list($src_width, $src_height,) = getimagesize($input_file);
-
     if ($_post['width'] == 'original') {
         $_post['width'] = $src_width;
     }
+    $new_width  = $_post['width'];
+    $new_height = $_post['width']; // will be changed below
 
     //----------------------------------
     // Cropping
@@ -1692,6 +2092,14 @@ function jrImage_create_image($input_file, $_image, $_post, $_conf, $_data = nul
                 }
                 break;
         }
+
+        // allow for adjustment of the crop offset
+        // https://www.jamroom.net/the-jamroom-network/forum/new_posts/50901/image-cropportrait
+        $_offsets = explode(':', $_post['crop']);
+        if (count($_offsets) == 4) {
+            $src_x_offset = (int) $_offsets[2];
+            $src_y_offset = (int) $_offsets[3];
+        }
     }
     else {
         // maintain aspect ratio of original image
@@ -1721,13 +2129,34 @@ function jrImage_create_image($input_file, $_image, $_post, $_conf, $_data = nul
 
     // If crop=fill we need to fill the image in first
     if (isset($_post['crop']) && $_post['crop'] == 'fill') {
-        $color = imagecolorallocate($image['handle'], 0, 0, 0);
+        if (empty($_post['fillcolor'])) {
+            $r = 0;
+            $g = 0;
+            $b = 0;
+        }
+        else {
+            @list($r, $g, $b) = explode(':', $_post['fillcolor'], 3);
+            if (!isset($r) || !jrCore_checktype($r, 'number_nn')) {
+                $r = 0;
+            }
+            if (!isset($g) || !jrCore_checktype($g, 'number_nn')) {
+                $g = 0;
+            }
+            if (!isset($b) || !jrCore_checktype($b, 'number_nn')) {
+                $b = 0;
+            }
+        }
+        $color = imagecolorallocate($image['handle'], $r, $g, $b);
         imagefilledrectangle($image['handle'], 0, 0, $_post['width'], $_post['height'], $color);
     }
 
     // resize image
     if ($ext == 'jpg') {
-        if (!jrImage_imagecopyresampled($image['handle'], $image['source'], $hnd_x_offset, $hnd_y_offset, $src_x_offset, $src_y_offset, $new_width, $new_height, $src_width, $src_height)) {
+        $qal = 2;
+        if ($new_width <= 40) {
+            $qal = 1;
+        }
+        if (!jrImage_imagecopyresampled($image['handle'], $image['source'], $hnd_x_offset, $hnd_y_offset, $src_x_offset, $src_y_offset, $new_width, $new_height, $src_width, $src_height, $qal)) {
             if (!imagecopyresized($image['handle'], $image['source'], $hnd_x_offset, $hnd_y_offset, $src_x_offset, $src_y_offset, $new_width, $new_height, $src_width, $src_height)) {
                 imagedestroy($image['source']);
                 return $input_file;
@@ -1752,14 +2181,18 @@ function jrImage_create_image($input_file, $_image, $_post, $_conf, $_data = nul
     // [quota_jrImage_watermark_sale_only] => on
     if (isset($_data['quota_jrImage_watermark']) && $_data['quota_jrImage_watermark'] == 'on') {
 
-        // See if it is ONLY for sale items
         $wmark = true;
         // See if we below our cutoff
         if (isset($_data['quota_jrImage_watermark_cutoff']) && jrCore_checktype($_data['quota_jrImage_watermark_cutoff'], 'number_nz') && $new_width < $_data['quota_jrImage_watermark_cutoff']) {
             $wmark = false;
         }
-        elseif (isset($_data['quota_jrImage_watermark_sale_only']) && $_data['quota_jrImage_watermark_sale_only'] == 'on' && $_data['watermark_image_price'] === 0) {
+        // See if it is ONLY for sale items
+        elseif (isset($_data['quota_jrImage_watermark_sale_only']) && $_data['quota_jrImage_watermark_sale_only'] == 'on') {
             $wmark = false;
+            if (isset($_data["{$_post['_1']}_item_price"]) && $_data["{$_post['_1']}_item_price"] > 0) {
+                // This image has a price - watermark
+                $wmark = true;
+            }
         }
         if ($wmark) {
 
@@ -1839,8 +2272,8 @@ function jrImage_create_image($input_file, $_image, $_post, $_conf, $_data = nul
                     if (function_exists($func)) {
                         $ext = $func();
                         if ($ext) {
+                            $cache_file                = str_replace(".{$_image['image_extension']}", ".{$ext}", $cache_file);
                             $_image['image_extension'] = $ext;
-                            $cache_file                = "{$cdr}/{$cid}.{$ext}";
                         }
                     }
                 }
@@ -1877,20 +2310,23 @@ function jrImage_create_image($input_file, $_image, $_post, $_conf, $_data = nul
 }
 
 /**
- * jrImage_display_default_image
  * Display the "default" image when no image is available
  * @param $_post array incoming $_post
  * @param $_conf array System Config
+ * @param $_item array DS Item
  * @return null
  */
-function jrImage_display_default_image($_post, $_conf)
+function jrImage_display_default_image($_post, $_conf, $_item = null)
 {
+    jrCore_db_close();
+    jrUser_ignore_action();
     // Make sure we get a valid image width
     $_sz = jrImage_get_allowed_image_widths();
     if (!isset($_sz["{$_post['_3']}"])) {
         jrCore_notice('CRI', "invalid image size - must be one of: " . implode(',', array_flip($_sz)));
     }
-    $_post['width'] = $_sz["{$_post['_3']}"];
+    $_post['width']         = $_sz["{$_post['_3']}"];
+    $_post['default_image'] = true;
 
     // Get any custom images
     $_cust      = (isset($_conf["jrCore_{$_post['module']}_custom_images"]{2})) ? json_decode($_conf["jrCore_{$_post['module']}_custom_images"], true) : array();
@@ -1917,17 +2353,17 @@ function jrImage_display_default_image($_post, $_conf)
         $img = APP_DIR . "/skins/{$_conf['jrCore_active_skin']}/img/default.png";
     }
 
-    // event for any other changes to the default image.
+    // trigger event for any other changes to the default image
     $_data = array(
-        'img' => $img
+        'img'   => $img,
+        '_item' => $_item
     );
-    // Trigger display event
     $_data = jrCore_trigger_event('jrImage', 'default_image', $_data);
     $img   = $_data['img'];
+    $_im   = getimagesize($img);
 
     // get sized/cached image for display
-    $_im                    = getimagesize($img);
-    $_rt                    = array(
+    $_rt = array(
         'image_name'      => 'default.png',
         'image_type'      => 'image/png',
         'image_size'      => filesize($img),
@@ -1935,26 +2371,31 @@ function jrImage_display_default_image($_post, $_conf)
         'image_height'    => $_im[1],
         'image_extension' => 'png'
     );
-    $_post['default_image'] = true;
-    $img                    = jrImage_create_image($img, $_rt, $_post, $_conf);
 
-    // Custom headers set by other modules
-    $_tmp = jrCore_get_flag('jrcore_set_custom_header');
-    if (isset($_tmp) && is_array($_tmp)) {
-        foreach ($_tmp as $header) {
-            header($header);
-        }
+    $key = json_encode($_rt) . $_conf['jrCore_active_skin'] . $_post['module'] . $_post['_1'] . $_post['_3'];
+    if (isset($_post['crop'])) {
+        $key .= $_post['crop'];
     }
-    header("Content-type: {$_rt['image_type']}");
-    header('Content-Disposition: inline; filename="' . $_rt['image_name'] . '"');
-    header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + 86400000));
-    header('Content-length: ' . filesize($img));
-    readfile($img);
+    if (isset($_post['filter'])) {
+        $key .= $_post['filter'];
+    }
+    $key = md5($key);
+    $cdr = jrCore_get_module_cache_dir('jrImage');
+    $new = "{$cdr}/default_{$key}.png";
+    if (!is_file($new)) {
+        // Create our resized image and cache it
+        $new = jrImage_create_image($img, $_rt, $_post, $_conf, $new, $_rt);
+    }
+
+    jrCore_set_custom_header("Content-Type: {$_rt['image_type']}");
+    jrCore_set_custom_header('Content-Disposition: inline; filename="' . $_rt['image_name'] . '"');
+    jrCore_set_custom_header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + 86400000));
+    jrCore_send_response_and_detach(file_get_contents($new), true);
     exit;
 }
 
 /**
- * jrImage_get_allowed_image_sizes
+ * Get the allowed sizes (in bytes) for use in ACP config
  */
 function jrImage_get_allowed_image_sizes()
 {
@@ -1971,9 +2412,77 @@ function jrImage_get_allowed_image_sizes()
     return $_out;
 }
 
-//---------------------------------------------------------
+/**
+ * Copy image to another image preserving transparency
+ * @param $dst_im resource
+ * @param $src_im resource
+ * @param $dst_x int
+ * @param $dst_y int
+ * @param $src_x int
+ * @param $src_y int
+ * @param $src_w int
+ * @param $src_h int
+ * @param $pct int
+ */
+function jrImage_imagecopymerge_alpha($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h, $pct)
+{
+    // creating a cut resource
+    $cut = imagecreatetruecolor($src_w, $src_h);
+
+    // copying relevant section from background to the cut resource
+    imagecopy($cut, $dst_im, 0, 0, $dst_x, $dst_y, $src_w, $src_h);
+
+    // copying relevant section from watermark to the cut resource
+    imagecopy($cut, $src_im, 0, 0, $src_x, $src_y, $src_w, $src_h);
+
+    // insert cut resource to destination image
+    imagecopymerge($dst_im, $cut, $dst_x, $dst_y, 0, 0, $src_w, $src_h, $pct);
+}
+
+/**
+ * Plug-and-Play function replaces much slower imagecopyresampled.
+ * Typically from 30 to 60 times faster when reducing high resolution images down to thumbnail size using the default quality setting.
+ * Author: Tim Eckel - Date: 09/07/07 - Version: 1.1 - Project: FreeRingers.net - Freely distributable - These comments must remain.
+ * Optional "quality" parameter (defaults is 3). Fractional values are allowed, for example 1.5. Must be greater than zero.
+ * Between 0 and 1 = Fast, but mosaic results, closer to 0 increases the mosaic effect.
+ * 1 = Up to 350 times faster. Poor results, looks very similar to imagecopyresized.
+ * 2 = Up to 95 times faster.  Images appear a little sharp, some prefer this over a quality of 3.
+ * 3 = Up to 60 times faster.  Will give high quality smooth results very close to imagecopyresampled, just faster.
+ * 4 = Up to 25 times faster.  Almost identical to imagecopyresampled for most images.
+ * 5 = No speedup. Just uses imagecopyresampled, no advantage over imagecopyresampled.
+ * @param resource $dst_image
+ * @param resource $src_image
+ * @param int $dst_x
+ * @param int $dst_y
+ * @param int $src_x
+ * @param int $src_y
+ * @param int $dst_w
+ * @param int $dst_h
+ * @param int $src_w
+ * @param int $src_h
+ * @param int $quality
+ * @return bool
+ */
+function jrImage_imagecopyresampled(&$dst_image, $src_image, $dst_x, $dst_y, $src_x, $src_y, $dst_w, $dst_h, $src_w, $src_h, $quality = 2)
+{
+    if (empty($src_image) || empty($dst_image) || $quality <= 0) {
+        return false;
+    }
+    if ($quality < 5 && (($dst_w * $quality) < $src_w || ($dst_h * $quality) < $src_h)) {
+        $temp = imagecreatetruecolor($dst_w * $quality + 1, $dst_h * $quality + 1);
+        imagecopyresized($temp, $src_image, 0, 0, $src_x, $src_y, $dst_w * $quality + 1, $dst_h * $quality + 1, $src_w, $src_h);
+        imagecopyresampled($dst_image, $temp, $dst_x, $dst_y, 0, 0, $dst_w, $dst_h, $dst_w * $quality, $dst_h * $quality);
+        imagedestroy($temp);
+    }
+    else {
+        imagecopyresampled($dst_image, $src_image, $dst_x, $dst_y, $src_x, $src_y, $dst_w, $dst_h, $src_w, $src_h);
+    }
+    return true;
+}
+
+//-------------------------
 // IMAGE FILTERS
-//---------------------------------------------------------
+//-------------------------
 
 /**
  * blur
@@ -2441,9 +2950,9 @@ function jrImage_filter_reflection_extension()
     return 'png';
 }
 
-//---------------------------------------------------------
-// Smarty template functions
-//---------------------------------------------------------
+//-------------------------
+// SMARTY
+//-------------------------
 
 /**
  * Display a "stacked" image setup
@@ -2509,8 +3018,8 @@ function smarty_function_jrImage_stacked_image($params, $smarty)
         }
         $_tm['style'] = "position:absolute;z-index:" . ($k * 10) . ";border-width:{$bw}px;border-style:{$bs};border-color:{$bc}";
         if ($k > 0) {
-            $t_off = round($_sz["{$params['size']}"] / 6) * $k;
-            $l_off = $t_off * 2;
+            $t_off        = round($_sz["{$params['size']}"] / 6) * $k;
+            $l_off        = $t_off * 2;
             $_tm['style'] .= ";top:{$t_off}px;left:{$l_off}px";
         }
         // Check for module
@@ -2523,7 +3032,7 @@ function smarty_function_jrImage_stacked_image($params, $smarty)
             $_tm['type'] = $_ty[$k];
         }
         $_tm['crop'] = 'auto';
-        $out .= smarty_function_jrImage_display($_tm, $smarty) . "\n";
+        $out         .= smarty_function_jrImage_display($_tm, $smarty) . "\n";
     }
     $out .= '</div>';
     return $out;
@@ -2593,13 +3102,36 @@ function smarty_function_jrImage_display($params, $smarty)
         $hgt = " height=\"" . $_sz["{$params['size']}"] . "\"";
     }
 
+    // Get last time image was updated
+    if (!isset($params['_v'])) {
+        if (isset($smarty->tpl_vars['item']->value[$key]) && $smarty->tpl_vars['item']->value[$key] == $params['item_id']) {
+            if (isset($smarty->tpl_vars['item']->value["{$params['type']}_time"])) {
+                $params['_v'] = (int) $smarty->tpl_vars['item']->value["{$params['type']}_time"];
+            }
+        }
+        elseif ($key == '_profile_id' && isset($smarty->tpl_vars['_profile_id']) && $smarty->tpl_vars['_profile_id']->value == $params['item_id']) {
+            if (isset($smarty->tpl_vars['profile_image_time']->value)) {
+                $params['_v'] = (int) $smarty->tpl_vars['profile_image_time']->value;
+            }
+        }
+        elseif (isset($smarty->tpl_vars['_items']) && is_array($smarty->tpl_vars['_items']->value)) {
+            foreach ($smarty->tpl_vars['_items']->value as $v) {
+                if (isset($v[$key]) && $v[$key] == $params['item_id'] && isset($v["{$params['type']}_time"])) {
+                    $params['_v'] = (int) (int) $v["{$params['type']}_time"];
+                    break;
+                }
+            }
+        }
+    }
+
     // Get active media system
+    $url = false;
     $plg = jrCore_get_active_media_system();
     $fnc = "_{$plg}_media_get_image_url";
     if (function_exists($fnc)) {
-        $url = $fnc($params);
+        $url = $fnc($params, $smarty);
     }
-    else {
+    if (!$url) {
         $url = jrCore_get_module_url($params['module']);
         $url = "{$_conf['jrCore_base_url']}/{$url}/image/{$params['type']}/{$params['item_id']}/{$params['size']}";
 
@@ -2607,33 +3139,14 @@ function smarty_function_jrImage_display($params, $smarty)
         if (isset($params['crop'])) {
             $url .= "/crop={$params['crop']}";
         }
+        if (isset($params['fillcolor'])) {
+            $url .= "/fillcolor={$params['fillcolor']}";
+        }
         if (isset($params['filter'])) {
             $url .= "/filter={$params['filter']}";
         }
-
         if (isset($params['_v']) && strlen($params['_v']) > 0) {
             $url .= '/_v=' . (int) $params['_v'];
-        }
-        elseif (isset($smarty->tpl_vars['item']->value[$key]) && $smarty->tpl_vars['item']->value[$key] == $params['item_id']) {
-            if (isset($smarty->tpl_vars['item']->value["{$params['type']}_time"])) {
-                $url .= '/_v=' . (int) $smarty->tpl_vars['item']->value["{$params['type']}_time"];
-                $params['_item'] = $smarty->tpl_vars['item']->value;
-            }
-        }
-        elseif ($key == '_profile_id' && isset($smarty->tpl_vars['_profile_id']) && $smarty->tpl_vars['_profile_id']->value == $params['item_id']) {
-            if (isset($smarty->tpl_vars['profile_image_time']->value)) {
-                $url .= '/_v=' . (int) $smarty->tpl_vars['profile_image_time']->value;
-                $params['_item'] = $smarty->tpl_vars;
-            }
-        }
-        elseif (isset($smarty->tpl_vars['_items']) && is_array($smarty->tpl_vars['_items']->value)) {
-            foreach ($smarty->tpl_vars['_items']->value as $v) {
-                if (isset($v[$key]) && $v[$key] == $params['item_id'] && isset($v["{$params['type']}_time"])) {
-                    $url .= '/_v=' . (int) $v["{$params['type']}_time"];
-                    $params['_item'] = $v;
-                    break;
-                }
-            }
         }
     }
 
@@ -2641,7 +3154,7 @@ function smarty_function_jrImage_display($params, $smarty)
     if (!isset($params['alt'])) {
         $params['alt'] = '';
     }
-    $_chck = array('alt', 'class', 'style', 'id', 'title');
+    $_chck = array('alt', 'class', 'style', 'id', 'title', 'crossorigin');
     $attrs = '';
     foreach ($_chck as $attr) {
         if (isset($params[$attr])) {
@@ -2660,72 +3173,4 @@ function smarty_function_jrImage_display($params, $smarty)
         return '';
     }
     return $_rs['src'];
-}
-
-/**
- * Copy image to another image preserving transparency
- * @param $dst_im resource
- * @param $src_im resource
- * @param $dst_x int
- * @param $dst_y int
- * @param $src_x int
- * @param $src_y int
- * @param $src_w int
- * @param $src_h int
- * @param $pct int
- */
-function jrImage_imagecopymerge_alpha($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h, $pct)
-{
-    // creating a cut resource
-    $cut = imagecreatetruecolor($src_w, $src_h);
-
-    // copying relevant section from background to the cut resource
-    imagecopy($cut, $dst_im, 0, 0, $dst_x, $dst_y, $src_w, $src_h);
-
-    // copying relevant section from watermark to the cut resource
-    imagecopy($cut, $src_im, 0, 0, $src_x, $src_y, $src_w, $src_h);
-
-    // insert cut resource to destination image
-    imagecopymerge($dst_im, $cut, $dst_x, $dst_y, 0, 0, $src_w, $src_h, $pct);
-}
-
-/**
- * Plug-and-Play function replaces much slower imagecopyresampled.
- * Typically from 30 to 60 times faster when reducing high resolution images down to thumbnail size using the default quality setting.
- * Author: Tim Eckel - Date: 09/07/07 - Version: 1.1 - Project: FreeRingers.net - Freely distributable - These comments must remain.
- * Optional "quality" parameter (defaults is 3). Fractional values are allowed, for example 1.5. Must be greater than zero.
- * Between 0 and 1 = Fast, but mosaic results, closer to 0 increases the mosaic effect.
- * 1 = Up to 350 times faster. Poor results, looks very similar to imagecopyresized.
- * 2 = Up to 95 times faster.  Images appear a little sharp, some prefer this over a quality of 3.
- * 3 = Up to 60 times faster.  Will give high quality smooth results very close to imagecopyresampled, just faster.
- * 4 = Up to 25 times faster.  Almost identical to imagecopyresampled for most images.
- * 5 = No speedup. Just uses imagecopyresampled, no advantage over imagecopyresampled.
- * @param resource $dst_image
- * @param resource $src_image
- * @param int $dst_x
- * @param int $dst_y
- * @param int $src_x
- * @param int $src_y
- * @param int $dst_w
- * @param int $dst_h
- * @param int $src_w
- * @param int $src_h
- * @param int $quality
- * @return bool
- */
-function jrImage_imagecopyresampled(&$dst_image, $src_image, $dst_x, $dst_y, $src_x, $src_y, $dst_w, $dst_h, $src_w, $src_h, $quality = 3)
-{
-    if (empty($src_image) || empty($dst_image) || $quality <= 0) {
-        return false;
-    }
-    if ($quality < 5 && (($dst_w * $quality) < $src_w || ($dst_h * $quality) < $src_h)) {
-        $temp = imagecreatetruecolor($dst_w * $quality + 1, $dst_h * $quality + 1);
-        imagecopyresized($temp, $src_image, 0, 0, $src_x, $src_y, $dst_w * $quality + 1, $dst_h * $quality + 1, $src_w, $src_h);
-        imagecopyresampled($dst_image, $temp, $dst_x, $dst_y, 0, 0, $dst_w, $dst_h, $dst_w * $quality, $dst_h * $quality);
-        imagedestroy($temp);
-    }
-    else {
-        imagecopyresampled($dst_image, $src_image, $dst_x, $dst_y, $src_x, $src_y, $dst_w, $dst_h, $src_w, $src_h);
-    }
-    return true;
 }

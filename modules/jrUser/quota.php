@@ -2,7 +2,7 @@
 /**
  * Jamroom Users module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -111,6 +111,20 @@ function jrUser_quota_config()
         'order'    => 5
     );
     jrProfile_register_quota_setting('jrUser', $_tmp);
+
+    // post to timeline
+    if (jrCore_module_is_active('jrAction')) {
+        $_tmp = array(
+            'name'     => 'add_to_timeline',
+            'type'     => 'checkbox',
+            'default'  => 'off',
+            'validate' => 'onoff',
+            'label'    => 'add to timeline',
+            'help'     => 'If this option is checked, when a user signs up or logs in to this quota, the action will be added to the timeline.',
+            'order'    => 6
+        );
+        jrProfile_register_quota_setting('jrUser', $_tmp);
+    }
 
     // Power User
     $_tmp = array(

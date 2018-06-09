@@ -2,7 +2,7 @@
 /**
  * Jamroom Playlists module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -93,3 +93,6 @@ $lang[47] = 'Log in or Create your account to save this playlist!';
 $lang[48] = 'You must be logged in to create a Playlist!';
 $lang[49] = 'Click here to Login or Create an Account';
 $lang[50] = 'Successfully added to playlist';
+$lang[51] = 'You haven\'t created any <b>Playlists</b> yet';
+$lang[52] = 'You can build collections of audio files you like into a playlist. <br>Visit other profiles who have uploaded audio and use the';
+$lang[53] = 'button to create playlists.<br>Playlists you create will show here on your profile.';

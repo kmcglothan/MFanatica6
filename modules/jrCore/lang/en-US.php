@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -177,5 +177,13 @@ $lang[130] = 'a string that does not contain HTML or hidden characters';
 $lang[131] = 'a valid URL';
 $lang[132] = 'either yes or no';
 $lang[133] = 'is JSON encoded';
-
-
+$lang[134] = 'Uploaded file is too large - maximum allowed size is';
+$lang[135] = 'Invalid file type - the file extension must match one of the following: ';
+$lang[136] = 'Sun';
+$lang[137] = 'Mon';
+$lang[138] = 'Tue';
+$lang[139] = 'Wed';
+$lang[140] = 'Thu';
+$lang[141] = 'Fri';
+$lang[142] = 'Sat';
+$lang[143] = 'per page';

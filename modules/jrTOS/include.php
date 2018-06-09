@@ -2,7 +2,7 @@
 /**
  * Jamroom Terms of Service module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -42,14 +42,14 @@
 defined('APP_DIR') or exit();
 
 /**
- * jrTOS_meta
+ * meta
  */
 function jrTOS_meta()
 {
     $_tmp = array(
         'name'        => 'Terms of Service',
         'url'         => 'quotatos',
-        'version'     => '1.0.4',
+        'version'     => '1.1.0',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Adds Terms of Service display and acknowledgement for configured Quotas',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2952/quota-terms-of-service',
@@ -61,13 +61,13 @@ function jrTOS_meta()
 }
 
 /**
- * jrTOS_init
+ * init
  */
 function jrTOS_init()
 {
-    // We're going to listen to the login success listener to
-    // display any required terms of service
+    // We're going to listen to the login success listener to display any required terms of service
     jrCore_register_event_listener('jrUser', 'login_success', 'jrTOS_login_success_listener');
+    jrCore_register_event_listener('jrUser', 'session_started', 'jrTOS_session_started_listener');
 
     // events
     jrCore_register_event_trigger('jrTOS', 'tos_agreed', 'Fired when the user accepts the Terms Of Service');
@@ -87,12 +87,45 @@ function jrTOS_init()
  * @param $event string Event Trigger name
  * @return array
  */
+function jrTOS_session_started_listener($_data, $_user, $_conf, $_args, $event)
+{
+    global $_post;
+    if (jrCore_is_view_request() && !jrUser_is_master()) {
+
+        // Specific conditions we don't want to match
+        if (isset($_post['module']) && ($_post['module'] == 'jrTOS' || $_post['module'] == 'jrUser')) {
+            return $_data;
+        }
+        // Don't match for validation when accepting TOS
+        if (isset($_post['option']) && $_post['option'] == 'form_validate') {
+            return $_data;
+        }
+
+        if (isset($_SESSION['user_jrTOS_agreed']) && $_SESSION['user_jrTOS_agreed'] > 0) {
+            $pid = $_SESSION['user_jrTOS_agreed'];
+            if (!isset($_SESSION["user_jrTOS_{$pid}_agreed"])) {
+                $murl = jrCore_get_module_url('jrTOS');
+                jrCore_location("{$_conf['jrCore_base_url']}/{$murl}/view_tos/{$_SESSION['quota_jrTOS_show_tos']}");
+            }
+        }
+    }
+    return $_data;
+}
+
+/**
+ * Display a Terms of Service to a user on successful login
+ * @param $_data array incoming data array
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return array
+ */
 function jrTOS_login_success_listener($_data, $_user, $_conf, $_args, $event)
 {
     if (!jrUser_is_master() && isset($_user['quota_jrTOS_show_tos']) && jrCore_checktype($_user['quota_jrTOS_show_tos'], 'number_nz')) {
         $pid = (int) $_user['quota_jrTOS_show_tos'];
-        $_pg = jrCore_db_get_item('jrPage', $pid, true);
-        if (is_array($_pg)) {
+        if ($_pg = jrCore_db_get_item('jrPage', $pid, true)) {
             if (!isset($_user["user_jrTOS_{$pid}_agreed"]) || $_user["user_jrTOS_{$pid}_agreed"] != $_pg['_updated']) {
                 $murl = jrCore_get_module_url('jrTOS');
                 jrCore_location("{$_conf['jrCore_base_url']}/{$murl}/view_tos/{$_user['quota_jrTOS_show_tos']}");

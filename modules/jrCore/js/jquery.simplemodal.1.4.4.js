@@ -33,6 +33,7 @@
     };
     b.fn.modal = function(a)
     {
+        $('html').css('overflow', 'hidden');
         return b.modal.impl.init(this, a)
     };
     b.modal.defaults = {
@@ -190,6 +191,7 @@
             this.bindEvents()
         }, close: function()
         {
+            $('html').css('overflow','');
             if (!this.d.data)return !1;
             this.unbindEvents();
             if (b.isFunction(this.o.onClose) && !this.occb)this.occb = !0, this.o.onClose.apply(this, [this.d]);

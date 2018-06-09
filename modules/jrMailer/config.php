@@ -2,7 +2,7 @@
 /**
  * Jamroom Email Support module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -92,6 +92,10 @@ function jrMailer_config()
     // Throttling
     $_opt = array(
         '0'   => 'disabled',
+        '1'   => '1',
+        '2'   => '2',
+        '3'   => '3',
+        '4'   => '4',
         '5'   => '5',
         '10'  => '10',
         '15'  => '15',

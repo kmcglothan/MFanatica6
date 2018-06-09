@@ -16,9 +16,9 @@
     <div class="block_content">
 
     {if jrProfile_is_profile_owner($_profile_id)}
-        {jrCore_list module="jrEvent" profile_id=$_profile_id search="event_date > 0" order_by="event_date asc" pagebreak=6 page=$_post.p pager=true}
+        {jrCore_list module="jrEvent" profile_id=$_profile_id search="event_date > 0" order_by="event_date desc" pagebreak=6 page=$_post.p pager=true}
     {else}
-        {jrCore_list module="jrEvent" profile_id=$_profile_id order_by="event_date asc" pagebreak=6 page=$_post.p pager=true}
+        {jrCore_list module="jrEvent" profile_id=$_profile_id order_by="event_date desc" pagebreak=6 page=$_post.p pager=true}
     {/if}
 
     </div>

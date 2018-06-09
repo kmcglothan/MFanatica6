@@ -26,7 +26,7 @@
                     <td class="page_table_cell p10" style="width:35%;vertical-align:top">
                         <div style="position:relative">
                             <div style="position:absolute;top:0;right:0">
-                                <input type="button" value="view account" class="form_button" style="margin-left:0" onclick="jrCore_window_location('{$jamroom_url}/{$uurl}/account/profile_id={$_profile_id}/user_id={$_user_id}')">
+                                <input type="button" value="view account" class="form_button" style="margin-left:0" onclick="window.open('{$jamroom_url}/{$uurl}/account/profile_id={$_profile_id}/user_id={$_user_id}')">
                             </div>
                             <a href="{$jamroom_url}/{$profile_url}"><b>@{$profile_url}</b></a><br>
                             Joined: {$_created|jrCore_format_time:false:'relative'}<br>

@@ -2,7 +2,7 @@
 /**
  * Jamroom Event Calendar module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -186,5 +186,8 @@ $lang[144] = 'Events you are attending';
 $lang[145] = 'No events you are attending found';
 $lang[146] = 'You are not attending any events';
 $lang[147] = 'Events attending';
+$lang[148] = 'My Event Title';
+$lang[149] = '1234 Elm Street';
+$lang[150] = 'Enter event description here';
 
 

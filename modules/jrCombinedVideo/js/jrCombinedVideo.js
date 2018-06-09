@@ -1,4 +1,4 @@
-// Jamroom 5 Combined Video Javascript
+// Jamroom Combined Video Javascript
 // @copyright 2003-2015 by Talldude Networks LLC
 
 /**

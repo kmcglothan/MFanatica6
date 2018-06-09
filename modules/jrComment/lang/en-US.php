@@ -2,20 +2,17 @@
 /**
  * Jamroom Comments module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0.  Please see the included "license.html" file.
+ * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
+ *
+ * This Source Code is subject to the terms of the Jamroom Network
+ * Commercial License -  please see the included "license.html" file.
  *
  * This module may include works that are not developed by
  * The Jamroom Network
  * and are used under license - any licenses are included and
  * can be found in the "contrib" directory within this module.
- *
- * Jamroom may use modules and skins that are licensed by third party
- * developers, and licensed under a different license  - please
- * reference the individual module or skin license that is included
- * with your installation.
  *
  * This software is provided "as is" and any express or implied
  * warranties, including, but not limited to, the implied warranties
@@ -76,3 +73,7 @@ $lang[27] = 'new reply to your comment';
 $lang[28] = 'If someone responds to one of your comments would you like to be notified?';
 $lang[29] = 'You do not have the privileges to view this page';
 $lang[30] = 'Posted a new Timeline Comment';
+$lang[31]   = 'file attachment';
+$lang[32]   = 'If you would like to attach a file to this comment, you can upload a file here';
+$lang[33] = 'Attach Files';
+

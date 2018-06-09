@@ -2,7 +2,7 @@
 /**
  * Jamroom Video module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -39,19 +39,39 @@
 // make sure we are not being called directly
 defined('APP_DIR') or exit();
 
+/**
+ * Decode an input file
+ * @param string $input_file
+ * @param array $_options
+ * @param string $error_file
+ * @return mixed
+ */
 function jrVideo_m4v_decode($input_file, $_options, $error_file)
 {
     return $input_file;
 }
 
+/**
+ * Encode a new video file
+ * @param string $input_file
+ * @param array $_options
+ * @param string $error_file
+ * @return string
+ */
 function jrVideo_m4v_encode($input_file, $_options, $error_file)
 {
+    global $_conf;
     $ffmpeg = jrVideo_get_ffmpeg_command();
 
+    $preset = 'veryfast';
+    if (isset($_conf['jrVideo_x264_preset']) && strlen($_conf['jrVideo_x264_preset']) > 0) {
+        $preset = trim($_conf['jrVideo_x264_preset']);
+    }
+
+    // M4V version
     ob_start();
-    system("{$ffmpeg} -y -i \"{$input_file}\" -threads " . jrVideo_get_ffmpeg_thread() . " -vcodec libx264 -vprofile high -preset veryfast -b:v 400k -maxrate 400k -bufsize 1000k -acodec libfaac -ac 2 -ar 48000 -ab 96k \"{$input_file}.m4v\" >/dev/null 2>{$error_file}", $ret);
+    system("{$ffmpeg} -y -i \"{$input_file}\" -threads " . jrVideo_get_ffmpeg_thread() . " -acodec libfaac -vcodec libx264 -movflags +faststart -preset {$preset} \"{$input_file}.m4v\" >/dev/null 2>{$error_file}", $ret);
     ob_end_clean();
+
     return "{$input_file}.m4v";
 }
-
-

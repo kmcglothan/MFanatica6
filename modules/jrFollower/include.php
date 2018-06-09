@@ -2,7 +2,7 @@
 /**
  * Jamroom Followers module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -49,7 +49,7 @@ function jrFollower_meta()
     $_tmp = array(
         'name'        => 'Followers',
         'url'         => 'follow',
-        'version'     => '1.5.4',
+        'version'     => '1.5.7',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Users can &quot;follow&quot; other users Profiles',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/3600/followers',
@@ -117,12 +117,11 @@ function jrFollower_init()
     // Add action on follow approve
     jrCore_register_event_listener('jrAction', 'create', 'jrFollower_action_create_listener');
 
-    // Insert "Approve Followers" form field
+    // Insert "Followers Require Approval" form field
     jrCore_register_event_listener('jrCore', 'form_display', 'jrFollower_insert_field');
 
     // Cleanup skin menu item
     jrCore_register_event_listener('jrCore', 'verify_module', 'jrFollower_verify_module_listener');
-
 
     jrCore_register_module_feature('jrTips', 'tip', 'jrFollower', 'tip');
 
@@ -203,6 +202,7 @@ function jrFollower_insert_field($_data, $_user, $_conf, $_args, $event)
             'name'          => 'profile_jrFollower_approve',
             'label'         => $_ln['jrFollower'][3],
             'help'          => $_ln['jrFollower'][4],
+            'sublabel'      => $_ln['jrFollower'][41],
             'type'          => 'checkbox',
             'default'       => 'off',
             'validate'      => 'onoff',
@@ -249,8 +249,17 @@ function jrFollower_action_create_listener($_data, $_user, $_conf, $_args, $even
 function jrFollower_action_stats_listener($_data, $_user, $_conf, $_args, $event)
 {
     if (isset($_args['profile_id']) && jrCore_checktype($_args['profile_id'], 'number_nz')) {
+
         $_data['followers'] = (int) jrCore_db_run_key_function('jrFollower', 'follow_profile_id', $_args['profile_id'], 'count');
-        $_data['following'] = (int) jrCore_db_run_key_function('jrFollower', '_profile_id', $_args['profile_id'], 'count');
+        $_data['following'] = 0;
+
+        // Get all profiles users of this profile are following
+        $tbl = jrCore_db_table_name('jrProfile', 'profile_link');
+        $req = "SELECT `user_id` FROM {$tbl} WHERE profile_id = '{$_args['profile_id']}'";
+        $_rt = jrCore_db_query($req, 'user_id');
+        if ($_rt && is_array($_rt)) {
+            $_data['following'] = (int) jrCore_db_run_key_function('jrFollower', '_user_id', 'IN (' . implode(',', array_keys($_rt)) . ')', 'count');
+        }
     }
     return $_data;
 }
@@ -435,32 +444,18 @@ function jrFollower_get_profiles_followed($user_id)
  */
 function jrFollower_get_users_following($profile_id)
 {
-    $tbl = jrCore_db_table_name('jrFollower', 'item_key');
-    $req = "SELECT a.`value` AS i FROM {$tbl} a
-              LEFT JOIN {$tbl} b ON (b.`_item_id` = a.`_item_id` AND b.`key` = 'follow_profile_id')
+    $tb1 = jrCore_db_table_name('jrFollower', 'item_key');
+    $tb2 = jrCore_db_table_name('jrUser', 'item_key');
+    if (jrCore_db_key_has_index_table('jrUser', 'user_name')) {
+        $tb2 = jrCore_db_get_index_table_name('jrUser', 'user_name');
+    }
+    $req = "SELECT a.`value` AS i, c.`value` as n FROM {$tb1} a
+         LEFT JOIN {$tb1} b ON (b.`_item_id` = a.`_item_id` AND b.`key` = 'follow_profile_id')
+         LEFT JOIN {$tb2} c ON (c.`_item_id` = a.`_item_id` AND c.`key` = 'user_name')
              WHERE a.`key` = '_user_id' AND b.`value` = '" . intval($profile_id) . "'";
-    $_rt = jrCore_db_query($req, 'i', false, 'i');
-    if ($_rt && is_array($_rt) && count($_rt) > 0) {
-        $_sp = array(
-            'search'         => array(
-                "_user_id IN " . implode(',', array_keys($_rt))
-            ),
-            'limit'          => 5000,
-            'return_keys'    => array('_user_id', 'user_name'),
-            'skip_triggers'  => true,
-            'ignore_pending' => true
-        );
-        $_rt = jrCore_db_search_items('jrUser', $_sp);
-        if ($_rt && is_array($_rt['_items'])) {
-            $_us = array();
-            foreach ($_rt['_items'] as $v) {
-                if (isset($v['_user_id']) && $v['_user_id'] > 0) {
-                    $_us["{$v['_user_id']}"] = $v['user_name'];
-                }
-            }
-            return $_us;
-        }
-        return false;
+    $_us = jrCore_db_query($req, 'i', false, 'n');
+    if ($_us && is_array($_us) && count($_us) > 0) {
+        return $_us;
     }
     return false;
 }

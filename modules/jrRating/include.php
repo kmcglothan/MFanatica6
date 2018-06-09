@@ -2,7 +2,7 @@
 /**
  * Jamroom Item Ratings module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -50,7 +50,7 @@ function jrRating_meta()
     $_tmp = array(
         'name'        => 'Item Ratings',
         'url'         => 'rating',
-        'version'     => '1.3.3',
+        'version'     => '1.4.2',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Ratings for all datastore based items',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/287/item-ratings',
@@ -94,36 +94,79 @@ function jrRating_init()
     jrCore_register_event_listener('jrCore', 'db_search_params', 'jrRating_db_search_params_listener');
     jrCore_register_event_listener('jrCore', 'db_search_items', 'jrRating_db_search_items_listener');
     jrCore_register_event_listener('jrCore', 'db_delete_item', 'jrRating_db_delete_item_listener');
+    jrCore_register_event_listener('jrCore', 'verify_module', 'jrRating_verify_module_listener');
+
+    // Register our rate_item event listener
+    jrCore_register_event_trigger('jrRating', 'rate_item', 'Fired when a new rating is going to be saved');
 
     // Support for actions
     jrCore_register_module_feature('jrCore', 'action_support', 'jrRating', 'rate', 'item_action.tpl');
 
+    // Verify DB queue worker
+    jrCore_register_queue_worker('jrRating', 'verify_db', 'jrRating_verify_db_worker', 0, 1, 14400);
+
     return true;
 }
 
-/**
- * Return a list of available rating types
- * @return array
- */
-function jrRating_get_types()
-{
-    return array(
-        'star' => 'star',
-        'html' => 'html'
-    );
-}
+//---------------------
+// QUEUE WORKER
+//---------------------
 
 /**
- * Return DOM targets for rating results
- * @return array
+ * Verify Rating Database
+ * @param array $_queue The queue entry the worker will receive
+ * @return bool
  */
-function jrRating_get_targets()
+function jrRating_verify_db_worker($_queue)
 {
-    return array(
-        'alert' => 'alert',
-        'div'   => 'div'
-    );
+    ini_set('max_execution_time', 28800); // 8 hours max
+    $max = 0;
+    $cnt = 0;
+    while (true) {
+        $max++;
+        $_rt = jrCore_db_get_items_missing_key('jrRating', 'rating_item_ckey', 2000);
+        if ($_rt && is_array($_rt)) {
+            $tot = count($_rt);
+            $_id = array();
+            foreach ($_rt as $k => $id) {
+                $_id[] = $id;
+                $cnt++;
+                if (($cnt % 200) === 0 || ($k + 1) >= $tot) {
+                    $_rg = jrCore_db_get_multiple_items('jrRating', $_id, null, true);
+                    if ($_rg && is_array($_rg)) {
+                        $_up = array();
+                        foreach ($_rg as $r) {
+                            $iid       = (int) $r['_item_id'];
+                            $_up[$iid] = array(
+                                'rating_item_ckey' => "{$r['rating_item_id']}:{$r['rating_index']}:{$r['rating_module']}"
+                            );
+                        }
+                        if (count($_up) > 0) {
+                            jrCore_db_update_multiple_items('jrRating', $_up, null, false, false);
+                            $_id = array();
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            if ($cnt > 0) {
+                jrCore_logger('INF', "added rating_item_ckey compound key to " . jrCore_number_format($cnt) . " ratings");
+            }
+            break;
+        }
+        if ($max > 1000) {
+            // fail safe - break out
+            jrCore_logger('CRI', "failsafe hit adding rating_item_ckey compound key to ratings");
+            break;
+        }
+    }
+    return true;
 }
+
+//---------------------
+// EVENT LISTENERS
+//---------------------
 
 /**
  * Special Order By support
@@ -264,6 +307,8 @@ function jrRating_db_search_items_listener($_data, $_user, $_conf, $_args, $even
         }
         return $_data;
     }
+
+    // Fall through - we are doing a rating list
     $_ids = array();
     $_lnk = array();
     foreach ($_data['_items'] as $k => $_item) {
@@ -326,26 +371,22 @@ function jrRating_db_delete_item_listener($_data, $_user, $_conf, $_args, $event
         while (true) {
             // Do a thousand at a time - lower memory usage
             $_sp = array(
-                "search"         => array(
+                "search"              => array(
                     "rating_module = {$_args['module']}",
                     "rating_item_id = {$_args['_item_id']}"
                 ),
-                'return_keys'    => array('_item_id'),
-                'skip_triggers'  => true,
-                'ignore_pending' => true,
-                'privacy_check'  => false,
-                'limit'          => 1000
+                'return_item_id_only' => true,
+                'skip_triggers'       => true,
+                'ignore_pending'      => true,
+                'privacy_check'       => false,
+                'limit'               => 1000
             );
             $_rt = jrCore_db_search_items('jrRating', $_sp);
-            if (isset($_rt) && isset($_rt['_items']) && is_array($_rt['_items'])) {
-                $_id = array();
-                foreach ($_rt['_items'] as $_item) {
-                    $_id[] = (int) $_item['_item_id'];
-                }
+            if ($_rt && is_array($_rt)) {
                 // NOTE: Since rating entries have no media, we set the 3rd param to "false" - this
                 // let's the delete function skip checking for associated item media.
-                jrCore_db_delete_multiple_items('jrRating', $_id, false);
-                if (count($_id) < 1000) {
+                jrCore_db_delete_multiple_items('jrRating', $_rt, false);
+                if (count($_rt) < 1000) {
                     // We got them all
                     break;
                 }
@@ -356,6 +397,52 @@ function jrRating_db_delete_item_listener($_data, $_user, $_conf, $_args, $event
         }
     }
     return $_data;
+}
+
+/**
+ * Add rating compound key
+ * @param $_data array Array of information from trigger
+ * @param $_user array Current user
+ * @param $_conf array Global Config
+ * @param $_args array additional parameters passed in by trigger caller
+ * @param $event string Triggered Event name
+ * @return array
+ */
+function jrRating_verify_module_listener($_data, $_user, $_conf, $_args, $event)
+{
+    $num = jrCore_db_get_datastore_item_count('jrRating');
+    if ($num > 0) {
+        jrCore_queue_create('jrRating', 'verify_db', array('count' => $num), 0, null, 1);
+    }
+    return $_data;
+}
+
+//---------------------
+// FUNCTIONS
+//---------------------
+
+/**
+ * Return a list of available rating types
+ * @return array
+ */
+function jrRating_get_types()
+{
+    return array(
+        'star' => 'star',
+        'html' => 'html'
+    );
+}
+
+/**
+ * Return DOM targets for rating results
+ * @return array
+ */
+function jrRating_get_targets()
+{
+    return array(
+        'alert' => 'alert',
+        'div'   => 'div'
+    );
 }
 
 /**
@@ -374,6 +461,10 @@ function jrRating_get_ratable_modules()
     }
     return $_out;
 }
+
+//---------------------
+// SMARTY
+//---------------------
 
 /**
  * Smarty function to return a rating form
@@ -409,7 +500,7 @@ function smarty_function_jrRating_form($params, $smarty)
 
     $_type = jrRating_get_types();
     if (!isset($params['type'])) {
-        $params['type'] = $_conf['jrRating_default_type'];
+        $params['type'] = 'star';
     }
     if (!isset($_type["{$params['type']}"])) {
         return 'jrRating_form: invalid rating type';
@@ -484,14 +575,12 @@ function smarty_function_jrRating_form($params, $smarty)
         // Get item raters
         $_s  = array(
             'search'   => array(
-                "rating_module = {$params['module']}",
-                "rating_item_id = {$params['item_id']}",
-                "rating_index = {$params['index']}",
+                "rating_item_ckey = {$params['item_id']}:{$params['index']}:{$params['module']}"
             ),
-            'limit'    => 100,
             'order_by' => array(
                 '_item_id' => 'desc'
-            )
+            ),
+            'limit'    => 100
         );
         $_rt = jrCore_db_search_items('jrRating', $_s);
         if (isset($_rt) && is_array($_rt)) {

@@ -24,7 +24,7 @@ function jrLike_action(module_url, item_id, action, uid)
             iid = did;
         }
         else {
-            alert("Error: Invalid action argument (like/dislike/neutral)");
+            jrCore_alert("Error: Invalid action argument (like/dislike/neutral)");
             like_in_progress = false;
             return false;
         }
@@ -49,7 +49,7 @@ function jrLike_action(module_url, item_id, action, uid)
                         $(dcn).text(r.d_cnt);
                     }
                     else if (r.error) {
-                        alert(r.error);
+                        jrCore_alert(r.error);
                     }
                     $(iid + ' img').animate({height: old}, 50);
                     setTimeout(function()
@@ -59,7 +59,7 @@ function jrLike_action(module_url, item_id, action, uid)
                 },
                 error: function()
                 {
-                    alert('an error was encountered saving the like - please try again');
+                    jrCore_alert('an error was encountered saving the like - please try again');
                     like_in_progress = false;
                 }
             });
@@ -89,7 +89,7 @@ function jrLike_get_like_users(e, mod, iid, type, uid)
             },
             error: function()
             {
-                alert('an error was encountered getting the user list - please try again');
+                jrCore_alert('an error was encountered getting the user list - please try again');
             }
         });
     }

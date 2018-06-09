@@ -1,0 +1,71 @@
+#error_log {
+    background-color:#FFF;
+    font-family: inherit;
+    width:98%;
+    padding:6px;
+    margin:10px auto;
+    font-size:12px;
+    white-space:pre-line;
+    color:#000;
+}
+
+#debug_log {
+    background-color:#FFF;
+    font-family: inherit;
+    width:98%;
+    padding:6px;
+    margin:10px auto;
+    font-size:12px;
+    white-space:pre-line;
+    color:#000;
+}
+/* @title Info Log */
+/* @help The Activity Log Information section */
+.log-inf {
+    background-color:transparent;
+    text-align:left;
+}
+/* @title Minor Log */
+/* @help The Activity Log Minor section */
+.log-min {
+    background-color:#CFDFCF;
+    text-align:left;
+    color:#000;
+}
+/* @title Major Log */
+/* @help The Activity Log Major section */
+.log-maj {
+    background-color:#CFDFCF;
+    text-align:left;
+    color:#408140;
+}
+/* @title Critical Log */
+/* @help The Activity Log Critical section */
+.log-cri {
+    background-color:#CFDFCF;
+    text-align:left;
+    color:#87321f;
+}
+
+.php_Notice {
+}
+/* @title PHP Warning Text */
+/* @help PHP Warning Text Color */
+.php_Warning {
+    color: #408140;
+}
+/* @title PHP Fatal Text */
+/* @help PHP Fatal Text Color */
+.php_Fatal, .php_Parse {
+    color:#87321f;
+}
+
+.CodeMirror {
+    background-color:#FFF;
+    color:#000;
+    width:98%;
+    padding:0;
+    margin:8px auto 0 auto;
+    font-size:12px;
+    overflow:auto;
+}

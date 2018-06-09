@@ -2,7 +2,7 @@
 /**
  * Jamroom Developer Tools module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -42,6 +42,86 @@
 defined('APP_DIR') or exit();
 
 //------------------------------
+// query_stats
+//------------------------------
+function view_jrDeveloper_query_stats($_post, $_user, $_conf)
+{
+    jrUser_master_only();
+    jrCore_page_include_admin_menu();
+    jrCore_page_admin_tabs('jrDeveloper');
+    jrCore_page_banner('database query stats');
+
+    // Start our output
+    $dat             = array();
+    $dat[1]['title'] = 'file';
+    $dat[1]['width'] = '55%';
+    $dat[2]['title'] = 'line number';
+    $dat[2]['width'] = '15%';
+    $dat[3]['title'] = 'query count';
+    $dat[3]['width'] = '15%';
+    $dat[4]['title'] = 'AVG query time (MS)';
+    $dat[4]['width'] = '15%';
+    jrCore_page_table_header($dat);
+
+    $_rt = apcu_cache_info();
+    if ($_rt && is_array($_rt) && isset($_rt['cache_list'])) {
+        $_qs = array();
+
+        // Gather
+        foreach ($_rt['cache_list'] as $v) {
+            // 0 = query count
+            // 1 = cumulative time
+            if (strpos($v['info'], 'c:') === 0) {
+                list(, $key, $script, $line) = explode(':', $v['info'], 4);
+                if (!isset($_qs[$key])) {
+                    $_qs[$key] = array(0, 0, $script, $line);
+                }
+                else {
+                    $_qs[$key][2] = $script;
+                    $_qs[$key][3] = $line;
+                }
+                $_qs[$key][0] = apcu_fetch($v['info']);
+            }
+            elseif (strpos($v['info'], 'd:') === 0) {
+                list(, $key) = explode(':', $v['info'], 2);
+                if (!isset($_qs[$key])) {
+                    $_qs[$key] = array(0, 0);
+                }
+                $_qs[$key][1] = apcu_fetch($v['info']);
+            }
+        }
+
+        // Sort
+        $_nw = array();
+        foreach ($_qs as $key => $e) {
+            if (!strpos($e[2], 'ata/cache')) {
+                $total = round($e[1] / $e[0]);
+                if ($total > 0) {
+                    $_nw[$key] = $total;
+                }
+            }
+        }
+        arsort($_nw);
+        if (count($_nw) > 500) {
+            $_nw = array_slice($_nw, 0, 500);
+        }
+        foreach ($_nw as $key => $v) {
+            $dat             = array();
+            $dat[1]['title'] = $_qs[$key][2];
+            $dat[2]['title'] = $_qs[$key][3];
+            $dat[2]['class'] = 'center';
+            $dat[3]['title'] = jrCore_number_format($_qs[$key][0]);
+            $dat[3]['class'] = 'center';
+            $dat[4]['title'] = jrCore_number_format($v);
+            $dat[4]['class'] = 'center';
+            jrCore_page_table_row($dat);
+        }
+    }
+    jrCore_page_table_footer();
+    jrCore_page_display();
+}
+
+//------------------------------
 // reset_system
 //------------------------------
 function view_jrDeveloper_reset_system($_post, $_user, $_conf)
@@ -49,14 +129,8 @@ function view_jrDeveloper_reset_system($_post, $_user, $_conf)
     jrUser_master_only();
     jrCore_page_include_admin_menu();
     jrCore_page_admin_tabs('jrDeveloper');
-    jrCore_set_form_notice('error', "<strong>WARNING!</strong><br>Running this tool will reset your system to the state of a fresh install!<br>It will truncate and delete your system tables!<br>This is serious!", false);
+    jrCore_set_form_notice('error', "<strong>WARNING!</strong><br>Running this tool will reset the data in your system. <br>The admin profile and its contents will survive. Quotas and their settings will survive. Everything else, GONE!<br>It will truncate and delete your system tables!<br>This is serious!", false);
     jrCore_page_banner('Reset System', "delete and reset all system modules");
-
-    // Form init
-    $_tmp = array(
-        'submit_value' => 'reset system',
-    );
-    jrCore_form_create($_tmp);
 
     // Form init
     $_tmp = array(
@@ -144,7 +218,9 @@ function view_jrDeveloper_reset_system_save($_post, $_user, $_conf)
     jrCore_db_query($req);
     $_vl = array();
     foreach ($_rt as $k => $v) {
-        $_vl[] = "('{$_user['_user_id']}', '{$pid}', '{$v['key']}', '{$v['index']}', '" . jrCore_db_escape($v['value']) . "')";
+        if (!strpos($v['key'], '_count')) {
+            $_vl[] = "('{$_user['_user_id']}', '{$pid}', '{$v['key']}', '{$v['index']}', '" . jrCore_db_escape($v['value']) . "')";
+        }
     }
     $req = "INSERT INTO {$tbl} (`_item_id`, `_profile_id`, `key`, `index`, `value`) VALUES " . implode(',', $_vl);
     jrCore_db_query($req);
@@ -166,9 +242,11 @@ function view_jrDeveloper_reset_system_save($_post, $_user, $_conf)
     $_vl = array();
     $qid = 0;
     foreach ($_pr as $k => $v) {
-        $_vl[] = "('{$pid}', '{$pid}', '{$v['key']}', '{$v['index']}', '" . jrCore_db_escape($v['value']) . "')";
-        if ($v['key'] == 'profile_quota_id') {
-            $qid = (int) $v['value'];
+        if (!strpos($v['key'], '_count')) {
+            $_vl[] = "('{$pid}', '{$pid}', '{$v['key']}', '{$v['index']}', '" . jrCore_db_escape($v['value']) . "')";
+            if ($v['key'] == 'profile_quota_id') {
+                $qid = (int) $v['value'];
+            }
         }
     }
     $req = "INSERT INTO {$tbl} (`_item_id`, `_profile_id`, `key`, `index`, `value`) VALUES " . implode(',', $_vl);
@@ -191,7 +269,7 @@ function view_jrDeveloper_reset_system_save($_post, $_user, $_conf)
     // Handle DataStores
     jrCore_form_modal_notice('update', "resetting module datastores...");
     $_mds = jrCore_get_datastore_modules();
-    if (isset($_mds) && is_array($_mds)) {
+    if ($_mds && is_array($_mds)) {
         foreach ($_mds as $mod => $pfx) {
             switch ($mod) {
                 case 'jrUser':
@@ -216,10 +294,7 @@ function view_jrDeveloper_reset_system_save($_post, $_user, $_conf)
         'count_ip'       => 'jrCore',
         'play_key'       => 'jrCore',
         'queue'          => 'jrCore',
-        'recycle'        => 'jrCore',
-        'cookie'         => 'jrUser',
-        'url'            => 'jrUser',
-        'forgot'         => 'jrUser'
+        'recycle'        => 'jrCore'
     );
     foreach ($_todo as $name => $mod) {
         if (jrCore_db_table_exists($mod, $name)) {
@@ -235,8 +310,8 @@ function view_jrDeveloper_reset_system_save($_post, $_user, $_conf)
     $_us = jrUser_session_online_user_info(1000000);
     if ($_us && is_array($_us)) {
         $_id = array();
-        foreach ($_us as $uid => $ignore) {
-            $_id[] = (int) $uid;
+        foreach ($_us as $k => $u) {
+            $_id[] = (int) $u['session_user_id'];
         }
         jrUser_session_remove($_id);
     }
@@ -297,7 +372,7 @@ function view_jrDeveloper_get_license($_post, $_user, $_conf)
             jrCore_json_response($_rs);
             break;
     }
-    if (isset($_mt['license'])) {
+    if (isset($_mt) && isset($_mt['license'])) {
         $_rs = array('success' => $_mt['license']);
     }
     else {
@@ -349,7 +424,7 @@ function view_jrDeveloper_package_skin($_post, $_user, $_conf)
 
     // modules ahead of the marketplace:
     $_ahead = array();
-    $_ver   = jrMarket_get_system_updates();
+    $_ver   = jrMarket_get_system_updates(true);
     if (isset($_ver) && is_array($_ver)) {
         foreach ($_skins as $nam) {
             $_mta = jrCore_skin_meta_data($nam);
@@ -410,7 +485,7 @@ function view_jrDeveloper_package_skin($_post, $_user, $_conf)
 
     $btn = false;
     if ($_mds && is_array($_mds) && count($_mds) > 0) {
-        $btn = jrCore_page_button('del', 'delete all zip files', "if(confirm('Are you sure you want to delete all the module ZIP files that have been created?')) { jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/delete_all/skin') }");
+        $btn = jrCore_page_button('del', 'delete all zip files', "jrCore_confirm('Delete all ZIP Files?', 'Are you sure you want to delete all the ZIP files that have been created?', function() { jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/delete_all/skin') })");
     }
     jrCore_page_banner('Create Skin ZIP', $btn);
 
@@ -658,7 +733,7 @@ function view_jrDeveloper_package_module($_post, $_user, $_conf)
 
     // modules ahead of the marketplace:
     $_ahead = array();
-    $_ver   = jrMarket_get_system_updates();
+    $_ver   = jrMarket_get_system_updates(true);
     if ($_ver && is_array($_ver)) {
         foreach ($_mods as $nam => $_inf) {
             // same versions
@@ -704,9 +779,13 @@ function view_jrDeveloper_package_module($_post, $_user, $_conf)
 
         // versions ahead the marketplace
         foreach ($_ahead as $_v) {
+            $_md             = jrCore_module_meta_data($_v['directory']);
             $dat             = array();
             $dat[1]['title'] = jrCore_get_module_icon_html($_v['directory'], 32);
-            $dat[2]['title'] = '<a onclick="$(\'#zip_mod\').val(\'' . $_v['directory'] . '\').change();$(document).scrollTop($(\'#zip_mod\').offset().top)">' . $_v['name'] . '</a>';
+            $dat[2]['title'] = '<a onclick="var z=$(\'#zip_mod\'); z.val(\'' . $_v['directory'] . '\').change(); $(document).scrollTop(z.offset().top)">' . $_v['name'] . '</a>';
+            if (isset($_md['requires']) && strlen($_md['requires']) > 0) {
+                $dat[2]['title'] .= '<br><small>Requires: ' . str_replace(array(',', ':'), array(', ', ': '), $_md['requires']) . '</small>';
+            }
             $dat[3]['title'] = $_v['directory'];
             $dat[3]['class'] = 'center';
             $dat[4]['title'] = jrCore_page_button($_v['directory'], $_v['local'], "window.open('{$_conf['jrCore_base_url']}/modules/{$_v['directory']}/changelog.txt?_v=" . time() . "')");
@@ -732,7 +811,7 @@ function view_jrDeveloper_package_module($_post, $_user, $_conf)
 
     $btn = false;
     if ($_mds && is_array($_mds) && count($_mds) > 0) {
-        $btn = jrCore_page_button('del', 'delete all zip files', "if(confirm('Are you sure you want to delete all the module ZIP files that have been created?')) { jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/delete_all/module') }");
+        $btn = jrCore_page_button('del', 'delete all zip files', "jrCore_confirm('Delete all ZIP Files?', 'Are you sure you want to delete all the ZIP files that have been created?', function() { jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/delete_all/module') })");
     }
     jrCore_page_banner('Create Module ZIP', $btn);
 

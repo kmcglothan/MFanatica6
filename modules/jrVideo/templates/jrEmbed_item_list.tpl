@@ -28,8 +28,8 @@
 {/if}
 
 <script type="text/javascript">
-    function jrVideo_insert_video(video_id) {
-        parent.tinymce.activeEditor.insertContent('[jrEmbed module="jrVideo" id="' + video_id + '"]');
+    function jrVideo_insert_video(id) {
+        parent.tinymce.activeEditor.insertContent('[jrEmbed module="jrVideo" id="' + Number(id) + '"]');
         parent.tinymce.activeEditor.windowManager.close();
     }
 </script>

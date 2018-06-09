@@ -2,7 +2,7 @@
 /**
  * Jamroom Documentation module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -46,7 +46,7 @@ function jrDocs_meta()
     $_tmp = array(
         'name'        => 'Documentation',
         'url'         => 'documentation',
-        'version'     => '1.5.0',
+        'version'     => '1.5.5',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Add detailed documentation creation capabilities to Profiles',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/594/documentation',
@@ -91,6 +91,9 @@ function jrDocs_init()
     jrCore_register_event_listener('jrCore', 'db_search_items', 'jrDocs_db_search_items_listener');
     jrCore_register_event_listener('jrCore', 'verify_module', 'jrDocs_verify_module_listener');
 
+    // Restrict images on admin only docs
+    jrCore_register_event_listener('jrImage', 'item_image_info', 'jrDocs_item_image_info_listener');
+
     // Profile tabs
     if (!isset($_conf['jrDocs_show_toc']) || $_conf['jrDocs_show_toc'] != 'off') {
         $_tmp = array(
@@ -114,6 +117,9 @@ function jrDocs_init()
     // format tags
     jrCore_register_event_listener('jrCore', 'format_string_display', 'jrDocs_format_string_display_listener');
 
+    // System resets
+    jrCore_register_event_listener('jrDeveloper', 'reset_system', 'jrDocs_reset_system_listener');
+
     return true;
 }
 
@@ -128,7 +134,7 @@ function jrDocs_init()
  * @param $_args Smarty function parameters
  * @param $smarty Smarty Object
  * @param $test_only - check if button WOULD be shown for given module
- * @return string
+ * @return mixed
  */
 function jrDocs_item_index_button($module, $_item, $_args, $smarty, $test_only = false)
 {
@@ -872,6 +878,60 @@ function jrDocs_section_function_definition_save($_post, $_user, $_conf, $_item 
 //----------------------
 
 /**
+ * Block images in admin-only docs
+ * @param $_data array Image info
+ * @param $_user array Current user
+ * @param $_conf array Global Config
+ * @param $_args array additional parameters passed in by trigger caller
+ * @param $event string Triggered Event name
+ * @return array
+ */
+function jrDocs_item_image_info_listener($_data, $_user, $_conf, $_args, $event)
+{
+    global $_user, $_post;
+    if (isset($_post['option']) && $_post['option'] == 'image' && isset($_post['module']) && $_post['module'] == 'jrDocs' && isset($_post['_2']) && jrCore_checktype($_post['_2'], 'number_nz')) {
+
+        /** @noinspection PhpUnusedLocalVariableInspection */
+        $_user = jrUser_session_start(false);
+
+        // Is this image on a doc that is admin only?
+        if (!jrUser_is_admin()) {
+            if ($group_id = jrCore_db_get_item_key('jrDocs', intval($_post['_2']), 'doc_group_id')) {
+                // Get parent document by doc_group_id
+                if ($_rt = jrCore_db_get_item('jrDocs', intval($group_id))) {
+                    if (isset($_rt['doc_group']) && !jrCore_user_is_part_of_group($_rt['doc_group'])) {
+                        // User does not have access to this document - block image access
+                        $_data['profile_private'] = 0;
+                    }
+                }
+                else {
+                    // Should never get here...
+                    $_data['profile_private'] = 0;
+                }
+            }
+        }
+    }
+    return $_data;
+}
+
+/**
+ * Cleanup schema on system reset
+ * @param $_data array Array of information from trigger
+ * @param $_user array Current user
+ * @param $_conf array Global Config
+ * @param $_args array additional parameters passed in by trigger caller
+ * @param $event string Triggered Event name
+ * @return array
+ */
+function jrDocs_reset_system_listener($_data, $_user, $_conf, $_args, $event)
+{
+    $tbl = jrCore_db_table_name('jrDocs', 'chapter');
+    jrCore_db_query("TRUNCATE TABLE {$tbl}");
+    jrCore_db_query("OPTIMIZE TABLE {$tbl}");
+    return $_data;
+}
+
+/**
  * Prevent comment timeline entries from showing up for admin docs
  * @param $_data array Array of information from trigger
  * @param $_user array Current user
@@ -1165,7 +1225,7 @@ function jrDocs_search_item_ids_listener($_data, $_user, $_conf, $_args, $event)
 function jrDocs_format_string_display_listener($_data, $_user, $_conf, $_args, $event)
 {
     global $_post;
-    if ($_post['module'] == 'jrDocs' && isset($_conf['jrDocs_show_related']) && $_conf['jrDocs_show_related'] == 'on' && !jrCore_get_flag('jrdocs_hide_show_related')) {
+    if (isset($_post['module']) && $_post['module'] == 'jrDocs' && isset($_conf['jrDocs_show_related']) && $_conf['jrDocs_show_related'] == 'on' && !jrCore_get_flag('jrdocs_hide_show_related')) {
         if (strlen($_data['string']) > 3 && jrCore_module_is_active('jrTags')) {
             $_replace = jrDocs_replacement_tags();
             if ($_replace && is_array($_replace)) {

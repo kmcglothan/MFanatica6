@@ -2,8 +2,7 @@
 /**
  * Jamroom Group Mailer module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2017 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -133,6 +132,13 @@ function view_jrGroupMailer_compose($_post, $_user, $_conf)
         $_tp = jrGroupMailer_get_template($_post['tid']);
         $val = $_tp['t_template'];
         $ttl = $_tp['t_title'];
+    }
+
+    // Add a link to the group as default if a new message
+    if (strlen(strip_tags($val)) == 0) {
+        $_gt  = jrCore_db_get_item('jrGroup', $_post['gid']);
+        $murl = jrCore_get_module_url('jrGroup');
+        $val  = "<br><br><a href=\"{$_conf['jrCore_system_url']}/{$_gt['profile_url']}/{$murl}/{$_post['gid']}/{$_gt['group_title_url']}\">{$_gt['group_title']}</a>";
     }
 
     // Hidden - Template Title

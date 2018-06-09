@@ -1,0 +1,274 @@
+/* @title No Chat Room Notice */
+/* @help This is the no chat room container */
+#jrchat-no-room-notice {
+    width: 80%;
+    margin: 20px auto;
+    padding: 20px;
+    background: #FFFFFF;
+    font-size: 15px;
+    text-align:center;
+    border-radius: 5px;
+    border:1px solid #CCCCCC;
+    text-transform: capitalize;
+}
+
+/* @title Chat Room Box */
+/* @help This is the chat room container */
+#jrchat-room-box {
+    background-color:#FFFFFF;
+    padding: 5px;
+    border-radius: 5px;
+    border:1px solid #303030;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+/* @title Chat Room Options */
+/* @help This is the chat room options div */
+.jrchat-room-opt {
+    position: relative;
+    background: #FFFFFF;
+    display: block;
+    padding: 6px 10px;
+    font-size: 16px;
+    margin: 5px;
+    border-radius: 4px;
+    border:1px solid #CCCCCC;
+}
+
+/* @title Chat Room Bubble */
+/* @help This is the chat room user count bubble */
+.jrchat-bubble {
+    background-color:#FF5500;
+    color: #FFFFFF;
+    font-size: 11px;
+    line-height: 18px;
+    position: absolute;
+    bottom: -2px;
+    left: -2px;
+    width: 18px;
+    height: 18px;
+    border: 1px solid #000000;
+    border-radius: 9px;
+    text-align: center;
+}
+
+/* @title Chat Room Config Bubble */
+/* @help This is the chat room Config bubble */
+.jrchat-config {
+    background-color:#FF5500;
+    color: #FFFFFF;
+    font-size: 11px;
+    line-height: 18px;
+    position: absolute;
+    bottom: -2px;
+    left: 22px;
+    width: 18px;
+    height: 18px;
+    border: 1px solid #000000;
+    border-radius: 9px;
+    text-align: center;
+}
+
+/* @title Chat Room Control */
+/* @help This is the chat room user control div */
+#jrchat-user-control {
+    background: #EEEEEE;
+    padding: 0 3px;
+    border-radius: 5px;
+    border:1px solid #CCCCCC;
+    position: fixed;
+    top: 63px;
+    right: 10px;
+    width: 260px;
+    height: 300px;
+    display: none;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+/* @title Chat Room User Settings */
+/* @help This is the chat room user settings div */
+#jrchat-user-settings {
+    background: #FFFFFF;
+    padding: 0 3px;
+    border-radius: 5px;
+    position: fixed;
+    top: 63px;
+    right: 10px;
+    width: 260px;
+    height: 300px;
+    display: none;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+/* @title Chat Room Browser */
+/* @help This is the chat room browser div */
+#jrchat-room-browser {
+    background: #EEEEEE;
+    padding: 0 3px;
+    border-radius: 5px;
+    border:1px solid #CCCCCC;
+    position: fixed;
+    top: 63px;
+    right: 10px;
+    width: 260px;
+    height: 300px;
+    display: none;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    z-index: 110000;
+}
+
+#jrchat-room-search {
+    background: #EEEEEE;
+    width: 100%;
+    padding:8px;
+    margin:0;
+    box-sizing: border-box;
+    border-right:1px solid #303030;
+    border-bottom:1px solid #303030;
+    border-left:1px solid #303030;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+/* @title Chat Room */
+/* @help This is the chat room div */
+#jrchat-room {
+    background: #EEEEEE;
+    height: 100%;
+    position: fixed;
+    right: 0;
+    top: 0;
+    box-sizing: border-box;
+    z-index: 100000;
+    overflow-x: hidden;
+}
+
+/* @title Chat Room Tabs */
+/* @help This is the chat room tabs */
+#jrchat-tabs {
+    background-color:#DDDDDD;
+    position: fixed;
+    bottom: 70px;
+    display: table;
+    box-sizing: border-box;
+    z-index: 100000;
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-top:1px solid #303030;
+    border-bottom:1px solid #303030;
+    border-left:1px solid #303030;
+}
+
+/* @title Chat Room Background */
+/* @help This is the chat room background */
+#jrchat-chat {
+    width: 100%;
+    background: #FFFFFF;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100000;
+    box-sizing: border-box;
+    border-left: 1px solid #303030;
+    overflow-x: hidden;
+}
+
+/* @title Chat Room Title */
+/* @help This is the chat room title */
+#jrchat-title {
+    background-color:#222222;
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 54px;
+    width: 100%;
+    z-index: 110000;
+    font-size: 16px;
+    padding: 6px 8px 8px 8px;
+    box-sizing: border-box;
+    box-shadow: 0 1px 3px 0 #000000;
+    border:1px solid #CCCCCC;
+    color:#FFFFFF;
+}
+
+/* @title Chat Room Text */
+/* @help This is the chat room beginning of chat text */
+#jrchat-page-limit {
+    margin: 6px 0;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #000000;
+    text-align: center;
+}
+
+/* @title Chat Room From */
+/* @help This is the chat room from bubble */
+.jrchat-msg-from {
+    padding: 9px 12px 21px 12px;
+    background: #F9F9F9;
+    margin-left: 26px;
+    overflow: hidden;
+    border:1px solid #303030;
+}
+
+/* @title Chat Room To */
+/* @help This is the chat room to bubble */
+.jrchat-msg-to {
+    padding: 9px 12px;
+    background: #FFFFFF;
+    margin-right: 26px;
+    overflow: hidden;
+    border:1px solid #303030;
+}
+
+/* @title Chat Room Byline */
+/* @help This is the chat room date/time text */
+.jrchat-msg-byline {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    display: block;
+    font-size: 9px;
+    color:#111111;
+}
+
+/* @title Chat Room Message */
+/* @help This is the chat room new message section */
+#jrchat-new-message {
+    background-color:#111111;
+    position: absolute;    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 70px;
+    padding: 10px 8px;
+    box-sizing: border-box;
+    border:1px solid #303030;
+}
+
+#jrchat-new-message-input {
+    font-family: inherit;
+    width: 70%;
+    position: absolute;
+    top: 9px;
+    left: 6px;
+    right: 36px;
+    height: 52px;
+    box-sizing: border-box;
+    resize: none;
+    font-size: 13px;
+}
+
+#jrchat-new-message > textarea {
+    min-height:40px;
+}
+
+#jrchat_smiley_button {
+    top:6px;
+    margin-right:8px;
+}

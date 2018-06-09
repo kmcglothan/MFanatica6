@@ -1,5 +1,71 @@
 User Accounts module changelog
 
+Version 2.3.1:
+ - Bug Fix: Some user names could be incorrectly flagged as invalid by the Spoofchecker
+ - Change: Updated "users online" function to be much faster on very large sites
+ - Change: Master admin users can no longer change their own User Group
+
+Version 2.3.0:
+ - New: Spoofchecker support added to detect Unicode confusables in user names (PHP 5.4+)
+ - New: Signup User Name checked against a list of reserved words not allowed in User names
+ - New: "Enable Bot Sessions" global config option to enable Web Bot sessions
+ - Change: By default web bots no longer create User Sessions
+ - Bug Fix: "Visitor" online user counts was including bot count
+ - Bug Fix: "Remember Me" cookie may expire after 14 days if Auto Login Reset set to "permanent"
+
+Version 2.2.10:
+ - New: "users + visitors online" and "visitors online" dashboard panels
+ - Change: Updating Account Settings deletes any pending "forgot" password reset codes
+ - Change: Bundled Crawler Detect library updated to version 1.2.55
+ - Bug Fix: User last login time may not be updated for sessions longer than 24 hours
+ - Bug Fix: Monthly and Daily Active users graph values not including private profile users
+
+Version 2.2.9:
+ - Bug Fix: Order by Last Login time in User Browser was not ordering correctly
+
+Version 2.2.8:
+ - Bug Fix: Redirected URL for when a user is not logged in may be wrong for some users
+
+Version 2.2.7:
+ - Bug Fix: Unable to create a new user without profile if user name matched existing profile name
+
+Version 2.2.6:
+ - Change: Changing password logs out all other browser sessions except the active one
+ - Change: User names can no longer contain < or > characters
+
+Version 2.2.5:
+ - Bug Fix: Dashboard online user count was no longer including site visitors
+
+Version 2.2.4:
+ - New: Detected bot sessions are limited to 3600 seconds to prevent session table build up
+ - Bug Fix: {jrUser_whos_online} template function not working if using Redis sessions
+ - Bug Fix: Users Online dashboard panel count is 1 higher than actual online users
+
+Version 2.2.3:
+ - New: Support added for online user counts for bots when using a session plugin
+
+Version 2.2.2:
+ - New: You can now select the Signup Quota when using the Site Builder signup widget
+ - New: Session sync functionality added to properly sync active users when quota changes
+ - Bug Fix: Signups from template code in Site Builder not saving user name or email address
+
+Version 2.2.1:
+ - Bug Fix: Site Builder Login/Signup widget not showing the selected option
+
+Version 2.2.0:
+ - New: Quota option to add signups and logins to the timeline
+ - New: Users linked to multiple profiles now indicate their "Home Profile" in Linked Profiles
+ - New: Users with multiple profiles now show all their linked profiles in Users Data Browser
+ - Change: Signup and Login forms now have separate help text in the Language tab
+ - Change: Updated session handling to be faster as well as verify linked profile IDs
+ - Bug Fix: User data could be cached when re-authenticating email address change
+ - Bug Fix: Users Online may only show 1 visitor even when multiple are online
+ - Bug Fix: Changing user language on pages other than the account page might not persist
+ - Bug Fix: Users may not sync with Quota changes made when users are online
+ - Bug Fix: Auto login cookie may be incorrectly reset after only 2 days
+ - Bug Fix: User data could get out of sync if re-authenticate was active
+ - Bug Fix: Some User account data not being removed when Developer Tools "Reset System" tool is run
+
 Version 2.1.2:
  - New: Activity Log entry for invalid password at login for admin and master users
  - Bug Fix: Possible incorrect user_id after jrUser_session_sync()

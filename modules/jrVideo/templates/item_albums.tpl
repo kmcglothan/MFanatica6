@@ -8,8 +8,9 @@
 
         <div class="title">
             <div class="block_config">
-                {jrCore_item_create_button module="jrVideo" profile_id=$_profile_id action="`$murl`/create_album" icon="star2" alt="45"}
-                {jrCore_item_create_button module="jrVideo" profile_id=$_profile_id}
+
+                {jrCore_bundle_index_buttons module="jrVideo" profile_id=$_profile_id create_action="`$murl`/create_album" create_alt=45}
+
             </div>
             <h1>{jrCore_lang module="jrVideo" id="34" default="Albums"}</h1>
             <div class="breadcrumbs">
@@ -46,8 +47,9 @@
                             </div>
                             <div class="col5 last">
                                 <div class="block_config">
-                                    {jrFoxyCartBundle_get_album module="jrVideo" profile_id=$item._profile_id name=$item.video_album assign="album"}
-                                    {jrCore_module_function function="jrFoxyCart_add_to_cart" module="jrFoxyCartBundle" field="bundle" quantity_max="1" price=$album.bundle_item_price no_bundle="true" item=$album}
+
+                                    {jrCore_bundle_list_buttons module="jrVideo" profile_id=$item._profile_id bundle_name=$item.video_album create_action="`$murl`/create_album" create_alt=45 update_action="`$murl`/update_album/`$item.video_album_url`" delete_action="`$murl`/delete_album/`$item.video_album_url`" delete_alt=52}
+
                                 </div>
                                 <div class="clear"></div>
                             </div>
@@ -81,11 +83,7 @@
         <div class="title">
             <div class="block_config">
 
-                {jrFoxyCartBundle_get_album module="jrVideo" profile_id=$_items.0._profile_id name=$_items.0.video_album assign="album"}
-                {jrCore_module_function function="jrFoxyCart_add_to_cart" module="jrFoxyCartBundle" field="bundle" quantity_max="1" price=$album.bundle_item_price no_bundle="true" item=$album}
-                {jrCore_item_create_button module="jrVideo" profile_id=$_items.0._profile_id action="`$murl`/create_album" icon="star2" alt="45"}
-                {jrCore_item_create_button module="jrVideo" profile_id=$_items.0._profile_id}
-                {jrCore_item_delete_button module="jrVideo" profile_id=$_items.0._profile_id action="`$murl`/delete_album/`$_items.0.video_album_url`" alt="52" prompt="53"}
+                {jrCore_bundle_detail_buttons module="jrVideo" profile_id=$_items[0]._profile_id bundle_name=$_items[0].video_album create_action="`$murl`/create_album" update_action="`$murl`/update_album/`$_items.0.video_album_url`" delete_action="`$murl`/delete_album/`$_items.0.video_album_url`"}
 
             </div>
             <h1>{$_items.0.video_album}</h1>

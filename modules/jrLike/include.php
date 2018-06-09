@@ -2,7 +2,7 @@
 /**
  * Jamroom Like It module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -46,7 +46,7 @@ function jrLike_meta()
     $_tmp = array(
         'name'        => 'Like It',
         'url'         => 'like',
-        'version'     => '1.4.13',
+        'version'     => '1.5.1',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => "A module to allow 'like' and 'dislike' of module items",
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/1722/like-it',
@@ -104,6 +104,7 @@ function jrLike_init()
 
     // Support for actions
     jrCore_register_module_feature('jrCore', 'action_support', 'jrLike', 'like', 'item_action.tpl');
+    jrCore_register_module_feature('jrCore', 'action_support', 'jrLike', 'dislike', 'item_action.tpl');
 
     // Listeners
     jrCore_register_event_listener('jrAction', 'action_data', 'jrLike_action_data_listener');
@@ -236,25 +237,27 @@ function jrLike_reset_system_listener($_data, $_user, $_conf, $_args, $event)
  */
 function jrLike_verify_module_listener($_data, $_user, $_conf, $_args, $event)
 {
-    $num = jrCore_db_get_datastore_item_count('jrLike');
-    if ($num > 0) {
-        $_queue = array('count' => $num);
-        jrCore_queue_create('jrLike', 'convert_db', $_queue);
-    }
-    else {
-        // Remove tables no longer needed
-        $_tb = array('notified', 'item', 'item_key');
-        foreach ($_tb as $nam) {
-            if (jrCore_db_table_exists('jrLike', $nam)) {
-                $tbl = jrCore_db_table_name('jrLike', $nam);
-                $req = "DROP TABLE IF EXISTS {$tbl}";
-                jrCore_db_query($req);
-            }
+    // Are we still on the old format?
+    if (jrCore_db_table_exists('jrLike', 'item')) {
+        // Do we have entries?
+        if (jrCore_db_number_rows('jrLike', 'item') > 0) {
+            jrCore_queue_create('jrLike', 'convert_db', array('time' => time()));
         }
-        // Make sure we remove the PREFIX in the module table
-        $tbl = jrCore_db_table_name('jrCore', 'module');
-        $req = "UPDATE {$tbl} SET module_prefix = '' WHERE module_directory = 'jrLike'";
-        jrCore_db_query($req);
+        else {
+            // Remove tables no longer needed
+            $_tb = array('notified', 'item', 'item_key');
+            foreach ($_tb as $nam) {
+                if (jrCore_db_table_exists('jrLike', $nam)) {
+                    $tbl = jrCore_db_table_name('jrLike', $nam);
+                    $req = "DROP TABLE IF EXISTS {$tbl}";
+                    jrCore_db_query($req);
+                }
+            }
+            // Make sure we remove the PREFIX in the module table
+            $tbl = jrCore_db_table_name('jrCore', 'module');
+            $req = "UPDATE {$tbl} SET module_prefix = '' WHERE module_directory = 'jrLike'";
+            jrCore_db_query($req);
+        }
     }
     return $_data;
 }
@@ -326,51 +329,52 @@ function jrLike_expire_recycle_bin_listener($_data, $_user, $_conf, $_args, $eve
  */
 function jrLike_convert_db_worker($_queue)
 {
-    if (jrCore_db_get_datastore_item_count('jrLike') > 0) {
-
-        $last_id = 0;
-        $total   = 0;
-        while (true) {
-            // We need to convert our existing DS items to the new DB format
-            $_sp = array(
-                'search'         => array(
-                    "_item_id > {$last_id}"
-                ),
-                'return_keys'    => array('_item_id', '_created', '_user_id', 'like_item_id', 'like_module', 'like_action', 'like_user_ip'),
-                'order_by'       => array('_item_id' => 'asc'),
-                'skip_triggers'  => true,
-                'privacy_check'  => false,
-                'ignore_pending' => true,
-                'limit'          => 1000
-            );
-            $_sp = jrCore_db_search_items('jrLike', $_sp);
-            if ($_sp && is_array($_sp) && isset($_sp['_items'])) {
-                if ($last_id == 0) {
-                    jrCore_logger('INF', "migration of like database to new format beginning");
-                }
-                $_in = array();
-                foreach ($_sp['_items'] as $_l) {
-                    if ($_l['_user_id'] > 0) {
-                        $_in[] = "('{$_l['_created']}','{$_l['_user_id']}','{$_l['like_item_id']}','{$_l['like_module']}','{$_l['like_action']}')";
-                    }
-                    else {
-                        $_in[] = "('{$_l['_created']}','{$_l['like_user_ip']}','{$_l['like_item_id']}','{$_l['like_module']}','{$_l['like_action']}')";
-                    }
-                    $last_id = (int) $_l['_item_id'];
-                    $total++;
-                }
-                $tbl = jrCore_db_table_name('jrLike', 'likes');
-                $ins = "INSERT INTO {$tbl} (like_created, like_user_id, like_item_id, like_module, like_action) VALUES " . implode(',', $_in) . ' ON DUPLICATE KEY UPDATE like_action = VALUES(like_action)';
-                $cnt = jrCore_db_query($ins, 'COUNT');
-                if (!$cnt || $cnt === 0) {
-                    jrCore_logger('CRI', 'an error was encountered migrating like entries to new database format');
-                    return true;
-                }
+    $last_id = 0;
+    $total   = 0;
+    while (true) {
+        // We need to convert our existing DS items to the new DB format
+        $_sp = array(
+            'search'         => array(
+                "_item_id > {$last_id}"
+            ),
+            'return_keys'    => array('_item_id', '_created', '_user_id', 'like_item_id', 'like_module', 'like_action', 'like_user_ip'),
+            'order_by'       => array('_item_id' => 'asc'),
+            'skip_triggers'  => true,
+            'privacy_check'  => false,
+            'ignore_pending' => true,
+            'limit'          => 1000
+        );
+        $_sp = jrCore_db_search_items('jrLike', $_sp);
+        if ($_sp && is_array($_sp) && isset($_sp['_items'])) {
+            if ($last_id == 0) {
+                jrCore_logger('INF', "migration of like database to new format beginning");
             }
-            else {
-                jrCore_logger('INF', "successfully migrated " . number_format($total) . " like entries to new database format");
-                break;
+            $_in = array();
+            foreach ($_sp['_items'] as $_l) {
+                if ($_l['_user_id'] > 0) {
+                    $_in[] = "('{$_l['_created']}','{$_l['_user_id']}','{$_l['like_item_id']}','{$_l['like_module']}','{$_l['like_action']}')";
+                }
+                else {
+                    $uip = sprintf('%u', ip2long($_l['like_user_ip']));
+                    $_in[] = "('{$_l['_created']}','{$uip}','{$_l['like_item_id']}','{$_l['like_module']}','{$_l['like_action']}')";
+                }
+                $last_id = (int) $_l['_item_id'];
+                $total++;
             }
+            $tbl = jrCore_db_table_name('jrLike', 'likes');
+            $ins = "INSERT INTO {$tbl} (like_created, like_user_id, like_item_id, like_module, like_action) VALUES " . implode(',', $_in) . ' ON DUPLICATE KEY UPDATE like_action = VALUES(like_action)';
+            $cnt = jrCore_db_query($ins, 'COUNT');
+            if (!$cnt || $cnt === 0) {
+                jrCore_logger('CRI', 'an error was encountered migrating like entries to new database format');
+                return true;
+            }
+        }
+        else {
+            if ($total > 0) {
+                jrCore_logger('INF', "successfully migrated " . jrCore_number_format($total) . " like entries to new database format");
+                jrCore_db_truncate_datastore('jrLike');
+            }
+            break;
         }
     }
     return true;
@@ -379,6 +383,350 @@ function jrLike_convert_db_worker($_queue)
 //--------------------------
 // FUNCTIONS
 //--------------------------
+
+/**
+ * Create a new like or dislike for a DS item
+ * @param array $_post
+ * @param array $_user
+ * @param array $_conf
+ * @return bool
+ */
+function jrLike_like_create($_post, $_user, $_conf)
+{
+    global $_mods;
+
+    // $_post.module - the module being (dis)liked
+    // $_post._1     - the '_item_id' of the item being (dis)liked
+    // $_post._2     - the action (like or dislike)
+
+    jrCore_validate_location_url();
+    $_ln = jrUser_load_lang_strings();
+
+    // Check the module being (dis)liked exists and is enabled
+    if (!jrCore_module_is_active($_post['module'])) {
+        return jrCore_json_response(array('error' => 'Module is inactive'));
+    }
+    // Must be a DS module
+    if (!jrCore_is_datastore_module($_post['module'])) {
+        return jrCore_json_response(array('error' => 'Invalid datastore module'));
+    }
+
+    // Check we got a valid item id
+    if (!isset($_post['_1']) || !jrCore_checktype($_post['_1'], 'number_nz')) {
+        return jrCore_json_response(array('error' => 'Invalid item id'));
+    }
+
+    // Check we got a valid action
+    if (!isset($_post['_2']) || ($_post['_2'] != 'like' && $_post['_2'] != 'dislike')) {
+        return jrCore_json_response(array('error' => 'Invalid like action - must be one of like/dislike'));
+    }
+
+    // Make sure we are liking a valid item
+    $_item = jrCore_db_get_item($_post['module'], $_post['_1']);
+    if (!$_item || !is_array($_item)) {
+        return jrCore_json_response(array('error' => 'Invalid item'));
+    }
+
+    if (jrUser_is_logged_in()) {
+        // Check Quota
+        $allowed  = jrUser_get_profile_home_key('quota_jrLike_allowed');
+        $selflike = jrUser_get_profile_home_key('quota_jrLike_allow_self_likings');
+        if ($allowed && $allowed == 'off') {
+            // Is the user allowed to like their own items?
+            if ($selflike && $selflike != 'on') {
+                return jrCore_json_response(array('error' => $_ln['jrLike'][18]));
+            }
+        }
+        // Are user allowed to self like?
+        if (jrUser_can_edit_item($_item) && $selflike == 'off' && $_item['_user_id'] == $_user['_user_id']) {
+            return jrCore_json_response(array('error' => $_ln['jrLike'][19]));
+        }
+        $uid = (int) $_user['_user_id'];
+    }
+    else {
+        // Check visitor
+        if (isset($_conf['jrLike_require_login']) && $_conf['jrLike_require_login'] == 'on') {
+            return jrCore_json_response(array('error' => $_ln['jrLike'][20]));
+        }
+        $uid = sprintf('%u', ip2long(jrCore_get_ip()));
+    }
+
+    // Looking good - get some variables that we'll need
+    $pfx = jrCore_db_get_prefix($_post['module']);
+
+    // See if this user already has a like
+    $tbl = jrCore_db_table_name('jrLike', 'likes');
+    $req = "SELECT like_action FROM {$tbl} WHERE like_user_id = {$uid} AND like_item_id = '{$_post['_1']}' AND like_module = '" . jrCore_db_escape($_post['module']) . "' LIMIT 1";
+    $_ex = jrCore_db_query($req, 'SINGLE');
+
+    // See if the user is CHANGING their like
+    $upv = $_post['_2'];
+    if ($_ex && is_array($_ex) && isset($_ex['like_action'])) {
+        if ($_ex['like_action'] == 'like' && $_post['_2'] == 'like') {
+            $upv = 'neutral';
+        }
+        if ($_ex['like_action'] == 'dislike' && $_post['_2'] == 'dislike') {
+            $upv = 'neutral';
+        }
+    }
+
+    // Record like
+    // Important: the extra jrCore_db_connect() call is here so we can get 0,1,2 back from the MySQL "COUNT" for the ON DUPLICATE KEY UPDATE
+    $con = jrCore_db_connect(true, false);
+    $req = "INSERT INTO {$tbl} (like_created, like_user_id, like_item_id, like_module, like_action)
+            VALUES(UNIX_TIMESTAMP(), {$uid}, '{$_post['_1']}', '" . jrCore_db_escape($_post['module']) . "', '{$upv}')
+            ON DUPLICATE KEY UPDATE like_created = UNIX_TIMESTAMP(), like_action = '{$upv}'";
+    $cnt = jrCore_db_query($req, 'COUNT', false, null, true, $con);
+    jrCore_db_close();
+
+    if (!is_numeric($cnt)) {
+
+        // We encountered a DB Error
+        return jrCore_json_response(array('error' => 'an error was encountered saving the like - please try again'));
+    }
+
+    elseif ($cnt === 2) {
+
+        // Like already exists and the user has updated
+        // Get the user's previous like or dislike and update accordingly
+        if (isset($_ex['like_action'])) {
+            $upd = false;
+            $exv = false;
+            if ($_ex['like_action'] == 'like') {
+                if ($_post['_2'] == 'like') {
+                    // User is changing their "like" to a "neutral"
+                    $exv = 'like';     // Existing Value to DECREMENT
+                }
+                elseif ($_post['_2'] == 'dislike') {
+                    // User is changing their "like" to a "dislike"
+                    $exv = 'like';     // Existing Value
+                    $upd = 'dislike';  // New Value
+                }
+            }
+            elseif ($_ex['like_action'] == 'dislike') {
+                if ($_post['_2'] == 'dislike') {
+                    // User is changing their "dislike" to a "neutral"
+                    $exv = 'dislike';
+                }
+                elseif ($_post['_2'] == 'like') {
+                    // User is changing their "dislike" to a "like"
+                    $exv = 'dislike';
+                    $upd = 'like';
+                }
+            }
+            elseif ($_ex['like_action'] == 'neutral') {
+                $upd = $_post['_2'];
+            }
+
+            // We changed our like - maintain item counts
+            $ppfx = jrCore_db_get_prefix('jrProfile');
+            if ($upd) {
+                jrCore_db_increment_key($_post['module'], $_post['_1'], "{$pfx}_{$upd}_count", 1);
+                if (jrUser_get_profile_home_key('_profile_id') != $_item['_profile_id']) {
+                    jrCore_db_increment_key('jrProfile', $_item['_profile_id'], "{$ppfx}_jrLike_{$upd}_home_item_count", 1);
+                }
+            }
+            if ($exv) {
+                jrCore_db_decrement_key($_post['module'], $_post['_1'], "{$pfx}_{$exv}_count", 1);
+                if (jrUser_get_profile_home_key('_profile_id') != $_item['_profile_id']) {
+                    jrCore_db_decrement_key('jrProfile', $_item['_profile_id'], "{$ppfx}_jrLike_{$exv}_home_item_count", 1);
+                }
+            }
+        }
+
+        // Event trigger
+        $_args = array(
+            'like_module'  => $_post['module'],
+            'like_item_id' => $_post['_1'],
+            'like_action'  => $upv,
+            'liked_item'   => $_item
+        );
+        jrCore_trigger_event('jrLike', 'item_liked', $_item, $_args);
+    }
+
+    elseif ($cnt === 1) {
+
+        // 1 = new row inserted - first time like or dislike
+        jrCore_db_increment_key($_post['module'], $_post['_1'], "{$pfx}_{$_post['_2']}_count", 1);
+
+        // Increment number of likes for profile
+        if (jrUser_get_profile_home_key('_profile_id') != $_item['_profile_id']) {
+            jrCore_db_increment_key('jrProfile', $_item['_profile_id'], "profile_jrLike_{$_post['_2']}_home_item_count", 1);
+        }
+
+        if (jrUser_is_logged_in()) {
+
+            $ttl = false;
+            $url = false;
+            // Trigger event to get item Title and URL
+            $_data = array(
+                'item_url'   => '',
+                'item_title' => ''
+            );
+            $_data = jrCore_trigger_event('jrLike', 'item_action_info', $_data, $_item, $_post['module']);
+            if (isset($_data['item_title']) && strlen($_data['item_title']) > 0) {
+                $ttl = $_data['item_title'];
+            }
+            if (isset($_data['item_url']) && strlen($_data['item_url']) > 0) {
+                $url = $_data['item_url'];
+            }
+            if (!$ttl || !$url) {
+                switch ($_post['module']) {
+                    case 'jrProfile':
+                        $ttl = $_item['profile_name'];
+                        $url = "{$_conf['jrCore_base_url']}/{$_item['profile_url']}";
+                        break;
+                    case 'jrGuestbook':
+                        $ttl = $_item['profile_name'] . ' - ' . $_ln['jrGuestbook']['menu'];
+                        $url = "{$_conf['jrCore_base_url']}/{$_item['profile_url']}/{$_post['module_url']}";
+                        break;
+                    case 'jrUser':
+                        $ttl = $_item['user_name'];
+                        $url = "{$_conf['jrCore_base_url']}/{$_item['profile_url']}";
+                        break;
+                    case 'jrAction':
+                        $ttl = '';
+                        if (isset($_item["{$pfx}_text"])) {
+                            $txt = strip_tags($_item["{$pfx}_text"]);
+                            if (strlen($txt) > 60) {
+                                $txt = substr($txt, 0, 60) . '...';
+                            }
+                            $ttl = "{$_ln['jrLike'][3]}: {$txt}";
+                        }
+                        elseif (isset($_item["{$pfx}_item"])) {
+                            $ipfx = jrCore_db_get_prefix($_item["{$pfx}_module"]);
+                            $ttl  = $_item["{$pfx}_item"]["{$ipfx}_title"];
+                        }
+                        $url = "{$_conf['jrCore_base_url']}/{$_item['profile_url']}/{$_post['module_url']}/{$_post['_1']}";
+                        break;
+                    case 'jrComment':
+                        $ttl = strip_tags($_item["{$pfx}_text"]);
+                        if (strlen($ttl) > 60) {
+                            $ttl = substr($ttl, 0, 60) . '...';
+                        }
+                        $url = "{$_conf['jrCore_base_url']}/{$_item['profile_url']}/{$_post['module_url']}/{$_post['_1']}";
+                        break;
+                    case 'jrForum':
+                        $furl = jrLike_get_forum_url($_item['forum_group_id']);
+                        $url  = "{$_conf['jrCore_base_url']}/{$furl}";
+                        $ttl  = $_item["{$pfx}_title"];
+                        break;
+                    default:
+                        $ttl = $_item["{$pfx}_title"];
+                        $url = "{$_conf['jrCore_base_url']}/{$_item['profile_url']}/{$_post['module_url']}/{$_post['_1']}/{$_item["{$pfx}_title_url"]}";
+                        break;
+                }
+            }
+
+            // Record Action
+            if (isset($_conf['jrLike_allow_actions']) && $_conf['jrLike_allow_actions'] == 'on') {
+                // Some modules we do NOT record a LIKE to the timeline for
+                switch ($_post['module']) {
+                    case 'jrFollower':
+                        break;
+                    default:
+                        // We need to get to the inserted ID of what we just did
+                        $tbl = jrCore_db_table_name('jrLike', 'likes');
+                        $req = "SELECT * FROM {$tbl} WHERE like_user_id = {$uid} AND like_item_id = '{$_post['_1']}' AND like_module = '" . jrCore_db_escape($_post['module']) . "' LIMIT 1";
+                        $_rt = jrCore_db_query($req, 'SINGLE');
+                        if ($_rt && is_array($_rt)) {
+                            $_rt['action_original_module']  = $_post['module'];
+                            $_rt['action_original_item_id'] = (int) $_post['_1'];
+                            $_rt['quota_jrAction_allowed']  = (isset($_user['quota_jrAction_allowed'])) ? $_user['quota_jrAction_allowed'] : false;
+                            jrCore_run_module_function('jrAction_save', $_post['_2'], 'jrLike', $_rt['like_id'], $_rt, false, jrUser_get_profile_home_key('_profile_id'), $_item['_profile_id']);
+                        }
+                }
+            }
+
+            // Notifications
+            // They are not sent multiple notifications if the (dis)liker changes his/her mind and reverses the (dis)like
+            // They are not sent a notification if its an item they own
+            // They are not sent a notification if a non-logged in visitor has (dis)liked their item
+            if (jrUser_get_profile_home_key('_profile_id') != $_item['_profile_id']) {
+                // Notify
+                $_owners = jrProfile_get_owner_info($_item['_profile_id']);
+                if ($_owners && is_array($_owners)) {
+                    $_info = array(
+                        'system_name'    => $_conf['jrCore_system_name'],
+                        'like_user_name' => $_user['user_name'],
+                        'like_title'     => $ttl,
+                        'like_url'       => $url,
+                        'like_module'    => $_post['module'],
+                        'like_action'    => $_post['_2']
+                    );
+                    list($sub, $msg) = jrCore_parse_email_templates('jrLike', 'new_like', $_info);
+                    foreach ($_owners as $_o) {
+                        if ($_o['_user_id'] != $_user['_user_id']) {
+                            jrUser_notify($_o['_user_id'], 0, 'jrLike', 'new_like', $sub, $msg);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Event trigger
+        $_args = array(
+            'like_module'  => $_post['module'],
+            'like_item_id' => $_post['_1'],
+            'like_action'  => $upv,
+            'liked_item'   => $_item
+        );
+        jrCore_trigger_event('jrLike', 'item_liked', $_item, $_args);
+    }
+
+    // Fall through - success
+    $imurl = "{$_conf['jrCore_base_url']}/" . jrCore_get_module_url('jrImage') . "/img/module/jrLike";
+    if ($_post['_2'] == 'like') {
+        // New like or going neutral from an existing like?
+        if (isset($_ex['like_action']) && $_ex['like_action'] == 'like') {
+            $l_src = "{$imurl}/like.png";
+            $d_src = "{$imurl}/dislike.png";
+            $l_ttl = jrCore_entity_string($_ln['jrLike'][4]);
+            $d_ttl = jrCore_entity_string($_ln['jrLike'][5]);
+        }
+        else {
+            $l_src = "{$imurl}/liked.png";
+            $d_src = "{$imurl}/dislike_greyed.png";
+            $l_ttl = jrCore_entity_string($_ln['jrLike'][6]);
+            $d_ttl = jrCore_entity_string($_ln['jrLike'][5]);
+        }
+    }
+    elseif ($_post['_2'] == 'dislike') {
+        // New dislike or going neutral from an existing dislike?
+        if (isset($_ex['like_action']) && $_ex['like_action'] == 'dislike') {
+            $l_src = "{$imurl}/like.png";
+            $d_src = "{$imurl}/dislike.png";
+            $l_ttl = jrCore_entity_string($_ln['jrLike'][4]);
+            $d_ttl = jrCore_entity_string($_ln['jrLike'][5]);
+        }
+        else {
+            $l_src = "{$imurl}/like_greyed.png";
+            $d_src = "{$imurl}/disliked.png";
+            $l_ttl = jrCore_entity_string($_ln['jrLike'][4]);
+            $d_ttl = jrCore_entity_string($_ln['jrLike'][7]);
+        }
+    }
+    else {
+        // Neutral
+        $l_src = "{$imurl}/like.png";
+        $d_src = "{$imurl}/dislike.png";
+        $l_ttl = jrCore_entity_string($_ln['jrLike'][4]);
+        $d_ttl = jrCore_entity_string($_ln['jrLike'][5]);
+    }
+    list($l_cnt, $d_cnt) = jrLike_get_like_counts($_post['module'], $_post['_1']);
+    $_rs = array(
+        'OK'    => 1,
+        'l_src' => $l_src . "?s={$_conf['jrCore_active_skin']}&_v={$_mods['jrLike']['module_version']}",
+        'l_ttl' => $l_ttl,
+        'l_cnt' => $l_cnt,
+        'd_src' => $d_src . "?s={$_conf['jrCore_active_skin']}&_v={$_mods['jrLike']['module_version']}",
+        'd_ttl' => $d_ttl,
+        'd_cnt' => $d_cnt
+    );
+    jrUser_reset_cache($_user['_user_id'], 'jrLike');
+    jrProfile_reset_cache($_item['_profile_id']);
+    return jrCore_json_response($_rs);
+}
 
 /**
  * Get number of likes and dislikes for an item
@@ -670,7 +1018,7 @@ function smarty_function_jrLike_button($params, $smarty)
         }
         else {
 
-            $uid = jrCore_get_ip();
+            $uid = sprintf('%u', ip2long(jrCore_get_ip()));
             if (isset($_conf['jrLike_require_login']) && $_conf['jrLike_require_login'] == 'on') {
                 // Not allowed to like - force to disabled state
                 $params['like_status']    = 'like_greyed';
@@ -684,7 +1032,7 @@ function smarty_function_jrLike_button($params, $smarty)
             $key = "jrlike_like_check_cache_{$uid}_{$iid}";
             if (!$_rt = jrCore_get_flag($key)) {
                 $tbl = jrCore_db_table_name('jrLike', 'likes');
-                $req = "SELECT like_action FROM {$tbl} WHERE like_user_id = '{$uid}' AND like_item_id = {$iid} AND like_module = '{$params['module']}' LIMIT 1";
+                $req = "SELECT like_action FROM {$tbl} WHERE like_user_id = {$uid} AND like_item_id = {$iid} AND like_module = '{$params['module']}' LIMIT 1";
                 $_rt = jrCore_db_query($req, 'SINGLE');
                 if (!$_rt || !is_array($_rt)) {
                     $_rt = 'no_results';
@@ -784,7 +1132,7 @@ function jrLike_item_likes_feature($module, $_item, $params, $smarty)
     $params['action'] = 'like';
     $out              = smarty_function_jrLike_button($params, $smarty);
     $params['action'] = 'dislike';
-    $out .= smarty_function_jrLike_button($params, $smarty);
+    $out              .= smarty_function_jrLike_button($params, $smarty);
     if (strlen($out) > 0) {
         $params['out'] = $out;
         return jrCore_parse_template('detail_buttons.tpl', $params, 'jrLike');

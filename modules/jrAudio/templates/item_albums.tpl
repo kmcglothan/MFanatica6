@@ -7,10 +7,11 @@
 
         <div class="title">
             <div class="block_config">
-                {jrCore_item_create_button module="jrAudio" profile_id=$_profile_id action="`$murl`/create_album" icon="star2" alt="35"}
-                {jrCore_item_modify_button module="jrAudio" profile_id=$_profile_id action="`$murl`/update_album" alt="60"}
+
+                {jrCore_bundle_index_buttons module="jrAudio" profile_id=$_profile_id create_action="`$murl`/create_album" create_alt=35}
+
             </div>
-            <h1>{jrCore_lang module="jrAudio" id="34" default="Albums"}</h1>
+            <h1>{jrCore_lang module="jrAudio" id=34 default="Albums"}</h1>
             <div class="breadcrumbs">
                 <a href="{$jamroom_url}/{$profile_url}/">{$profile_name}</a> &raquo;
                 {if jrCore_module_is_active('jrCombinedAudio')}
@@ -32,8 +33,9 @@
                     <a href="{$jamroom_url}/{$item.profile_url}/{$murl}/albums/{$item.audio_album_url}">{jrCore_module_function function="jrImage_display" module="jrAudio" type="audio_image" item_id=$item._item_id size="icon" crop="auto" alt=$item.audio_title title=$item.audio_title class="iloutline" width=false height=false}</a>
                     &nbsp;&nbsp;<a href="{$jamroom_url}/{$item.profile_url}/{$murl}/albums/{$item.audio_album_url}"><h1>{$item.audio_album}</h1></a>
                     <div class="block_config">
-                        {jrFoxyCartBundle_get_album module="jrAudio" profile_id=$item._profile_id name=$item.audio_album assign="album"}
-                        {jrCore_module_function function="jrFoxyCart_add_to_cart" module="jrFoxyCartBundle" field="bundle" quantity_max="1" price=$album.bundle_item_price no_bundle="true" item=$album}
+
+                        {jrCore_bundle_list_buttons module="jrAudio" profile_id=$item._profile_id bundle_name=$item.audio_album create_action="`$murl`/create_album" create_alt=35 update_action="`$murl`/update_album/`$item.audio_album_url`" update_alt=60 delete_action="`$murl`/delete_album/`$item.audio_album_url`" delete_alt=56}
+
                     </div>
                 </div>
                 {/foreach}
@@ -64,12 +66,7 @@
 
             <div class="block_config">
 
-                {jrAudio_download_album_button items=$_items}
-                {jrFoxyCartBundle_get_album module="jrAudio" profile_id=$_items.0._profile_id name=$_items.0.audio_album assign="album"}
-                {jrCore_module_function function="jrFoxyCart_add_to_cart" module="jrFoxyCartBundle" field="bundle" quantity_max="1" price=$album.bundle_item_price no_bundle="true" item=$album}
-                {jrCore_item_create_button module="jrAudio" profile_id=$_items.0._profile_id action="`$murl`/create_album" icon="star2" alt="35"}
-                {jrCore_item_update_button module="jrAudio" profile_id=$_items.0._profile_id action="`$murl`/update_album/`$_items.0.audio_album_url`" alt="60"}
-                {jrCore_item_delete_button module="jrAudio" profile_id=$_items.0._profile_id action="`$murl`/delete_album/`$_items.0.audio_album_url`" alt="56" prompt="57"}
+                {jrCore_bundle_detail_buttons module="jrAudio" profile_id=$_items[0]._profile_id bundle_name=$_items[0].audio_album create_action="`$murl`/create_album" update_action="`$murl`/update_album/`$_items.0.audio_album_url`" delete_action="`$murl`/delete_album/`$_items.0.audio_album_url`"}
 
             </div>
             <h1>{$_items.0.audio_album}</h1>

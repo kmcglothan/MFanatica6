@@ -2,7 +2,7 @@
 /**
  * Jamroom Event Calendar module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -64,6 +64,7 @@ function view_jrEvent_create($_post, $_user, $_conf)
         'name'     => 'event_title',
         'label'    => 2,
         'help'     => 3,
+        'placeholder' => 148,
         'type'     => 'text',
         'validate' => 'not_empty',
         'required' => true
@@ -76,6 +77,7 @@ function view_jrEvent_create($_post, $_user, $_conf)
         'label'    => 6,
         'help'     => 7,
         'type'     => 'text',
+        'placeholder' => 149,
         'validate' => 'not_empty',
         'required' => true
     );
@@ -99,6 +101,7 @@ function view_jrEvent_create($_post, $_user, $_conf)
         'help'     => 5,
         'type'     => 'editor',
         'validate' => 'allowed_html',
+        'placeholder' => 150,
         'required' => false
     );
     jrCore_form_field_create($_tmp);
@@ -448,7 +451,15 @@ function view_jrEvent_attend($_post, $_user, $_conf)
             "return_count" => true,
         );
         if (!jrCore_checktype(jrCore_db_search_items('jrAction', $_s), 'number_nz')) {
-            jrCore_run_module_function('jrAction_save', 'attend', 'jrEvent', $_post['_1']);
+            $_as = array(
+                'quota_jrAction_allowed'  => $_user['quota_jrAction_allowed'],
+                'action_original_module'  => $_post['module'],
+                'action_original_item_id' => (int) $_post['_1'],
+                'ignore_ds_item'          => true,
+                '_profile_id'             => jrUser_get_profile_home_key('_profile_id'),
+                '_user_id'                => $_user['_user_id']
+            );
+            jrCore_run_module_function('jrAction_save', 'attend', 'jrEvent', $_post['_1'], $_as);
         }
     }
 

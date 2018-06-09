@@ -2,7 +2,7 @@
 /**
  * Jamroom Timeline module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -50,13 +50,14 @@ function jrAction_meta()
     $_tmp = array(
         'name'        => 'Timeline',
         'url'         => 'timeline',
-        'version'     => '2.0.9',
+        'version'     => '2.0.18',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Users can enter updates and log activity to their Timeline',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/1579/timeline',
         'category'    => 'profiles',
         'priority'    => 250, // LOW load priority (we want other listeners to run first)
         'activate'    => true,
+        'requires'    => 'jrCore:6.1.6',
         'license'     => 'mpl'
     );
     return $_tmp;
@@ -168,6 +169,10 @@ function jrAction_init()
     // Cleanup Deleted items worker
     jrCore_register_queue_worker('jrAction', 'deleted_item', 'jrAction_deleted_item_worker', 0, 1, 3600);
 
+
+    // When an action is shared via jrOneAll, we can provide the text of the shared item
+    jrCore_register_event_listener('jrOneAll', 'network_share_text', 'jrAction_network_share_text_listener');
+
     jrCore_register_module_feature('jrTips', 'tip', 'jrAction', 'tip');
     return true;
 }
@@ -224,7 +229,7 @@ function jrAction_action_cleanup_worker($_queue)
                 if (count($_up) > 0) {
 
                     // Update
-                    jrCore_db_update_multiple_items('jrAction', $_up);
+                    jrCore_db_update_multiple_items('jrAction', $_up, null, true, false);
 
                     // And remove keys
                     $_dl = array_keys($_up);
@@ -470,7 +475,7 @@ function jrAction_format_string_convert_hash_tags($string, $quota_id = 0)
                 // We have found the actual code portion
                 list($beg, $end) = explode('</script>', $part, 2);
                 $_sv[$k] = "<script{$beg}</script>";
-                $out .= "~~!~~{$k}~~!~~{$end}";
+                $out     .= "~~!~~{$k}~~!~~{$end}";
             }
             else {
                 $out .= $part;
@@ -663,7 +668,7 @@ function jrAction_verify_module_listener($_data, $_user, $_conf, $_args, $event)
                     $num = count($_up);
                     if ($num > 0) {
                         $tot += $num;
-                        jrCore_db_update_multiple_items('jrAction', $_up);
+                        jrCore_db_update_multiple_items('jrAction', $_up, null, true, false);
                         jrCore_form_modal_notice('update', 'applying changes: ' . jrCore_number_format($tot) . ' like action entries converted to correct format');
                     }
                 }
@@ -745,7 +750,7 @@ function jrAction_verify_module_listener($_data, $_user, $_conf, $_args, $event)
                     $num = count($_up);
                     if ($num > 0) {
                         $tot += $num;
-                        jrCore_db_update_multiple_items('jrAction', $_up);
+                        jrCore_db_update_multiple_items('jrAction', $_up, null, true, false);
                         jrCore_form_modal_notice('update', 'applying changes: ' . jrCore_number_format($tot) . ' follower action entries converted to correct format');
                     }
                     if (count($_dl) > 0) {
@@ -829,7 +834,7 @@ function jrAction_verify_module_listener($_data, $_user, $_conf, $_args, $event)
                     $num = count($_up);
                     if ($num > 0) {
                         $tot += $num;
-                        jrCore_db_update_multiple_items('jrAction', $_up);
+                        jrCore_db_update_multiple_items('jrAction', $_up, null, true, false);
                         jrCore_form_modal_notice('update', 'applying changes: ' . jrCore_number_format($tot) . ' rating action entries converted to correct format');
                     }
                     if (count($_dl) > 0) {
@@ -913,7 +918,7 @@ function jrAction_verify_module_listener($_data, $_user, $_conf, $_args, $event)
                     $num = count($_up);
                     if ($num > 0) {
                         $tot += $num;
-                        jrCore_db_update_multiple_items('jrAction', $_up);
+                        jrCore_db_update_multiple_items('jrAction', $_up, null, true, false);
                         jrCore_form_modal_notice('update', 'applying changes: ' . jrCore_number_format($tot) . ' comment action entries converted to correct format');
                     }
                     if (count($_dl) > 0) {
@@ -1073,6 +1078,34 @@ function jrAction_db_search_params_listener($_data, $_user, $_conf, $_args, $eve
             if ($_ram) {
                 if (!isset($_data['search']) || !is_array($_data['search'])) {
                     $_data['search'] = array();
+                }
+                else {
+                    // See if we are purposefully including or excluding modules
+                    foreach ($_data['search'] as $k => $s) {
+                        if (strpos(trim($s), 'action_module') === 0) {
+                            list(, $m, $v) = explode(' ', $s, 3);
+                            switch (trim($m)) {
+
+                                case '=':
+                                    // Since we are asking for a specific module, we can ignore adding our own check in
+                                    return $_data;
+                                    break;
+
+                                case '!=':
+                                case 'not_in':
+                                    foreach (explode(',', $v) as $rm) {
+                                        $rm = trim($rm);
+                                        if (isset($_ram[$rm])) {
+                                            unset($_ram[$rm]);
+                                        }
+                                    }
+                                    unset($_data['search'][$k]);
+                                    break;
+
+                            }
+
+                        }
+                    }
                 }
                 $_data['search'][] = "action_module in jrAction," . implode(',', array_keys($_ram));
             }
@@ -1251,7 +1284,7 @@ function jrAction_db_search_items_listener($_data, $_user, $_conf, $_args, $even
                 }
                 if (isset($_data['_items'][$k]['action_data']["{$pfx}_title_url"])) {
                     $_data['_items'][$k]['action_title_url'] = $_data['_items'][$k]['action_data']["{$pfx}_title_url"];
-                    $_data['_items'][$k]['action_item_url'] .= '/' . $_data['_items'][$k]['action_data']["{$pfx}_title_url"];
+                    $_data['_items'][$k]['action_item_url']  .= '/' . $_data['_items'][$k]['action_data']["{$pfx}_title_url"];
                 }
 
                 // Share Count
@@ -1294,7 +1327,7 @@ function jrAction_db_search_items_listener($_data, $_user, $_conf, $_args, $even
                         }
                         if (isset($_itm[$mod][$iid]["{$pfx}_title_url"])) {
                             $_data['_items'][$k]['action_original_title_url'] = $_itm[$mod][$iid]["{$pfx}_title_url"];
-                            $_data['_items'][$k]['action_original_item_url'] .= "/" . $_itm[$mod][$iid]["{$pfx}_title_url"];
+                            $_data['_items'][$k]['action_original_item_url']  .= "/" . $_itm[$mod][$iid]["{$pfx}_title_url"];
                         }
                         // Share Count
                         $_itm[$mod][$iid]['action_share_count'] = 0;
@@ -1359,7 +1392,7 @@ function jrAction_db_get_item_listener($_data, $_user, $_conf, $_args, $event)
         }
 
         // Action Data
-        if (isset($_data['action_module']) && isset($_data['action_item_id']) && jrCore_is_datastore_module($_data['action_module'])) {
+        if (isset($_data['action_module']) && isset($_data['action_item_id']) && jrCore_is_datastore_module($_data['action_module']) && $_data['action_module'] != 'jrAction') {
             $_data['action_data'] = jrCore_db_get_item($_data['action_module'], $_data['action_item_id']);
         }
 
@@ -1369,7 +1402,7 @@ function jrAction_db_get_item_listener($_data, $_user, $_conf, $_args, $event)
             $_ids                            = explode(',', $_data['action_shared_by']);
             $_data['action_shared_by_ids']   = array_flip($_ids);
             $_data['action_shared_by_count'] = count($_ids);
-            if (isset($_data['action_shared_by_ids']["{$_user['_user_id']}"])) {
+            if (jrUser_is_logged_in() && isset($_data['action_shared_by_ids']["{$_user['_user_id']}"])) {
                 $_data['action_shared_by_user'] = 1;
             }
             // If we are on the item detail page for this item, get info about who shared
@@ -1442,7 +1475,7 @@ function jrAction_db_get_item_listener($_data, $_user, $_conf, $_args, $event)
                         }
                         if (isset($_itm["{$pfx}_title_url"])) {
                             $_data['action_original_title_url'] = $_itm["{$pfx}_title_url"];
-                            $_data['action_original_item_url'] .= '/' . $_itm["{$pfx}_title_url"];
+                            $_data['action_original_item_url']  .= '/' . $_itm["{$pfx}_title_url"];
                         }
                     }
                     $_data['action_original_data'] = $_itm;
@@ -1481,6 +1514,34 @@ function jrAction_db_get_item_listener($_data, $_user, $_conf, $_args, $event)
 
     }
     return $_data;
+}
+
+/**
+ * Add share data to a jrOneAll network share
+ * @param $_data array incoming data array
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return mixed
+ */
+function jrAction_network_share_text_listener($_data, $_user, $_conf, $_args, $event)
+{
+    // $_data:
+    // [providers] => twitter
+    // [user_token] => c64xxxxa-b66e-4c6c-xxxx-cdea7xxxxx03
+    // [user_id] => 1
+    // [action_module] => jrGallery
+    // [action_data] => (JSON array of data for item initiating action)
+    $_data = json_decode($_data['action_data'], true);
+    if (!isset($_data) || !is_array($_data)) {
+        return false;
+    }
+    $_out = array(
+        'text' => $_data['action_text']
+    );
+    return $_out;
+
 }
 
 //----------------------
@@ -1629,36 +1690,62 @@ function jrAction_process_mentions($text, $item_id)
  */
 function jrAction_save($mode, $module, $item_id, $_data = null, $profile_check = true, $profile_id = 0, $feedback_profile_id = 0)
 {
-    global $_post, $_user;
-    // See if we are turned on for this module
-    if (!isset($_user['quota_jrAction_allowed']) || $_user['quota_jrAction_allowed'] != 'on') {
-        return true;
-    }
-    if (isset($_post['jraction_add_to_timeline']) && $_post['jraction_add_to_timeline'] != 'on') {
-        return true;
-    }
-    elseif (isset($_data['jraction_add_to_timeline']) && $_data['jraction_add_to_timeline'] != 'on') {
-        return true;
-    }
+    global $_post;
+
     // Make sure module is active
     if (!jrCore_module_is_active($module)) {
         return true;
     }
+
     // Make sure we get a valid $item_id...
     if (!jrCore_checktype($item_id, 'number_nz')) {
-        return false;
+        return true;
     }
-    $pid = (isset($_user['user_active_profile_id'])) ? intval($_user['user_active_profile_id']) : $_user['_profile_id'];
-    if (jrCore_checktype($profile_id, 'number_nz')) {
-        $pid = (int) $profile_id;
+
+    // Make sure we are not being turned off in post
+    if (isset($_post['jraction_add_to_timeline']) && $_post['jraction_add_to_timeline'] != 'on') {
+        return true;
+    }
+
+    // Make sure we are not turned off by the calling module
+    elseif (isset($_data['jraction_add_to_timeline']) && $_data['jraction_add_to_timeline'] != 'on') {
+        return true;
+    }
+
+    // Get item info
+    if (!isset($_data['ignore_ds_item']) && jrCore_is_datastore_module($module)) {
+        $_it = jrCore_db_get_item($module, $item_id);
+        if (!$_it || !is_array($_it)) {
+            return true;
+        }
+    }
+    elseif (is_array($_data)) {
+        $_it = $_data;
+    }
+    else {
+        return true;
+    }
+
+    // See if actions are enabled for this module
+    if (!isset($_it['quota_jrAction_allowed']) || $_it['quota_jrAction_allowed'] != 'on') {
+        return true;
+    }
+
+    // Get profile_id
+    $pid = (jrCore_checktype($profile_id, 'number_nz')) ? intval($profile_id) : intval($_it['_profile_id']);
+    if (!jrCore_checktype($pid, 'number_nz')) {
+        // Could not determine profile_id
+        return false;
     }
 
     // If we are an ADMIN USER that is creating something for a profile
     // that is NOT our home profile, we do not record the action.
-    $key = jrUser_get_profile_home_key('_profile_id');
-    if ($profile_check) {
-        if (jrUser_is_admin() && $pid != $key) {
-            return true;
+    if (jrUser_is_logged_in()) {
+        $key = jrUser_get_profile_home_key('_profile_id');
+        if ($profile_check) {
+            if (jrUser_is_admin() && $pid != $key) {
+                return true;
+            }
         }
     }
 
@@ -1668,7 +1755,7 @@ function jrAction_save($mode, $module, $item_id, $_data = null, $profile_check =
         'action_module'  => $module,
         'action_item_id' => (int) $item_id
     );
-    if ($feedback_profile_id > 0) {
+    if (jrCore_checktype($feedback_profile_id, 'number_nz')) {
         $_save['action_feedback'] = (int) $feedback_profile_id;
     }
 
@@ -1688,7 +1775,7 @@ function jrAction_save($mode, $module, $item_id, $_data = null, $profile_check =
     // See if items being created in this module are pending
     if (!jrUser_is_admin()) {
         $_pnd = jrCore_get_registered_module_features('jrCore', 'pending_support');
-        if ($_pnd && isset($_pnd[$module]) && isset($_user["quota_{$module}_pending"]) && intval($_user["quota_{$module}_pending"]) > 0) {
+        if ($_pnd && isset($_pnd[$module]) && isset($_it["quota_{$module}_pending"]) && intval($_it["quota_{$module}_pending"]) > 0) {
             $_save['action_pending']                    = 1;
             $_save['action_pending_linked_item_module'] = $module;
             $_save['action_pending_linked_item_id']     = (int) $item_id;
@@ -1697,12 +1784,22 @@ function jrAction_save($mode, $module, $item_id, $_data = null, $profile_check =
     $_core = array(
         '_profile_id' => $pid
     );
+    if (isset($_it['_user_id']) && jrCore_checktype($_it['_user_id'], 'number_nz')) {
+        $_core['_user_id'] = intval($_it['_user_id']);
+    }
     if ($aid = jrCore_db_create_item('jrAction', $_save, $_core)) {
         // Send out our Action Created trigger
         $_args = array(
-            '_user_id' => $_user['_user_id'],
-            '_item_id' => $aid,
+            '_user_id'    => (isset($_it['_user_id'])) ? intval($_it['_user_id']) : 0,
+            '_item_id'    => $aid,
+            '_profile_id' => $pid
         );
+
+        if (!isset($_save['action_data']) && is_array($_it)) {
+            $_save['action_data'] = $_it;
+            $_post['action_data'] = $_save['action_data'];
+        }
+
         jrCore_trigger_event('jrAction', 'create', $_save, $_args);
         jrProfile_reset_cache($profile_id);
         return $aid;
@@ -1864,7 +1961,7 @@ function smarty_function_jrAction_form($params, $smarty)
         if ($key && $key == 'on') {
 
             $_rp = array(
-                'token'       => jrCore_form_token_create(),
+                'token'       => jrCore_form_token_create('quick_share'),
                 'version'     => $_mods['jrAction']['module_version'],
                 'quick_share' => (!isset($params['quick_share']) || $params['quick_share'] == true) ? 1 : 0,
                 'editor'      => (isset($params['editor']) && $params['editor'] == true) ? 1 : 0,

@@ -34,7 +34,7 @@
 
                             <p class="center">{jrCore_lang module="jrVideo" id="38" default="This video file is currently being processed and will appear here when complete."}</p>
 
-                        {elseif $item.video_file_extension == 'flv'}
+                        {elseif $item.video_file_extension == 'm4v'}
 
                             {assign var="ap" value="`$_conf.jrCore_active_skin`_auto_play"}
                             {assign var="skin_player_type" value="`$_conf.jrCore_active_skin`_player_type"}
@@ -54,11 +54,7 @@
                                     <span class="info">{jrCore_lang module="jrVideo" id="12" default="category"}:</span> <span class="info_c">{$item.video_category}</span><br>
                                 {/if}
                                 <span class="info">{jrCore_lang module="jrVideo" id="37" default="streams"}:</span> <span class="info_c">{$item.video_file_stream_count|default:"0"|number_format}</span><br>
-                                {if isset($item.video_file_original_extension)}
-                                <span class="info">{jrCore_lang module="jrVideo" id="14" default="video file"}:</span> <span class="info_c">{$item.video_file_original_extension}, {$item.video_file_original_size|jrCore_format_size}, {$item.video_file_length}</span>
-                                {else}
-                                <span class="info">{jrCore_lang module="jrVideo" id="14" default="video file"}:</span> <span class="info_c">{$item.video_file_extension}, {$item.video_file_size|jrCore_format_size}, {$item.video_file_length}</span>
-                                {/if}
+                                <span class="info">{jrCore_lang module="jrVideo" id="14" default="video file"}:</span> <span class="info_c">{$item.video_file_size|jrCore_format_size}, {$item.video_file_length}</span>
 
                                 <br><br>{jrCore_module_function function="jrRating_form" type="star" module="jrVideo" index="1" item_id=$item._item_id current=$item.video_rating_1_average_count|default:0 votes=$item.video_rating_1_count|default:0}
                             </div>

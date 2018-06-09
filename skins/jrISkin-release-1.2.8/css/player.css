@@ -1,0 +1,282 @@
+
+.video_container {
+    position: relative;
+}
+
+.jrISkin_player .jp-gui.start {
+    display: block !important;
+}
+
+.jrISkin_player .jp-gui {
+    bottom: 0;
+    height: 100% !important;
+    left: 0;
+    position: absolute;
+    width: 100%;
+}
+
+.jrISkin_player li {
+    float: left;
+    list-style: outside none none;
+}
+
+.jrISkin_player .jp-video-play {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+}
+
+.jrISkin_player .jp-video-play-icon {
+    display: block;
+    height: 40px;
+    margin: auto;
+    width: 40px;
+    text-indent: -9999px;
+}
+
+.jrISkin_player .jp-interface {
+    background: rgba(0, 0, 0, 0) linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.6)) repeat scroll 0 0;
+    bottom: 0;
+    height: 60px;
+    position: absolute;
+    width: 100%;
+}
+
+.jrISkin_player .jp-video-play {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.jrISkin_player .jp-play,
+.jrISkin_player .jp-pause,
+.jrISkin_player .jp-mute,
+.jrISkin_player .jp-unmute,
+.jrISkin_player .jp-video-play-icon,
+.jrISkin_player .jp-restore-screen,
+.jrISkin_player .jp-full-screen {
+    background: rgba(0, 0, 0, 0) url("{$jrISkin_img_url}/player.png") no-repeat scroll 0 0;
+}
+
+.jrISkin_player .jp-pause {
+    background-position: 0 -221px !important;
+}
+
+.jrISkin_player .jp-play,
+.jrISkin_player .jp-pause,
+.jrISkin_player .jp-mute,
+.jrISkin_player .jp-unmute,
+.jrISkin_player .jp-settings,
+.jrISkin_player .jp-restore-screen,
+.jrISkin_player .jp-full-screen {
+    display: block;
+    height: 25px;
+    margin: 0 20px;
+    width: 25px;
+    position: absolute;
+}
+
+.jrISkin_player .jp-play {
+    background-position: 0 -246px;
+}
+
+.jrISkin_player .jp-controls-holder {
+    padding: 20px 0;
+}
+
+.jrISkin_player .jp-progress-holder {
+    height: 25px;
+    left: 56px;
+    padding: 6px 0 0;
+    position: absolute;
+    right: 190px;
+}
+
+.jrISkin_player .jp-duration {
+    color: #fff;
+    font-size: 15px;
+    font-weight: bold;
+    line-height: 1.6em;
+    position: absolute;
+    right: 132px;
+}
+
+.jrISkin_player .jp-full-screen, .jp-restore-screen {
+    right: 0;
+}
+
+.jrISkin_player .jp-full-screen {
+    background-position: 0 -146px;
+}
+
+.jrISkin_player .jp-unmute {
+    background-position: 0 -196px !important;
+}
+
+.jrISkin_player .jp-mute {
+    background-position: 0 -371px !important;
+}
+
+.jrISkin_player .jp-mute, .jrISkin_player .jp-unmute {
+    right: 70px;
+}
+
+.jrISkin_player .jp-settings {
+    background: rgba(0, 0, 0, 0) url("{$jrISkin_img_url}/acp.png") repeat scroll 0 0;
+    right: 35px;
+}
+
+.jrISkin_player .jp-seek-bar, .jrISkin_player .jp-play-bar, .jrISkin_player .jp-progress {
+    background: rgba(255, 255, 255, 0.3) none repeat scroll 0 0;
+    border-radius: 8px;
+    height: 12px;
+}
+
+.jrISkin_player .jp-play-bar {
+    background: rgba(0, 0, 0, 0.3) none repeat scroll 0 0;
+}
+
+.jrISkin_player div.jp-video-full div.jp-jplayer {
+    top: 0;
+    left: 0;
+    position: fixed !important;
+    position: relative; /* Rules for IE6 (full-screen) */
+    overflow: hidden;
+}
+
+.jrISkin_player div.jp-video-full div.jp-gui,
+.jrISkin_player .jp-audio.jp-state-full-screen div.jp-gui {
+    position: fixed !important;
+    position: static; /* Rules for IE6 (full-screen) */
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 1001; /* 1 layer above the others. */
+}
+
+.jrISkin_player .jp-restore-screen {
+    background-position: 0 -172px;
+}
+
+.jrISkin_player .jp-video-full .jp-controls-holder,
+.jrISkin_player .jp-audio.jp-state-full-screen .jp-controls-holder {
+    margin: auto;
+    max-width: 1180px;
+    position: relative;
+}
+
+.jrISkin_player .jp-audio .jp-title {
+    background: rgba(0, 0, 0, 0.5) none repeat scroll 0 0;
+    color: #fff;
+    display: inline !important;
+    font-weight: bold;
+    left: 20px;
+    max-width: 80%;
+    padding: 10px;
+    position: absolute;
+    top: 0;
+}
+
+.jrISkin_player .jp-playlist {
+    bottom: 50px;
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    width: 100%;
+}
+
+.jrISkin_player .jp-playlist li {
+    background: rgba(0, 0, 0, 0.5) none repeat scroll 0 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    display: block;
+    width: 100%;
+}
+
+.jrISkin_player .jp-playlist-current a {
+    color: rgba(248, 197, 116, 1);
+}
+
+.jrISkin_player .jp-playlist div {
+    padding: 7px;
+}
+
+.jrISkin_player .jp-control-settings {
+    background: rgba(0, 0, 0, 0.5) none repeat scroll 0 0;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+    bottom: 50px;
+    padding: 6px;
+    position: absolute;
+    right: 10px;
+    z-index: 500;
+}
+
+.jrISkin_player .jp-volume-bar {
+    background: rgba(255, 255, 255, 0.5) none repeat scroll 0 0;
+    border-radius: 8px;
+    bottom: 44px;
+    height: 21px;
+    overflow: hidden;
+    position: absolute;
+    right: 53px;
+    width: 100px;
+    cursor: pointer;
+}
+
+.jrISkin_player .jp-volume-bar-value {
+    background: rgba(0, 0, 0, 0.5) none repeat scroll 0 0;
+    border-radius: 8px;
+    height: 17px;
+    margin: 2px;
+}
+
+.jrISkin_player.audio .jp-settings {
+    right: 0;
+}
+
+.jrISkin_player.audio .jp-mute, .jrISkin_player.audio .jp-unmute {
+    right: 35px;
+}
+
+.jrISkin_player.audio .jp-duration {
+    right: 95px;
+}
+
+.jrISkin_player.audio .jp-volume-bar {
+    right: 25px;
+}
+
+.jrISkin_player.audio .jp-progress-holder {
+    right: 158px;
+}
+
+.jrISkin_player .jp-video-play-icon.replay {
+    background-position: 0 -41px;
+}
+
+.jrISkin_player .jp-play.replay {
+    background-position: 0 -321px;
+}
+
+.jrISkin_player .jp-title {
+    margin: 2em;
+}
+
+.jrISkin_player .jp-control-settings span {
+    color: white;
+}
+
+.button_player div.jp-interface ul.jp-controls a.jp-play,
+.button_player div.jp-interface ul.jp-controls a.jp-pause {
+    display: none;
+}
+
+li.jp-playlist-current {
+    background: rgba(255, 255, 255, 0.1) none repeat scroll 0 0;
+}
+
+.jrISkin_player {
+    box-shadow: 0 0 2px #666;
+}

@@ -2,7 +2,7 @@
 /**
  * Jamroom Video module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -61,7 +61,7 @@ $lang[13] = 'If you have already entered genres in other video files, you may se
 $lang[14] = 'video file';
 $lang[15] = 'select and upload the video file.';
 $lang[16] = 'cover image';
-$lang[17] = 'if you would like to associate an image file with this song, upload it here.';
+$lang[17] = 'if you would like to associate an image file with this video, upload it here.';
 $lang[18] = 'An error was encountered creating the video file - please try again.';
 $lang[19] = 'The video file was successfully created!';
 $lang[20] = 'Invalid id - please pass in a valid video id.';
@@ -110,3 +110,5 @@ $lang[62] = 'Updated a Video Album';
 $lang[63] = 'Upload Video';
 $lang[64] = 'video title';
 $lang[65] = 'Created a new Video';
+$lang[66] = 'modify album';
+$lang[67] = 'invalid album name - please try again';

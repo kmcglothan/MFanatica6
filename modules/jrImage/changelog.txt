@@ -1,5 +1,51 @@
 Image Support module change log
 
+Version 2.0.9:
+ - New: jrImage_display function will now let crossorigin="" through as a parameter
+
+Version 2.0.8:
+ - New: Support added for "fillcolor" parameter to define RGB color for background when using "fill" crop
+ - Bug Fix: Possible corruption of some JPG images when using the Image Resize Tool
+
+Version 2.0.7:
+ - Change: Resize Images Tool updated with support for all modules with a DataStore or Attachment support
+ - Change: Added larger image sizes in the "Max Item Sizes" dropdown select in the Resize Images tool
+
+Version 2.0.6:
+ - Bug Fix: Image enlargement without a "crop" parameter may not enlarge image
+
+Version 2.0.5:
+ - New: "get_allowed_image_widths" event trigger added to allow custom image widths
+
+Version 2.0.4:
+ - New: "item_image_info" event trigger fired with item info before displaying image
+ - Change: Improved performance when displaying "original" image if allowed in Global Config
+ - Bug Fix: Some images may not be linked to correctly in the image cache
+ - Bug Fix: Possible memory error when resizing with watermark or filters on very large images
+
+Version 2.0.3:
+ - Bug Fix: Some images were not being create correctly in the cache
+ - Bug Fix: Some uploaded images were not having their height detected correctly
+
+Version 2.0.2:
+ - Change: caching of module default images improved to use less disk space
+
+Version 2.0.1:
+ - Bug Fix: Watermark may show on free images if "Only Images for Sale" Quota Config is active
+
+Version 2.0.0
+ - New: Optimized image cache handling to speed up non-private image requests by up to 50%
+ - New: Support for "epeg" image resizing to speed up thumbnailing of large JPEG images
+ - New: "Resize Animated GIFs" global config option to disable resizing of animated GIF images
+ - New: "Minimum Image Width" global config option to enforce a minimum image width allowed for upload
+ - New: image crop feature now accepts x-offset and y-offset: crop=16:9 can now be set as crop=16:9:0:0
+ - New: Support added to display images for items in Recycle Bin that have images
+ - Change: Updated to support new System Tools module plus functions from System Core 6.1.0
+ - Change: Resizing of animated GIF images moved to Queue worker
+ - Change: "default.png" and new "working.png" default images have been updated
+ - Bug Fix: "original" size for JPEG images were not being handled correctly when embedded
+ - Bug Fix: some image upload locations that should only allow one image to be uploaded were allowing many
+
 Version 1.5.3:
  - Change: In progress lock added to prevent simultaneous resize requests for animated GIF images
  - Bug Fix: numeric image size could cause smarty error when using {jrImage_display}

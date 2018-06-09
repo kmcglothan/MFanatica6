@@ -87,7 +87,7 @@ function start()
 	"use strict";
 
 	if (typeof(window.CodeMirror) !== 'function') {
-		alert('CodeMirror not found in "' + CMsettings.path + '", aborting...');
+		jrCore_alert('CodeMirror not found in "' + CMsettings.path + '", aborting...');
 		return;
 	}
 

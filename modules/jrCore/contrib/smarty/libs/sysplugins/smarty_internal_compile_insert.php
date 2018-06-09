@@ -97,7 +97,7 @@ class Smarty_Internal_Compile_Insert extends Smarty_Internal_CompileBase
                 }
                 if (!empty($_dir)) {
                     foreach ((array) $_dir as $_script_dir) {
-                        $_script_dir = rtrim($_script_dir, '/\\') . DS;
+                        $_script_dir = rtrim($_script_dir, '/\\') . $compiler->smarty->ds;
                         if (file_exists($_script_dir . $_script)) {
                             $_filepath = $_script_dir . $_script;
                             break;
@@ -147,7 +147,7 @@ class Smarty_Internal_Compile_Insert extends Smarty_Internal_CompileBase
                 $_output .= "echo Smarty_Internal_Nocache_Insert::compile ('{$_function}',{$_params}, \$_smarty_tpl, '{$_filepath}');?>";
             } else {
                 // Modified by brian@jamroom.net to check if function exists
-                $_output .= "if (function_exists('{$_function}')) { echo {$_function}({$_params},\$_smarty_tpl); } ?>";
+                $_output .= "echo (function_exists('{$_function}')) ? {$_function}({$_params},\$_smarty_tpl) : ''; ?>";
             }
         }
 

@@ -49,8 +49,12 @@
     white-space: nowrap;
 }
 
+.market-requires {
+    font-size: 11px;
+}
+
 .changelog_div {
-    background-color:#FFFFFF;
-    font-family:monospace;
-    white-space:pre-wrap
+    background-color: #FFFFFF;
+    font-family: monospace;
+    white-space: pre-wrap
 }

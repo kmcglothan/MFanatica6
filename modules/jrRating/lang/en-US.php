@@ -2,7 +2,7 @@
 /**
  * Jamroom Item Ratings module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -58,5 +58,6 @@ $lang[12] = 'Item rated';
 $lang[13] = 'If one of your items is rated, would you like to be notified?';
 $lang[14] = 'Visitor';
 $lang[15] = 'Activity Update';
-$lang[16] = 'Rated';
-$lang[17] = 'a';
+$lang[16] = 'Rated an %1 item created by %2 with a %3:';
+$lang[17] = 'Rated a %1 item created by %2 with a %3:';
+$lang[18] = 'You must be logged in to rate items';

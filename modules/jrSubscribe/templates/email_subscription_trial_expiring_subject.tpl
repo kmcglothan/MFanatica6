@@ -1,0 +1,1 @@
+We hope you have enjoyed your {$_conf.jrCore_system_name} free trial!

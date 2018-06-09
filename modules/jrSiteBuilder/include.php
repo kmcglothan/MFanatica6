@@ -2,7 +2,7 @@
 /**
  * Jamroom Site Builder module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -46,11 +46,11 @@ function jrSiteBuilder_meta()
     $_tmp = array(
         'name'        => 'Site Builder',
         'url'         => 'sbcore',
-        'version'     => '2.0.2',
+        'version'     => '2.2.0',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Site Builder Core provides support for all Site Builder functions',
         'category'    => 'site',
-        'requires'    => 'jrCore:6.0.0',
+        'requires'    => 'jrCore:6.1.0',
         'priority'    => 5,
         'license'     => 'mpl'
     );
@@ -63,9 +63,10 @@ function jrSiteBuilder_meta()
 function jrSiteBuilder_init()
 {
     // Events
+    jrCore_register_module_feature('jrCore', 'javascript', 'jrSiteBuilder', 'jrSiteBuilder_admin.js', 'admin');
     jrCore_register_module_feature('jrCore', 'javascript', 'jrSiteBuilder', 'jrSiteBuilder.js');
-    jrCore_register_module_feature('jrCore', 'javascript', 'jrSiteBuilder', 'jquery-ui-1.10.4.custom.min.js');
-    jrCore_register_module_feature('jrCore', 'javascript', 'jrSiteBuilder', 'jquery.mjs.nestedSortable.js');
+    jrCore_register_module_feature('jrCore', 'javascript', 'jrSiteBuilder', 'jquery-ui-1.10.4.custom.min.js', 'admin');
+    jrCore_register_module_feature('jrCore', 'javascript', 'jrSiteBuilder', 'jquery.mjs.nestedSortable.js', 'admin');
     jrCore_register_module_feature('jrCore', 'css', 'jrSiteBuilder', 'jrSiteBuilder.css');
     jrCore_register_module_feature('jrCore', 'css', 'jrSiteBuilder', 'jquery.nouislider.css');
 
@@ -74,22 +75,24 @@ function jrSiteBuilder_init()
     jrCore_register_module_feature('jrSiteBuilder', 'widget', 'jrSiteBuilder', 'widget_code', 'Template Code');
 
     // Insert our "Edit this page" option for masters
-    jrCore_register_event_listener('jrCore', 'module_view', 'jrSiteBuilder_module_view_listener');
     jrCore_register_event_listener('jrCore', 'index_template', 'jrSiteBuilder_view_template_listener');
     jrCore_register_event_listener('jrCore', 'skin_template', 'jrSiteBuilder_view_template_listener');
+    jrCore_register_event_listener('jrCore', 'profile_template', 'jrSiteBuilder_view_template_listener');
+    jrCore_register_event_listener('jrCore', 'module_view', 'jrSiteBuilder_view_template_listener');
+
     jrCore_register_event_listener('jrCore', 'view_results', 'jrSiteBuilder_view_results_listener');
-    jrCore_register_event_listener('jrCore', 'template_variables', 'jrSiteBuilder_template_variables_listener');
+
     jrCore_register_event_listener('jrCore', 'verify_module', 'jrSiteBuilder_verify_module_listener');
     jrCore_register_event_listener('jrCore', 'verify_skin', 'jrSiteBuilder_verify_skin_listener');
-
-    // Custom page display
-    jrCore_register_event_listener('jrCore', 'profile_template', 'jrSiteBuilder_profile_template_listener');
 
     // For a 404 not found page, if it is a master and looks good let them create it
     jrCore_register_event_listener('jrCore', '404_not_found', 'jrSiteBuilder_404_not_found_listener');
 
     // widget specifies a template, but its not found
     jrCore_register_event_listener('jrCore', 'tpl_404', 'jrSiteBuilder_tpl_404_listener');
+
+    // Add pages to Sitemap
+    jrCore_register_event_listener('jrSitemap', 'sitemap_site_pages', 'jrSiteBuilder_sitemap_site_pages_listener');
 
     // tools
     jrCore_register_module_feature('jrCore', 'tool_view', 'jrSiteBuilder', 'browser', array('Page Browser', 'View and Delete existing Site Builder pages.'));
@@ -132,6 +135,12 @@ function jrSiteBuilder_widget_html_config($_post, $_user, $_conf, $_wg)
  */
 function jrSiteBuilder_widget_html_config_save($_post)
 {
+    // Did we get some content?
+    if (!isset($_post['html_content_editor_contents']) || strlen($_post['html_content_editor_contents']) === 0) {
+        jrCore_set_form_notice('error', 'You forgot to entet the HTML content');
+        jrCore_form_result();
+    }
+
     // Make sure some smarty constructs are properly setup
     $_rp                                   = array(
         '&amp;&amp;' => '&&',
@@ -214,58 +223,16 @@ function jrSiteBuilder_widget_code_display($_widget)
  * @param $event string Event Trigger name
  * @return mixed
  */
-function jrSiteBuilder_profile_template_listener($_data, $_user, $_conf, $_args, $event)
+function jrSiteBuilder_sitemap_site_pages_listener($_data, $_user, $_conf, $_args, $event)
 {
-    // See if a page reload has been requested by the Master
-    if (jrUser_is_master() && isset($_COOKIE['sb-page-layout-reload'])) {
-        $pid = (int) $_COOKIE['sb-page-layout-reload'];
-        unset($_COOKIE['sb-page-layout-reload']);
-        jrCore_delete_cookie('sb-page-layout-reload');
-        jrCore_set_flag('sb-page-layout-reload', $pid);
-        $_js = array("jrSiteBuilder_edit_page('{$pid}');");
-        jrCore_create_page_element('javascript_ready_function', $_js);
-    }
-
-    $uri = jrSiteBuilder_get_page_uri();
-    if ($uri == '/index') {
-        jrCore_location($_conf['jrCore_base_url']);
-    }
-    if ($_pg = jrSiteBuilder_get_page_by_uri($uri)) {
-
-        // Check page Groups
-        if (!jrUser_is_master() && isset($_pg['page_groups']) && strlen($_pg['page_groups']) > 0 && $_pg['page_groups'] != 'all') {
-            if (!jrCore_user_is_part_of_group($_pg['page_groups'])) {
-                jrCore_page_not_found();
-            }
+    // Add in custom site builder pages
+    $tbl = jrCore_db_table_name('jrSiteBuilder', 'page');
+    $req = "SELECT page_uri FROM {$tbl} WHERE page_active = 1";
+    $_rt = jrCore_db_query($req, 'NUMERIC');
+    if ($_rt && is_array($_rt)) {
+        foreach ($_rt as $p) {
+            $_data[] = $p['page_uri'];
         }
-
-        if ($_pg && isset($_pg['page_active']) && $_pg['page_active'] == '1') {
-
-            // We have a Site Builder page - show instead
-            jrCore_set_flag('sb-active-page', $_pg);
-            return jrSiteBuilder_get_page($_pg);
-
-        }
-    }
-    elseif ($_pg = jrSiteBuilder_get_page_by_json_file($_conf['jrCore_active_skin'], $uri)) {
-        // Check page Groups
-        if (!jrUser_is_master() && isset($_pg['page_groups']) && strlen($_pg['page_groups']) > 0 && $_pg['page_groups'] != 'all') {
-            if (!jrCore_user_is_part_of_group($_pg['page_groups'])) {
-                jrCore_page_not_found();
-            }
-        }
-
-        if ($_pg && isset($_pg['page_active']) && $_pg['page_active'] == '1') {
-
-            // We have a Site Builder page - show instead
-            jrCore_set_flag('sb-active-page', $_pg);
-            return jrSiteBuilder_get_page($_pg);
-
-        }
-    }
-    else {
-        // Normal profile view - no site builder
-        jrCore_set_flag('jrsitebuilder_hide_sitebuilder', 1);
     }
     return $_data;
 }
@@ -297,26 +264,7 @@ function jrSiteBuilder_404_not_found_listener($_data, $_user, $_conf, $_args, $e
 }
 
 /**
- * Don't add site builder to module views
- * @param $_data array incoming data array
- * @param $_user array current user info
- * @param $_conf array Global config
- * @param $_args array additional info about the module
- * @param $event string Event Trigger name
- * @return array
- */
-function jrSiteBuilder_module_view_listener($_data, $_user, $_conf, $_args, $event)
-{
-    global $_mods, $_post;
-    if (jrUser_is_master() && isset($_post['module']) && isset($_mods["{$_post['module']}"]) && isset($_post['option']) && strlen($_post['option']) > 0) {
-        // This is a module VIEW - i.e. not a module index, we don't add SB to these pages
-        jrCore_set_flag('jrsitebuilder_hide_sitebuilder', 1);
-    }
-    return $_data;
-}
-
-/**
- * See if we are enabled for a page
+ * Return SB page if enabled for URI
  * @param $_data array incoming data array
  * @param $_user array current user info
  * @param $_conf array Global config
@@ -326,59 +274,72 @@ function jrSiteBuilder_module_view_listener($_data, $_user, $_conf, $_args, $eve
  */
 function jrSiteBuilder_view_template_listener($_data, $_user, $_conf, $_args, $event)
 {
-    global $_post;
-    // See if we ARE over-riding this template and if we are, return a placeholder for $out so the template isn't parsed
-    $page_uri = false;
+    global $_mods, $_post;
+
+    // Check if this is a module view function - not module index
+    if (isset($_post['module']) && isset($_mods["{$_post['module']}"]) && isset($_post['option']) && strlen($_post['option']) > 0) {
+        return $_data;
+    }
+
     switch ($event) {
         case 'index_template':
             $page_uri = '/';
             break;
-        case 'skin_template':
-            $page_uri = $_data['_uri'];
+        default:
+            $page_uri = jrSiteBuilder_get_page_uri();
             break;
     }
     if ($page_uri) {
-        $_rt = jrSiteBuilder_get_page_by_uri($page_uri);
-        if ($_rt && jrCore_checktype($_rt['page_id'], 'number_nz')) {
-            jrCore_set_flag("jrSiteBuilder_view_template_{$page_uri}", $_rt);
-            return 'Site Builder is going to show page_id ' . $_rt['page_id'] . ' here, so dont bother parsing the skin template.';
-        }
-        elseif ($_pg = jrSiteBuilder_get_page_by_json_file($_conf['jrCore_active_skin'], $page_uri)) {
-            jrCore_set_flag("jrSiteBuilder_view_template_{$page_uri}", $_pg);
-            return 'Site Builder is going to the json default file for this page ' . $page_uri . '.json here, so dont bother parsing the skin template.';
-        }
-    }
 
-    // See if we are viewing a skin template
-    if (jrUser_is_master()) {
-        if ((!isset($_post['option']) || strlen($_post['option']) === 0) && isset($_post['module_url']) && strlen($_post['module_url']) > 0) {
-            // OK - we either have a MODULE INDEX or a SKIN TEMPLATE - let the site
-            // admin OVERRIDE these if they want to, but let them know about it
-            if (is_file(APP_DIR . "/skins/{$_conf['jrCore_active_skin']}/{$_post['module_url']}.tpl")) {
-                // We have a skin template
-                jrCore_set_flag('jrsitebuilder_show_override_notice', "{$_post['module_url']}.tpl");
+        if ($page_uri == '/index') {
+            jrCore_location($_conf['jrCore_base_url']);
+        }
+
+        // Get our page info - first by DB
+        $_pg = jrSiteBuilder_get_page_by_uri($page_uri);
+        if ($_pg && is_array($_pg)) {
+            // We have a DB SB page
+            if (isset($_pg['page_active']) && $_pg['page_active'] == '1') {
+                if (jrUser_is_master() || !isset($_pg['page_groups']) || jrCore_user_is_part_of_group($_pg['page_groups'])) {
+                    if ($_temp = jrSiteBuilder_get_page($_pg)) {
+                        if (strlen($_temp) > 5) {
+                            $_data = $_temp;
+                        }
+                    }
+                }
             }
         }
-    }
-    return $_data;
-}
+        else {
+            // See if we have a JSON file for this page
+            $_pg = jrSiteBuilder_get_page_by_json_file($_conf['jrCore_active_skin'], $page_uri);
+            if ($_pg && is_array($_pg)) {
+                if (!isset($_pg['page_active']) || $_pg['page_active'] == '1') {
+                    if (jrUser_is_master() || !isset($_pg['page_groups']) || jrCore_user_is_part_of_group($_pg['page_groups'])) {
+                        if ($_temp = jrSiteBuilder_get_page($_pg)) {
+                            if (strlen($_temp) > 5) {
+                                $_data = $_temp;
+                            }
+                        }
+                        $_pg['notice'] = "This URL is using a default Site Builder layout - click OK to create a new Site Builder page.\\n\\nIf you change your mind, delete the new page and the default layout will return.";
+                    }
+                }
+            }
+        }
 
-/**
- * See if we are enabled for module and skin index templates
- * @param $_data array incoming data array
- * @param $_user array current user info
- * @param $_conf array Global config
- * @param $_args array additional info about the module
- * @param $event string Event Trigger name
- * @return array
- */
-function jrSiteBuilder_template_variables_listener($_data, $_user, $_conf, $_args, $event)
-{
-    if (isset($_data['jr_template']) && $_data['jr_template'] == 'index.tpl') {
-        // See if a page reload has been requested by the Master
-        if (jrUser_is_master() && isset($_COOKIE['sb-page-layout-reload'])) {
-            unset($_COOKIE['sb-page-layout-reload']);
-            jrCore_delete_cookie('sb-page-layout-reload');
+        if (jrUser_is_master()) {
+
+            // If we don't have a page, show options
+            if (!is_array($_pg)) {
+                jrCore_set_flag('jrsitebuilder_show_page_notices', $page_uri);
+            }
+            // If we DO have a page, add our SB buttons
+            if (!is_array($_data) && strpos($_data, '<body>')) {
+                if (strpos($_data, '<body>')) {
+                    $temp  = jrCore_parse_template('page_editor_include.tpl', $_pg, 'jrSiteBuilder');
+                    $_data = str_replace('</body>', "{$temp}\n</body>", $_data);
+                }
+            }
+
         }
     }
     return $_data;
@@ -386,7 +347,7 @@ function jrSiteBuilder_template_variables_listener($_data, $_user, $_conf, $_arg
 
 /**
  * Insert "Edit This Page" option for a master admin
- * @param $_data array incoming data array
+ * @param $_data string HTML results
  * @param $_user array current user info
  * @param $_conf array Global config
  * @param $_args array additional info about the module
@@ -396,104 +357,45 @@ function jrSiteBuilder_template_variables_listener($_data, $_user, $_conf, $_arg
 function jrSiteBuilder_view_results_listener($_data, $_user, $_conf, $_args, $event)
 {
     global $_post, $_mods;
+    if ($page_uri = jrCore_get_flag('jrsitebuilder_show_page_notices')) {
 
-    if (!jrCore_is_maintenance_mode($_conf, $_post) && !jrCore_get_flag('jrsitebuilder_hide_sitebuilder')) {
-
-        $uri = jrSiteBuilder_get_page_uri();
-        if ($uri == '/index') {
-            jrCore_location($_conf['jrCore_base_url']);
-        }
-        if (strlen($uri) > 0) {
-
-            // See if a page reload has been requested by the Master
-            if (jrUser_is_master() && isset($_COOKIE['sb-page-layout-reload'])) {
-                $pid = (int) $_COOKIE['sb-page-layout-reload'];
-                unset($_COOKIE['sb-page-layout-reload']);
-                jrCore_delete_cookie('sb-page-layout-reload');
-                jrCore_set_flag('sb-page-layout-reload', $pid);
-                $_js = array("jrSiteBuilder_edit_page('{$pid}');");
-                jrCore_create_page_element('javascript_ready_function', $_js);
-            }
-
-            if ($_pg = jrCore_get_flag("jrSiteBuilder_view_template_{$uri}")) {
-                if ($_pg && isset($_pg['page_active']) && $_pg['page_active'] == '1') {
-                    // We have a Site Builder page - show it
-
-                    // Check page Groups
-                    if (!jrUser_is_master() && isset($_pg['page_groups']) && strlen($_pg['page_groups']) > 0 && $_pg['page_groups'] != 'all') {
-                        if (!jrCore_user_is_part_of_group($_pg['page_groups'])) {
-                            return $_data;
-                        }
-                    }
-
-                    if (!jrCore_get_flag('sb-active-page')) {
-                        $_data = jrSiteBuilder_get_page($_pg);
-                    }
-                }
-            }
-            else {
-                // See if this is a site builder page
-                if ($_pg = jrSiteBuilder_get_page_by_uri($uri)) {
-                    if ($_pg && isset($_pg['page_active']) && $_pg['page_active'] == '1') {
-                        // We have a Site Builder page - show it
-
-                        // Check page Groups
-                        if (!jrUser_is_master() && isset($_pg['page_groups']) && strlen($_pg['page_groups']) > 0 && $_pg['page_groups'] != 'all') {
-                            if (!jrCore_user_is_part_of_group($_pg['page_groups'])) {
-                                return jrCore_parse_template('404.tpl', array()); // if we return $_data here, the module default will show, this url has been claimed by sitebuilder, then deactivated for some users. respect that.
-                            }
-                        }
-
-                        if (!jrCore_get_flag('sb-active-page')) {
-                            $_data = jrSiteBuilder_get_page($_pg);
-                        }
-                    }
-                }
-                elseif ($_pg = jrSiteBuilder_get_page_by_json_file($_conf['jrCore_active_skin'], $uri)) {
-                    // Check page Groups
-                    if (!jrUser_is_master() && isset($_pg['page_groups']) && strlen($_pg['page_groups']) > 0 && $_pg['page_groups'] != 'all') {
-                        if (!jrCore_user_is_part_of_group($_pg['page_groups'])) {
-                            return jrCore_parse_template('404.tpl', array()); // if we return $_data here, the module default will show, this url has been claimed by sitebuilder, then deactivated for some users. respect that.
-                        }
-                    }
-
-                    if (!jrCore_get_flag('sb-active-page')) {
-                        $_data = jrSiteBuilder_get_page($_pg);
-                    }
-                }
-            }
-            if (!$_pg) {
-                $_pg = array();
-            }
-        }
-        else {
-            if (!$_pg = jrCore_get_flag('sb-active-page')) {
-                $_pg = array();
-            }
+        if (jrCore_get_flag('jrprofile_view_is_active')) {
+            // This is a valid profile view - return
+            return $_data;
         }
 
-        // Viewing a module index
-        if ($tpl = jrCore_get_flag('jrsitebuilder_show_override_notice')) {
-            $_mt           = jrCore_skin_meta_data($_conf['jrCore_active_skin']);
-            $_pg['notice'] = "This URL is currently mapped to the {$_mt['title']} skin &quot;{$tpl}&quot; template.\\n\\nClick OK to use a fresh Site Builder page instead. \\n\\nIf you want to restore the page to how it is now, just delete the Site Builder page you created \\nand the current page will return.\\n\\nClick OK to continue, or cancel to keep it how it is now. ";
-        }
-        elseif ($tpl = jrCore_get_flag('jrsitebuilder_show_override_notice_for_custom_page')) {
-            $_mt           = jrCore_skin_meta_data($_conf['jrCore_active_skin']);
-            $_pg['notice'] = "A Site Builder default layout is being proivded on this URL by the {$_mt['title']} skin.\\n\\nClick OK to import to Site Builder to begin alterations. \\n\\nIf you want to restore the page to how it is now, just delete the Site Builder page you created \\nand the current page will return.\\n\\nClick OK to continue, or cancel to keep it how it is now. ";
-        }
-        elseif (count($_pg) === 0) {
-            if ($uri == '/') {
-                // Viewing the SITE INDEX
-                $_mt           = jrCore_skin_meta_data($_conf['jrCore_active_skin']);
-                $_pg['notice'] = "This URL is currently mapped to the {$_mt['title']} skin &quot;index.tpl&quot; template.\\n\\nClick OK to use a fresh Site Builder page instead. \\n\\nIf you want to restore the page to how it is now, just delete the Site Builder page you created \\nand the current page will return.\\n\\nClick OK to continue, or cancel to keep it how it is now. ";
-            }
-            elseif (isset($_post['module']) && isset($_mods["{$_post['module']}"]) && !strpos($uri, '/')) {
-                $module_name   = $_mods["{$_post['module']}"]['module_name'];
-                $_pg['notice'] = "This URL is currently mapped to the {$module_name} module &quot;index.tpl&quot; template.\\n\\nClick OK to use a fresh Site Builder page instead. \\n\\nIf you want to restore the page to how it is now, just delete the Site Builder page you created \\nand the current page will return.\\n\\nClick OK to continue, or cancel to keep it how it is now. ";
-            }
+        // Are we being hidden on this view?
+        if (jrCore_get_flag('jrsitebuilder_hide_sitebuilder')) {
+            return $_data;
         }
 
-        if (jrUser_is_master()) {
+        // OK - we either have a MODULE INDEX or a SKIN TEMPLATE - let the site
+        // admin OVERRIDE these if they want to, but let them know about it
+        $_pg = array();
+        $mod = false;
+        $tpl = false;
+        $_mt = jrCore_skin_meta_data($_conf['jrCore_active_skin']);
+        if ($page_uri == '/') {
+            $mod = $_mt['title'];
+            $tpl = 'index.tpl';
+        }
+        elseif (isset($_post['module']) && isset($_mods["{$_post['module']}"]) && empty($_post['option']) && !strpos($page_uri, '/')) {
+            $mod = $_mods["{$_post['module']}"]['module_name'] . ' module';
+            $tpl = "index.tpl";
+        }
+        elseif (isset($_post['module']) && isset($_mods["{$_post['module']}"]) && !strpos($page_uri, '/')) {
+            $mod = $_mods["{$_post['module']}"]['module_name'] . ' module';
+            $tpl = "item_index.tpl";
+        }
+        elseif (is_file(APP_DIR . "/skins/{$_conf['jrCore_active_skin']}/{$_post['module_url']}.tpl")) {
+            $mod = $_mt['title'] . ' skin';
+            $tpl = "{$_post['module_url']}.tpl";
+        }
+        if ($mod) {
+            $_pg['notice'] = "This URL is using the {$mod} {$tpl} template - click OK to create a new Site Builder page.\\n\\nIf you change your mind, delete the new page and the {$mod} {$tpl} template content will return.";
+        }
+        // Add SB buttons
+        if (strpos($_data, '<body>')) {
             $temp  = jrCore_parse_template('page_editor_include.tpl', $_pg, 'jrSiteBuilder');
             $_data = str_replace('</body>', "{$temp}\n</body>", $_data);
         }
@@ -512,7 +414,6 @@ function jrSiteBuilder_view_results_listener($_data, $_user, $_conf, $_args, $ev
  */
 function jrSiteBuilder_verify_skin_listener($_data, $_user, $_conf, $_args, $event)
 {
-
     // on 'verify_skin' clear the default menu temp values
     jrCore_delete_temp_value('jrSiteBuilder', 'default_menu');
     return $_data;
@@ -590,9 +491,8 @@ function jrSiteBuilder_verify_module_listener($_data, $_user, $_conf, $_args, $e
                         $ttl = str_replace(array('/', '-', '_'), ' ', $item['panel_name']);
 
                         // insert
-                        $req = "INSERT INTO {$tbl} (page_enabled, page_uri, page_active, page_layout, page_groups, page_title, page_head, page_settings)
-                                VALUES ('1', '/" . jrCore_db_escape($item['panel_name']) . "', '1', '{$page_layout}', 'all', '" . jrCore_db_escape($ttl) . "', '', '')
-                                ON DUPLICATE KEY UPDATE page_enabled = page_enabled";
+                        $req                                         = "INSERT IGNORE INTO {$tbl} (page_uri, page_active, page_layout, page_groups, page_title, page_head, page_settings)
+                                VALUES ('/" . jrCore_db_escape($item['panel_name']) . "', '1', '{$page_layout}', 'all', '" . jrCore_db_escape($ttl) . "', '', '')";
                         $page_id                                     = jrCore_db_query($req, 'INSERT_ID');
                         $_existing_page_uri["{$item['panel_name']}"] = $page_id;
                     }
@@ -805,14 +705,8 @@ function jrSiteBuilder_template_cache_reset_listener($_data, $_user, $_conf, $_a
  */
 function jrSiteBuilder_template_code_contains_errors($code)
 {
-    global $_conf;
-    $url = jrCore_get_module_url('jrCore');
-    $cdr = jrCore_get_module_cache_dir('jrCore');
-    $nam = time() . ".tpl";
-    jrCore_write_to_file("{$cdr}/{$nam}", $code);
-    $out = jrCore_load_url("{$_conf['jrCore_base_url']}/{$url}/test_template/{$nam}");
-    @unlink("{$cdr}/{$nam}");
-    if ($out && strlen($out) > 1 && (strpos($out, 'error:') === 0 || stristr($out, 'fatal error'))) {
+    $err = jrCore_test_template_for_errors('jrSiteBuilder', $code);
+    if ($err && strpos($err, 'error') === 0) {
         return true;
     }
     return false;
@@ -930,7 +824,7 @@ function jrSiteBuilder_get_menu_entries($cache = true, $group_filter = true)
             if (count($_rt) > 0) {
                 foreach ($_rt as $mid => $_m) {
                     $pid = (int) $_m['menu_parent_id'];
-                    if (isset($_mp[$pid])) {
+                    if (isset($_mp) && isset($_mp[$pid])) {
                         $tid = $_mp[$pid];
                         if (isset($_rp['_list'][$tid]['_children'][$pid])) {
                             if (!isset($_rp['_list'][$tid]['_children'][$pid]['_children']) || !is_array($_rp['_list'][$tid]['_children'][$pid]['_children'])) {
@@ -1146,6 +1040,9 @@ function jrSiteBuilder_get_page($_page)
     if (!isset($_post['_uri']) || strlen($_post['_uri']) === 0) {
         $_post['_uri'] = '/';
     }
+    else {
+        $_post['_uri'] = rtrim($_post['_uri'], '/');
+    }
     $key = $_post['_uri'];
     if (!$out = jrCore_is_cached('jrSiteBuilder', $key)) {
 
@@ -1214,7 +1111,9 @@ function jrSiteBuilder_get_page($_page)
                                 else {
                                     $out = $fnc($_dt, $w, $_wc);
                                     // allow functions in the titles so skins can have "View More" links.
-                                    $w['widget_title'] = jrCore_parse_template($w['widget_title'], $w, 'jrSiteBuilder');
+                                    if (isset($w['widget_title']) && strlen($w['widget_title']) > 0) {
+                                        $w['widget_title'] = jrCore_parse_template($w['widget_title'], $w, 'jrSiteBuilder');
+                                    }
                                 }
                             }
                             $_ct++;
@@ -1264,6 +1163,11 @@ function jrSiteBuilder_get_page($_page)
             $_rp['config']              = $_cf;
             $_rp['_registered_widgets'] = jrCore_get_registered_module_features('jrSiteBuilder', 'widget');
             $out                        = jrCore_parse_template('page_row_column.tpl', $_rp, 'jrSiteBuilder');
+
+            // some javascript for the hashtag tabs change:
+            $_js = array("if (window.location.hash){var hash=location.hash.replace('#','');var tab_target=$('[data-widget_hash=\"' + hash + '\"]').data('widget_value');if (typeof tab_target != 'undefined'){var sb=tab_target.split('|'); jrSiteBuilder_load_tab(sb[0],sb[1],sb[2]);}}");
+            jrCore_create_page_element('javascript_ready_function', $_js);
+
         }
         $_rp                       = array(
             '_page'         => $_page,
@@ -1415,6 +1319,10 @@ function smarty_function_jrSiteBuilder_mobile_menu($params, $smarty)
 {
     global $_conf;
     $_rp = jrSiteBuilder_get_menu_entries(true);
+    if (!$_rp['_list'] || count($_rp['_list']) == 0) {
+        // get the default instead
+        $_rp['_list'] = jrSiteBuilder_skin_default_menu_items();
+    }
     $tpl = 'menu_mobile.tpl';
     $mod = 'jrSiteBuilder';
     if (isset($params['template']) && strlen($params['template']) > 0) {
@@ -1631,7 +1539,7 @@ function jrSiteBuilder_daily_maintenance_listener($_data, $_user, $_conf, $_args
         $req = "SELECT page_id FROM {$tbl}";
         $_rt = jrCore_db_query($req, 'page_id', false, 'page_id');
 
-        if (!is_array($_rt)) {
+        if (!$_rt || !is_array($_rt)) {
             // No Site Builder content, return.
             return $_data;
         }

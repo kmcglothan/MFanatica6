@@ -2,20 +2,17 @@
 /**
  * Jamroom Comments module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0.  Please see the included "license.html" file.
+ * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
+ *
+ * This Source Code is subject to the terms of the Jamroom Network
+ * Commercial License -  please see the included "license.html" file.
  *
  * This module may include works that are not developed by
  * The Jamroom Network
  * and are used under license - any licenses are included and
  * can be found in the "contrib" directory within this module.
- *
- * Jamroom may use modules and skins that are licensed by third party
- * developers, and licensed under a different license  - please
- * reference the individual module or skin license that is included
- * with your installation.
  *
  * This software is provided "as is" and any express or implied
  * warranties, including, but not limited to, the implied warranties
@@ -71,7 +68,7 @@ function profile_view_jrComment_default($_profile, $_post, $_user, $_conf)
 
                         // We have private comments for this module - get comments attached to items
                         $_sp = array(
-                            'search' => array(
+                            'search'              => array(
                                 'comment_item_id in ' . implode(',', $_ids["{$_rt['comment_module']}"]),
                                 "comment_module = {$_rt['comment_module']}"
                             ),

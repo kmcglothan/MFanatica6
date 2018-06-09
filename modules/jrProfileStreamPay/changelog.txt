@@ -1,5 +1,11 @@
 Profile Stream Pay module changelog
 
+Version 1.0.9:
+ - Change: Module no longer requires the FoxyCart payments module to function
+
+Version 1.0.8:
+ - Bug Fix: Stream Pay payment log not being reset when Developer Tools "Reset System" tool is run
+
 Version 1.0.7:
  - Change: Lowered module priority so event listeners run after other module listeners
 

@@ -1,9 +1,8 @@
 <?php
 /**
- * Jamroom 5 Editor Image Upload module
+ * Jamroom Editor Image Upload module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -50,7 +49,7 @@ function jrUpimg_meta()
     $_tmp = array(
         'name'        => 'Editor Image Upload',
         'url'         => 'upimg',
-        'version'     => '1.1.7',
+        'version'     => '1.1.11',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Adds an image upload tool to the Embedded Media module in the editor',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/292/editor-image-upload',
@@ -69,6 +68,7 @@ function jrUpimg_init()
     // Make sure our tab looks nice
     jrCore_register_event_listener('jrEmbed', 'embed_tabs', 'jrUpimg_embed_tabs_listener');
     jrCore_register_event_listener('jrEmbed', 'embed_variables', 'jrUpimg_embed_variables_listener');
+    jrCore_register_event_listener('jrEmbed', 'embed_params', 'jrUpimg_embed_params_listener');
 
     // Core support
     $_tmp = array(
@@ -138,12 +138,39 @@ function jrUpimg_embed_variables_listener($_data, $_user, $_conf, $_args, $event
     jrCore_create_page_element('page', $_field);
 
     $_temp                 = jrCore_get_flag('jrcore_page_elements');
-    $_temp['upload_token'] = jrCore_form_token_create();
+    $_temp['upload_token'] = jrCore_form_token_create('upimg_file');
     $_temp['show_search']  = false;
-    $_temp['show_pager']   = false;
+    $_temp['show_pager']   = true;
     return array_merge($_data, $_temp);
 }
 
+/**
+ * show more images on the jrEmbed html embedder
+ * @param $_data
+ * @param $_user
+ * @param $_conf
+ * @param $_args
+ * @param $event
+ * @return mixed
+ */
+function jrUpimg_embed_params_listener($_data, $_user, $_conf, $_args, $event)
+{
+
+    // turn on profile only if its not turned on by default
+    if (isset($_conf['jrEmbed_profile_only']) && $_conf['jrEmbed_profile_only'] == 'off') {
+        if (!isset($_data['search']) || !is_array($_data['search'])) {
+            $_data['search'] = array();
+        }
+        $pid = $_user['user_active_profile_id'];
+        if ($_tm = jrProfile_get_user_linked_profiles($_SESSION['_user_id'])) {
+            $pid = "{$pid}," . implode(',', array_keys($_tm));
+        }
+        $_data['search'][] = "_profile_id in {$pid}";
+    }
+
+    $_data['pagebreak'] = 14;
+    return $_data;
+}
 //------------------------------------
 // WIDGETS
 //------------------------------------
@@ -166,8 +193,58 @@ function jrUpimg_widget_upimg_config($_post, $_user, $_conf, $_wg)
     );
     jrCore_form_field_create($_tmp);
 
+    $_img_name = array();
+    $_img_size = array();
+    $_opt      = array();
+    $_tmp      = jrImage_get_allowed_image_widths();
+    foreach ($_tmp as $k => $v) {
+        if (is_numeric($k)) {
+            $_img_size[$k] = $v;
+        }
+        if (!is_numeric($k)) {
+            $_img_name[$v] = $k;
+        }
+    }
+    natsort($_img_size);
+    foreach ($_img_size as $pixels) {
+        if (strlen($_img_name[$pixels]) > 2) {
+            $_opt[$pixels] = "{$_img_size[$pixels]}px - {$_img_name[$pixels]}";
+        }
+        else {
+            $_opt[$pixels] = $_img_size[$pixels] . 'px';
+        }
+    }
+    if (isset($_img_name['original'])) {
+        $_opt['original'] = 'original';
+    }
+
+    // image size
+    $_tmp = array(
+        'name'     => 'upimg_size',
+        'label'    => 'Image Size',
+        'help'     => 'Select the size you would like to display the image at.  Small image stretched into a large conatiner will mean the image could be blurry. Choose a size close to the container size you\'re putting it in.',
+        'options'  => $_opt,
+        'default'  => '512',
+        'type'     => 'select',
+        'validate' => 'printable',
+    );
+    jrCore_form_field_create($_tmp);
+
+    // crop
+    $_tmp = array(
+        'name'        => 'upimg_crop',
+        'label'       => 'crop',
+        'placeholder' => '16:9',
+        'help'        => '( Optional ) If you would like to crop the image to a certain aspect ratio, enter the ratio here.  Useful if you are using many images of different aspect ratios.',
+        'options'     => $_opt,
+        'default'     => '',
+        'type'        => 'text',
+        'validate'    => 'printable',
+    );
+    jrCore_form_field_create($_tmp);
+
     // token for upload
-    $_wg['tkn'] = jrCore_form_token_create();
+    $_wg['tkn'] = jrCore_form_token_create('upimg_widget');
 
     // header
     $html = jrCore_parse_template('widget_config_header.tpl', $_wg, 'jrUpimg');
@@ -183,7 +260,11 @@ function jrUpimg_widget_upimg_config($_post, $_user, $_conf, $_wg)
  */
 function jrUpimg_widget_upimg_config_save($_post)
 {
-    return array('upimg_list' => $_post['upimg_list']);
+    return array(
+        'upimg_list' => $_post['upimg_list'],
+        'upimg_size' => $_post['upimg_size'],
+        'upimg_crop' => $_post['upimg_crop']
+    );
 }
 
 /**
@@ -200,8 +281,21 @@ function jrUpimg_widget_upimg_display($_widget)
             'search' => array("_item_id IN {$_widget['upimg_list']}")
         );
 
-        $_rt              = jrCore_db_search_items('jrUpimg', $_sp);
-        $_rt['unique_id'] = jrCore_create_unique_string(6);
+        $_rt               = jrCore_db_search_items('jrUpimg', $_sp);
+        $_rt['unique_id']  = jrCore_create_unique_string(6);
+        $_rt['upimg_size'] = 'xxlarge';
+        if (isset($_widget['upimg_crop']) && strlen($_widget['upimg_crop']) > 2) {
+            $_rt['upimg_crop'] = $_widget['upimg_crop'];
+            list($w, $h) = explode(':', $_widget['upimg_crop']);
+            if (jrCore_checktype($w, 'number_nz') && jrCore_checktype($h, 'number_nz')) {
+                // its an aspect ratio, pass it in
+                $_rt['aspect_w'] = $w;
+                $_rt['aspect_h'] = $h;
+            }
+        }
+        if (isset($_widget['upimg_size']) && strlen($_widget['upimg_size']) > 1) {
+            $_rt['upimg_size'] = $_widget['upimg_size'];
+        }
     }
 
     return jrCore_parse_template('widget_upimg_display.tpl', $_rt, 'jrUpimg');

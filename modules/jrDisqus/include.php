@@ -1,9 +1,8 @@
 <?php
 /**
- * Jamroom 5 Disqus Comments module
+ * Jamroom Disqus Comments module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2017 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -51,7 +50,7 @@ function jrDisqus_meta()
     $_tmp = array(
         'name'        => 'Disqus Comments',
         'url'         => 'disqus',
-        'version'     => '1.0.5',
+        'version'     => '1.1.0',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Add Disqus Users Comments to item detail pages',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/1348/disqus-comments',
@@ -102,7 +101,7 @@ function jrDisqus_disqus_comments_feature($module, $_item, $params, $smarty)
     if (!isset($_conf['jrDisqus_site_name']) || strlen($_conf['jrDisqus_site_name']) === 0) {
         return '';
     }
-    $_rep['disqus_identifier'] = "{$module}_{$_item['_item_id']}";
+    $_rep['disqus_identifier'] = "{$params['module']}_{$_item['_item_id']}";
     return jrCore_parse_template('embed.tpl', $_rep, 'jrDisqus');
 }
 

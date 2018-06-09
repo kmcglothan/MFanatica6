@@ -2,7 +2,7 @@
 /**
  * Jamroom Video module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -46,11 +46,12 @@ function jrVideo_meta()
     $_tmp = array(
         'name'        => 'Video',
         'url'         => 'video',
-        'version'     => '1.5.2',
+        'version'     => '2.0.2',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Create and stream Video - transcodes for both desktop and mobile viewing',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/293/video',
         'category'    => 'profiles',
+        'requires'    => 'jrCore:6.1.0b2,jrSystemTools',
         'license'     => 'jcl'
     );
     return $_tmp;
@@ -74,6 +75,12 @@ function jrVideo_init()
     // We listen for the jrUrlScan 'url_found' trigger and if its a video url, add appropriate data to its array
     jrCore_register_event_listener('jrUrlScan', 'url_found', 'jrVideo_url_found_listener');
 
+    // We want RSS feeds
+    jrCore_register_module_feature('jrFeed', 'feed_support', 'jrVideo', 'enabled');
+
+    // tools
+    jrCore_register_module_feature('jrCore', 'tool_view', 'jrVideo', 'verify', array('Verify Video Files', 'Verify uploaded videos have the correct video files'));
+
     // We also provide support for the "video" form field type
     jrCore_register_module_feature('jrCore', 'form_field', 'jrVideo', 'video');
 
@@ -81,6 +88,7 @@ function jrVideo_init()
     jrCore_register_module_feature('jrCore', 'designer_form', 'jrVideo', 'create');
     jrCore_register_module_feature('jrCore', 'designer_form', 'jrVideo', 'update');
     jrCore_register_module_feature('jrCore', 'designer_form', 'jrVideo', 'create_album');
+    jrCore_register_module_feature('jrCore', 'designer_form', 'jrVideo', 'update_album');
 
     // Core support
     jrCore_register_module_feature('jrCore', 'quota_support', 'jrVideo', 'on');
@@ -102,6 +110,7 @@ function jrVideo_init()
     $max = (isset($_conf['jrVideo_conversion_worker_count'])) ? intval($_conf['jrVideo_conversion_worker_count']) : 1;
     jrCore_register_queue_worker('jrVideo', 'video_conversions', 'jrVideo_convert_file', 0, $max, 14400);
     jrCore_register_queue_worker('jrVideo', 'create_video_sample', 'jrVideo_create_video_sample', 0, $max, 7200);
+    jrCore_register_queue_worker('jrVideo', 'verify_video_files', 'jrVideo_verify_video_files', 0, 2, 600);
 
     // Block downloads of FLV and MP4 files
     jrCore_register_event_listener('jrCore', 'download_file', 'jrVideo_download_file_listener');
@@ -109,7 +118,6 @@ function jrVideo_init()
     jrCore_register_event_listener('jrCore', 'db_search_items', 'jrVideo_db_search_items_listener');
     jrCore_register_event_listener('jrCore', 'db_get_item', 'jrVideo_db_get_item_listener');
     jrCore_register_event_listener('jrCore', 'stream_file', 'jrVideo_stream_file_listener');
-    jrCore_register_event_listener('jrCore', 'media_player_params', 'jrVideo_media_player_params_listener');
     jrCore_register_event_listener('jrCore', 'verify_module', 'jrVideo_verify_module_listener');
 
     // When an action is shared via jrOneAll, we can provide the text of the shared item
@@ -173,7 +181,6 @@ function jrVideo_init()
 
     jrCore_register_module_feature('jrTips', 'tip', 'jrVideo', 'tip');
 
-
     return true;
 }
 
@@ -229,6 +236,9 @@ function jrVideo_quick_share_video_save($_post, $_user, $_conf)
     }
     $vid = jrCore_db_create_item('jrVideo', $_rt);
     if (!$vid) {
+        if ($error_message = jrCore_get_flag("max_jrVideo_items_reached")) {
+            return "ERROR: {$error_message}";
+        }
         $_ln = jrUser_load_lang_strings();
         return "ERROR: {$_ln['jrVideo'][18]}";
     }
@@ -334,7 +344,7 @@ function jrVideo_widget_video_player_display($_widget)
  * @param $_args Smarty function parameters
  * @param $smarty Smarty Object
  * @param $test_only - check if button WOULD be shown for given module
- * @return string
+ * @return mixed
  */
 function jrVideo_create_album_button($module, $_item, $_args, $smarty, $test_only = false)
 {
@@ -363,7 +373,7 @@ function jrVideo_create_album_button($module, $_item, $_args, $smarty, $test_onl
  * @param $_args Smarty function parameters
  * @param $smarty Smarty Object
  * @param $test_only - check if button WOULD be shown for given module
- * @return string
+ * @return mixed
  */
 function jrVideo_item_download_button($module, $_item, $_args, $smarty, $test_only = false)
 {
@@ -398,7 +408,11 @@ function jrVideo_item_download_button($module, $_item, $_args, $smarty, $test_on
                 foreach (explode(',', $_item['video_file_item_bundle']) as $bid) {
                     $_id[] = (int) $bid;
                 }
-                $_bi = jrCore_db_get_multiple_items('jrFoxyCartBundle', $_id, array('bundle_item_price'));
+                $mod = 'jrFoxyCartBundle';
+                if (jrCore_module_is_active('jrBundle')) {
+                    $mod = 'jrBundle';
+                }
+                $_bi = jrCore_db_get_multiple_items($mod, $_id, array('bundle_item_price'));
                 if ($_bi && is_array($_bi)) {
                     $block = false;
                     foreach ($_bi as $_bun) {
@@ -498,24 +512,6 @@ function jrVideo_verify_module_listener($_data, $_user, $_conf, $_args, $event)
 }
 
 /**
- * Set video solution based on accessing device
- * @param $_data array incoming data array from jrCore_save_media_file()
- * @param $_user array current user info
- * @param $_conf array Global config
- * @param $_args array additional info about the module
- * @param $event string Event Trigger name
- * @return array
- */
-function jrVideo_media_player_params_listener($_data, $_user, $_conf, $_args, $event)
-{
-    // Desktops use Flash for quality
-    if (!jrCore_is_mobile_device() && $_args['module'] == 'jrVideo') {
-        $_data['solution'] = 'flash,html';
-    }
-    return $_data;
-}
-
-/**
  * Skip sample if we are NOT doing samples
  * @param $_data array incoming data array from jrCore_save_media_file()
  * @param $_user array current user info
@@ -545,7 +541,7 @@ function jrVideo_stream_file_listener($_data, $_user, $_conf, $_args, $event)
  */
 function jrVideo_download_file_listener($_data, $_user, $_conf, $_args, $event)
 {
-    if (isset($_conf['jrVideo_block_download']) && $_conf['jrVideo_block_download'] == 'on' && !jrUser_is_admin()) {
+    if (isset($_conf['jrVideo_block_download']) && $_conf['jrVideo_block_download'] == 'on' && !jrUser_can_edit_item($_data)) {
         // Check for extension
         switch ($_data["{$_args['file_name']}_extension"]) {
             case 'flv':
@@ -643,9 +639,7 @@ function jrVideo_network_share_text_listener($_data, $_user, $_conf, $_args, $ev
 }
 
 /**
- * jrVideo_save_media_file_listener
  * Adds video file meta data to saved video files
- *
  * @param $_data array incoming data array from jrCore_save_media_file()
  * @param $_user array current user info
  * @param $_conf array Global config
@@ -662,9 +656,9 @@ function jrVideo_save_media_file_listener($_data, $_user, $_conf, $_args, $event
     if (!$f_ext) {
         return $_data;
     }
-    if (isset($_data) && is_array($_data) && is_array($_types) && isset($_types[$f_ext])) {
-        $_tmp = jrCore_get_media_file_metadata($_args['saved_file'], $_args['file_name']);
-        if (isset($_tmp) && is_array($_tmp)) {
+    if ($_data && is_array($_data) && is_array($_types) && isset($_types[$f_ext])) {
+        $_tmp = jrCore_get_media_file_metadata($_args['_file']['tmp_name'], $_args['file_name']);
+        if ($_tmp && is_array($_tmp)) {
             // Init streaming preview seconds
             $_tmp["{$_args['file_name']}_preview"] = 0;
             $_data                                 = array_merge($_data, $_tmp);
@@ -688,6 +682,7 @@ function jrVideo_add_price_field_listener($_data, $_user, $_conf, $_args, $event
     $_data["jrVideo/create"]       = 'video_file';
     $_data["jrVideo/update"]       = 'video_file';
     $_data['jrVideo/create_album'] = 'video_file';
+    $_data['jrVideo/update_album'] = 'video_file';
     return $_data;
 }
 
@@ -704,6 +699,10 @@ function jrVideo_add_bundle_price_field_listener($_data, $_user, $_conf, $_args,
 {
     // Module/View => array(Bundle Title field, Bundle File field)
     $_data['jrVideo/create_album'] = array(
+        'title' => 'video_album',
+        'field' => 'video_file'
+    );
+    $_data['jrVideo/update_album'] = array(
         'title' => 'video_album',
         'field' => 'video_file'
     );
@@ -935,7 +934,7 @@ function jrVideo_form_field_video_display($_field, $_att = null)
 
 /**
  * Defines Form Designer field options
- * @return string
+ * @return array
  */
 function jrVideo_form_field_video_form_designer_options()
 {
@@ -1024,7 +1023,7 @@ function jrVideo_form_field_video_validate($_field, $_post, $e_msg)
 function jrVideo_get_ffmpeg_command()
 {
     global $_conf;
-    $ffmpeg = jrCore_check_ffmpeg_install();
+    $ffmpeg = jrCore_get_tool_path('ffmpeg', 'jrCore');
     if ($ffmpeg) {
         $nice = 12;
         if (isset($_conf['jrVideo_conversion_priority']) && jrCore_checktype($_conf['jrVideo_conversion_priority'], 'number_nz')) {
@@ -1042,9 +1041,28 @@ function jrVideo_get_ffmpeg_command()
 function jrVideo_get_ffmpeg_thread()
 {
     global $_conf;
-    $threads = 1;
-    if (isset($_conf['jrVideo_conversion_priority']) && $_conf['jrVideo_conversion_priority'] == '1') {
-        $threads = 0;
+    $threads  = 1;
+    $priority = (isset($_conf['jrVideo_conversion_priority'])) ? intval($_conf['jrVideo_conversion_priority']) : 12;
+    switch ($priority) {
+        case 1:
+            // HIGHEST
+            $threads = 0;  // Will use maximum number of procs it can
+            break;
+        case 3:
+            // HIGHER - all but one
+            if ($_cpu = jrCore_get_proc_info()) {
+                $threads = (int) (count($_cpu) - 1);
+            }
+            break;
+        case 6:
+            // HIGH - half procs rounded down
+            if ($_cpu = jrCore_get_proc_info()) {
+                $threads = (int) floor(count($_cpu) / 2);
+            }
+            break;
+    }
+    if (!jrCore_checktype($threads, 'number_nz')) {
+        $threads = 1;
     }
     return $threads;
 }
@@ -1072,13 +1090,8 @@ function jrVideo_create_sample($profile_id, $video_id, $_video, $extension, $sam
         return false;
     }
 
-    $field = 'video_file'; // Desktop FLV preview
-    if (isset($extension) && $extension == 'm4v') {
-        $field = 'video_file_mobile'; // Mobile M4V preview
-    }
-
     // Make sure input MP3 file exists
-    $input_file = jrCore_get_media_file_path('jrVideo', $field, $_video);
+    $input_file = jrCore_get_media_file_path('jrVideo', 'video_file', $_video);
     if (!jrCore_media_file_exists($profile_id, $input_file)) {
         return false;
     }
@@ -1128,27 +1141,202 @@ function jrVideo_create_sample($profile_id, $video_id, $_video, $extension, $sam
 }
 
 /**
+ * Create an FLV video from an M4V video
+ * @param int $pid Profile ID
+ * @param string $flv FLV file name
+ * @param string $m4v M4V file name
+ * @return bool
+ */
+function jrVideo_create_flv_from_m4v($pid, $flv, $m4v)
+{
+    $ffmpeg = jrVideo_get_ffmpeg_command();
+    if (jrCore_media_file_exists($pid, $m4v)) {
+        $dir = jrCore_get_media_directory($pid);
+        if (jrCore_confirm_media_file_is_local($pid, $m4v)) {
+
+            if (jrCore_get_active_media_system() == 'jrCore_local') {
+                // We can work directly with the file
+                ob_start();
+                system("{$ffmpeg} -y -i \"{$dir}/{$m4v}\" -vcodec copy -acodec libmp3lame -ar 44100 -ab 128 \"{$dir}/{$flv}\" >/dev/null 2>/dev/null", $ret);
+                ob_end_clean();
+                if (is_file("{$dir}/{$flv}") && filesize("{$dir}/{$flv}") > 200) {
+                    return filesize("{$dir}/{$flv}");
+                }
+                // Bad file
+                @unlink("{$dir}/{$flv}");
+            }
+            else {
+                // We need to go through a temp file
+                // We have the FLV video file local now - create M4V copy
+                $tmp = str_replace('.flv', '.tmp.flv', $m4v);
+                ob_start();
+                system("{$ffmpeg} -y -i \"{$dir}/{$m4v}\" -vcodec copy -acodec libmp3lame -ar 44100 -ab 128 \"{$dir}/{$tmp}\" >/dev/null 2>/dev/null", $ret);
+                ob_end_clean();
+                if (is_file("{$dir}/{$tmp}") && filesize("{$dir}/{$tmp}") > 200) {
+                    $size = filesize("{$dir}/{$tmp}");
+                    jrCore_copy_media_file($pid, "{$dir}/{$tmp}", $flv);
+                    @unlink("{$dir}/{$tmp}");
+                    return $size;
+                }
+                // Bad file
+                @unlink("{$dir}/{$tmp}");
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Create an M4V video from an FLV video
+ * @param int $pid Profile ID
+ * @param string $flv FLV file name
+ * @param string $m4v M4V file name
+ * @param bool $force force a new conversion instead of a copy
+ * @return mixed
+ */
+function jrVideo_create_m4v_from_flv($pid, $m4v, $flv, $force = false)
+{
+    $ffmpeg = jrVideo_get_ffmpeg_command();
+    if (jrCore_media_file_exists($pid, $flv)) {
+        $tag = '-vcodec copy ';
+        if ($force) {
+            $tag = '';
+        }
+        $dir = jrCore_get_media_directory($pid);
+        if (jrCore_confirm_media_file_is_local($pid, $flv)) {
+            if (jrCore_get_active_media_system() == 'jrCore_local') {
+                // We can work directly with the file
+                ob_start();
+                system("{$ffmpeg} -y -i \"{$dir}/{$flv}\" {$tag}-acodec libfaac \"{$dir}/{$m4v}\" >/dev/null 2>/dev/null", $ret);
+                ob_end_clean();
+                if (is_file("{$dir}/{$m4v}") && filesize("{$dir}/{$m4v}") > 200) {
+                    return filesize("{$dir}/{$m4v}");
+                }
+                // Bad file
+                @unlink("{$dir}/{$m4v}");
+            }
+            else {
+                // We need to go through a temp file
+                // We have the FLV video file local now - create M4V copy
+                $tmp = str_replace('.m4v', '.tmp.m4v', $m4v);
+                ob_start();
+                system("{$ffmpeg} -y -i \"{$dir}/{$flv}\" {$tag}-acodec libfaac \"{$dir}/{$tmp}\" >/dev/null 2>/dev/null", $ret);
+                ob_end_clean();
+                if (is_file("{$dir}/{$tmp}") && filesize("{$dir}/{$tmp}") > 200) {
+                    $size = filesize("{$dir}/{$tmp}");
+                    jrCore_copy_media_file($pid, "{$dir}/{$tmp}", $m4v);
+                    @unlink("{$dir}/{$tmp}");
+                    return $size;
+                }
+                // Bad file
+                @unlink("{$dir}/{$tmp}");
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Verify video files are correct
+ * @param array $_queue The queue entry the worker will receive
+ * @return bool
+ */
+function jrVideo_verify_video_files($_queue)
+{
+    @ini_set('max_execution_time', 600);
+    @ini_set('memory_limit', '1024M');
+    if (!is_array($_queue)) {
+        return true;
+    }
+    if (!isset($_queue['_item_id'])) {
+        return true;
+    }
+    $vid = (int) $_queue['_item_id'];
+    if (!$_it = jrCore_db_get_item('jrVideo', $vid, true)) {
+        // Item does not exist
+        return true;
+    }
+
+    $pid = (int) $_queue['_profile_id'];
+    $flv = "jrVideo_{$vid}_video_file.flv";
+    $m4v = "jrVideo_{$vid}_video_file.m4v";
+
+    // Our M4V file is considered our "base" file - must exist
+    if (!jrCore_media_file_exists($pid, $m4v)) {
+        if (!$size = jrVideo_create_m4v_from_flv($pid, $m4v, $flv)) {
+            // We are unable to create the M4V file by copying - try forcing conversion
+            if (!$size = jrVideo_create_m4v_from_flv($pid, $m4v, $flv, true)) {
+                // Last resort - try renaming the mobile M4V if it exists
+                $err = true;
+                if (jrCore_media_file_exists($pid, "jrVideo_{$vid}_video_file_mobile.m4v")) {
+                    if (jrCore_rename_media_file($pid, "jrVideo_{$vid}_video_file_mobile.m4v", $m4v)) {
+                        $err = false;
+                    }
+                }
+                if ($err) {
+                    jrCore_logger('MAJ', "error creating M4V version of video file: {$flv}", $_it);
+                    return true;
+                }
+            }
+        }
+    }
+    else {
+        $size = $_it['video_file_size'];
+    }
+
+    // Make sure our DS is updated with correct info for the video file
+    $_data = array(
+        "video_file_name"      => $m4v,
+        "video_file_type"      => 'video/mp4',
+        "video_file_extension" => 'm4v'
+    );
+    if (jrCore_checktype($size, 'number_nz')) {
+        $_data['video_file_size'] = $size;
+    }
+    $_core = array(
+        '_updated' => $_it['_updated']
+    );
+    jrCore_db_update_item('jrVideo', $vid, $_data, $_core);
+
+    // Are we supporting Flash Video?
+    if (isset($_queue['enable_flash']) && $_queue['enable_flash'] == 'on') {
+        // YES - we need to have an FLV version of this video
+        if (!jrCore_media_file_exists($pid, $flv)) {
+            jrVideo_create_flv_from_m4v($pid, $flv, $m4v);
+        }
+    }
+    else {
+        // NO - if an FLV version exists, delete it
+        jrCore_delete_media_file($pid, $flv);
+    }
+    // We no longer use the "mobile" version - remove it
+    jrCore_delete_media_file($pid, "jrVideo_{$vid}_video_file_mobile.m4v");
+
+    return true;
+}
+
+/**
  * Create a video "sample" for videos that are for sale
  * @param array $_queue The queue entry the worker will receive
  * @return bool
  */
 function jrVideo_create_video_sample($_queue)
 {
-    if (!isset($_queue) || !is_array($_queue)) {
+    if (!is_array($_queue)) {
         return false;
     }
 
     // Our queue entry will contain the item ID and the Quota ID
     // for the item being submitted for conversion
     $_qt = jrProfile_get_quota($_queue['quota_id']);
-    if (!isset($_qt) || !is_array($_qt)) {
+    if (!$_qt || !is_array($_qt)) {
         jrCore_logger('CRI', "invalid quota_id received in queue entry: {$_queue['quota_id']}");
         return true; // Bad queue entry - remove it
     }
 
     // Get the item
     $_it = jrCore_db_get_item('jrVideo', $_queue['item_id']);
-    if (!isset($_it) || !is_array($_it)) {
+    if (!$_it || !is_array($_it)) {
         jrCore_logger('CRI', "invalid item_id received in queue entry: {$_queue['item_id']}");
         return true; // Bad queue entry - remove it
     }
@@ -1194,28 +1382,37 @@ function jrVideo_create_video_sample($_queue)
  */
 function jrVideo_convert_file($_queue)
 {
-    if (!isset($_queue) || !is_array($_queue)) {
+    if (!is_array($_queue)) {
         return false;
     }
+    // Have we already tried 3 times?
+    if (isset($_queue['queue_count']) && $_queue['queue_count'] >= 3) {
+        jrCore_logger('CRI', "unable to convert video file - exiting after 3 tries", $_queue);
+        // We could not convert - return true to delete queue
+        return true;
+    }
+
+    @ini_set('max_execution_time', 28800);
+    @ini_set('memory_limit', '1024M');
 
     // Our queue entry will contain the item ID and the Quota ID
     // for the item being submitted for conversion
     $_qt = jrProfile_get_quota($_queue['quota_id']);
-    if (!is_array($_qt)) {
+    if (!$_qt || !is_array($_qt)) {
         jrCore_logger('CRI', "invalid quota_id received in queue entry: {$_queue['quota_id']}");
         return true; // Bad queue entry - remove it
     }
 
     // Make sure profile is valid
     $_pr = jrCore_db_get_item('jrProfile', $_queue['profile_id'], true);
-    if (!is_array($_pr)) {
+    if (!$_pr || !is_array($_pr)) {
         jrCore_logger('CRI', "invalid profile_id received in queue entry: {$_queue['profile_id']}");
         return true; // Bad queue entry - remove it
     }
 
     // Get the item
     $_it = jrCore_db_get_item('jrVideo', $_queue['item_id']);
-    if (!is_array($_it)) {
+    if (!$_it || !is_array($_it)) {
         jrCore_logger('CRI', "invalid item_id received in queue entry: {$_queue['item_id']}");
         return true; // Bad queue entry - remove it
     }
@@ -1284,50 +1481,50 @@ function jrVideo_convert_file($_queue)
     }
 
     //---------------------------
-    // ENCODE - FLV
+    // ENCODE M4V
     //---------------------------
-    $func = "jrVideo_flv_encode";
-    require_once APP_DIR . "/modules/jrVideo/plugins/flv.php";
-    if (function_exists($func) && isset($_it["{$_queue['file_name']}_extension"]) && $_it["{$_queue['file_name']}_extension"] != 'flv') {
+    require_once APP_DIR . "/modules/jrVideo/plugins/m4v.php";
+    $func = "jrVideo_m4v_encode";
+    if (function_exists($func) && isset($_it["{$_queue['file_name']}_extension"]) && $_it["{$_queue['file_name']}_extension"] !== 'm4v') {
 
-        // If we are NOT an FLV already
+        // See if we converted or are using our uploaded file
         $tmp = $func($input_file, $_queue, $err);
 
         // If we encounter an error, the plugin will return false.  The
         // plugin is responsible for logging and error checking
         if (!$tmp) {
+            jrVideo_save_conversion_error($err, $_queue['item_id']);
             unlink($err);
             return true;
         }
         if (!is_file($tmp) || filesize($tmp) < 200) {
-            jrCore_logger('CRI', "unable to convert FLV video file for: {$_queue['file_name']}/{$_queue['item_id']}", file_get_contents($err));
+            jrVideo_save_conversion_error($err, $_queue['item_id']);
+            jrCore_logger('CRI', "unable to convert M4V video file for: {$_queue['file_name']}/{$_queue['item_id']}", file_get_contents($err));
             return true;
         }
+        jrVideo_delete_conversion_error($_queue['item_id']);
 
-        // This is now our CONVERTED FLV - rename and move into place
         $input_size = filesize($tmp);
-        if (!jrCore_write_media_file($_queue['profile_id'], "{$input_name}.flv", $tmp)) {
-            jrCore_logger('CRI', "unable to create converted FLV video file for: {$_queue['file_name']}/{$_queue['item_id']}");
+        if (!jrCore_write_media_file($_queue['profile_id'], "{$input_name}.m4v", $tmp)) {
+            jrCore_logger('CRI', "unable to create converted M4V video file for: {$_queue['file_name']}/{$_queue['item_id']}");
             return true;
         }
         unlink($tmp);
 
     }
     else {
-
-        // We are ALREADY an FLV file
+        // We are ALREADY an MP4/M4V file
         $input_size = filesize($input_file);
         $input_save = false;
-
     }
 
-    // New DS entries for FLV file and Original
+    // New DS entries for M4V file and Original
     $_data = array(
         "{$_queue['file_name']}_name"               => basename($input_file),
         "{$_queue['file_name']}_time"               => time(),
         "{$_queue['file_name']}_size"               => $input_size,
-        "{$_queue['file_name']}_type"               => 'video/mpeg',
-        "{$_queue['file_name']}_extension"          => 'flv',
+        "{$_queue['file_name']}_type"               => 'video/mp4',
+        "{$_queue['file_name']}_extension"          => 'm4v',
         "{$_queue['file_name']}_original_name"      => $_it["{$_queue['file_name']}_name"],
         "{$_queue['file_name']}_original_time"      => $_it["{$_queue['file_name']}_time"],
         "{$_queue['file_name']}_original_size"      => $_it["{$_queue['file_name']}_size"],
@@ -1336,55 +1533,7 @@ function jrVideo_convert_file($_queue)
     );
 
     //---------------------------
-    // FLV - SAMPLE
-    //---------------------------
-    if ($_queue['sample'] && $_queue['sample_length'] > 0) {
-        jrVideo_create_sample($_queue['profile_id'], $_queue['item_id'], array_merge($_it, $_data), 'flv', $_queue['sample_length']);
-    }
-    else {
-        // We're not creating a sample - make sure any old one is removed
-        jrCore_delete_media_file($_queue['profile_id'], "{$input_file}.sample.flv");
-    }
-
-    //---------------------------
-    // ENCODE - MP4
-    //---------------------------
-    $func = "jrVideo_m4v_encode";
-    require_once APP_DIR . "/modules/jrVideo/plugins/m4v.php";
-    if (function_exists($func) && jrCore_file_extension($input_file) !== 'm4v') {
-
-        // See if we converted or are using our uploaded file
-        $tmp = $func($input_file, $_queue, $err);
-
-        // If we encounter an error, the plugin will return false.  The
-        // plugin is responsible for logging and error checking
-        if (!$tmp) {
-            unlink($err);
-            return true;
-        }
-        if (!is_file($tmp) || filesize($tmp) < 200) {
-            jrCore_logger('CRI', "unable to convert M4V video file for: {$_queue['file_name']}/{$_queue['item_id']}", file_get_contents($err));
-            return true;
-        }
-
-        // Save off mobile version
-        if (!jrCore_write_media_file($_queue['profile_id'], "{$input_name}_mobile.m4v", $tmp)) {
-            jrCore_logger('CRI', "unable to create converted mobile M4V video file for: {$_queue['file_name']}/{$_queue['item_id']}");
-            return true;
-        }
-
-        // Additional DS entries
-        $_data["{$_queue['file_name']}_mobile_name"]      = basename("{$input_name}_mobile.m4v");
-        $_data["{$_queue['file_name']}_mobile_time"]      = time();
-        $_data["{$_queue['file_name']}_mobile_size"]      = filesize($tmp);
-        $_data["{$_queue['file_name']}_mobile_type"]      = 'video/mp4';
-        $_data["{$_queue['file_name']}_mobile_extension"] = 'm4v';
-
-        unlink($tmp);
-    }
-
-    //---------------------------
-    // M4V - SAMPLE
+    // ENCODE M4V SAMPLE
     //---------------------------
     if ($_queue['sample'] && $_queue['sample_length'] > 0) {
         jrVideo_create_sample($_queue['profile_id'], $_queue['item_id'], array_merge($_it, $_data), 'm4v', $_queue['sample_length']);
@@ -1392,6 +1541,52 @@ function jrVideo_convert_file($_queue)
     else {
         // We're not creating a sample - make sure any old one is removed
         jrCore_delete_media_file($_queue['profile_id'], "{$input_file}.sample.m4v");
+    }
+
+    //---------------------------
+    // ENCODE - FLV
+    //---------------------------
+    if (isset($_queue['create_flash']) && $_queue['create_flash'] == 'on') {
+        $func = "jrVideo_flv_encode";
+        require_once APP_DIR . "/modules/jrVideo/plugins/flv.php";
+        if (function_exists($func)) {
+
+            // If we are NOT an FLV already
+            $tmp = $func($input_file, $_queue, $err);
+
+            // If we encounter an error, the plugin will return false.  The
+            // plugin is responsible for logging and error checking
+            if (!$tmp) {
+                jrVideo_save_conversion_error($err, $_queue['item_id']);
+                unlink($err);
+                return true;
+            }
+            if (!is_file($tmp) || filesize($tmp) < 200) {
+                jrVideo_save_conversion_error($err, $_queue['item_id']);
+                jrCore_logger('CRI', "unable to convert FLV video file for: {$_queue['file_name']}/{$_queue['item_id']}", file_get_contents($err));
+                return true;
+            }
+            jrVideo_delete_conversion_error($_queue['item_id']);
+
+            // This is now our CONVERTED FLV - rename and move into place
+            if (!jrCore_write_media_file($_queue['profile_id'], "{$input_name}.flv", $tmp)) {
+                jrCore_logger('CRI', "unable to create converted FLV video file for: {$_queue['file_name']}/{$_queue['item_id']}");
+                return true;
+            }
+            unlink($tmp);
+
+        }
+
+        //---------------------------
+        // FLV - SAMPLE
+        //---------------------------
+        if ($_queue['sample'] && $_queue['sample_length'] > 0) {
+            jrVideo_create_sample($_queue['profile_id'], $_queue['item_id'], array_merge($_it, $_data), 'flv', $_queue['sample_length']);
+        }
+        else {
+            // We're not creating a sample - make sure any old one is removed
+            jrCore_delete_media_file($_queue['profile_id'], "{$input_file}.sample.flv");
+        }
     }
 
     // Finally, let's grab an image from this video to use as the video image
@@ -1436,6 +1631,43 @@ function jrVideo_convert_file($_queue)
     // We're done - returning true tells the core to delete the queue entry
     unlink($err);
     return true;
+}
+
+/**
+ * Save a conversion error to a video DS item
+ * @param string $error_file
+ * @param int $item_id
+ * @return bool
+ */
+function jrVideo_save_conversion_error($error_file, $item_id)
+{
+    if (is_file($error_file)) {
+        if ($_errors = file($error_file)) {
+            $_er = array();
+            foreach ($_errors as $line) {
+                if (strpos($line, 'data/media') || strpos($line, '[') === 0) {
+                    $_er[] = $line;
+                }
+            }
+            if (count($_er) > 0) {
+                $iid = (int) $item_id;
+                if (jrCore_db_update_item('jrVideo', $iid, array('video_conversion_error' => implode("\n", $_er)))) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Delete any conversion error key from an item
+ * @param int $item_id
+ * @return mixed
+ */
+function jrVideo_delete_conversion_error($item_id)
+{
+    return jrCore_db_delete_item_key('jrVideo', $item_id, 'video_conversion_error');
 }
 
 /**

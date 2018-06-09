@@ -1,4 +1,4 @@
-// Jamroom 5 Combined Audio Javascript
+// Jamroom Combined Audio Javascript
 // @copyright 2003-2015 by Talldude Networks LLC
 
 /**

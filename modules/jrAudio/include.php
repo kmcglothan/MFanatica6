@@ -2,7 +2,7 @@
 /**
  * Jamroom Audio module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -47,12 +47,12 @@ function jrAudio_meta()
     $_tmp = array(
         'name'        => 'Audio',
         'url'         => 'audio',
-        'version'     => '1.7.10',
+        'version'     => '2.0.2',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Create and stream Audio files such as songs and audio books',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/273/audio',
         'category'    => 'profiles',
-        'requires'    => 'jrCore:6.0.0',
+        'requires'    => 'jrCore:6.1.0,jrSystemTools',
         'license'     => 'jcl'
     );
     return $_tmp;
@@ -68,6 +68,7 @@ function jrAudio_init()
     // Tools
     jrCore_register_module_feature('jrCore', 'tool_view', 'jrAudio', 'import', array('Import Audio', 'Import ID3 tagged MP3 audio files from the filesystem'));
     jrCore_register_module_feature('jrCore', 'tool_view', 'jrAudio', 'reconvert', array('Convert Audio', 'Run audio conversions for existing audio files based on Quota Settings'));
+    jrCore_register_module_feature('jrCore', 'tool_view', 'jrAudio', 'tag', array('Tag Audio Files', 'Update ID3 Tags on MP3 audio files'));
 
     // We provide support for the "audio" form field type
     jrCore_register_module_feature('jrCore', 'form_field', 'jrAudio', 'audio');
@@ -100,6 +101,9 @@ function jrAudio_init()
     jrCore_register_module_feature('jrCore', 'media_player', 'jrAudio', 'jrAudio_black_overlay_player', 'audio');
     jrCore_register_module_feature('jrCore', 'media_player', 'jrAudio', 'jrAudio_solo_player', 'audio');
 
+    // We want RSS feeds
+    jrCore_register_module_feature('jrFeed', 'feed_support', 'jrAudio', 'enabled');
+
     // We support audio conversions
     $max = (isset($_conf['jrAudio_conversion_worker_count'])) ? intval($_conf['jrAudio_conversion_worker_count']) : 1;
     jrCore_register_queue_worker('jrAudio', 'audio_conversions', 'jrAudio_convert_file', 0, $max);
@@ -107,7 +111,6 @@ function jrAudio_init()
     jrCore_register_queue_worker('jrAudio', 'audio_update', 'jrAudio_audio_update_worker', 0, $max);
 
     // Event Listeners
-    jrCore_register_event_listener('jrCore', 'system_check', 'jrAudio_system_check_listener');
     jrCore_register_event_listener('jrCore', 'stream_file', 'jrAudio_stream_file_listener');
     jrCore_register_event_listener('jrCore', 'download_file', 'jrAudio_download_file_listener');
     jrCore_register_event_listener('jrCore', 'get_save_data', 'jrAudio_get_save_data_listener');
@@ -119,6 +122,9 @@ function jrAudio_init()
     jrCore_register_event_listener('jrFoxyCart', 'adding_item_to_purchase_history', 'jrAudio_adding_item_to_purchase_history_listener');
     jrCore_register_event_listener('jrFoxyCart', 'my_earnings_row', 'jrAudio_my_earnings_row_listener');
 
+    // We can be hidden but included in bundles
+    jrCore_register_module_feature('jrFoxyCartBundle', 'bundle_only_support', 'jrAudio', 'create');
+    jrCore_register_module_feature('jrFoxyCartBundle', 'bundle_only_support', 'jrAudio', 'update');
     jrCore_register_module_feature('jrFoxyCartBundle', 'visible_support', 'jrAudio', true);
     jrCore_register_event_listener('jrFoxyCartBundle', 'get_album_field', 'jrAudio_get_album_field_listener');
     jrCore_register_event_listener('jrFoxyCartBundle', 'add_bundle_price_field', 'jrAudio_add_bundle_price_field_listener');
@@ -128,10 +134,6 @@ function jrAudio_init()
     // We listen for the jrUrlScan 'url_found' trigger and if its an audio url, add appropriate data to its array
     jrCore_register_event_listener('jrUrlScan', 'url_found', 'jrAudio_url_found_listener');
     jrCore_register_event_listener('jrUrlScan', 'url_player_params', 'jrAudio_url_player_params_listener');
-
-    // We can be hidden but included in bundles
-    jrCore_register_module_feature('jrFoxyCartBundle', 'bundle_only_support', 'jrAudio', 'create');
-    jrCore_register_module_feature('jrFoxyCartBundle', 'bundle_only_support', 'jrAudio', 'update');
 
     // We have fields that can be searched
     jrCore_register_module_feature('jrSearch', 'search_fields', 'jrAudio', 'audio_title,audio_genre,audio_album', 52);
@@ -169,6 +171,15 @@ function jrAudio_init()
     );
     jrCore_register_module_feature('jrCore', 'item_list_button', 'jrAudio', 'jrAudio_item_download_button', $_tmp);
     jrCore_register_module_feature('jrCore', 'item_detail_button', 'jrAudio', 'jrAudio_item_download_button', $_tmp);
+
+    $_tmp = array(
+        'title'  => 'download album button',
+        'icon'   => 'download',
+        'active' => 'on',
+        'group'  => 'owner'
+    );
+    jrCore_register_module_feature('jrCore', 'item_bundle_list_button', 'jrAudio', 'jrAudio_album_download_button', $_tmp);
+    jrCore_register_module_feature('jrCore', 'item_bundle_detail_button', 'jrAudio', 'jrAudio_album_download_button', $_tmp);
 
     jrCore_register_module_feature('jrSiteBuilder', 'widget', 'jrAudio', 'widget_audio_player', 'Audio Player');
 
@@ -249,6 +260,9 @@ function jrAudio_quick_share_audio_save($_post, $_user, $_conf)
     }
     $aid = jrCore_db_create_item('jrAudio', $_rt);
     if (!$aid) {
+        if ($error_message = jrCore_get_flag("max_jrAudio_items_reached")) {
+            return "ERROR: {$error_message}";
+        }
         $_ln = jrUser_load_lang_strings();
         return "ERROR: {$_ln['jrAudio'][18]}";
     }
@@ -322,7 +336,6 @@ function jrAudio_quick_share_audio_save($_post, $_user, $_conf)
  */
 function jrAudio_widget_audio_player_config($_post, $_user, $_conf, $_wg)
 {
-
     // Widget Content
     $_tmp = array(
         'name'     => 'audio_playlist',
@@ -383,7 +396,7 @@ function jrAudio_widget_audio_player_display($_widget)
  * @param $_args Smarty function parameters
  * @param $smarty Smarty Object
  * @param $test_only - check if button WOULD be shown for given module
- * @return string
+ * @return mixed
  */
 function jrAudio_create_album_button($module, $_item, $_args, $smarty, $test_only = false)
 {
@@ -406,18 +419,52 @@ function jrAudio_create_album_button($module, $_item, $_args, $smarty, $test_onl
 }
 
 /**
+ * Return "download" button for the audio ALBUMS
+ * @param $module string Module name
+ * @param $_item array Item Array
+ * @param $_args Smarty function parameters
+ * @param $smarty Smarty Object
+ * @param $test_only - check if button WOULD be shown for given module
+ * @return mixed
+ */
+function jrAudio_album_download_button($module, $_item, $_args, $smarty, $test_only = false)
+{
+    global $_conf;
+    if ($module == 'jrAudio') {
+        if ($test_only) {
+            return true;
+        }
+        if (isset($_conf['jrAudio_block_album_download']) && $_conf['jrAudio_block_album_download'] == 'on' && !jrUser_is_admin() && !jrProfile_is_profile_owner($_args['profile_id'])) {
+            return '';
+        }
+        $pid = (int) $_args['profile_id'];
+        $url = jrCore_get_module_url('jrAudio');
+        if ($tmp = explode('/', $_args['update_action'])) {
+            $tmp = end($tmp);
+            $_rt = array(
+                'url'  => "{$_conf['jrCore_base_url']}/{$url}/download_album/{$pid}/{$tmp}",
+                'icon' => 'download',
+                'alt'  => 64
+            );
+            return $_rt;
+        }
+    }
+    return false;
+}
+
+/**
  * Return "download" button for the audio item
  * @param $module string Module name
  * @param $_item array Item Array
  * @param $_args Smarty function parameters
  * @param $smarty Smarty Object
  * @param $test_only - check if button WOULD be shown for given module
- * @return string
+ * @return mixed
  */
 function jrAudio_item_download_button($module, $_item, $_args, $smarty, $test_only = false)
 {
-    global $_conf;
-    if ($module == 'jrAudio') {
+    global $_post, $_conf;
+    if ($module == 'jrAudio' && !strpos($_post['_uri'], 'album')) {
         if ($test_only) {
             return true;
         }
@@ -447,7 +494,11 @@ function jrAudio_item_download_button($module, $_item, $_args, $smarty, $test_on
                     foreach (explode(',', $_item['audio_file_item_bundle']) as $bid) {
                         $_id[] = (int) $bid;
                     }
-                    $_bi = jrCore_db_get_multiple_items('jrFoxyCartBundle', $_id, array('bundle_item_price'));
+                    $mod = 'jrFoxyCartBundle';
+                    if (jrCore_module_is_active('jrBundle')) {
+                        $mod = 'jrBundle';
+                    }
+                    $_bi = jrCore_db_get_multiple_items($mod, $_id, array('bundle_item_price'));
                     if ($_bi && is_array($_bi)) {
                         $block = false;
                         foreach ($_bi as $_bun) {
@@ -559,7 +610,7 @@ function jrAudio_form_field_audio_display($_field, $_att = null)
 
 /**
  * Defines Form Designer field options
- * @return string
+ * @return array
  */
 function jrAudio_form_field_audio_form_designer_options()
 {
@@ -693,61 +744,8 @@ function smarty_function_jrAudio_download_album_button($params, &$smarty)
  */
 function jrAudio_delete_album_zip_file($profile_id, $album_url)
 {
+    $album_url = jrCore_url_string($album_url);
     return jrCore_delete_media_file($profile_id, "album_{$album_url}.zip");
-}
-
-/**
- * Checks to be sure ID3V2 is installed and working
- * @param bool $notice Set to FALSE to return boolean instead of show notice
- * @return bool
- */
-function jrAudio_check_id3_install($notice = true)
-{
-    global $_conf;
-    // Our audio module requires SOX - make sure it is executable
-    $id3 = APP_DIR . "/modules/jrAudio/tools/id3v2";
-    if (isset($_conf['jrAudio_id3v2_binary'])) {
-        $id3 = $_conf['jrAudio_id3v2_binary'];
-    }
-    if (is_file($id3) && !is_executable($id3)) {
-        // Try to set permissions if we can...
-        @chmod($id3, 0755);
-    }
-    if (jrUser_is_master() && (!is_file($id3) || !is_executable($id3))) {
-        if ($notice) {
-            $show = htmlentities(str_replace(APP_DIR . '/', '', $id3));
-            jrCore_set_form_notice('error', 'The ID3v2 binary: ' . $show . ' is not executable! Set permissions on the file to 755 or 555.');
-        }
-        return false;
-    }
-    return $id3;
-}
-
-/**
- * Checks to be sure SOX is installed and working
- * @param bool $notice Set to FALSE to return boolean instead of show notice
- * @return bool
- */
-function jrAudio_check_sox_install($notice = true)
-{
-    global $_conf;
-    // Our audio module requires SOX - make sure it is executable
-    $sox = APP_DIR . "/modules/jrAudio/tools/sox";
-    if (isset($_conf['jrAudio_sox_binary'])) {
-        $sox = $_conf['jrAudio_sox_binary'];
-    }
-    if (is_file($sox) && !is_executable($sox)) {
-        // Try to set permissions if we can...
-        @chmod($sox, 0755);
-    }
-    if (jrUser_is_master() && (!is_file($sox) || !is_executable($sox))) {
-        if ($notice) {
-            $show = htmlentities(str_replace(APP_DIR . '/', '', $sox));
-            jrCore_set_form_notice('error', 'The SOX binary: ' . $show . ' is not executable! Set permissions on the file to 755 or 555.');
-        }
-        return false;
-    }
-    return $sox;
 }
 
 /**
@@ -758,8 +756,7 @@ function jrAudio_check_sox_install($notice = true)
 function jrAudio_get_id3_tags($input_file)
 {
     // Make sure our id3v2 binary is available
-    $id3 = jrAudio_check_id3_install();
-    if (!is_file($id3)) {
+    if (!$id3 = jrCore_get_tool_path('id3v2', 'jrAudio')) {
         return false;
     }
 
@@ -799,8 +796,7 @@ function jrAudio_get_id3_tags($input_file)
 function jrAudio_tag_audio_file($input_file, $_tags = null)
 {
     // Make sure our id3v2 binary is available
-    $id3 = jrAudio_check_id3_install();
-    if (!is_file($id3)) {
+    if (!$id3 = jrCore_get_tool_path('id3v2', 'jrAudio')) {
         return false;
     }
     // Frames we support - see http://id3.org/id3v2.3.0
@@ -808,7 +804,8 @@ function jrAudio_tag_audio_file($input_file, $_tags = null)
         return false;
     }
     // Must be an MP3
-    if (jrCore_file_extension($input_file) !== 'mp3') {
+    $ext = jrCore_file_extension($input_file);
+    if ($ext !== 'mp3' && $ext !== 'temp_tags') {
         return true;
     }
 
@@ -871,8 +868,7 @@ function jrAudio_create_sample($profile_id, $audio_id, $field, $_audio, $sample_
 {
     global $_conf;
     // Make sure our sox binary is available
-    $sox = jrAudio_check_sox_install();
-    if (!is_file($sox)) {
+    if (!$sox = jrCore_get_tool_path('sox', 'jrAudio')) {
         return false;
     }
 
@@ -985,8 +981,7 @@ function jrAudio_create_sample($profile_id, $audio_id, $field, $_audio, $sample_
  */
 function jrAudio_get_apic_image($audio_file)
 {
-    $ffmpeg = jrCore_check_ffmpeg_install();
-    if (!is_file($ffmpeg)) {
+    if (!$ffmpeg = jrCore_get_tool_path('ffmpeg', 'jrCore')) {
         return false;
     }
     $dir = jrCore_get_module_cache_dir('jrAudio');
@@ -1002,13 +997,21 @@ function jrAudio_get_apic_image($audio_file)
     }
     $_out = array();
     $_tmp = file($tmp);
-    if (isset($_tmp) && is_array($_tmp)) {
+    if (is_array($_tmp)) {
         foreach ($_tmp as $line) {
             // Stream #0:0: Audio: mp3, 44100 Hz, stereo, s16, 256 kb/s
             // Stream #0:1: Video: png, rgb24, 400x400, 90k tbr, 90k tbn, 90k tbc
             $line = trim($line);
             if (strpos($line, 'Video:')) {
-                $_out['extension'] = trim(trim(jrCore_string_field($line, 4)), ',');
+                $_out['extension'] = strtolower(trim(trim(jrCore_string_field($line, 4)), ','));
+                switch ($_out['extension']) {
+                    case 'mjpeg':
+                    case 'mjpg':
+                    case 'jpeg':
+                    case 'jpi':
+                        $_out['extension'] = 'jpg';
+                        break;
+                }
                 // get stream for mapping
                 $str_num = jrCore_string_field($line, 2);
                 $str_num = trim(trim(trim($str_num), '#'), ':');
@@ -1017,7 +1020,7 @@ function jrAudio_get_apic_image($audio_file)
                 ob_end_clean();
                 if (is_file("{$audio_file}.{$_out['extension']}")) {
                     // If this is a PNG image, convert to JPG to save space
-                    if (strtolower($_out['extension']) === 'png') {
+                    if ($_out['extension'] === 'png') {
                         $src = imagecreatefrompng("{$audio_file}.png");
                         imagejpeg($src, "{$audio_file}.jpg", 85);
                         imagedestroy($src);
@@ -1031,7 +1034,7 @@ function jrAudio_get_apic_image($audio_file)
         }
     }
     @unlink($tmp);
-    if (isset($_out) && is_array($_out) && isset($_out['image_data']) && strlen($_out['image_data']) > 50) {
+    if (is_array($_out) && isset($_out['image_data']) && strlen($_out['image_data']) > 50) {
         return $_out;
     }
     return false;
@@ -1122,37 +1125,47 @@ function jrAudio_create_audio_sample($_queue)
 function jrAudio_convert_file($_queue)
 {
     global $_conf;
-    if (!isset($_queue) || !is_array($_queue)) {
-        return false;
+    if (!is_array($_queue)) {
+        jrCore_logger('CRI', "invalid queue received in convert_file", $_queue);
+        return true; // Bad queue entry - remove it
     }
 
     // Our queue entry will contain the item ID and the Quota ID
     // for the item being submitted for conversion
     $_qt = jrProfile_get_quota($_queue['quota_id']);
-    if (!isset($_qt) || !is_array($_qt)) {
+    if (!is_array($_qt)) {
         jrCore_logger('CRI', "quota does not exist for quota_id in queue entry: {$_queue['quota_id']}", $_queue);
         return true; // Bad queue entry - remove it
+    }
+    // Are we still converting audio?
+    if (isset($_qt['quota_jrAudio_audio_conversions']) && $_qt['quota_jrAudio_audio_conversions'] == 'off') {
+        // Quota was changed while we were in queue
+        return true;
     }
 
     // Make sure profile is valid
     $_pr = jrCore_db_get_item('jrProfile', $_queue['profile_id']);
-    if (!isset($_pr) || !is_array($_pr)) {
+    if (!is_array($_pr)) {
         jrCore_logger('CRI', "profile does not exist for profile_id in queue entry: {$_queue['profile_id']}", $_queue);
         return true; // Bad queue entry - remove it
     }
 
     // Get the item
     $_it = jrCore_db_get_item('jrAudio', $_queue['item_id'], true);
-    if (!isset($_it) || !is_array($_it)) {
+    if (!is_array($_it)) {
         jrCore_logger('CRI', "item_id does not exist for queue entry: {$_queue['item_id']}", $_queue);
         return true; // Bad queue entry - remove it
     }
+
+    // Log start time
+    $start = explode(' ', microtime());
+    $start = $start[1] + $start[0];
 
     // If this audio file is ALREADY an MP3 file, we need to find it's bit rate.  If it is LESS than
     // what we are encoding for, then we don't want to "up sample" the file or it sounds like crap.
     // But we need to check for embedded images and strip if needed
     if (isset($_it["{$_queue['file_name']}_extension"]) && $_it["{$_queue['file_name']}_extension"] == 'mp3') {
-        // We have an MP3 - check bitrate
+        // We have an MP3 - check bit rate
         if (isset($_it["{$_queue['file_name']}_bitrate"]) && $_it["{$_queue['file_name']}_bitrate"] < $_queue['bitrate']) {
             $_queue['bitrate'] = $_it["{$_queue['file_name']}_bitrate"]; // Don't up sample
         }
@@ -1165,27 +1178,61 @@ function jrAudio_convert_file($_queue)
     $input_temp = basename($input_file);
     $input_name = preg_replace("/\\.[^.\\s]{3,4}$/", "", basename($input_orig));
     if (isset($_queue['reconvert']) && $_queue['reconvert'] == '1') {
+
         // We are doing re-conversions - do not overwrite original file
         $input_save = false;
         $input_temp = false;
+
+        // Do we have an "original" file?
+        // NOTE: "original" keys will not be set if audio conversions were disabled at the time the audio item was created
+        if (!isset($_it["{$_queue['file_name']}_original_size"])) {
+            // There is no "original" key for this file - we need to create it
+            if (jrCore_copy_media_file($_queue['profile_id'], $input_orig, "{$input_orig}.original." . jrCore_file_extension($input_orig))) {
+                // We created the original - update
+                $_data = array(
+                    "{$_queue['file_name']}_original_name"      => $_it["{$_queue['file_name']}_name"],
+                    "{$_queue['file_name']}_original_time"      => $_it["{$_queue['file_name']}_time"],
+                    "{$_queue['file_name']}_original_size"      => $_it["{$_queue['file_name']}_size"],
+                    "{$_queue['file_name']}_original_type"      => $_it["{$_queue['file_name']}_type"],
+                    "{$_queue['file_name']}_original_extension" => $_it["{$_queue['file_name']}_extension"],
+                    "{$_queue['file_name']}_original_bitrate"   => $_it["{$_queue['file_name']}_bitrate"]
+                );
+                if (jrCore_db_update_item('jrAudio', $_queue['item_id'], $_data)) {
+                    foreach ($_data as $k => $v) {
+                        $_it[$k] = $v;
+                    }
+                }
+                else {
+                    // We were not able to save this one - do not convert
+                    jrCore_logger('CRI', "unable to save original audio file for {$_queue['profile_id']}/{$_queue['item_id']}/{$_queue['file_name']} - skipping reconversion");
+                    return true;
+                }
+            }
+            else {
+                // We were not able to copy this one - do not convert
+                jrCore_logger('CRI', "unable to copy original audio file for {$_queue['profile_id']}/{$_queue['item_id']}/{$_queue['file_name']} - skipping reconversion");
+                return true;
+            }
+        }
+
         // See if have an original - always do our work off the original
         if (isset($_it["{$_queue['file_name']}_original_size"]) && jrCore_checktype($_it["{$_queue['file_name']}_original_size"], 'number_nz')) {
-            $ext = $_it["{$_queue['file_name']}_original_extension"];
-            if (jrCore_media_file_exists($_queue['profile_id'], "{$input_orig}.original.{$ext}")) {
-                $input_orig = "{$input_file}.original.{$ext}";
+            $oxt = $_it["{$_queue['file_name']}_original_extension"];
+            $org = str_replace(".{$_it["{$_queue['file_name']}_extension"]}", ".{$oxt}", $input_orig) . ".original.{$oxt}";
+            if (jrCore_media_file_exists($_queue['profile_id'], $org)) {
+                $input_orig = $org;
                 // Make sure if our Original file is on an external FS we get it local
-                $input_orig = jrCore_confirm_media_file_is_local($_queue['profile_id'], basename($input_orig));
+                if ($input_orig = jrCore_confirm_media_file_is_local($_queue['profile_id'], basename($input_orig))) {
+                    $input_file = $input_orig;
+                }
             }
         }
     }
+
     if (!jrCore_media_file_exists($_queue['profile_id'], $input_file)) {
         jrCore_logger('CRI', "invalid item_id received in queue entry: {$_queue['item_id']} - unable to open input file: {$_queue['file_name']} for reading", $_queue);
         return true; // Bad queue entry - remove it
     }
-
-    // Log start time
-    $start = explode(' ', microtime());
-    $start = $start[1] + $start[0];
 
     // Confirm media file is a "local" file
     // If $input_file is on a remote FS (S3) then it will be copied locally
@@ -1219,13 +1266,33 @@ function jrAudio_convert_file($_queue)
     //---------------------------
     if ($input_save) {
 
+        // NOTE: $input_save is TRUE when we are encoding an audio item for the first time
+        if (!jrCore_rename_media_file($_queue['profile_id'], $input_orig, basename($input_orig) . '.original.' . $ext)) {
+            jrCore_logger('CRI', "unable to rename original audio file for: {$_queue['profile_id']}/{$_queue['item_id']}/{$_queue['file_name']}");
+            return true;
+        }
+        $input_orig = $input_orig . '.original.' . $ext;
+        if (is_file($input_orig)) {
+            // NOTE: $input_orig will NOT be local when using S3 so this only happens when the FS is local
+            $input_file = $input_orig;
+        }
+
         // Add tags to our ORIGINAL file
-        if (isset($_pr['quota_jrAudio_audio_tag']) && $_pr['quota_jrAudio_audio_tag'] == 'on') {
+        if (isset($_pr['quota_jrAudio_audio_tag']) && $_pr['quota_jrAudio_audio_tag'] == 'on' && $ext == 'mp3') {
             jrAudio_tag_audio_file($input_orig, $_tags);
         }
-        if (!jrCore_copy_media_file($_queue['profile_id'], $input_orig, basename($input_orig) . '.original.' . $ext)) {
-            jrCore_logger('CRI', "unable to save original audio file for: {$_queue['file_name']}/{$_queue['item_id']}");
-            return true;
+
+    }
+    else {
+
+        // NOTE: We get here when we are doing reconversion
+        // Do we have a duplicated original audio file?
+        if (isset($org) && isset($oxt) && $oxt != 'mp3') {
+            $old = str_replace(".original.{$oxt}", '', $input_orig);
+            if (jrCore_media_file_exists($_queue['profile_id'], $old)) {
+                // We have a duplicated "original" file - i.e.
+                jrCore_delete_media_file($_queue['profile_id'], $old);
+            }
         }
 
     }
@@ -1255,7 +1322,20 @@ function jrAudio_convert_file($_queue)
     //---------------------------
     $func = "jrAudio_mp3_encode";
     require_once APP_DIR . "/modules/jrAudio/plugins/mp3.php";
-    if ($ext != 'mp3' || (isset($_it["{$_queue['file_name']}_bitrate"]) && $_it["{$_queue['file_name']}_bitrate"] != $_queue['bitrate']) || (isset($_queue['reconvert']) && $_queue['reconvert'] == '1')) {
+
+    // For encoding, we encode under the following conditions:
+    // 1) The original file is NOT an MP3
+    // 2) The original file IS an MP3 file but the bit rate is higher than what we want
+    $conv = false;
+    if ($ext != 'mp3') {
+        // This is NOT an MP3 file - we always convert here
+        $conv = true;
+    }
+    elseif (isset($_it["{$_queue['file_name']}_bitrate"]) && $_it["{$_queue['file_name']}_bitrate"] > $_queue['bitrate']) {
+        $conv = true;
+    }
+    if ($conv) {
+
         // If we are NOT an MP3 OR the bit rate we are encoded at is HIGHER than allowed
         $tmp = $func($input_file, $_queue, $err);
 
@@ -1265,8 +1345,12 @@ function jrAudio_convert_file($_queue)
             unlink($err);
             return true;
         }
-        if (!is_file($tmp) || filesize($tmp) < 200) {
-            jrCore_logger('CRI', "unable to convert mp3 file for: {$_queue['file_name']}/{$_queue['item_id']}", file_get_contents($err));
+        if (!is_file($tmp) || filesize($tmp) < 200 || stripos(' ' . file_get_contents($err), 'Conversion failed')) {
+            jrCore_logger('CRI', "error encoding " . strtoupper($_it["{$_queue['file_name']}_extension"]) . " to MP3 audio file for: {$_queue['profile_id']}/{$_queue['item_id']}/{$_queue['file_name']}", file_get_contents($err));
+            if (is_file($tmp)) {
+                unlink($tmp);
+            }
+            unlink($err);
             return true;
         }
 
@@ -1278,16 +1362,24 @@ function jrAudio_convert_file($_queue)
         // This is now our CONVERTED MP3 - rename and move into place
         $input_size = filesize($tmp);
         if (!jrCore_write_media_file($_queue['profile_id'], "{$input_name}.mp3", $tmp)) {
-            jrCore_logger('CRI', "unable to save converted MP3 audio file for: {$_queue['file_name']}/{$_queue['item_id']}");
+            jrCore_logger('CRI', "unable to save converted MP3 audio file for: {$_queue['profile_id']}/{$_queue['item_id']}/{$_queue['file_name']}");
+            unlink($tmp);
+            unlink($err);
             return true;
         }
         unlink($tmp);
+        unlink($err);
 
     }
     else {
 
-        // We are ALREADY an MP3 file
-        $input_size = filesize($input_file);
+        // We are ALREADY an MP3 file - no need for conversion - just copy
+        // the original to the MP3 file
+        $input_size = filesize($input_orig);
+        if (!jrCore_copy_media_file($_queue['profile_id'], $input_orig, "{$input_name}.mp3")) {
+            jrCore_logger('CRI', "unable to save uploaded MP3 audio file for: {$_queue['profile_id']}/{$_queue['item_id']}/{$_queue['file_name']}");
+            return true;
+        }
 
     }
 
@@ -1301,22 +1393,17 @@ function jrAudio_convert_file($_queue)
         if (function_exists($func)) {
 
             $tmp = $func($input_file, $_queue, $err);
-            // If we encounter an error, the plugin will return false.  The
-            // plugin is responsible for logging and error checking
-            if (!$tmp) {
-                unlink($err);
-                return true;
+            if (!is_file($tmp) || filesize($tmp) < 200 || stripos(' ' . file_get_contents($err), 'Conversion failed')) {
+                jrCore_logger('CRI', "error encoding " . strtoupper($_it["{$_queue['file_name']}_extension"]) . " to OGG audio file for: {$_queue['profile_id']}/{$_queue['item_id']}/{$_queue['file_name']}", file_get_contents($err));
             }
-            if (!is_file($tmp) || filesize($tmp) < 200) {
-                jrCore_logger('CRI', "unable to convert ogg file for: {$_queue['file_name']}/{$_queue['item_id']}", file_get_contents($err));
-                return true;
+            else {
+                // Next, we need to rename the new MP3 file and update the item
+                if (!jrCore_write_media_file($_queue['profile_id'], "{$input_name}.ogg", $tmp)) {
+                    jrCore_logger('CRI', "unable to save converted OGG audio file for: {$_queue['profile_id']}/{$_queue['item_id']}/{$_queue['file_name']}");
+                }
             }
-
-            // Next, we need to rename the new MP3 file and update the item
-            if (!jrCore_write_media_file($_queue['profile_id'], "{$input_name}.ogg", $tmp)) {
-                jrCore_logger('CRI', "unable to save converted OGG audio file for: {$_queue['file_name']}/{$_queue['item_id']}");
-                return true;
-            }
+            unlink($tmp);
+            unlink($err);
         }
     }
     else {
@@ -1338,8 +1425,8 @@ function jrAudio_convert_file($_queue)
     // Data to Update DS Item with AFTER sample creation
     $_data = array(
         "audio_active"                              => 'on',
-        "{$_queue['file_name']}_name"               => "{$input_name}.{$ext}",
-        "{$_queue['file_name']}_time"               => time(),
+        "{$_queue['file_name']}_name"               => "{$input_name}.mp3",
+        "{$_queue['file_name']}_time"               => 'UNIX_TIMESTAMP()',
         "{$_queue['file_name']}_size"               => $input_size,
         "{$_queue['file_name']}_type"               => 'audio/mpeg',
         "{$_queue['file_name']}_extension"          => 'mp3',
@@ -1349,13 +1436,23 @@ function jrAudio_convert_file($_queue)
         "{$_queue['file_name']}_original_size"      => $_it["{$_queue['file_name']}_size"],
         "{$_queue['file_name']}_original_type"      => $_it["{$_queue['file_name']}_type"],
         "{$_queue['file_name']}_original_extension" => $_it["{$_queue['file_name']}_extension"],
-        "{$_queue['file_name']}_original_bitrate"   => $_it["{$_queue['file_name']}_bitrate"],
+        "{$_queue['file_name']}_original_bitrate"   => $_it["{$_queue['file_name']}_bitrate"]
     );
+
+    // If we are reconverting, don't override original
+    if (isset($_queue['reconvert']) && $_queue['reconvert'] == '1') {
+        foreach ($_data as $k => $v) {
+            if (strpos($k, '_original_')) {
+                unset($_data[$k]);
+            }
+        }
+    }
+
 
     //---------------------------
     // SAMPLE
     //---------------------------
-    if ($_queue['sample'] && jrCore_checktype($_queue['sample_length'], 'number_nz')) {
+    if ($_queue['sample'] && isset($_queue['sample_length']) && jrCore_checktype($_queue['sample_length'], 'number_nz')) {
 
         $length = jrAudio_create_sample($_queue['profile_id'], $_queue['item_id'], $_queue['file_name'], array_merge($_it, $_data), 60);
         if ($length && $length > 0) {
@@ -1371,15 +1468,15 @@ function jrAudio_convert_file($_queue)
 
     // Update Audio DS Item with new entries
     jrCore_db_update_item('jrAudio', $_queue['item_id'], $_data);
+    jrProfile_reset_cache($_queue['profile_id']);
 
     $finish = explode(' ', microtime());
     $finish = $finish[1] + $finish[0];
     $total  = round(($finish - $start), 2);
-    jrCore_logger('INF', "converted {$_queue['profile_id']}/{$_queue['item_id']}/{$_queue['file_name']} from {$ext} to MP3 in {$total} seconds");
-    jrProfile_reset_cache($_queue['profile_id']);
+    jrCore_logger('INF', "converted " . jrCore_format_size($_it["{$_queue['file_name']}_size"]) . " audio file {$_queue['profile_id']}/{$_queue['item_id']}/{$_queue['file_name']} from " . strtoupper($ext) . " to MP3 in {$total} seconds");
 
     // We're done - returning true tells the core to delete the queue entry
-    unlink($err);
+    @unlink($err);
     return true;
 }
 
@@ -1534,95 +1631,15 @@ function jrAudio_stream_file_listener($_data, $_user, $_conf, $_args, $event)
  */
 function jrAudio_download_file_listener($_data, $_user, $_conf, $_args, $event)
 {
-    if (isset($_conf['jrAudio_block_download']) && $_conf['jrAudio_block_download'] == 'on' && !jrUser_is_admin()) {
+    if (isset($_conf['jrAudio_block_download']) && $_conf['jrAudio_block_download'] == 'on' && !jrUser_can_edit_item($_data)) {
         // Check for extension
         switch ($_data["{$_args['file_name']}_extension"]) {
             case 'mp3':
-                jrCore_notice('Error', $_data["{$_args['file_name']}_extension"] . " files are restricted to streaming only");
+                jrCore_notice_page('Error', $_data["{$_args['file_name']}_extension"] . " files are restricted to streaming only");
                 break;
         }
     }
     return $_data;
-}
-
-/**
- * Add some items to the System Check
- * @param $_data array incoming data array
- * @param $_user array current user info
- * @param $_conf array Global config
- * @param $_args array additional info about the module
- * @param $event string Event Trigger name
- * @return bool
- */
-function jrAudio_system_check_listener($_data, $_user, $_conf, $_args, $event)
-{
-    // Check for SOX binary
-    $dat             = array();
-    $dat[1]['title'] = 'Audio SOX binary';
-    $dat[1]['class'] = 'center';
-    $dat[2]['title'] = 'executable';
-    $dat[2]['class'] = 'center';
-
-    $pass = jrCore_get_option_image('pass');
-    $fail = jrCore_get_option_image('fail');
-
-    $dir = jrCore_get_module_cache_dir('jrAudio');
-    $tmp = tempnam($dir, 'system_check_');
-
-    if ($sox = jrAudio_check_sox_install(false)) {
-        ob_start();
-        system("nice -n 9 {$sox} >{$tmp} 2>&1", $ret);
-        ob_end_clean();
-        if (is_file($tmp) && strpos(file_get_contents($tmp), 'Usage summary:')) {
-            // See if we have OGG support
-            if (!strpos(file_get_contents($tmp), 'ogg')) {
-                $dat[3]['title'] = jrCore_get_option_image('warning');
-                $dat[4]['title'] = 'SOX binary is working, but OGG is not supported';
-            }
-            else {
-                $dat[3]['title'] = $pass;
-                $dat[4]['title'] = 'SOX binary is working properly';
-            }
-        }
-        else {
-            $dat[3]['title'] = $fail;
-            $dat[4]['title'] = "SOX binary is not working<br>" . str_replace(APP_DIR . '/', '', $sox);
-        }
-    }
-    else {
-        $dat[3]['title'] = $fail;
-        $dat[4]['title'] = 'SOX binary is not executable<br>modules/jrAudio/tools/sox';
-    }
-    $dat[3]['class'] = 'center';
-    jrCore_page_table_row($dat);
-
-    $dat             = array();
-    $dat[1]['title'] = 'Audio ID3v2 binary';
-    $dat[1]['class'] = 'center';
-    $dat[2]['title'] = 'executable';
-    $dat[2]['class'] = 'center';
-
-    if ($id3 = jrAudio_check_id3_install(false)) {
-        ob_start();
-        system("nice -n 9 {$id3} >{$tmp} 2>&1", $ret);
-        ob_end_clean();
-        if (is_file($tmp) && strpos(' ' . file_get_contents($tmp), 'Usage:')) {
-            $dat[3]['title'] = $pass;
-            $dat[4]['title'] = 'ID3v2 binary is working properly';
-        }
-        else {
-            $dat[3]['title'] = $fail;
-            $dat[4]['title'] = "ID3v2 binary is not working<br>" . str_replace(APP_DIR . '/', '', $id3);
-        }
-    }
-    else {
-        $dat[3]['title'] = $fail;
-        $dat[4]['title'] = 'ID3v2 binary is not executable<br>modules/jrAudio/tools/id3v2';
-    }
-    $dat[3]['class'] = 'center';
-    jrCore_page_table_row($dat);
-    unlink($tmp);
-    return true;
 }
 
 /**
@@ -1970,11 +1987,12 @@ function jrAudio_get_id3_tags_for_audio($item_id, $_profile, $_audio)
 {
     global $_conf;
     $a_url = jrCore_get_module_url('jrAudio');
-    return array(
+    $_tags = array(
         'TPE1' => $_profile['profile_name'],
         'TPE2' => $_profile['profile_name'],
         'TIT2' => $_audio['audio_title'],
         'TCOP' => 'Copyright ' . strftime('%Y') . " by {$_profile['profile_name']}",
+        'TCOM' => $_profile['profile_name'],
         'TCON' => (isset($_audio['audio_genre'])) ? $_audio['audio_genre'] : '',
         'TALB' => (isset($_audio['audio_album'])) ? $_audio['audio_album'] : '',
         'TRCK' => (isset($_audio['audio_file_track'])) ? intval($_audio['audio_file_track']) : 0,
@@ -1982,6 +2000,22 @@ function jrAudio_get_id3_tags_for_audio($item_id, $_profile, $_audio)
         'COMM' => "Downloaded from {$_conf['jrCore_system_name']}",
         'WOAF' => "{$_conf['jrCore_base_url']}/{$_profile['profile_url']}/{$a_url}/{$item_id}/{$_audio['audio_title_url']}"
     );
+    // optional ID3 tags
+    $_opts = array(
+        'tbpm', 'tcom', 'tden', 'tdly', 'tdor', 'tdrc', 'tdrl',
+        'tdtg', 'tenc', 'text', 'tflt', 'tipl', 'tit1', 'tit3',
+        'tkey', 'tlan', 'tlen', 'tmcl', 'tmed', 'tmoo', 'toal',
+        'tofn', 'toly', 'tope', 'town', 'tpe3', 'tpe4', 'tpos',
+        'tpro', 'tpub', 'trsn', 'trso', 'tsoa', 'tsop', 'tsot',
+        'tsrc', 'tsse', 'tsst'
+    );
+    foreach ($_opts as $opt) {
+        if (isset($_audio["audio_{$opt}"]) && strlen($_audio["audio_{$opt}"]) > 0) {
+            $id3_tag         = strtoupper($opt);
+            $_tags[$id3_tag] = $_audio["audio_{$opt}"];
+        }
+    }
+    return $_tags;
 }
 
 /**

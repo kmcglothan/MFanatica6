@@ -1,9 +1,8 @@
 <?php
 /**
- * Jamroom 5 Batch Item Editor module
+ * Jamroom Batch Item Editor module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2017 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -228,8 +227,8 @@ function view_jrBatchEdit_batch_update($_post, $_user, $_conf)
     $order_by = '_item_id';
     if (isset($_post['order_by'])) {
         switch ($_post['order_by']) {
-            case '_item_id';
-            case '_created';
+            case '_item_id':
+            case '_created':
                 $order_dir = 'numerical_' . $order_dir;
                 $order_opp = 'numerical_' . $order_opp;
             default:

@@ -2,7 +2,7 @@
 /**
  * Jamroom DB and System Backup module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -66,7 +66,7 @@ function jrBackup_config()
         'validate' => 'not_empty',
         'default'  => '',
         'label'    => 'AWS access key',
-        'help'     => 'Enter your Amazon Web Services (AWS) Access Key.<br><br>Create this key in the &quot;Access Keys&quot; section of the Your Security Credentials Page:<br><br><a href="https://console.aws.amazon.com/iam/home#security_credential" target="_blank">https://console.aws.amazon.com/iam/home#security_credential</a>',
+        'help'     => 'Enter your Amazon Web Services (AWS) Access Key.<br><br>Create this key in the &quot;Access Keys&quot; section of the Your Security Credentials Page:<br><br><a href="https://console.aws.amazon.com/iam/home#security_credential" target="_blank" rel="noopener noreferrer">https://console.aws.amazon.com/iam/home#security_credential</a>',
         'section'  => 'daily offsite backups',
         'order'    => 2
     );
@@ -79,7 +79,7 @@ function jrBackup_config()
         'validate' => 'not_empty',
         'default'  => '',
         'label'    => 'AWS secret key',
-        'help'     => 'Enter your Amazon Web Services (AWS) Secret Key.<br><br>Create this key in the &quot;Access Keys&quot; section of the Your Security Credentials Page:<br><br><a href="https://console.aws.amazon.com/iam/home#security_credential" target="_blank">https://console.aws.amazon.com/iam/home#security_credential</a>',
+        'help'     => 'Enter your Amazon Web Services (AWS) Secret Key.<br><br>Create this key in the &quot;Access Keys&quot; section of the Your Security Credentials Page:<br><br><a href="https://console.aws.amazon.com/iam/home#security_credential" target="_blank" rel="noopener noreferrer">https://console.aws.amazon.com/iam/home#security_credential</a>',
         'section'  => 'daily offsite backups',
         'order'    => 3
     );
@@ -92,7 +92,7 @@ function jrBackup_config()
         'validate' => 'not_empty',
         'default'  => '',
         'label'    => 'S3 bucket name',
-        'help'     => 'Enter your Amazon Web Services (AWS) S3 Bucket Name.<br><br>This S3 Bucket must already exist in your AWS account:<br><br><a href="https://console.aws.amazon.com/s3/home" target="_blank">https://console.aws.amazon.com/s3/home</a>',
+        'help'     => 'Enter your Amazon Web Services (AWS) S3 Bucket Name.<br><br>This S3 Bucket must already exist in your AWS account:<br><br><a href="https://console.aws.amazon.com/s3/home" target="_blank" rel="noopener noreferrer">https://console.aws.amazon.com/s3/home</a>',
         'section'  => 'daily offsite backups',
         'order'    => 4
     );

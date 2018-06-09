@@ -1,5 +1,9 @@
-{foreach from=$_items key="id" item="item"}
-<table class="page_section_header jrcore_file_detail" onmouseover="$('#d{$id}').show()" onmouseout="$('#d{$id}').hide()">
+{jrCore_module_url module="jrCore" assign="curl"}
+{jrCore_lang module="jrCore" id=40 default="are you sure you want to delete this item?" assign="prompt"}
+{jrCore_lang module="jrCore" id=38 default="delete" assign="title"}
+
+{foreach $_items as $key => $item}
+<table class="page_section_header jrcore_file_detail" onmouseover="$('#file-delete-{$item._item_id}-{$key}').show()" onmouseout="$('#file-delete-{$item._item_id}-{$key}').hide()">
     <tr>
         <td class="jrcore_file_detail_left">
             {* If this is an image field, show image in lightbox *}
@@ -21,11 +25,17 @@
 
             <span class="jrcore_file_title">{jrCore_lang module="jrCore" id="75" default="size"}:&nbsp;</span> {$item.size|jrCore_format_size}<br>
             <span class="jrcore_file_title">{jrCore_lang module="jrCore" id="76" default="date"}:&nbsp;</span> {$item.time|jrCore_format_time}
-            <div id="d{$id}" class="image_delete">
-                {jrCore_module_url module="jrCore" assign="curl"}
-                {jrCore_lang module="jrCore" id="40" default="are you sure you want to delete this item?" assign="prompt"}
-                {jrCore_lang module="jrCore" id="38" default="delete" assign="title"}
-                <a href="{$jamroom_url}/{$curl}/delete/{$_post.module}/{$item.field_name}/{$item._item_id}" title="{$title|jrCore_entity_string}" onclick="jrCore_set_csrf_cookie('{$jamroom_url}/{$curl}/delete/{$_post.module}/{$item.field_name}/{$item._item_id}'); if(!confirm('{$prompt|jrCore_entity_string}')){ return false; }">{jrCore_icon icon="close" size=16}</a>
+            <div id="file-delete-{$item._item_id}-{$key}" class="image_delete">
+                {if !empty($item.delete_prompt)}
+                    {assign var="delete_prompt" value=$item.delete_prompt}
+                {else}
+                    {assign var="delete_prompt" value=$prompt}
+                {/if}
+                {if !empty($item.delete_url)}
+                    <a onclick="jrCore_confirm('{$delete_prompt|jrCore_entity_string}', '', function() { jrCore_window_location('{$item.delete_url}') } )" title="{$title|jrCore_entity_string}">{jrCore_icon icon="close" size=16}</a>
+                {else}
+                    <a onclick="jrCore_confirm('{$delete_prompt|jrCore_entity_string}', '', function() { jrCore_window_location('{$jamroom_url}/{$curl}/delete/{$_post.module}/{$item.field_name}/{$item._item_id}') } )" title="{$title|jrCore_entity_string}">{jrCore_icon icon="close" size=16}</a>
+                {/if}
             </div>
 
         </td>

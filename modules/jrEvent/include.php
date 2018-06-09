@@ -2,7 +2,7 @@
 /**
  * Jamroom Event Calendar module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -46,7 +46,7 @@ function jrEvent_meta()
     $_tmp = array(
         'name'        => 'Event Calendar',
         'url'         => 'event',
-        'version'     => '1.3.6',
+        'version'     => '1.3.9',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Add Calendar Events support to Profiles',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/276/event-calendar',
@@ -536,7 +536,7 @@ function jrEvent_db_search_items_listener($_data, $_user, $_conf, $_args, $event
                 }
             }
             foreach ($_data['_items'] as $k => $_v) {
-                if (isset($_attendee["{$_v['_item_id']}"])) {
+                if (isset($_attendee) && isset($_attendee["{$_v['_item_id']}"])) {
                     $_data['_items'][$k]['event_attendee']       = $_attendee["{$_v['_item_id']}"];
                     $_data['_items'][$k]['event_attendee_count'] = count($_attendee["{$_v['_item_id']}"]);
                 }

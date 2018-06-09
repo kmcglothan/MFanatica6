@@ -147,9 +147,10 @@ class Smarty_Internal_Compile_Private_Modifier extends Smarty_Internal_CompileBa
                         }
                 }
             }
+
             // Comment out by brian@jamroom.net so we don't bomb on unknown modifiers
             // if (!isset($compiler->known_modifier_type[ $modifier ])) {
-            //     $compiler->trigger_template_error("unknown modifier \"" . $modifier . "\"", null, true);
+            //    $compiler->trigger_template_error("unknown modifier \"" . $modifier . "\"", null, true);
             // }
         }
 

@@ -75,7 +75,6 @@
             </div>
         </td>
     </tr>
-
 </table>
 
 <div id="jrUpimg_holder">
@@ -116,7 +115,7 @@
                         $('.qq-upload-list').html('');
                     }
                     else {
-                        alert('uploaded file was not saved. ' + m.success_msg);
+                        jrCore_alert('uploaded file was not saved. ' + m.success_msg);
                     }
                 }
             } );

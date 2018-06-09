@@ -73,7 +73,7 @@ function jrPhotoAlbum_remove(dom_id, id, mod, item_id)
                 });
             }
             else {
-                alert('error received trying to remove item: ' + _msg.error_msg);
+                jrCore_alert('error received trying to remove item: ' + _msg.error_msg);
             }
         }
     });

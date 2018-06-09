@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -89,7 +89,7 @@ function jrCore_set_form_notice($type, $text, $strip = true)
 function jrCore_get_form_notice($display = true)
 {
     $key = 'jrcore_form_notices';
-    if (isset($_SESSION[$key]) && is_array($_SESSION[$key])) {
+    if (isset($_SESSION) && isset($_SESSION[$key]) && is_array($_SESSION[$key])) {
 
         // $_form will NOT be set if this is a brand new form, but if we have encountered an ERROR
         // in a form, it WILL be set on refresh (since jrCore_form_delete_session() has not been called)
@@ -130,7 +130,7 @@ function jrCore_get_form_notice($display = true)
 function jrCore_get_all_form_notices()
 {
     $key = 'jrcore_form_notices';
-    if (isset($_SESSION[$key]) && is_array($_SESSION[$key])) {
+    if (isset($_SESSION) && isset($_SESSION[$key]) && is_array($_SESSION[$key])) {
         return $_SESSION[$key];
     }
     return false;
@@ -143,7 +143,7 @@ function jrCore_get_all_form_notices()
 function jrCore_clear_all_form_notices()
 {
     $key = 'jrcore_form_notices';
-    if (isset($_SESSION[$key])) {
+    if (isset($_SESSION) && isset($_SESSION[$key])) {
         unset($_SESSION[$key]);
     }
     return true;
@@ -241,7 +241,7 @@ function jrCore_form_create($_form)
 
     // Make sure cancel URL is correct if we get one
     if (jrCore_get_flag('jrcore_is_profile_referrer')) {
-        if (isset($_form['cancel']) && jrCore_checktype($_form['cancel'], 'url')) {
+        if ((!isset($_form['cancel_detect']) || $_form['cancel_detect'] === true) && isset($_form['cancel']) && jrCore_checktype($_form['cancel'], 'url')) {
             $rurl = jrCore_get_local_referrer();
             if ($rurl && !strpos($rurl, "/{$_user['profile_url']}")) {
                 // We may have changed profiles - correct URL
@@ -263,8 +263,10 @@ function jrCore_form_create($_form)
         // See if this is a create form and we need to show our pending notice
         $_pn = jrCore_get_registered_module_features('jrCore', 'pending_support');
         if ($_pn && isset($_pn[$module]) && isset($_user["quota_{$module}_pending"]) && $_user["quota_{$module}_pending"] > 0) {
-            $_ln = jrUser_load_lang_strings();
-            jrCore_set_form_notice('notice', $_ln['jrCore'][88]);
+            if (!isset($_user["quota_{$module}_max_items"]) || $_user["quota_{$module}_max_items"] == 0 || (isset($_user["profile_{$module}_item_count"]) && $_user["profile_{$module}_item_count"] < $_user["quota_{$module}_max_items"])) {
+                $_ln = jrUser_load_lang_strings();
+                jrCore_set_form_notice('notice', $_ln['jrCore'][88]);
+            }
         }
     }
 
@@ -372,11 +374,6 @@ function jrCore_form_field_create($_field, $module = null, $form_name = null, $d
         $_field['required'] = 0;
     }
 
-    // If this is a mobile device, and we are asking for an editor, we use a textarea instead
-    if ($_field['type'] == 'editor' && jrCore_is_mobile_device()) {
-        $_field['type'] = 'textarea';
-    }
-
     // Add providing module into field info
     $_field['module'] = $_fld["{$_field['type']}"];
 
@@ -406,7 +403,7 @@ function jrCore_form_field_create($_field, $module = null, $form_name = null, $d
 
     // Expand language strings
     $_lang = jrUser_load_lang_strings();
-    $_todo = array('label', 'sublabel', 'help', 'error_msg');
+    $_todo = array('placeholder', 'label', 'sublabel', 'help', 'error_msg');
     foreach ($_todo as $lbl) {
         if (isset($_field[$lbl]) && isset($_lang[$module]["{$_field[$lbl]}"])) {
             $_field[$lbl] = $_lang[$module]["{$_field[$lbl]}"];
@@ -581,11 +578,14 @@ function jrCore_json_response($_data, $exit = true, $strip_tags = true, $process
 
 /**
  * Send a response to the browser and detach
- * @param $data string Data to send to browser
+ * @param string $data Data to send to browser
+ * @param bool $done_trigger set to TRUE to trigger process_done
  * @return bool
  */
-function jrCore_send_response_and_detach($data)
+function jrCore_send_response_and_detach($data = null, $done_trigger = false)
 {
+    global $_conf;
+    $_tmp = array();
     if (!headers_sent()) {
         $cont = false;
         $_tmp = jrCore_get_flag('jrcore_set_custom_header');
@@ -599,34 +599,57 @@ function jrCore_send_response_and_detach($data)
                 }
             }
         }
+        else {
+            $_tmp = array();
+        }
         if (!$cont) {
             header("Content-Type: text/html; charset=utf-8");
         }
+        if (!isset($_conf['jrCore_disable_xframe'])) {
+            header('X-Frame-Options: SAMEORIGIN');
+        }
     }
 
-    // Required for the process_exit (shutdown function) to detach properly from the client
-    if (function_exists('apache_setenv')) {
-        apache_setenv('no-gzip', 1);
+    // Close any open session
+    if (isset($_SESSION)) {
+        session_write_close();
     }
-    ini_set('zlib.output_compression', 0);
-    ini_set('implicit_flush', 1);
 
     // Send output
     // THE ORDER OF THE FOLLOWING STATEMENTS is critical for it
     // to work properly on mod_php, CGI/FastCGI, and FPM - DO NOT CHANGE!
+    $length = 0;
+
     @ob_end_clean();
     header('Connection: close');
-    header('Content-Length: ' . strlen($data));
     ignore_user_abort();
-    ob_start();
-    echo $data;
-    ob_end_flush();
+    if (strlen($data) > 0) {
+        ob_start();
+        ob_start('ob_gzhandler');
+        echo $data;
+        ob_end_flush();
+        $length = ob_get_length();
+        header('Content-Length: ' . $length);
+        ob_end_flush();
+    }
+    @ob_end_flush();
+    @ob_flush();
     @flush();
 
     // PHP-FPM only
     if (function_exists('fastcgi_finish_request')) {
         fastcgi_finish_request();
     }
+
+    // NOTE: Client is detached at this point!
+    $_tmp['results_length'] = $length;
+    if ($done_trigger) {
+        jrCore_trigger_event('jrCore', 'process_done', $_tmp);
+    }
+    else {
+        jrCore_trigger_event('jrCore', 'results_sent', $_tmp);
+    }
+    jrCore_set_flag('jrcore_client_is_detached', true);
     return true;
 }
 
@@ -755,6 +778,7 @@ function jrCore_form_validate(&$_post)
 
     // Validate each field
     foreach ($_rt['form_fields'] as $k => $_valid) {
+
         // Make sure the field is active
         if (isset($_valid['active']) && $_valid['active'] == '0') {
             // Field is not active - make sure nothing is posted for it
@@ -808,7 +832,7 @@ function jrCore_form_validate(&$_post)
         }
 
         // Make sure we have a valid field_required...
-        if (!isset($_valid['required']) || $_valid['required'] == '0') {
+        if (!isset($_valid['required']) || $_valid['required'] == '0' || $_valid['required'] == 0) {
             $_valid['required'] = false;
         }
         else {
@@ -844,35 +868,44 @@ function jrCore_form_validate(&$_post)
             $_valid['label'] = $_lang["{$_rt['form_params']['module']}"]["{$_valid['label']}"];
         }
 
-        // Check for UNIQUE
-        if (isset($_valid['unique']) && $_valid['unique'] != 'off' && $_valid['unique'] != ' false' && $_valid['unique'] !== false && isset($_post["{$_valid['name']}"]) && strlen($_post["{$_valid['name']}"]) > 0) {
-            // we have to make sure there are NO OTHER entries for this profile, for this module with this key => value
-            // If this is an UPDATE form, we will have $_rt['form_params']['values'] - we need to make sure that a
-            // search on the NEW value comes back empty
+        // Make sure we have a good active profile ID
+        if (jrUser_is_logged_in()) {
+
             $pid = $_user['user_active_profile_id'];
             if (isset($_post['jr_html_form_profile_id']) && jrCore_checktype($_post['jr_html_form_profile_id'], 'number_nz') && $_post['jr_html_form_profile_id'] != $pid) {
                 if (jrProfile_is_profile_owner($_post['jr_html_form_profile_id'])) {
                     $pid = (int) $_post['jr_html_form_profile_id'];
+                    // We have posted from a different profile_id then the current ACTIVE profile_id - change
+                    if ($_pr = jrCore_db_get_item('jrProfile', $pid)) {
+                        $_user = jrProfile_change_to_profile($_pr);
+                    }
                 }
             }
-            $_params = array(
-                'search'         => array(
-                    "_profile_id = {$pid}",
-                    "{$_valid['name']} = " . $_post["{$_valid['name']}"]
-                ),
-                'limit'          => 1,
-                'skip_triggers'  => true,
-                'privacy_check'  => false,
-                'ignore_pending' => true
-            );
-            if (strlen($_valid['unique']) > 0 && $_valid['unique'] != 'on' && $_valid['unique'] != ' true' && $_valid['unique'] !== true) {
-                $_params['search'][] = "{$_valid['name']} != {$_valid['unique']}";
-            }
-            $_rt = jrCore_db_search_items($_rt['form_params']['module'], $_params);
-            if ($_rt && is_array($_rt)) {
-                jrCore_set_form_notice('error', "{$_lang['jrCore'][65]} {$_valid['label']} {$_lang['jrCore'][66]}");
-                jrCore_form_field_hilight($_valid['name']);
-                jrCore_form_result();
+
+            // Check for UNIQUE
+            if (isset($_valid['unique']) && $_valid['unique'] != 'off' && $_valid['unique'] != ' false' && $_valid['unique'] !== false && isset($_post["{$_valid['name']}"]) && strlen($_post["{$_valid['name']}"]) > 0) {
+                // we have to make sure there are NO OTHER entries for this profile, for this module with this key => value
+                // If this is an UPDATE form, we will have $_rt['form_params']['values'] - we need to make sure that a
+                // search on the NEW value comes back empty
+                $_params = array(
+                    'search'         => array(
+                        "_profile_id = {$pid}",
+                        "{$_valid['name']} = " . $_post["{$_valid['name']}"]
+                    ),
+                    'limit'          => 1,
+                    'skip_triggers'  => true,
+                    'privacy_check'  => false,
+                    'ignore_pending' => true
+                );
+                if (strlen($_valid['unique']) > 0 && $_valid['unique'] != 'on' && $_valid['unique'] != ' true' && $_valid['unique'] !== true) {
+                    $_params['search'][] = "{$_valid['name']} != {$_valid['unique']}";
+                }
+                $_rt = jrCore_db_search_items($_rt['form_params']['module'], $_params);
+                if ($_rt && is_array($_rt)) {
+                    jrCore_set_form_notice('error', "{$_lang['jrCore'][65]} {$_valid['label']} {$_lang['jrCore'][66]}");
+                    jrCore_form_field_hilight($_valid['name']);
+                    jrCore_form_result();
+                }
             }
         }
 
@@ -943,9 +976,7 @@ function jrCore_form_validate(&$_post)
     // On our initial AJAX validation call, set the "form_validated" flag
     // to "1" to let the next pass know we've already been here.
     if (isset($_rt['form_validated']) && $_rt['form_validated'] != '1') {
-        $tbl = jrCore_db_table_name('jrCore', 'form_session');
-        $req = "UPDATE {$tbl} SET form_rand = '" . mt_rand() . "', form_validated = '1' WHERE form_token = '{$_rt['form_token']}' LIMIT 1";
-        jrCore_db_query($req);
+        jrCore_form_mark_as_validated($_rt['form_token']);
     }
     else {
         // If this form included a spam bot check, remove it from post so
@@ -1052,185 +1083,6 @@ function jrCore_form_get_save_data($module, $view, $_data)
     return false;
 }
 
-//------------------------------------------------------------------
-// FORM sessions
-//------------------------------------------------------------------
-
-/**
- * @ignore
- * jrCore_form_create_session
- *
- * @param string $form_id Form ID from jrCore_form_token_create()
- * @param array $_form Form Information
- * @return bool
- */
-function jrCore_form_create_session($form_id, $_form)
-{
-    global $_post;
-    // Make sure form session is created for this id
-    $uid = (isset($_SESSION['_user_id']) && jrCore_checktype($_SESSION['_user_id'], 'number_nz')) ? intval($_SESSION['_user_id']) : '0';
-    $opt = jrCore_db_escape("{$_post['module']}/{$_post['option']}");
-    $tbl = jrCore_db_table_name('jrCore', 'form_session');
-    $_rt = jrCore_form_get_session($form_id);
-    if (!isset($_rt) || !is_array($_rt) || !isset($_rt['form_token'])) {
-        $req = "INSERT INTO {$tbl} (form_token,form_created,form_user_id,form_view,form_params,form_fields,form_saved) VALUES ('{$form_id}',UNIX_TIMESTAMP(),'{$uid}','{$opt}','" . jrCore_db_escape(json_encode($_form)) . "','','')
-                ON DUPLICATE KEY UPDATE form_created = UNIX_TIMESTAMP(), form_view = '{$opt}', form_params = '" . jrCore_db_escape(json_encode($_form)) . "'";
-        $cnt = jrCore_db_query($req, 'COUNT');
-        if (!$cnt || $cnt === 0) {
-            jrCore_notice('Error', 'unable to store form session - check Activity Log');
-        }
-    }
-    else {
-        // Update with new session info
-        $req = "UPDATE {$tbl} SET form_created = UNIX_TIMESTAMP(), form_rand = '" . mt_rand(0, 999999999) . "', form_view = '{$opt}', form_params = '" . jrCore_db_escape(json_encode($_form)) . "' WHERE form_token = '" . jrCore_db_escape($form_id) . "' LIMIT 1";
-        $cnt = jrCore_db_query($req, 'COUNT');
-        if (!$cnt || $cnt === 0) {
-            jrCore_notice('Error', 'unable to update form session - check Activity Log');
-        }
-    }
-
-    // Lastly, set an internal flag so any form functions can get
-    // the currently generated form token/form_id
-    jrCore_delete_flag("jrcore_form_get_session_{$form_id}");
-    jrCore_set_flag('jr_form_create_active_form_id', $form_id);
-    return true;
-}
-
-/**
- * Get information about the active form session
- * @param string $form_id Form ID to get session for
- * @return mixed
- */
-function jrCore_form_get_session($form_id = null)
-{
-    if (is_null($form_id) || $form_id === false) {
-        if (!$form_id = jrCore_get_flag('jr_form_create_active_form_id')) {
-            // bad session
-            return false;
-        }
-    }
-    // Check for cache
-    $_rt = jrCore_get_flag("jrcore_form_get_session_{$form_id}");
-    if ($_rt) {
-        return $_rt;
-    }
-    $tbl = jrCore_db_table_name('jrCore', 'form_session');
-    $tkn = jrCore_db_escape($form_id);
-    $uid = (isset($_SESSION['_user_id'])) ? intval($_SESSION['_user_id']) : '0';
-    $req = "SELECT * FROM {$tbl} WHERE form_token = '{$tkn}' AND form_user_id = '{$uid}'";
-    $_rt = jrCore_db_query($req, 'SINGLE');
-    if (!$_rt || !is_array($_rt) || !isset($_rt['form_token'])) {
-        return false;
-    }
-    // form_params - parameters for the form
-    $_rt['form_params'] = (isset($_rt['form_params']{2})) ? json_decode($_rt['form_params'], true) : false;
-
-    // form_fields - information about each field in the form
-    $_rt['form_fields'] = (isset($_rt['form_fields']{2})) ? json_decode($_rt['form_fields'], true) : false;
-
-    // form_saved - if the user enters info an encounters an error, the values they entered are saved here
-    $_rt['form_saved'] = (isset($_rt['form_saved']{2})) ? json_decode($_rt['form_saved'], true) : false;
-
-    jrCore_set_flag("jrcore_form_get_session_{$form_id}", $_rt);
-    return $_rt;
-}
-
-/**
- * @ignore
- * jrCore_form_add_field_to_session
- * @param string $form_id Form ID of existing form session
- * @param array $_field Field information to add to form
- * @return bool
- */
-function jrCore_form_add_field_to_session($form_id, $_field)
-{
-    $_tmp = jrCore_get_flag('jrcore_form_session_fields');
-    if (!$_tmp) {
-        $_tmp = array();
-    }
-    $_tmp[] = $_field;
-    jrCore_set_flag('jrcore_form_session_fields', $_tmp);
-    return true;
-}
-
-/**
- * @ignore
- * jrCore_form_save_session
- * @param string $form_id Form ID of existing form session
- * @param array $_data Form information to save
- * @return bool
- */
-function jrCore_form_save_session($form_id, $_data)
-{
-    $_rt = jrCore_form_get_session($form_id);
-    if (!isset($_rt) || !is_array($_rt) || !isset($_rt['form_token'])) {
-        // Form Session must have been previously created before it can be saved
-        return false;
-    }
-    $tbl = jrCore_db_table_name('jrCore', 'form_session');
-    $tkn = jrCore_db_escape($form_id);
-    $sav = jrCore_db_escape(json_encode($_data));
-    $req = "UPDATE {$tbl} SET form_updated = UNIX_TIMESTAMP(), form_rand = '" . mt_rand() . "', form_saved = '{$sav}' WHERE form_token = '{$tkn}'";
-    $cnt = jrCore_db_query($req, 'COUNT');
-    if ($cnt && $cnt === 1) {
-        return true;
-    }
-    return false;
-}
-
-/**
- * Delete an Active form session
- * @param string $form_id Form ID to delete
- * @return bool
- */
-function jrCore_form_delete_session($form_id = null)
-{
-    global $_post;
-    if (is_null($form_id) || $form_id === false) {
-        if (isset($_post['jr_html_form_token']{0})) {
-            $form_id                                   = trim($_post['jr_html_form_token']);
-            $_SESSION['jrcore_form_notice_last_token'] = $form_id;
-        }
-        else {
-            return false;
-        }
-    }
-
-    $tbl = jrCore_db_table_name('jrCore', 'form_session');
-    $tkn = jrCore_db_escape($form_id);
-    $req = "DELETE FROM {$tbl} WHERE form_token = '{$tkn}'";
-    jrCore_db_query($req);
-
-    // Clean up any file uploads
-    if (isset($_post['upload_token']{0})) {
-        $dir = jrCore_get_upload_temp_directory($_post['upload_token']);
-        if (is_dir($dir)) {
-            jrCore_delete_dir_contents($dir);
-            rmdir($dir);
-        }
-    }
-
-    session_regenerate_id(true);
-    return true;
-}
-
-/**
- * @ignore
- * jrCore_form_delete_session_view
- * @param string $module Module that contains the View
- * @param string $view View to delete
- * @return bool
- */
-function jrCore_form_delete_session_view($module, $view)
-{
-    $mod = jrCore_db_escape($module);
-    $opt = jrCore_db_escape($view);
-    $tbl = jrCore_db_table_name('jrCore', 'form_session');
-    $req = "DELETE FROM {$tbl} WHERE form_view = '{$mod}/{$opt}'";
-    jrCore_db_query($req);
-    return true;
-}
-
 /**
  * @ignore
  * jrCore_form_field_get_hilight
@@ -1297,7 +1149,7 @@ function jrCore_enable_meter_support($_field, $allowed = 'mp3', $max_size = 2097
     // If this meter is enabled for multiple item support, we have to see if the profile quota is
     // limiting the number of items allowed to upload and block if they go over
     if ($multiple) {
-        if (isset($_user["quota_{$_post['module']}_max_items"]) && $_user["quota_{$_post['module']}_max_items"] > 0) {
+        if (!jrUser_is_admin() && isset($_user["quota_{$_post['module']}_max_items"]) && $_user["quota_{$_post['module']}_max_items"] > 0) {
             // Looks like we are limiting the number of items - see how many this user has currently created on their profile
             if (isset($_user["profile_{$_post['module']}_item_count"]) && intval($_user["profile_{$_post['module']}_item_count"]) > $_user["quota_{$_post['module']}_max_items"]) {
                 return false; // not allowed
@@ -1310,7 +1162,7 @@ function jrCore_enable_meter_support($_field, $allowed = 'mp3', $max_size = 2097
     // false - multiple uploads NOT allowed (single)
     // true - unlimited uploads
     // (int) - number of allowed uploads
-    if (isset($multiple) && jrCore_checktype($multiple, 'number_nz')) {
+    if (jrCore_checktype($multiple, 'number_nz')) {
         $multi = 'true';
         $maxup = (int) $multiple;
     }
@@ -1351,7 +1203,7 @@ function jrCore_enable_meter_support($_field, $allowed = 'mp3', $max_size = 2097
         }
     }
     if (!$tokn) {
-        $tokn = md5("{$token}-{$_sess['form_rand']}");
+        $tokn = md5("{$token}-{$_post['_uri']}");
     }
 
     // empty the uploaded directory of previous uploads on page refresh.
@@ -1432,7 +1284,7 @@ function jrCore_enable_meter_support($_field, $allowed = 'mp3', $max_size = 2097
     if (!isset($_field['help'])) {
         $_field['help'] = '';
     }
-    $allowed = str_replace(',', ', ', $allowed);
+    $allowed        = str_replace(',', ', ', $allowed);
     $_field['help'] .= '<br><br>' . $_lang['jrCore'][68] . ' <strong>' . $allowed . '</strong>';
     return $_field;
 }
@@ -1489,7 +1341,7 @@ function jrCore_form_begin($form_name, $action, $_att = null)
     jrCore_create_page_element('form_begin', $_tmp);
 
     // Get our CSRF form token inserted into the form as a hidden element
-    $tok = jrCore_form_token_create($action);
+    $tok = jrCore_form_token_create($form_name . $action);
     jrCore_set_flag("jr_html_form_token_{$form_name}", $tok);
 
     // Form ID
@@ -1621,7 +1473,7 @@ function jrCore_form_field_editor_display($_field, $_att = null)
     global $_conf, $_mods, $_user;
     $tmp = jrCore_get_flag('jrcore_editor_js_included');
     if (!$tmp) {
-        $_js = array('source' => "{$_conf['jrCore_base_url']}/modules/jrCore/contrib/tinymce/tinymce.min.js?v={$_mods['jrCore']['module_version']}");
+        $_js = array('source' => "{$_conf['jrCore_base_url']}/modules/jrCore/contrib/tinymce/tinymce.min.js?v={$_mods['jrCore']['module_updated']}");
         jrCore_create_page_element('javascript_href', $_js);
         jrCore_set_flag('jrcore_editor_js_included', 1);
     }
@@ -1652,7 +1504,7 @@ function jrCore_form_field_editor_display($_field, $_att = null)
             // Make sure the user is allowed Quota access
             if (jrCore_module_is_active($mod) && isset($_user["quota_{$mod}_allowed"]) && $_user["quota_{$mod}_allowed"] == 'on') {
                 if (is_file(APP_DIR . "/modules/{$mod}/tinymce/plugin.min.js")) {
-                    $_js = array('source' => "{$_conf['jrCore_base_url']}/modules/{$mod}/tinymce/plugin.min.js?v=" . $_mods[$mod]['module_version']);
+                    $_js = array('source' => "{$_conf['jrCore_base_url']}/modules/{$mod}/tinymce/plugin.min.js?v=" . $_mods['jrCore']['module_updated']);
                     jrCore_create_page_element('javascript_href', $_js);
                 }
                 $_rp[$tag] = true;
@@ -1685,7 +1537,7 @@ function jrCore_form_field_editor_display($_field, $_att = null)
     elseif (isset($_field['default']) && strlen($_field['default']) > 0) {
         $val = $_field['default'];
     }
-    $htm .= '>' . $val . '</textarea><input type="hidden" id="' . $_field['name'] . '_editor_contents" name="' . $_field['name'] . '_editor_contents" value=""></div>';
+    $htm            .= '>' . $val . '</textarea><input type="hidden" id="' . $_field['name'] . '_editor_contents" name="' . $_field['name'] . '_editor_contents" value=""></div>';
     $_field['html'] = $htm;
     $_field['type'] = 'editor';
     if (isset($_field['full_width']) && $_field['full_width'] === true) {
@@ -1773,7 +1625,11 @@ function jrCore_form_field_editor_validate($_field, $_post, $e_msg)
         }
     }
     else {
-        // No Content...
+        // No Content... are we required?
+        if ($_field['required']) {
+            jrCore_set_form_notice('error', $e_msg);
+            return false;
+        }
         $_post[$name] = '';
     }
     unset($_post["{$name}_editor_contents"]);
@@ -1839,7 +1695,7 @@ function jrCore_form_field_text_display($_field, $_att = null)
             $htm .= ' ' . $key . '="' . $attr . '"';
         }
     }
-    $htm .= '>';
+    $htm                .= '>';
     $_field['html']     = $htm;
     $_field['type']     = 'text';
     $_field['template'] = 'form_field_elements.tpl';
@@ -1893,7 +1749,7 @@ function jrCore_form_field_password_display($_field, $_att = null)
             $htm .= ' ' . $key . '="' . $attr . '"';
         }
     }
-    $htm .= '>';
+    $htm                .= '>';
     $_field['html']     = $htm;
     $_field['type']     = 'password';
     $_field['template'] = 'form_field_elements.tpl';
@@ -2093,33 +1949,46 @@ function jrCore_form_field_date_display($_field, $_att = null)
     // Make sure our date picker is included (only once)
     $tmp = jrCore_get_flag('jrcore_datetime_datepicker_included');
     if (!$tmp) {
-        $_js = array('source' => "{$_conf['jrCore_base_url']}/modules/jrCore/js/jquery.datepicker.1.3.0.min.js?v={$_mods['jrCore']['module_version']}");
+        $_ls = jrCore_form_field_get_date_language_strings();
+        $_js = array('var ' . implode(",", $_ls) . ';');
+        jrCore_create_page_element('javascript_embed', $_js);
+
+        $_js = array('source' => "{$_conf['jrCore_base_url']}/modules/jrCore/js/jquery.datepicker.1.3.0.js?v={$_mods['jrCore']['module_updated']}");
         jrCore_create_page_element('javascript_href', $_js);
         jrCore_set_flag('jrcore_datetime_datepicker_included', 1);
     }
+
     // Check for display format
     if (isset($_conf['jrCore_date_format']) && $_conf['jrCore_date_format'] == '%d/%m/%y') {
-        $_js = 'onChange: function(target,newDate) { var yy = newDate.getUTCFullYear().toString(); var mm = (newDate.getMonth() + 1).toString(); var dd = newDate.getDate().toString(); target.val((dd[1] ? dd : "0" + dd[0]) +"/"+ (mm[1] ? mm : "0" + mm[0]) +"/"+ yy.substring(2)); }';
+        $_js = 'onChange: function(target,newDate,locale) { var yy = newDate.getUTCFullYear().toString(); var mm = (newDate.getMonth() + 1).toString(); var dd = newDate.getDate().toString(); target.val((dd[1] ? dd : "0" + dd[0]) +"/"+ (mm[1] ? mm : "0" + mm[0]) +"/"+ yy.substring(2)); }';
     }
     elseif (isset($_conf['jrCore_date_format']) && $_conf['jrCore_date_format'] == '%d %b %Y') {
-        $_js = 'onChange: function(target,newDate) { var yy = newDate.getUTCFullYear().toString(); var mm = newDate.toDateString().split(" "); var dd = newDate.getDate().toString(); target.val((dd[1] ? dd : "0" + dd[0]) +" "+ mm[1] +" "+ yy); }';
+        $_js = 'onChange: function(target,newDate,locale) { var yy = newDate.getUTCFullYear().toString(); var mm = newDate.toLocaleDateString(locale, {month: \'short\'}).replace(\'\.\',\'\'); var dd = newDate.getDate().toString(); target.val((dd[1] ? dd : "0" + dd[0]) +" "+ mm +" "+ yy); }';
     }
     else {
-        $_js = 'onChange: function(target,newDate) { var yy = newDate.getUTCFullYear().toString(); var mm = (newDate.getMonth() + 1).toString(); var dd = newDate.getDate().toString(); target.val((mm[1] ? mm : "0" + mm[0]) +"/"+ (dd[1] ? dd : "0" + dd[0]) +"/"+ yy.substring(2)); }';
+        $_js = 'onChange: function(target,newDate,locale) { var yy = newDate.getUTCFullYear().toString(); var mm = (newDate.getMonth() + 1).toString(); var dd = newDate.getDate().toString(); target.val((mm[1] ? mm : "0" + mm[0]) +"/"+ (dd[1] ? dd : "0" + dd[0]) +"/"+ yy.substring(2)); }';
     }
-    $_js = array('try { $(\'#' . $_field['name'] . '\').glDatePicker({ ' . $_js . ' }); } catch(e) {};');
-    jrCore_create_page_element('javascript_ready_function', $_js);
 
+    $ini = false;
     $val = jrCore_format_time(time(), true);
     if (isset($_field['value']) && jrCore_checktype($_field['value'], 'number_nz')) {
         $val = jrCore_format_time($_field['value'], true);
+        $ini = ($_field['value'] * 1000);
     }
     elseif (isset($_field['default']) && jrCore_checktype($_field['default'], 'number_nz')) {
         $val = jrCore_format_time($_field['default'], true);
+        $ini = ($_field['value'] * 1000);
     }
     elseif (isset($_field['default']) && ($_field['default'] == 'false' || $_field['default'] === false)) {
         $val = '';
     }
+    if ($ini) {
+        $_js = array('var s = new Date(' . $ini . '); try { $(\'#' . $_field['name'] . '\').glDatePicker({ startDate: s, selectedDate: s, ' . $_js . ' }); } catch(e) {};');
+    }
+    else {
+        $_js = array('try { $(\'#' . $_field['name'] . '\').glDatePicker({ ' . $_js . ' }); } catch(e) {};');
+    }
+    jrCore_create_page_element('javascript_ready_function', $_js);
 
     // Our "value" will come in as an epoch time - we need to
     // format the data and time portion based on the conf
@@ -2136,7 +2005,7 @@ function jrCore_form_field_date_display($_field, $_att = null)
             $htm .= ' ' . $key . '="' . $attr . '"';
         }
     }
-    $htm .= '>';
+    $htm                .= '>';
     $_field['html']     = $htm;
     $_field['type']     = 'date';
     $_field['template'] = 'form_field_elements.tpl';
@@ -2175,19 +2044,38 @@ function jrCore_form_field_date_attributes()
  */
 function jrCore_form_field_date_validate($_field, $_post, $e_msg)
 {
-    global $_conf;
+    global $_conf, $_user;
     $name = $_field['name'];
     // For Date we must convert our incoming values to EPOCH time
     // if have changed the default date format to UK we
     // must convert back here so strtotime() gets it right
     if (isset($_post[$name]) && strlen($_post[$name]) > 0) {
-        if (isset($_conf['jrCore_date_format']) && $_conf['jrCore_date_format'] == '%d/%m/%y') {
-            list($day, $mon, $yer) = explode('/', $_post[$name]);
-            $temp = strtotime("{$mon}/{$day}/{$yer}");
+
+        // Check our date format
+        $temp = false;
+        switch ($_conf['jrCore_date_format']) {
+            // Day / Month / Year
+            case '%d/%m/%y':
+                list($d, $m, $y) = explode('/', $_post[$name]);
+                $temp = strtotime("{$m}/{$d}/{$y}");
+                break;
+            // Day / Month / Year
+            // NOTE: Month will be a locale abbr - i.e. "okt" - need to get month number
+            case '%d %b %Y':
+                list($d, $m, $y) = explode(' ', trim($_post[$name]));
+                $lang = (isset($_conf['jrUser_default_language'])) ? $_conf['jrUser_default_language'] : 'en_US';
+                if (jrUser_is_logged_in() && isset($_user['user_language']{1})) {
+                    $lang = str_replace('-', '_', $_user['user_language']);
+                }
+                if ($mnum = jrCore_get_english_month_number($m, $lang)) {
+                    $temp = strtotime("{$mnum}/{$d}/{$y}");
+                }
+                break;
+            default:
+                $temp = strtotime($_post[$name]);
+                break;
         }
-        else {
-            $temp = strtotime($_post[$name]);
-        }
+
         if (!$temp) {
             jrCore_set_form_notice('error', $e_msg);
             jrCore_form_field_hilight($name);
@@ -2216,41 +2104,53 @@ function jrCore_form_field_datetime_display($_field, $_att = null)
     // Make sure our date picker is included (only once)
     $tmp = jrCore_get_flag('jrcore_datetime_datepicker_included');
     if (!$tmp) {
-        $_js = array('source' => "{$_conf['jrCore_base_url']}/modules/jrCore/js/jquery.datepicker.1.3.0.min.js?v={$_mods['jrCore']['module_version']}");
-        jrCore_create_page_element('javascript_href', $_js);
+        $_ls = jrCore_form_field_get_date_language_strings();
+        $_js = array('var ' . implode(",", $_ls) . ';');
+        jrCore_create_page_element('javascript_embed', $_js);
+
+        $_js = array('source' => "{$_conf['jrCore_base_url']}/modules/jrCore/js/jquery.datepicker.1.3.0.js?v={$_mods['jrCore']['module_updated']}");
+        jrCore_create_page_element('javascript_footer_href', $_js);
         jrCore_set_flag('jrcore_datetime_datepicker_included', 1);
     }
 
     // Check for display format
     if (isset($_conf['jrCore_date_format']) && $_conf['jrCore_date_format'] == '%d/%m/%y') {
-        $_js = 'onChange: function(target,newDate) { var yy = newDate.getUTCFullYear().toString(); var mm = (newDate.getMonth() + 1).toString(); var dd = newDate.getDate().toString(); target.val((dd[1] ? dd : "0" + dd[0]) +"/"+ (mm[1] ? mm : "0" + mm[0]) +"/"+ yy.substring(2)); }';
+        $_js = 'onChange: function(target,newDate,locale) { var yy = newDate.getUTCFullYear().toString(); var mm = (newDate.getMonth() + 1).toString(); var dd = newDate.getDate().toString(); target.val((dd[1] ? dd : "0" + dd[0]) +"/"+ (mm[1] ? mm : "0" + mm[0]) +"/"+ yy.substring(2)); }';
     }
     elseif (isset($_conf['jrCore_date_format']) && $_conf['jrCore_date_format'] == '%d %b %Y') {
-        $_js = 'onChange: function(target,newDate) { var yy = newDate.getUTCFullYear().toString(); var mm = newDate.toDateString().split(" "); var dd = newDate.getDate().toString(); target.val((dd[1] ? dd : "0" + dd[0]) +" "+ mm[1] +" "+ yy); }';
+        $_js = 'onChange: function(target,newDate,locale) { var yy = newDate.getUTCFullYear().toString(); var mm = newDate.toLocaleDateString(locale, {month: \'short\'}).replace(\'\.\',\'\'); var dd = newDate.getDate().toString(); target.val((dd[1] ? dd : "0" + dd[0]) +" "+ mm +" "+ yy); }';
     }
     else {
-        $_js = 'onChange: function(target,newDate) { var yy = newDate.getUTCFullYear().toString(); var mm = (newDate.getMonth() + 1).toString(); var dd = newDate.getDate().toString(); target.val((mm[1] ? mm : "0" + mm[0]) +"/"+ (dd[1] ? dd : "0" + dd[0]) +"/"+ yy.substring(2)); }';
+        $_js = 'onChange: function(target,newDate,locale) { var yy = newDate.getUTCFullYear().toString(); var mm = (newDate.getMonth() + 1).toString(); var dd = newDate.getDate().toString(); target.val((mm[1] ? mm : "0" + mm[0]) +"/"+ (dd[1] ? dd : "0" + dd[0]) +"/"+ yy.substring(2)); }';
     }
-    $_js = array('try { $(\'#' . $_field['name'] . '_date\').glDatePicker({ ' . $_js . ' }); } catch(e) {};');
-    jrCore_create_page_element('javascript_ready_function', $_js);
 
+    $ini = false;
     $sel = true;
     $val = jrCore_format_time(time(), true);
     if (isset($_field['value']) && jrCore_checktype($_field['value'], 'number_nz')) {
         $val = jrCore_format_time($_field['value'], true);
+        $ini = ($_field['value'] * 1000);
         $sel = false;
     }
     elseif (isset($_field['default']) && jrCore_checktype($_field['default'], 'number_nz')) {
         $val = jrCore_format_time($_field['default'], true);
+        $ini = ($_field['value'] * 1000);
     }
+    if ($ini) {
+        $_js = array('var s = new Date(' . $ini . '); try { $(\'#' . $_field['name'] . '_date\').glDatePicker({ startDate: s, selectedDate: s, ' . $_js . ' }); } catch(e) {};');
+    }
+    else {
+        $_js = array('try { $(\'#' . $_field['name'] . '_date\').glDatePicker({ ' . $_js . ' }); } catch(e) {};');
+    }
+    jrCore_create_page_element('javascript_ready_function', $_js);
 
     // Our "value" will come in as an epoch time - we need to
     // format the data and time portion based on the conf
     $cls = 'form_date' . jrCore_form_field_get_hilight($_field['name']);
     // Get our tab index
     $idx = jrCore_form_field_get_tab_index($_field);
-    $htm = '<input type="text" id="' . $_field['name'] . '_date" class="' . $cls . '" name="' . $_field['name'] . '_date" value="' . $val . '" tabindex="' . $idx . '"';
-    if (isset($_att) && is_array($_att)) {
+    $htm = '<input type="text" id="' . $_field['name'] . '_date" class="' . $cls . '" name="' . $_field['name'] . '_date" value="' . ucfirst($val) . '" tabindex="' . $idx . '"';
+    if (is_array($_att)) {
         foreach ($_att as $key => $attr) {
             $htm .= ' ' . $key . '="' . $attr . '"';
         }
@@ -2295,18 +2195,18 @@ function jrCore_form_field_datetime_display($_field, $_att = null)
         }
         $h       = strftime($format, $date_s);
         $_hr[$h] = $h;
-        $date_s += 900;
+        $date_s  += 900;
     }
 
     foreach ($_hr as $k => $v) {
         if ($val && $val == $k || $sel && $sel == $k) {
-            $htm .= '<option value="' . $k . '" selected="selected"> ' . $v . '</option>' . "\n";
+            $htm .= '<option value="' . $k . '" selected> ' . $v . '</option>' . "\n";
         }
         else {
             $htm .= '<option value="' . $k . '"> ' . $v . '</option>' . "\n";
         }
     }
-    $htm .= '</select>';
+    $htm                .= '</select>';
     $_field['html']     = $htm;
     $_field['type']     = 'datetime';
     $_field['template'] = 'form_field_elements.tpl';
@@ -2352,7 +2252,7 @@ function jrCore_form_field_datetime_is_empty($_field, $_post)
  */
 function jrCore_form_field_datetime_validate($_field, $_post, $e_msg)
 {
-    global $_conf;
+    global $_user, $_conf;
     $name = $_field['name'];
     if (!isset($_post["{$name}_date"]) || strlen($_post["{$name}_date"]) === 0) {
         jrCore_set_form_notice('error', $e_msg);
@@ -2365,10 +2265,24 @@ function jrCore_form_field_datetime_validate($_field, $_post, $e_msg)
         return false;
     }
     // Check our date format
+    $temp = false;
     switch ($_conf['jrCore_date_format']) {
+        // Day / Month / Year
         case '%d/%m/%y':
             list($d, $m, $y) = explode('/', $_post["{$name}_date"]);
             $temp = strtotime("{$m}/{$d}/{$y} " . $_post["{$name}_time"]);
+            break;
+        // Day / Month / Year
+        // NOTE: Month will be a locale abbr - i.e. "okt" - need to get month number
+        case '%d %b %Y':
+            list($d, $m, $y) = explode(' ', trim($_post["{$name}_date"]));
+            $lang = (isset($_conf['jrUser_default_language'])) ? $_conf['jrUser_default_language'] : 'en_US';
+            if (jrUser_is_logged_in() && isset($_user['user_language']{1})) {
+                $lang = str_replace('-', '_', $_user['user_language']);
+            }
+            if ($mnum = jrCore_get_english_month_number($m, $lang)) {
+                $temp = strtotime("{$mnum}/{$d}/{$y} " . $_post["{$name}_time"]);
+            }
             break;
         default:
             $temp = strtotime($_post["{$name}_date"] . ' ' . $_post["{$name}_time"]);
@@ -2380,7 +2294,6 @@ function jrCore_form_field_datetime_validate($_field, $_post, $e_msg)
         return false;
     }
     if (!@jrCore_is_valid_min_max_value($_field['validate'], $_post[$name], $_field['min'], $_field['max'], $e_msg)) {
-        // jrCore_set_form_notice() called in jrCore_is_valid_min_max_value()
         jrCore_form_field_hilight($name);
         return false;
     }
@@ -2388,6 +2301,85 @@ function jrCore_form_field_datetime_validate($_field, $_post, $e_msg)
     unset($_post["{$name}_date"]);
     unset($_post["{$name}_time"]);
     return $_post;
+}
+
+/**
+ * Get an english month number from a foreign month name
+ * @param string $name
+ * @param string $locale
+ * @return mixed
+ */
+function jrCore_get_english_month_number($name, $locale)
+{
+    setlocale(LC_TIME, 'en_US.UTF-8');
+    $month_numbers = range(1, 12);
+    $_english_full = array();
+    $_english_abbr = array();
+    foreach ($month_numbers as $month) {
+        $_english_full[$month] = jrCore_str_to_lower(strftime('%B', mktime(0, 0, 0, $month, 1, 2020)));
+        $_english_abbr[$month] = jrCore_str_to_lower(strftime('%b', mktime(0, 0, 0, $month, 1, 2020)));
+    }
+    setlocale(LC_ALL, $locale . '.UTF-8');
+    foreach ($month_numbers as $month) {
+        $name = jrCore_str_to_lower($name);
+        $tmp  = jrCore_str_to_lower(strftime('%b', mktime(0, 0, 0, $month, 1, 2020)));
+        if ($tmp == $name) {
+            // We've found our month
+            if (isset($_english_abbr[$month])) {
+                return str_pad($month, 2, '0', STR_PAD_LEFT);
+            }
+        }
+        $tmp = jrCore_str_to_lower(strftime('%B', mktime(0, 0, 0, $month, 1, 2020)));
+        if ($tmp == $name) {
+            // We've found our month
+            if (isset($_english_full[$month])) {
+                return str_pad($month, 2, '0', STR_PAD_LEFT);
+            }
+        }
+
+    }
+    return false;
+}
+
+/**
+ * Get language strings for use in the date selector
+ * @return array
+ */
+function jrCore_form_field_get_date_language_strings()
+{
+    global $_conf, $_user;
+    $lang = (isset($_conf['jrUser_default_language'])) ? $_conf['jrUser_default_language'] : 'en_US';
+    if (jrUser_is_logged_in() && isset($_user['user_language']{1})) {
+        $lang = $_user['user_language'];
+    }
+    // Lang strings
+    $_ln = jrUser_load_lang_strings();
+    $_ls = array(
+        '_dp_jan' => $_ln['jrCore'][10],
+        '_dp_feb' => $_ln['jrCore'][11],
+        '_dp_mar' => $_ln['jrCore'][12],
+        '_dp_apr' => $_ln['jrCore'][13],
+        '_dp_may' => $_ln['jrCore'][14],
+        '_dp_jun' => $_ln['jrCore'][15],
+        '_dp_jul' => $_ln['jrCore'][16],
+        '_dp_aug' => $_ln['jrCore'][17],
+        '_dp_sep' => $_ln['jrCore'][18],
+        '_dp_oct' => $_ln['jrCore'][19],
+        '_dp_nov' => $_ln['jrCore'][20],
+        '_dp_dec' => $_ln['jrCore'][21],
+        '_dp_sun' => $_ln['jrCore'][136],
+        '_dp_mon' => $_ln['jrCore'][137],
+        '_dp_tue' => $_ln['jrCore'][138],
+        '_dp_wed' => $_ln['jrCore'][139],
+        '_dp_thu' => $_ln['jrCore'][140],
+        '_dp_fri' => $_ln['jrCore'][141],
+        '_dp_sat' => $_ln['jrCore'][142],
+        '_dp_lng' => $lang
+    );
+    foreach ($_ls as $k => $v) {
+        $_ls[$k] = "{$k} = '" . jrCore_entity_string($v) . "'";
+    }
+    return $_ls;
 }
 
 /**
@@ -2418,7 +2410,7 @@ function jrCore_form_field_select_date_display($_field, $_att = null)
     $now = strftime('%Y');
     while ($yer <= $now) {
         if (isset($y_v) && $y_v == "{$yer}") {
-            $htm .= '<option value="' . $yer . '" selected="selected"> ' . $yer . '</option>' . "\n";
+            $htm .= '<option value="' . $yer . '" selected> ' . $yer . '</option>' . "\n";
         }
         else {
             $htm .= '<option value="' . $yer . '"> ' . $yer . '</option>' . "\n";
@@ -2443,7 +2435,7 @@ function jrCore_form_field_select_date_display($_field, $_att = null)
     );
     foreach ($_mn as $num => $desc) {
         if (isset($m_v) && $m_v == "{$num}") {
-            $htm .= '<option value="' . $num . '" selected="selected"> ' . $desc . '</option>' . "\n";
+            $htm .= '<option value="' . $num . '" selected> ' . $desc . '</option>' . "\n";
         }
         else {
             $htm .= '<option value="' . $num . '"> ' . $desc . '</option>' . "\n";
@@ -2456,14 +2448,14 @@ function jrCore_form_field_select_date_display($_field, $_att = null)
     while ($day < 32) {
         $day = str_pad($day, 2, '0', STR_PAD_LEFT);
         if (isset($d_v) && $d_v == "{$day}") {
-            $htm .= '<option value="' . $day . '" selected="selected"> ' . $day . '</option>' . "\n";
+            $htm .= '<option value="' . $day . '" selected> ' . $day . '</option>' . "\n";
         }
         else {
             $htm .= '<option value="' . $day . '"> ' . $day . '</option>' . "\n";
         }
         $yer++;
     }
-    $htm .= '</select>';
+    $htm                .= '</select>';
     $_field['html']     = $htm;
     $_field['type']     = 'selectdate';
     $_field['template'] = 'form_field_elements.tpl';
@@ -2518,8 +2510,10 @@ function jrCore_form_field_select_and_text_display($_field, $_att = null)
         if ($_rt && is_array($_rt) && isset($_rt['_items'])) {
             $_field['options'] = array();
             foreach ($_rt['_items'] as $k => $_v) {
-                $val                     = trim($_v["{$_field['name']}"]);
-                $_field['options'][$val] = $val;
+                if (!empty($_v["{$_field['name']}"])) {
+                    $val                     = trim($_v["{$_field['name']}"]);
+                    $_field['options'][$val] = $val;
+                }
                 unset($_rt['_items'][$k]);
             }
         }
@@ -2544,7 +2538,7 @@ function jrCore_form_field_select_and_text_display($_field, $_att = null)
             }
             $k = jrCore_entity_string($k);
             if (isset($_field['value']) && ($_field['value'] == $k || trim($_field['value']) == $val)) {
-                $htm .= '<option value="' . $k . '" selected="selected"> ' . $val . '</option>' . "\n";
+                $htm .= '<option value="' . $k . '" selected> ' . $val . '</option>' . "\n";
             }
             else {
                 $htm .= '<option value="' . $k . '"> ' . $val . '</option>' . "\n";
@@ -2577,7 +2571,7 @@ function jrCore_form_field_select_and_text_display($_field, $_att = null)
                 $htm .= ' ' . $key . '="' . $attr . '"';
             }
         }
-        $htm .= '>';
+        $htm                .= '>';
         $_field['html']     = $htm;
         $_field['type']     = 'text';
         $_field['template'] = 'form_field_elements.tpl';
@@ -2731,7 +2725,7 @@ function jrCore_form_field_live_search_display($_field, $_att = null)
     $_tmp = array(
         'type'  => 'hidden',
         'name'  => "{$_field['name']}_livesearch_value",
-        'value' => (isset($key) && strlen($key) > 0) ? $key : $val
+        'value' => (strlen($key) > 0) ? $key : $val
     );
     jrCore_form_field_create($_tmp);
 
@@ -2956,7 +2950,7 @@ function jrCore_form_field_checkbox_display($_field, $_att = null)
     $cls = 'form_checkbox' . jrCore_form_field_get_hilight($_field['name']);
     $beg = '';
     $end = '';
-    if (isset($cls) && strlen($cls) > 14) {
+    if (strlen($cls) > 14) {
         // We are in error - we need to highlight the area around the checkbox so the user can see
         $beg = '<span class="field-hilight" style="padding:6px 3px;">';
         $end = '</span>';
@@ -2964,12 +2958,12 @@ function jrCore_form_field_checkbox_display($_field, $_att = null)
     // Get our tab index
     $idx = jrCore_form_field_get_tab_index($_field);
     $htm = $beg . '<input type="checkbox" id="' . $_field['name'] . '" class="' . $cls . '" name="' . $_field['name'] . '" tabindex="' . $idx . '"' . $checked;
-    if (isset($_att) && is_array($_att)) {
+    if ($_att && is_array($_att)) {
         foreach ($_att as $key => $attr) {
             $htm .= ' ' . $key . '="' . $attr . '"';
         }
     }
-    $htm .= '>' . $end;
+    $htm                .= '>' . $end;
     $_field['html']     = $htm;
     $_field['type']     = 'checkbox';
     $_field['template'] = 'form_field_elements.tpl';
@@ -2988,6 +2982,16 @@ function jrCore_form_field_checkbox_form_designer_options()
         'disable_options'     => true,
         'disable_min_and_max' => true
     );
+}
+
+/**
+ * @ignore
+ * Additional form field HTML attributes that can be passed in via the form
+ * @return array
+ */
+function jrCore_form_field_checkbox_attributes()
+{
+    return array('disabled');
 }
 
 /**
@@ -3168,7 +3172,7 @@ function jrCore_form_field_optionlist_display($_field, $_att = null)
     $_cb = array();
     foreach ($_field['options'] as $fname => $display) {
         $mod = $_post['module'];
-        if (isset($display) && jrCore_checktype($display, 'number_nz') && isset($_lang[$mod][$display])) {
+        if (jrCore_checktype($display, 'number_nz') && isset($_lang[$mod][$display])) {
             $display = $_lang[$mod][$display];
         }
         $idx = jrCore_form_field_get_tab_index($_field);
@@ -3180,7 +3184,7 @@ function jrCore_form_field_optionlist_display($_field, $_att = null)
             $chk = ' checked="checked"';
         }
         $dcs   = 'form_option_list_text';
-        $_cb[] = '<input type="checkbox" id="' . $_field['name'] . '_' . $fname . '" data-key="' . $fname . '" class="form_checkbox" tabindex="' . $idx . '" name="' . $_field['name'] . '_' . $fname . '"' . $chk . '>&nbsp<span class="' . $dcs . '">' . $display . "</span>\n";
+        $_cb[] = '<input type="checkbox" id="' . $_field['name'] . '_' . $fname . '" data-key="' . $fname . '" class="form_checkbox" tabindex="' . $idx . '" name="' . $_field['name'] . '_' . $fname . '" ' . $chk . '>&nbsp<span class="' . $dcs . '">' . $display . "</span>\n";
     }
     // Layout
     if (isset($_field['layout']) && $_field['layout'] == 'horizontal') {
@@ -3374,10 +3378,10 @@ function jrCore_form_field_select_display($_field, $_att = null)
                 $htm .= '<optgroup label="' . $k . '">';
                 foreach ($v as $kk => $vv) {
                     if (isset($_field['value']) && strlen($_field['value']) > 0 && $_field['value'] == "{$kk}") {
-                        $htm .= '<option value="' . $kk . '" selected="selected"> ' . $vv . '</option>' . "\n";
+                        $htm .= '<option value="' . $kk . '" selected> ' . $vv . '</option>' . "\n";
                     }
                     elseif ((!isset($_field['value']) || strlen($_field['value']) === 0) && (isset($_field['default']) && $_field['default'] == "{$kk}")) {
-                        $htm .= '<option value="' . $kk . '" selected="selected"> ' . $vv . '</option>' . "\n";
+                        $htm .= '<option value="' . $kk . '" selected> ' . $vv . '</option>' . "\n";
                     }
                     else {
                         $htm .= '<option value="' . $kk . '"> ' . $vv . '</option>' . "\n";
@@ -3387,10 +3391,10 @@ function jrCore_form_field_select_display($_field, $_att = null)
             }
             else {
                 if (isset($_field['value']) && strlen($_field['value']) > 0 && $_field['value'] == "{$k}") {
-                    $htm .= '<option value="' . $k . '" selected="selected"> ' . $v . '</option>' . "\n";
+                    $htm .= '<option value="' . $k . '" selected> ' . $v . '</option>' . "\n";
                 }
                 elseif ((!isset($_field['value']) || strlen($_field['value']) === 0) && (isset($_field['default']) && $_field['default'] == "{$k}")) {
-                    $htm .= '<option value="' . $k . '" selected="selected"> ' . $v . '</option>' . "\n";
+                    $htm .= '<option value="' . $k . '" selected> ' . $v . '</option>' . "\n";
                 }
                 else {
                     $htm .= '<option value="' . $k . '"> ' . $v . '</option>' . "\n";
@@ -3398,7 +3402,7 @@ function jrCore_form_field_select_display($_field, $_att = null)
             }
         }
     }
-    $htm .= '</select>';
+    $htm                .= '</select>';
     $_field['html']     = $htm;
     $_field['type']     = 'select';
     $_field['template'] = 'form_field_elements.tpl';
@@ -3501,9 +3505,40 @@ function jrCore_form_field_select_multiple_display($_field, $_att = null)
         }
     }
     $htm .= '>';
-    if (isset($_field['value']) && !is_array($_field['value']) && strpos($_field['value'], ',')) {
-        $_field['value'] = explode(',', $_field['value']);
+
+    // Get selected values
+    $_vl = array();
+    if (!isset($_field['value']) && isset($_field['default'])) {
+        $_field['value'] = $_field['default'];
     }
+    if (isset($_field['value'])) {
+        if (!is_array($_field['value']) && (strpos($_field['value'], '{') === 0 || strpos($_field['value'], '[') === 0)) {
+            $_field['value'] = html_entity_decode($_field['value'], ENT_QUOTES, 'UTF-8');
+            $_field['value'] = json_decode($_field['value'], true);
+        }
+        if (is_array($_field['value'])) {
+            foreach ($_field['value'] as $v) {
+                if (strlen($v) > 0) {
+                    $_vl[$v] = 1;
+                }
+            }
+        }
+        elseif (!is_array($_field['value']) && strlen($_field['value']) > 0) {
+            if (strpos($_field['value'], ',')) {
+                foreach (explode(',', $_field['value']) as $v) {
+                    $v = trim($v);
+                    if (strlen($v) > 0) {
+                        $_vl[$v] = 1;
+                    }
+                }
+            }
+            else {
+                $_vl = array(trim($_field['value']) => 1);
+            }
+        }
+    }
+
+    // Get Options
     if (isset($_field['options']) && !is_array($_field['options']) && strlen($_field['options']) > 0) {
         // JSON encoded options
         if (strpos($_field['options'], '{') === 0 || strpos($_field['options'], '[') === 0) {
@@ -3519,21 +3554,15 @@ function jrCore_form_field_select_multiple_display($_field, $_att = null)
             if (strlen($k) === 0) {
                 continue;
             }
-            if (isset($_field['value']) && is_array($_field['value']) && in_array($k, $_field['value'])) {
-                $htm .= '<option value="' . $k . '" selected="selected"> ' . $v . '</option>' . "\n";
-            }
-            elseif (isset($_field['value']) && !is_array($_field['value']) && strlen($_field['value']) > 0 && $_field['value'] == "{$k}") {
-                $htm .= '<option value="' . $k . '" selected="selected"> ' . $v . '</option>' . "\n";
-            }
-            elseif (!isset($_field['value']) && isset($_field['default']) && $_field['default'] == "{$k}") {
-                $htm .= '<option value="' . $k . '" selected="selected"> ' . $v . '</option>' . "\n";
+            if (isset($_vl[$k])) {
+                $htm .= '<option value="' . $k . '" selected> ' . $v . '</option>' . "\n";
             }
             else {
                 $htm .= '<option value="' . $k . '"> ' . $v . '</option>' . "\n";
             }
         }
     }
-    $htm .= '</select>';
+    $htm                .= '</select>';
     $_field['html']     = $htm;
     $_field['type']     = 'select_multiple';
     $_field['template'] = 'form_field_elements.tpl';
@@ -3685,7 +3714,7 @@ function jrCore_form_field_textarea_display($_field, $_att = null)
     elseif (isset($_field['default']) && strlen($_field['default']) > 0) {
         $val = $_field['default'];
     }
-    $htm .= '>' . $val . '</textarea>';
+    $htm                .= '>' . $val . '</textarea>';
     $_field['html']     = $htm;
     $_field['type']     = 'textarea';
     $_field['template'] = 'form_field_elements.tpl';
@@ -3771,7 +3800,7 @@ function jrCore_form_field_date_birthday_display($_field, $_att = null)
     $htm .= '<option value=""></option>' . "\n";
     foreach ($_op as $k => $val) {
         if (!is_null($dmn) && $k == $dmn) {
-            $htm .= '<option value="' . $k . '" selected="selected"> ' . $val . '</option>' . "\n";
+            $htm .= '<option value="' . $k . '" selected> ' . $val . '</option>' . "\n";
         }
         else {
             $htm .= '<option value="' . $k . '"> ' . $val . '</option>' . "\n";
@@ -3790,7 +3819,7 @@ function jrCore_form_field_date_birthday_display($_field, $_att = null)
     }
     $htm .= ">\n";
 
-    $htm .= '<option value="" selected="selected"></option>' . "\n";
+    $htm .= '<option value="" selected></option>' . "\n";
     $num = 1;
     while ($num < 32) {
         $knum = (string) $num;
@@ -3798,7 +3827,7 @@ function jrCore_form_field_date_birthday_display($_field, $_att = null)
             $knum = '0' . $knum;
         }
         if (!is_null($ddy) && $num == $ddy) {
-            $htm .= '<option value="' . $knum . '" selected="selected"> ' . $num . '</option>' . "\n";
+            $htm .= '<option value="' . $knum . '" selected> ' . $num . '</option>' . "\n";
         }
         else {
             $htm .= '<option value="' . $knum . '"> ' . $num . '</option>' . "\n";
@@ -4025,14 +4054,6 @@ function jrCore_form_submit($submit_value = 'submit', $clear_value = 'reset', $c
         $_js[] = $_form['form_params']['onclick'];
     }
     $module = $_form['form_params']['module'];
-    // See if we are doing a submit prompt
-    if (isset($_form['form_params']['submit_prompt']{0})) {
-        $txt = $_form['form_params']['submit_prompt'];
-        if (isset($_form['form_params']['submit_prompt']) && isset($_lang[$module]["{$_form['form_params']['submit_prompt']}"])) {
-            $txt = $_lang[$module]["{$_form['form_params']['submit_prompt']}"];
-        }
-        $_js[] = "if (jrc) {if (!confirm('" . addslashes($txt) . "')) jrc=false; };";
-    }
 
     // By default we submit via AJAX, but if we have disabled AJAX upload
     // or have the progress meter on page, we do a normal submit
@@ -4045,7 +4066,24 @@ function jrCore_form_submit($submit_value = 'submit', $clear_value = 'reset', $c
         $submit = 'post';
     }
 
-    if (isset($_js) && count($_js) > 0) {
+    // See if we are doing a submit prompt
+    if (isset($_form['form_params']['submit_prompt']{0})) {
+        $txt = $_form['form_params']['submit_prompt'];
+        if (isset($_form['form_params']['submit_prompt']) && isset($_lang[$module]["{$_form['form_params']['submit_prompt']}"])) {
+            $txt = $_lang[$module]["{$_form['form_params']['submit_prompt']}"];
+        }
+        $ttl = 'Are you sure?';
+        if (isset($_form['form_params']['submit_title'])) {
+            if (isset($_lang[$module]["{$_form['form_params']['submit_title']}"])) {
+                $ttl = $_lang[$module]["{$_form['form_params']['submit_title']}"];
+            }
+            else {
+                $ttl = $_form['form_params']['submit_title'];
+            }
+        }
+        $_form['form_params']['onclick'] = "jrCore_confirm('" . addslashes($ttl) . "', '" . addslashes($txt) . "', function(){ jrFormSubmit('#{$_form['form_params']['name']}',{$key},'{$submit}') })";
+    }
+    elseif (isset($_js) && count($_js) > 0) {
         $_form['form_params']['onclick'] = 'var jrc=true;' . implode(' ', $_js) . " if (jrc){jrFormSubmit('#{$_form['form_params']['name']}',{$key},'{$submit}');} else {return false;}";
     }
     else {
@@ -4073,21 +4111,41 @@ function jrCore_form_submit($submit_value = 'submit', $clear_value = 'reset', $c
         if (!$cancel_value) {
             $cancel_value = $_lang['jrCore'][2];
         }
+
+        // Handle referring URLs
         if ($cancel_url == 'referrer') {
             $cancel_url = jrCore_get_local_referrer();
         }
+        elseif ($cancel_url == 'reset_form_referrer') {
+            if (isset($_SESSION['reset_form_referrer_url'])) {
+                $cancel_url = $_SESSION['reset_form_referrer_url'];
+            }
+            else {
+                $cancel_url = jrCore_get_local_referrer();
+                if (!strpos($cancel_url, '_rfs=')) {
+                    if (strpos($cancel_url, '?')) {
+                        $cancel_url .= "&_rfs={$form_id}";
+                    }
+                    else {
+                        $cancel_url .= "?_rfs={$form_id}";
+                    }
+                }
+                $_SESSION['reset_form_referrer_url'] = $cancel_url;
+            }
+        }
+
         if ($cancel_url == '$.modal.close();') {
             $html .= '&nbsp;&nbsp;<input type="button" id="' . $_form['form_params']['name'] . '_cancel" class="form_button" value="' . $cancel_value . '" onclick="$.modal.close();">';
         }
         elseif (jrCore_checktype($cancel_url, 'url')) {
             $html .= '&nbsp;&nbsp;<input type="button" id="' . $_form['form_params']['name'] . '_cancel" class="form_button" value="' . $cancel_value . '" onclick="jrCore_window_location(\'' . $cancel_url . '\')">';
         }
-        elseif (isset($cancel_url) && strlen($cancel_url) > 1) {
+        elseif (!empty($cancel_url)) {
             $html .= '&nbsp;&nbsp;<input type="button" id="' . $_form['form_params']['name'] . '_cancel" class="form_button" value="' . $cancel_value . '" onclick="' . $cancel_url . '">';
         }
         else {
             $cancel_url = jrCore_get_last_history_url();
-            $html .= '&nbsp;&nbsp;<input type="button" id="' . $_form['form_params']['name'] . '_cancel" class="form_button" value="' . $cancel_value . '" onclick="jrCore_window_location(\'' . $cancel_url . '\')">';
+            $html       .= '&nbsp;&nbsp;<input type="button" id="' . $_form['form_params']['name'] . '_cancel" class="form_button" value="' . $cancel_value . '" onclick="jrCore_window_location(\'' . $cancel_url . '\')">';
         }
     }
     $_tmp = array(
@@ -4119,8 +4177,8 @@ function jrCore_form_modal_notice($type, $text)
         );
         $tbl = jrCore_db_table_name('jrCore', 'modal');
         $req = "INSERT INTO {$tbl} (modal_key,modal_updated,modal_value) VALUES ('{$key}',UNIX_TIMESTAMP(),'" . jrCore_db_escape(json_encode($tmp)) . "')";
-        $cnt = jrCore_db_query($req, 'COUNT');
-        if ($cnt && $cnt === 1) {
+        $iid = jrCore_db_query($req, 'INSERT_ID');
+        if ($iid && $iid > 0) {
             return true;
         }
     }
@@ -4169,8 +4227,11 @@ function jrCore_form_end()
  */
 function jrCore_form_token_create($extra = '')
 {
+    global $_post, $_conf;
     $uid = (isset($_SESSION['_user_id'])) ? $_SESSION['_user_id'] : '';
-    return md5(session_id() . $uid . $_REQUEST['_uri'] . json_encode($extra));
+    $pid = (isset($_SESSION['user_active_profile_id'])) ? $_SESSION['user_active_profile_id'] : '';
+    $uri = (!empty($_post['_uri'])) ? $_post['_uri'] : '/';
+    return md5($_conf['jrCore_base_url'] . $uri . session_id() . $uid . $pid . json_encode($extra));
 }
 
 /**
@@ -4199,8 +4260,8 @@ function jrCore_validate_location_url()
     }
     // Without a cookie, it could be a cross domain issue - check
     if (jrUser_is_logged_in()) {
-        $ref = jrCore_get_local_referrer();
-        $url = jrUser_get_saved_url_location();
+        $ref = str_replace('https:', 'http:', jrCore_get_local_referrer());
+        $url = str_replace('https:', 'http:', jrUser_get_saved_url_location());
         if ($ref && strpos(' ' . $ref, $url) || strpos($url, $_conf['jrCore_base_url']) === 0) {
             return true;
         }
@@ -4241,4 +4302,451 @@ function jrCore_form_check_default_attributes($_default, $_attrs = null)
         }
     }
     return $_attrs;
+}
+
+//---------------------------
+// FORM SESSIONS
+//---------------------------
+
+/**
+ * Get the active form session plugin
+ * @note: form_sessions follow the active user session plugin
+ * @return string
+ */
+function jrCore_get_active_form_session_system()
+{
+    global $_conf;
+    if (isset($_conf['jrUser_active_session_system']{1})) {
+        // Make sure it is valid...
+        $func = "_{$_conf['jrUser_active_session_system']}_form_create_session";
+        if (function_exists($func)) {
+            return $_conf['jrUser_active_session_system'];
+        }
+    }
+    return 'jrCore_mysql';
+}
+
+/**
+ * Create a new Form Session
+ * @param string $form_id Form ID from jrCore_form_token_create()
+ * @param array $_form Form Information
+ * @return bool
+ */
+function jrCore_form_create_session($form_id, $_form)
+{
+    $temp = jrCore_get_active_form_session_system();
+    $func = "_{$temp}_form_create_session";
+    if (function_exists($func)) {
+        $tmp = $func($form_id, $_form);
+        // Set an internal flag so any form functions can get the currently generated form token/form_id
+        jrCore_set_flag("jrcore_form_get_session_{$form_id}", $tmp);
+        jrCore_set_flag('jr_form_create_active_form_id', $form_id);
+        return true;
+    }
+    jrCore_logger('CRI', "active form session system function: {$func} is not defined");
+    return false;
+}
+
+/**
+ * Get information about the active form session
+ * @param string $form_id Form ID to get session for
+ * @return mixed
+ */
+function jrCore_form_get_session($form_id = null)
+{
+    if (is_null($form_id) || $form_id === false) {
+        if (!$form_id = jrCore_get_flag('jr_form_create_active_form_id')) {
+            // bad session
+            return false;
+        }
+    }
+
+    // Check for cache
+    if ($_rt = jrCore_get_flag("jrcore_form_get_session_{$form_id}")) {
+        return $_rt;
+    }
+    $temp = jrCore_get_active_form_session_system();
+    $func = "_{$temp}_form_get_session";
+    if (function_exists($func)) {
+        if ($_rt = $func($form_id)) {
+            jrCore_set_flag("jrcore_form_get_session_{$form_id}", $_rt);
+            return $_rt;
+        }
+        // No form session from plugin
+        return false;
+    }
+    jrCore_logger('CRI', "active form session system function: {$func} is not defined");
+    return false;
+}
+
+/**
+ * Save a form session
+ * @param string $form_id Form ID of existing form session
+ * @param array $_data Form information to save
+ * @return bool
+ */
+function jrCore_form_save_session($form_id, $_data)
+{
+    $_rt = jrCore_form_get_session($form_id);
+    if (!isset($_rt) || !is_array($_rt) || !isset($_rt['form_token'])) {
+        // Form Session must have been previously created before it can be saved
+        return false;
+    }
+    $temp = jrCore_get_active_form_session_system();
+    $func = "_{$temp}_form_save_session";
+    if (function_exists($func)) {
+        return $func($form_id, $_data, $_rt);
+    }
+    jrCore_logger('CRI', "active form session system function: {$func} is not defined");
+    return false;
+}
+
+/**
+ * Update a form session with new form fields (form designer)
+ * @param string $form_id Form ID of existing form session
+ * @param array $_fields New form fields data
+ * @return bool
+ */
+function jrCore_form_update_session_fields($form_id, $_fields)
+{
+    $temp = jrCore_get_active_form_session_system();
+    $func = "_{$temp}_form_update_session_fields";
+    if (function_exists($func)) {
+        return $func($form_id, $_fields);
+    }
+    jrCore_logger('CRI', "active form session system function: {$func} is not defined");
+    return false;
+}
+
+/**
+ * Update a form session with new form fields (form designer)
+ * @param string $form_id Form ID of existing form session
+ * @return bool
+ */
+function jrCore_form_mark_as_validated($form_id)
+{
+    $temp = jrCore_get_active_form_session_system();
+    $func = "_{$temp}_form_mark_as_validated";
+    if (function_exists($func)) {
+        return $func($form_id);
+    }
+    jrCore_logger('CRI', "active form session system function: {$func} is not defined");
+    return false;
+}
+
+/**
+ * Delete an Active form session
+ * @param string $form_id Form ID to delete
+ * @return bool
+ */
+function jrCore_form_delete_session($form_id = null)
+{
+    global $_post;
+    if (is_null($form_id) || $form_id === false) {
+        if (isset($_post['jr_html_form_token']{0})) {
+            $form_id                                   = trim($_post['jr_html_form_token']);
+            $_SESSION['jrcore_form_notice_last_token'] = $form_id;
+        }
+        else {
+            return false;
+        }
+    }
+    $temp = jrCore_get_active_form_session_system();
+    $func = "_{$temp}_form_delete_session";
+    if (function_exists($func)) {
+        $tmp = $func($form_id);
+        // Clean up any file uploads
+        if (isset($_post['upload_token']{0})) {
+            $dir = jrCore_get_upload_temp_directory($_post['upload_token']);
+            if (is_dir($dir)) {
+                jrCore_delete_dir_contents($dir);
+                rmdir($dir);
+            }
+        }
+        session_regenerate_id();
+        return $tmp;
+    }
+    jrCore_logger('CRI', "active form session system function: {$func} is not defined");
+    return false;
+}
+
+/**
+ * Delete all form sessions for a module/view
+ * @param string $module Module that contains the View
+ * @param string $view View to delete
+ * @return bool
+ */
+function jrCore_form_delete_session_view($module, $view)
+{
+    $temp = jrCore_get_active_form_session_system();
+    $func = "_{$temp}_form_delete_session_view";
+    if (function_exists($func)) {
+        return $func($module, $view);
+    }
+    jrCore_logger('CRI', "active form session system function: {$func} is not defined");
+    return false;
+}
+
+/**
+ * Perform form session maintenance (cleanup, etc.)
+ * @return bool
+ */
+function jrCore_form_session_maintenance()
+{
+    global $_conf;
+    $hours = 4;
+    if (isset($_conf['jrCore_form_session_expire_hours']) && jrCore_checktype($_conf['jrCore_form_session_expire_hours'], 'number_nz')) {
+        $hours = (int) $_conf['jrCore_form_session_expire_hours'];
+    }
+    $temp = jrCore_get_active_form_session_system();
+    $func = "_{$temp}_form_session_maintenance";
+    if (function_exists($func)) {
+        return $func(intval($hours));
+    }
+    jrCore_logger('CRI', "active form session system function: {$func} is not defined");
+    return false;
+}
+
+/**
+ * Delete all form session
+ * @return bool
+ */
+function jrCore_form_delete_all_form_sessions()
+{
+    $temp = jrCore_get_active_form_session_system();
+    $func = "_{$temp}_form_delete_all_form_sessions";
+    if (function_exists($func)) {
+        return $func();
+    }
+    jrCore_logger('CRI', "active form session system function: {$func} is not defined");
+    return false;
+}
+
+/**
+ * Add a form field to a form session
+ * @param string $form_id Form ID of the form session
+ * @param array $_field Field information to add to form
+ * @return bool
+ */
+function jrCore_form_add_field_to_session($form_id, $_field)
+{
+    $_tmp = jrCore_get_flag('jrcore_form_session_fields');
+    if (!$_tmp) {
+        $_tmp = array();
+    }
+    $_tmp[] = $_field;
+    jrCore_set_flag('jrcore_form_session_fields', $_tmp);
+    return true;
+}
+
+/**
+ * Delete a form field from an existing form session
+ * @param string $form_id form ID of existing form session
+ * @param string $field_name field 'name' to delete
+ * @return bool
+ */
+function jrCore_form_delete_field_from_session($form_id, $field_name)
+{
+    if ($_tmp = jrCore_get_flag('jrcore_form_session_fields')) {
+        foreach ($_tmp as $k => $_field) {
+            if ($_field['name'] == $field_name) {
+                unset($_tmp[$k]);
+                jrCore_set_flag('jrcore_form_session_fields', $_tmp);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+//---------------------------
+// FORM SESSION PLUGINS
+//---------------------------
+
+/**
+ * Create a new Form Session
+ * @param string $form_id Form ID from jrCore_form_token_create()
+ * @param array $_form Form Information
+ * @return bool
+ */
+function _jrCore_mysql_form_create_session($form_id, $_form)
+{
+    global $_post, $_user;
+    // Make sure form session is created for this id
+    $uid = (isset($_SESSION['_user_id']) && jrCore_checktype($_SESSION['_user_id'], 'number_nz')) ? intval($_SESSION['_user_id']) : '0';
+    $opt = jrCore_db_escape("{$_post['module']}/{$_post['option']}");
+    $tbl = jrCore_db_table_name('jrCore', 'form_session');
+    // Do we already have an existing session?
+    $_rt = jrCore_form_get_session($form_id);
+    if (!$_rt || !is_array($_rt) || !isset($_rt['form_token'])) {
+        $req = "INSERT INTO {$tbl} (form_token,form_created,form_user_id,form_view,form_params,form_fields,form_saved)
+                VALUES ('{$form_id}',UNIX_TIMESTAMP(),'{$uid}','{$opt}','" . jrCore_db_escape(json_encode($_form)) . "','','')
+                ON DUPLICATE KEY UPDATE form_created = UNIX_TIMESTAMP(), form_view = '{$opt}', form_params = '" . jrCore_db_escape(json_encode($_form)) . "'";
+        $cnt = jrCore_db_query($req, 'COUNT');
+        if (!$cnt || $cnt === 0) {
+            jrCore_notice('Error', 'unable to store form session - check Activity Log');
+        }
+        // Set flag so any get_sessions in this process won't have to come back to the DB
+        $_rt = array(
+            'form_token'      => $form_id,
+            'form_created'    => time(),
+            'form_updated'    => 0,
+            'form_rand'       => 0,
+            'form_user_id'    => $uid,
+            'form_profile_id' => ($uid > 0) ? $_user['user_active_profile_id'] : 0,
+            'form_view'       => "{$_post['module']}/{$_post['option']}",
+            'form_validated'  => 0,
+            'form_params'     => $_form,
+            'form_fields'     => '',
+            'form_saved'      => ''
+        );
+    }
+    else {
+        // Update with new session info
+        $req = "UPDATE {$tbl} SET form_created = UNIX_TIMESTAMP(), form_rand = '" . mt_rand(0, 999999999) . "', form_view = '{$opt}', form_params = '" . jrCore_db_escape(json_encode($_form)) . "'
+                 WHERE form_token = '" . jrCore_db_escape($form_id) . "' LIMIT 1";
+        $cnt = jrCore_db_query($req, 'COUNT');
+        if (!$cnt || $cnt === 0) {
+            jrCore_notice('Error', 'unable to update form session - check Activity Log');
+        }
+    }
+    return $_rt;
+}
+
+/**
+ * Get information about the active form session
+ * @param string $form_id Form ID to get session for
+ * @return mixed
+ */
+function _jrCore_mysql_form_get_session($form_id = null)
+{
+    $tbl = jrCore_db_table_name('jrCore', 'form_session');
+    $tkn = jrCore_db_escape($form_id);
+    $uid = (isset($_SESSION['_user_id'])) ? intval($_SESSION['_user_id']) : '0';
+    $req = "SELECT * FROM {$tbl} WHERE form_token = '{$tkn}' AND form_user_id = '{$uid}'";
+    $_rt = jrCore_db_query($req, 'SINGLE');
+    if (!$_rt || !is_array($_rt) || !isset($_rt['form_token'])) {
+        return false;
+    }
+    // form_params - parameters for the form
+    $_rt['form_params'] = (isset($_rt['form_params']{2})) ? json_decode($_rt['form_params'], true) : false;
+
+    // form_fields - information about each field in the form
+    $_rt['form_fields'] = (isset($_rt['form_fields']{2})) ? json_decode($_rt['form_fields'], true) : false;
+
+    // form_saved - if the user enters info an encounters an error, the values they entered are saved here
+    $_rt['form_saved'] = (isset($_rt['form_saved']{2})) ? json_decode($_rt['form_saved'], true) : false;
+
+    return $_rt;
+}
+
+/**
+ * Save a form session
+ * @param string $form_id Form ID of existing form session
+ * @param array $_data Form information to save
+ * @param array $_form existing form information
+ * @return bool
+ */
+function _jrCore_mysql_form_save_session($form_id, $_data, $_form)
+{
+    $tbl = jrCore_db_table_name('jrCore', 'form_session');
+    $tkn = jrCore_db_escape($form_id);
+    $sav = jrCore_db_escape(json_encode($_data));
+    $req = "UPDATE {$tbl} SET form_updated = UNIX_TIMESTAMP(), form_rand = '" . mt_rand() . "', form_saved = '{$sav}' WHERE form_token = '{$tkn}'";
+    $cnt = jrCore_db_query($req, 'COUNT');
+    if ($cnt && $cnt === 1) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Save a form session
+ * @param string $form_id Form ID of existing form session
+ * @param array $_fields form field data
+ * @return bool
+ */
+function _jrCore_mysql_form_update_session_fields($form_id, $_fields)
+{
+    $tbl = jrCore_db_table_name('jrCore', 'form_session');
+    $tkn = jrCore_db_escape($form_id);
+    $sav = jrCore_db_escape(json_encode($_fields));
+    $req = "UPDATE {$tbl} SET form_updated = UNIX_TIMESTAMP(), form_rand = '" . mt_rand() . "', form_fields = '{$sav}' WHERE form_token = '{$tkn}'";
+    $cnt = jrCore_db_query($req, 'COUNT');
+    if ($cnt && $cnt === 1) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Mark a form session as validated
+ * @param string $form_id Form ID to delete
+ * @return bool
+ */
+function _jrCore_mysql_form_mark_as_validated($form_id)
+{
+    $tbl = jrCore_db_table_name('jrCore', 'form_session');
+    $req = "UPDATE {$tbl} SET form_rand = '" . mt_rand() . "', form_validated = '1' WHERE form_token = '{$form_id}' LIMIT 1";
+    return jrCore_db_query($req);
+}
+
+/**
+ * Delete an Active form session
+ * @param string $form_id Form ID to delete
+ * @return bool
+ */
+function _jrCore_mysql_form_delete_session($form_id)
+{
+    $tbl = jrCore_db_table_name('jrCore', 'form_session');
+    $tkn = jrCore_db_escape($form_id);
+    $req = "DELETE FROM {$tbl} WHERE form_token = '{$tkn}'";
+    jrCore_db_query($req);
+    return true;
+}
+
+/**
+ * @ignore
+ * jrCore_form_delete_session_view
+ * @param string $module Module that contains the View
+ * @param string $view View to delete
+ * @return bool
+ */
+function _jrCore_mysql_form_delete_session_view($module, $view)
+{
+    $mod = jrCore_db_escape($module);
+    $opt = jrCore_db_escape($view);
+    $tbl = jrCore_db_table_name('jrCore', 'form_session');
+    $req = "DELETE FROM {$tbl} WHERE form_view = '{$mod}/{$opt}'";
+    jrCore_db_query($req);
+    return true;
+}
+
+/**
+ * Perform form session maintenance
+ * @param int $hours
+ * @return bool
+ */
+function _jrCore_mysql_form_session_maintenance($hours)
+{
+    // Cleanup old form sessions
+    $tbl = jrCore_db_table_name('jrCore', 'form_session');
+    $req = "SELECT form_token FROM {$tbl} WHERE form_updated < (UNIX_TIMESTAMP() - ({$hours} * 3600))";
+    $_rt = jrCore_db_query($req, 'form_token', false, 'form_token');
+    if ($_rt && is_array($_rt)) {
+        $req = "DELETE FROM {$tbl} WHERE form_token IN('" . implode("','", $_rt) . "')";
+        jrCore_db_query($req);
+    }
+    return true;
+}
+
+/**
+ * Delete all existing form sessions
+ * @return mixed
+ */
+function _jrCore_mysql_form_delete_all_form_sessions()
+{
+    $tbl = jrCore_db_table_name('jrCore', 'form_session');
+    $req = "TRUNCATE TABLE {$tbl}";
+    return jrCore_db_query($req);
 }

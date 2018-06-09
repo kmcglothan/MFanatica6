@@ -1,0 +1,92 @@
+/* @title Header */
+/* @help This is the main header section for the site */
+#header {
+    height:76px;
+    background-color: #BBBBBB;
+    background-image: url("{$jrNovaLight_img_url}/bckgrd.png");
+    color:#111111;
+    margin-bottom:12px;
+}
+/* @title Header Links */
+/* @help Header text URL */
+#header a {
+    text-transform:capitalize;
+    text-decoration:none;
+    color:#F7DD4F;
+}
+
+/* @title Header Link Hover */
+/* @help Header text URL hover */
+#header a:hover {
+    text-decoration:underline;
+    color:#333333;
+}
+
+#header_content {
+    height:100%;
+    max-width:1280px;
+    margin-left:auto;
+    margin-right:auto;
+}
+
+/* @title Header Logo */
+/* @help Header Logo background */
+.logo {
+    background-color:#a7a7a7;
+    padding:8px;
+    margin-bottom:0;
+}
+/* @title Header Ad */
+/* @help Header Ad section */
+.top_ad {
+    background-color: #BBBBBB;
+    max-width:500px;
+    color:#EEE;
+    font-size:14px;
+    font-weight:normal;
+    border-width:1px;
+    border-style: solid;
+    border-color: #999999;
+    text-align:center;
+    padding:6px;
+    margin:6px auto;
+}
+/* @title Header Ad Link */
+/* @help Header Ad Link color */
+.top_ad a {
+    color:#F7DD4F;
+}
+/* @title Header Ad Hover */
+/* @help Header Ad Link Hover color */
+.top_ad a:hover {
+    text-decoration:underline;
+}
+#main_logo {
+    vertical-align:middle;
+    cursor:pointer;
+}
+
+/* @title Main Menu */
+/* @help Main Menu */
+#main_menu {
+    height:100%;
+    display:table-cell;
+    vertical-align:middle;
+    text-align:right;
+    font-size:16px;
+    padding-right:12px;
+}
+
+/* @title Add To Cart Success */
+/* @help This success section after adding an item to the cart */
+#add_to_cart_success {
+    float:left;
+    position:absolute;
+    margin:0 auto;
+    background-color:#BBBBBB;
+    border:1px solid #999999;
+    padding:8px;
+    font-size:14px;
+    color:#111111;
+    border-radius:4px;
+}

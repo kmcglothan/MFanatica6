@@ -48,7 +48,7 @@ function jrSoundCloud_config()
         'name'     => 'client_id',
         'type'     => 'text',
         'default'  => '',
-        'validate' => 'hex',
+        'validate' => 'string',
         'label'    => 'Client ID',
         'help'     => 'Enter the SoundCloud API Client ID code',
         'order'    => 1
@@ -60,7 +60,7 @@ function jrSoundCloud_config()
         'name'     => 'client_secret',
         'type'     => 'text',
         'default'  => '',
-        'validate' => 'hex',
+        'validate' => 'string',
         'label'    => 'Client Secret',
         'help'     => 'Enter the SoundCloud API Client Secret code',
         'order'    => 2

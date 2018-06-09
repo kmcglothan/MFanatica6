@@ -1,0 +1,1161 @@
+/* @title Info Log */
+/* @help Background color for Informational (INF) Log entries */
+.log-inf {
+    background-color: transparent;
+    text-align: left;
+}
+
+/* @title Minor Log */
+/* @help Background color for Minor (MIN) Log entries */
+.log-min {
+    background-color: #FFFF99;
+    text-align: left;
+}
+
+/* @title Major Log */
+/* @help Background color for Major (MAJ) Log entries */
+.log-maj {
+    background-color: #FF9900;
+    text-align: left;
+}
+
+/* @title Critical Log */
+/* @help Background color for Critical (CRI) Log entries */
+.log-cri {
+    background-color: #FF6600;
+    text-align: left;
+}
+
+/* admin menu */
+/* admin menu */
+/* admin menu */
+
+#item-holder {
+    margin-right: 9px;
+}
+
+dd {
+    padding-top: 0;
+    padding-bottom: 9px;
+    margin: 0;
+    font-size: 12px;
+}
+
+.admin_section_header {
+    background: #FAF9F2;
+    margin-top: 0;
+}
+
+.admin_section_search {
+    background-color: #DDDDDD !important;
+    border-radius: 0 !important;
+    padding: 11px !important;
+    box-sizing: border-box;
+}
+
+.form_admin_search {
+    width: 98% !important;
+    font-style: italic;
+    color: #AAAAAA;
+    box-sizing: border-box;
+}
+
+.form_admin_search:focus {
+    border: 0 !important;
+}
+
+/* @title Menu Row */
+/* @help The row for the menu list */
+.item-entry {
+    color: #444444;
+    display: table-cell;
+    font-size: 15px;
+    padding: 6px;
+    vertical-align: middle;
+    width: 100%;
+}
+
+.item-row {
+    background: white none repeat scroll 0 0;
+    cursor: pointer;
+    display: table-row;
+    height: 42px;
+    width: 100%;
+}
+
+/* @title Menu Active Row */
+/* @help The active row for the menu list */
+.item-row-active {
+    background-color: #F3F3F3;
+}
+
+.item-row:hover {
+    background-color: #F3F3F3;
+}
+
+/* @title Menu Icon */
+/* @help The icon for the menu item */
+.item-icon {
+    display: table-cell;
+    padding: 3px;
+}
+
+.item-enabled {
+    display: table-cell;
+    padding-right: 6px;
+}
+
+/* @title Module Disabled */
+/* @help Contents of Small box to the right of a disabled module */
+.item-disabled {
+    display: table-cell;
+    color: #000000;
+    background: #AADDFF;
+    font-size: 11px;
+    padding: 6px;
+    border: 0;
+}
+
+#item-work {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+    margin: 2px;
+}
+
+/* @title Banner Background */
+/* @help The Banner Background is the background color in the small section at the top of pages where the module icon appears */
+.page_banner_box {
+
+}
+
+/* @title Page Banner border */
+/* @help The Page Banner border is the border around the section at the top of pages where the module icon appears */
+
+.page_banner {
+    background: #DDDDDD none repeat scroll 0 0;
+    color: #333333;
+    margin-bottom: 6px;
+    padding-bottom: 3px;
+}
+
+/* @title Page Banner Icon */
+/* @help The Page Banner Icon section is the small section at the top of pages where the module icon appears */
+.page_banner_icon {
+    width: 1%;
+    padding: 8px 0 8px 8px; /* @ignore */
+}
+
+/* @title Page Banner Title */
+/* @help The Title section in the page banner */
+.page_banner_left {
+    height: 36px;
+    text-align: left;
+    padding: 5px 12px 3px 12px;
+    font-size: 18px;
+    font-weight: bold;
+    text-transform: capitalize;
+    white-space: nowrap;
+}
+
+/* @title Page Banner Description */
+/* @help The Description section on the right side of the page banner */
+.page_banner_right {
+    padding: 4px 8px 0 0; /* @ignore */
+    text-align: right;
+}
+
+.form_radio {
+}
+
+/* @title Radio Option */
+/* @help Format for Radio form field options */
+.form_radio_option {
+    display: inline;
+    padding-right: 32px;
+}
+
+/* @title Textarea */
+/* @help Format for Textarea form input fields */
+.form_text {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    border: 0;
+    border-radius: 3px;
+    color: #FFFFFF;
+    font-size: 14px;
+    margin: 0 2px;
+    padding: 4px 5px;
+    width: 75%;
+    background-color: #555555;
+    vertical-align: middle;
+}
+
+/* @title Radio Option */
+/* @help Format for Radio form field options */
+.form_radio_option {
+    display: inline;
+    padding-right: 32px;
+}
+
+/* @title Textarea Focus */
+/* @help Class applied to a textarea field when the field is selected for input. */
+textarea:focus {
+    border: 1px solid #303030;
+}
+
+/* @title Checkbox */
+/* @help Class applied to a checkbox form field */
+.form_checkbox {
+    font-size: 16px;
+    margin: 3px;
+    border-radius: 3px;
+}
+
+/* @title Optionlist Text */
+/* @help Class applied to the text to the right of an Optionlist entry */
+.form_option_list_text {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+}
+
+/* @title Disabled */
+/* @help Class applied to a form element when it is disabled */
+.form_element_disabled {
+    border-width: 1px;
+    border-style: solid;
+    border-color: #DDDDDD;
+    background-color: #FFFFFF;
+    color: #AAAAAA;
+}
+
+/* @title Code Mirror */
+/* @help Overrides Core CodeMirror class */
+.CodeMirror {
+    background: #FFFFFF;
+    padding: 0;
+    font-size: 12px;
+    border: solid 1px #7F7F7F;
+    border-radius: 3px;
+    margin-left: 2px;
+}
+
+/* @title Date Input */
+/* @help Format for Date Input form elements */
+.form_date {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #000000;
+    font-size: 14px;
+    height: 24px;
+    line-height: 24px;
+    width: 15%;
+    padding: 0 4px; /* @ignore */
+    margin: 0 2px; /* @ignore */
+    background-color: #FFFFFF;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #7F7F7F;
+    border-radius: 3px;
+}
+
+/* @title Input Focus */
+/* @help Class applied to a text input field when the field is selected for input. */
+input[type="text"]:focus, select:focus, textarea:focus {
+    box-shadow: 0 0 3px #FFCC33;
+}
+
+.form_text[disabled="disabled"], .form_text[readonly="readonly"] {
+    opacity: 0.5;
+}
+
+.form_text_search {
+    width: 35%;
+    padding: 7px;
+    margin-right: 6px;
+}
+
+.live_search_text {
+    color: #CCCCCC;
+    font-style: italic;
+}
+
+/* remove Firefox's dotted outlines... */
+:focus {
+    outline: none;
+}
+
+::-moz-focus-inner {
+    border: 0;
+}
+
+form {
+    margin-bottom: 0;
+}
+
+/* @title Element Left */
+/* @help This is the left side of pages and forms where the label and sub-label will appear */
+.element_left {
+    text-align: right;
+    text-transform: capitalize;
+    padding: 4px 6px 12px 0;
+    width: 23%;
+}
+
+.tool_element_left {
+    padding: 6px;
+}
+
+/* @title Element Right */
+/* @help This is the right side of pages and forms where the form elements appear */
+.element_right {
+    padding: 4px 0 12px 0;
+    width: 77%;
+}
+
+.tool_element_right {
+    padding: 6px;
+}
+
+/* @title Element Right URLs */
+/* @help This is the color of URLs that might appear on the right side of the form */
+.element_right a {
+    color: #222222;
+}
+
+.form_input_left {
+    height: 30px;
+}
+
+.sublabel {
+    font-size: 11px;
+    text-transform: none;
+}
+
+.form_help_button {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    position: absolute;
+    top: 5px;
+    right: 0;
+    background: rgba(0, 0, 0, 0) linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.8)) repeat scroll 0 0;
+}
+
+/* @title Form Help */
+/* @help This is for the help sections for the forms */
+
+.form_help {
+    background-color: #EEEEEE;
+    padding: 8px;
+    margin: 0 2px 8px 2px;
+    border-radius: 3px;
+    box-shadow: inset 0 0 5px #BBBBBB;
+}
+
+/* @title Form Help Drop */
+/* @help This is for the help drop down section for the forms */
+.form_help_drop {
+    padding: 8px;
+    width: 100%;
+}
+
+/* @title Form Help Drop Left */
+/* @help This is for the left side help drop down section for the forms */
+.form_help_drop_left {
+    color: #333333;
+    font-size: 15px;
+    padding: 10px;
+    text-align: left;
+    text-transform: none;
+    width: 95%;
+}
+
+/* @title Form Help Drop Right */
+/* @help This is for the right side help drop down section for the forms */
+.form_help_drop_right {
+    width: 5%;
+    padding: 10px 20px 20px 20px;
+}
+
+.form_help_default {
+    display: inline-block;
+    margin-top: 12px;
+}
+
+/* @title Form Help Small */
+/* @help This is for the small help text */
+.form_help_small {
+    display: inline-block;
+    font-size: 9px;
+    margin-top: 12px;
+    color: #999999;
+    font-style: italic;
+}
+
+.form_submit_box {
+    padding-top: 6px;
+}
+
+.form_submit_section {
+    padding: 10px;
+    text-align: center;
+    background: #DDDDDD none repeat scroll 0 0;
+}
+
+#form_submit_indicator {
+    display: none;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.page_notice_drop {
+
+}
+
+/* @title Form Message Box */
+/* @help Form messages will be displayed withing the Form Message box */
+.page_notice {
+    text-align: center;
+    padding: 10px;
+    margin: 0 0 6px;
+    font-size: 14px;
+}
+
+/* @title Form Message Text */
+/* @help Formats the message text as shown in the Form Message Box */
+.form_notice {
+    text-align: center;
+    padding: 10px;
+    display: none;
+}
+
+/* @title Form Notice */
+/* @help Background color of Form Notice messages */
+.notice {
+    background-color: #AADDFF !important;
+    color: #000000 !important;
+}
+
+.notice a {
+    color: #000000 !important;
+}
+
+/* @title Form Warning */
+/* @help Background color of Form Warning messages */
+.warning {
+    background-color: #FFD940 !important;
+    color: #000000;
+}
+
+.warning a {
+    color: #000000 !important;
+}
+
+/* @title Form Error */
+/* @help Background color of Form Error messages */
+.error {
+    background-color: #FFD940 !important;
+    color: #000000;
+}
+
+.error a {
+    color: #000000 !important;
+}
+
+/* @title Form Success */
+/* @help Background color of Form Success messages */
+.success {
+    background-color: #66D940 !important;
+    color: #000000 !important;
+}
+
+.success a {
+    color: #000000 !important;
+}
+
+/* @title Field Error */
+/* @help Background color of a form field if the contents are in error */
+.field-hilight {
+    background-color: #FFDD00;
+}
+
+/* @title Select */
+/* @help Format for the Select form field. */
+.form_select {
+    border: medium none;
+    border-radius: 3px;
+    box-sizing: border-box;
+    color: #EEEEEE;
+    font-size: 14px;
+    margin: 2px;
+    padding: 3px;
+    width: 76.4%;
+}
+
+/* @title Select Multiple */
+/* @help Format for the Select form field when multiple items can be selected. */
+.form_select_multiple {
+}
+
+.form_select_and_text_select {
+    width: 33%;
+    margin-right: 12px;
+}
+
+.form_select_and_text_text {
+    width: 32%;
+}
+
+/* @title Select Jumper */
+/* @help Format for the Select Jumper field used in Page Headers */
+.form_select_item_jumper {
+    width: 250px;
+}
+
+/* @title Time Input */
+/* @help Class applied to the Time Select Field */
+.form_time {
+    margin-left: 12px;
+    width: 15%;
+    min-width: 95px;
+}
+
+optgroup {
+    font-style: normal;
+}
+
+.accordion a {
+    color: #F8C574;
+    text-decoration: none;
+}
+
+.accordion a:hover {
+    color: #FFFFFF;
+    text-decoration: none;
+}
+
+/* @title Form Button */
+/* @help Format for Form Buttons */
+
+.form_button {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: rgba(0, 0, 0, 0) linear-gradient(#FFFFFF, #E5E5E5) repeat scroll 0 0;
+    border: 1px solid #CCCCCC;
+    border-radius: 3px;
+    box-shadow: none;
+    color: #666666;
+    cursor: pointer;
+    font-size: 14px;
+    height: auto;
+    margin: 0 2px;
+    padding: 6px 8px;
+    text-decoration: none;
+    text-transform: capitalize;
+    vertical-align: middle;
+}
+
+.form_button:disabled {
+    cursor: auto;
+    opacity: 0.3;
+}
+
+/* @title Follow Button*/
+/* @help Override for border-radius on follow button */
+.follow_button {
+    border-radius: 3px;
+}
+
+.form_button_disabled {
+    opacity: 0.3;
+}
+
+.form_button_disabled:hover {
+    color: #A4A4A4;
+    background: #F0F0F0;
+}
+
+.form_button a, .form_button_anchor a, .form_button_anchor:hover a {
+    text-decoration: none;
+}
+
+.sprite_icon_hilighted {
+    background-color: #FFCC00;
+}
+
+/* @title Tables */
+/* @help This is the HTML table style */
+table {
+    width: 100%;
+    border-width: 0;
+    border-spacing: 0;
+}
+
+/* @title Table TD */
+/* @help This is the TD tag for tables */
+td, th {
+    padding: 0;
+}
+
+/* @title Table Links */
+/* @help This is the color for URL links in a table */
+td a {
+    color: #226699;
+}
+
+#page_notice > a {
+    color: #5588CC;
+}
+
+/* @title Page Table */
+/* @help This is the page table style */
+.page_table {
+    background-color: #DDDDDD;
+    border-spacing: 1px;
+    width: 100%;
+}
+
+.bigtable {
+    border-spacing: 3px;
+}
+
+.page_table_header > a {
+    color: #FF5500;
+}
+
+/* @title Page Table Header */
+/* @help This is the page header table style */
+.page_table_header {
+    background-color: rgba(255, 255, 255, 0.1);
+    font-size: 12px;
+    font-weight: bold;
+    padding: 6px;
+    text-align: center;
+    text-transform: capitalize;
+    white-space: nowrap;
+}
+
+/* @title Page Table Footer */
+/* @help This is the page footer table style */
+.page_table_footer {
+    background-color: #E8EAEB;
+    text-align: center;
+    padding: 6px;
+    font-size: 12px;
+    text-transform: capitalize;
+    color: #000000;
+    white-space: nowrap;
+}
+
+/* @title Page Table Row */
+/* @help This is the page row table style */
+.page_table_row {
+    background-color: #F2F2F2;
+}
+
+.page_table_row_alt {
+    background-color: #F8F8F8;
+}
+
+/* @title Page Table Cell */
+/* @help This is the page table cell style */
+.page_table_cell {
+    padding: 4px;
+    font-size: 13px;
+    color: #333333;
+}
+
+/* @title Page Table Pager */
+/* @help This is the page pagination table style */
+
+/* @title Page Pager Left */
+/* @help This is the left pagination cell */
+.page_table_pager_left {
+    width: 25%;
+    padding: 5px;
+}
+
+/* @title Page Pager Center */
+/* @help This is the center pagination cell */
+.page_table_pager_center {
+    text-align: center;
+    width: 50%;
+    padding: 5px;
+    font-size: 11px;
+}
+
+/* @title Page Pager Right */
+/* @help This is the right pagination cell */
+.page_table_pager_right {
+    text-align: right;
+    width: 25%;
+    padding: 5px;
+}
+
+/* @title Page Pager Jumper */
+/* @help This is the page selection drop down */
+.page_table_jumper {
+    width: 50px;
+}
+
+/* @title Page Notice */
+/* @help This is the page notice section */
+.page_table_notice {
+    text-align: center;
+    line-height: 32px;
+    font-size: 14px;
+}
+
+/* @title Page Section */
+/* @help The Page Section is the small divider that can divide forms into logical groups. */
+.page_section_header {
+    background: #FAF9F2 none repeat scroll 0 0;
+    border-radius: 0;
+    color: #333333;
+    font-size: 16px;
+    text-transform: lowercase;
+    font-variant: small-caps;
+    font-weight: normal;
+    margin: 0 0 9px;
+    padding: 6px 6px 6px 14px;
+}
+
+.accordion .page_section_header {
+    background-color: #FAF9F2;
+    color: #444444;
+}
+
+/* @title Page Divider */
+/* @help The small horizontal line or section that can be used to divide large sections of a page */
+.page_divider {
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #DDDDDD;
+}
+
+/* @title Page Note */
+/* @help If a module has a special &quot;note&quot; that it wants to display, this controls how it looks. */
+.page_note {
+    background-color: #CCFF99;
+    color: #333333;
+    font-size: 14px;
+    margin-bottom: 9px;
+    margin-top: 12px;
+    padding: 9px;
+    text-align: center;
+}
+
+/* @title Page Search Hilight */
+/* @help For options that support searching and hilighting, this is the background color for text matching. */
+.page_search_highlight {
+    background-color: #F7DD4F;
+}
+
+/* Tab Bar */
+/* @title Tab Bar Holder */
+/* @help This is the holder for the tab bar */
+.page_tab_bar_holder {
+    padding-top: 3px;
+    border-bottom: 1px solid #DDDDDD;
+    width: 100%;
+}
+
+.page_tab_bar_spacer {
+    height: 10px;
+}
+
+.page_tab_bar {
+    padding-left: 16px;
+}
+
+/* @title Page Tab */
+/* @help This is the tab for the tab bar */
+.page_tab {
+    background-color: #DDDDDD;
+    border-radius: 4px 4px 0 0;
+    color: #333333;
+    cursor: pointer;
+    float: left;
+    font-size: 14px;
+    list-style: outside none none;
+    margin-left: 6px;
+    text-align: center;
+    text-decoration: none;
+    text-transform: capitalize;
+}
+
+/* @title Page Tab Hover */
+/* @help This is the tab hover for the tab bar */
+.page_tab:hover {
+    background-color: #666666;
+    color: #000000;
+    text-decoration: none;
+}
+
+/* @title Page Tab Hover Link */
+/* @help This is the tab link hover for the tab bar */
+.page_tab:hover a {
+    color: #FFFFFF;
+    text-decoration: none;
+}
+
+.page_tab_active {
+    color: #000000;
+}
+
+.page_tab_active:hover {
+    border-bottom: 0 none;
+    color: #DDDDDD;
+    text-decoration: none;
+}
+
+.page_tab_active:hover a {
+    color: #000000;
+    text-decoration: none;
+}
+
+.page_tab_active.page_tab a {
+    color: white;
+}
+
+.page_tab_active a:hover {
+    color: #DDDDDD;
+}
+
+/* @title Page Tab Link */
+/* @help This is the tab URL link for the tab bar */
+.page_tab a {
+    color: #333333;
+    display: block;
+    padding: 7px 14px;
+    text-decoration: none;
+}
+
+.page_tab_first {
+    margin-left: 0;
+}
+
+.page_tab_last {
+}
+
+/* @title Page Tab Active */
+/* @help This is the active tab */
+.page_tab_hilight {
+    background-color: #FFCC00;
+    color: #000000;
+}
+
+.page_tab_hilight a {
+    color: #000000;
+}
+
+/* @title Modal Overlay */
+/* @help The background overlay for the Modal window */
+#simplemodal-overlay {
+    background-color: #000000;
+    cursor: wait;
+}
+
+/* @title Modal Window */
+/* @help The Modal window */
+#modal_window {
+    background-color: #FFFFFF;
+    overflow: auto;
+    padding: 10px;
+}
+
+/* @title Modal Updates */
+/* @help The Modal window updates */
+#modal_updates {
+    color: #CCCCCC;
+    font-size: 12px;
+    padding: 8px;
+    margin-left: 12px;
+    overflow: auto;
+}
+
+/* @title Modal Spinner */
+/* @help The Modal window loading image */
+#modal_spinner {
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+.action_item_desc a {
+    color: #999999;
+}
+
+.action_item_holder {
+    border-bottom: 1px solid #FFFFFF;
+}
+
+#wrapper {
+    min-height: calc(100vh - 110px);
+    padding: 50px 0 0 !important;
+    position: relative;
+}
+
+#content .item-list {
+    padding: 2px 0;
+}
+
+#dashboard_container {
+    padding: 1em;
+}
+
+/* @title Site Content */
+/* @help This is the main Site Content holder */
+
+#content {
+    background: white none repeat scroll 0 0;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 0 2px #AAAAAA;
+    font-size: 1em;
+    margin: 10px auto;
+    max-width: 1280px;
+}
+
+#content > .container {
+    padding: 1em;
+}
+
+#content > .page_content {
+    padding: 1em;
+}
+
+#content > .jrform {
+    padding: 1em;
+}
+
+#content h2 {
+    margin: 0;
+}
+
+#content .sb-widget-title > h2 {
+    font-weight: normal;
+    text-transform: uppercase;
+}
+
+/* @title block */
+/* @help This is the main style for the individual blocks of the page */
+.block {
+    background-color: transparent;
+    padding: 12px;
+    margin: 0 auto;
+}
+
+.recommend_box {
+    background-color: #EDEDED;
+    padding: 25px;
+    margin: 12px;
+    border-style: solid;
+    border-color: #DDDDDD;
+    border-width: 1px;
+    font-size: 16px;
+    color: #000000;
+}
+
+.recommend_box a {
+    color: #336699;
+    text-decoration: none;
+}
+
+.recommend_box a:hover {
+    color: #333333;
+    text-decoration: underline;
+}
+
+.search_box {
+    color: #EEEEEE;
+    font-size: 16px;
+    margin: 12px;
+    padding: 25px;
+    border: none;
+    border-radius: 4px;
+}
+
+.page_content {
+    border-radius: 4px;
+    color: #444444;
+}
+
+.search_box a {
+    text-decoration: none;
+}
+
+.search_box a:hover {
+    color: #333333;
+    text-decoration: underline;
+}
+
+.container {
+    margin: 0;
+}
+
+.bignum_stat .sprite_icon {
+    background: #666666 none repeat scroll 0 0;
+}
+
+.sb-menu-entry {
+    border-radius: 2px;
+    color: #000000;
+    cursor: move;
+    font-size: 15px;
+    margin-top: 3px;
+    padding: 6px 9px;
+    text-transform: capitalize;
+    vertical-align: middle;
+}
+
+#modal_window {
+    background: #111111 none repeat scroll 0 0;
+}
+
+#modal_updates {
+    color: #CCCCCC;
+}
+
+.item h2 {
+    margin: 0 0 5px;
+}
+
+.sb-widget-title {
+    font-size: 16px;
+}
+
+.sb-widget-col {
+    padding: 0 6px;
+}
+
+.sb-widget-col.sb-widget-hilight {
+    padding: 6px 6px 44px;
+}
+
+.form_text, .form_textarea, .form_select {
+    background: #555555 none repeat scroll 0 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) inset, 0 0 1px rgba(0, 0, 0, 0.1) inset, 0 2px 0 rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+.page_banner_box .page_banner {
+    width: 100%;
+}
+
+.sb-widget-controls {
+    right: 6px;
+    top: 6px;
+}
+
+.plugin #providers .provider .name {
+    color: #AAAAAA;
+}
+
+.plugin .footer #branding a span.plugin_title {
+    color: #FFFFFF;
+}
+
+.plugin .footer #branding a {
+    color: #CCCCCC;
+}
+
+.simplemodal-container .sb-menu-entry {
+    background-color: #555555;
+}
+
+.sb-row-button {
+    color: #666666;
+}
+
+.black #debug_log {
+    color: white;
+}
+
+#sb-edit-cp {
+    border-radius: 8px;
+}
+
+.widget-template-code {
+    background: rgba(100, 150, 205, 0.1) none repeat scroll 0 0;
+}
+
+.item.success {
+    background-color: #CCFF99;
+    color: #CCCCCC;
+}
+
+textarea {
+    border: medium none;
+}
+
+.jrform .upload_button {
+    width: 188px;
+    line-height: 28px;
+}
+
+#info_box {
+    padding: 0 0 8px;
+}
+
+#info_box .item {
+    border-bottom: 0 !important;
+}
+
+.form_textarea {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    border: 1px solid rgba(0, 0, 0, 0);
+    border-radius: 3px;
+    padding: 4px 5px;
+    font-size: 14px;
+    margin-left: 2px;
+    height: 100px;
+    min-height: 90px;
+    width: 74.7%;
+}
+
+a.qq-upload-cancel {
+    color: black;
+}
+
+.center {
+    text-align: center;
+}
+
+p.waiting {
+    padding: 12em 0;
+}
+
+.acp-default-img {
+    border: medium none;
+}
+
+.form_text.form_select_and_text_text {
+    width: 30%;
+}
+
+.action span.title {
+    font-size: 18px;
+}
+
+.page_tab.page_tab_active {
+    background-color: #FF5500;
+}
+
+.sb-menu-entry a {
+    color: white;
+    cursor: pointer;
+}
+
+.simplemodal-data .page_content {
+    background: #F3F3F3;
+}
+
+.paypal_buy_now_section {
+    height:28px;
+    box-shadow:none;
+}
+.paypal_buy_now_section img {
+    padding-top:3px;
+}
+
+.paypal_buy_now_price {
+    padding-bottom: 8px;
+    padding-right:10px;
+
+}
+
+.sb-menu-entry button {
+    height:27px;
+}

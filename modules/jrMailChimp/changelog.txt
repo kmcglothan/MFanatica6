@@ -1,0 +1,11 @@
+MailChimp Module changelog
+
+Version 1.0.2:
+ - New: added "Account Created Date" as a Merge variable
+
+Version 1.0.1:
+ - New: "Sync User Accounts" tool for synchronizing existing User Accounts
+ - Change: List maintenance moved to Queue Workers to improve UI
+
+Version 1.0.0:
+ - Initial Release

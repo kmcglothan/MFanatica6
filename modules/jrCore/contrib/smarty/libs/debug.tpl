@@ -64,7 +64,7 @@
             }
 
             td {
-                color: grey;
+                color: green;
             }
 
             .odd {

@@ -1,7 +1,7 @@
 {jrCore_page_title title=$_page.page_title}
 {jrCore_include template="header.tpl"}
 
-<div class="container">
+<div class="container sb-page-id-{$_page.page_id}">
 
 {if jrUser_is_master()}
     {if $_widget_count == 0 && $show_widget_notice}
@@ -33,10 +33,10 @@
         -ms-user-select: none;
         user-select: none;
     }
-    ul.sb-widget-sortable li {
+    ul.sb-widget-sortable > li {
         list-style: none;
     }
-    ul.sb-widget-sortable li.sortable-placeholder {
+    ul.sb-widget-sortable > li.sortable-placeholder {
         border: 2px dashed #FC0;
         background: none;
         height: 38px;

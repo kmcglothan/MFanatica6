@@ -2,7 +2,7 @@
 /**
  * Jamroom Like It module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -43,19 +43,31 @@ defined('APP_DIR') or exit();
  */
 function jrLike_db_schema()
 {
+    // Update any like_user_id values that are IP addresses
+    // We are changing to INT for performance reasons
+    if (jrCore_db_table_exists('jrLike', 'likes')) {
+        $tbl = jrCore_db_table_name('jrLike', 'likes');
+        $req = "UPDATE {$tbl} SET like_user_id = INET_ATON(like_user_id) WHERE like_user_id LIKE '%.%'";
+        $cnt = jrCore_db_query($req, 'COUNT');
+        if ($cnt > 0) {
+            jrCore_logger('INF', "converted " . jrCore_number_format($cnt) . " like entries to correct IP address format");
+        }
+    }
+
     // Likes
     $_tmp = array(
         "like_id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
         "like_created INT(11) UNSIGNED NOT NULL DEFAULT '0'",
-        "like_user_id VARCHAR(16) NOT NULL DEFAULT ''",
+        "like_user_id INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "like_item_id INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "like_module VARCHAR(64) NOT NULL DEFAULT ''",
         "like_action VARCHAR(8) NOT NULL DEFAULT ''",
         "UNIQUE like_unique (like_user_id, like_item_id, like_module)",
         "INDEX like_action (like_action)",
+        "INDEX like_item_id (like_item_id)",
         "INDEX like_module (like_module)"
     );
-    jrCore_db_verify_table('jrLike', 'likes', $_tmp);
+    jrCore_db_verify_table('jrLike', 'likes', $_tmp, 'InnoDB');
 
     return true;
 }

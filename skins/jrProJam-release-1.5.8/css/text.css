@@ -1,0 +1,192 @@
+/*
+ * Jamroom 5 ProJam CSS
+ * Copyright 2003-2011 by Talldude Networks, LLC.
+ * @author Brian Johnson - brian@talldude.net
+ */
+
+.separator{
+    background:transparent url("{$jrProJam_img_url}/div.gif") center no-repeat;
+    text-align:center;
+    height:16px;
+    width:16px;
+    display:inline;
+}
+
+.divider{
+    height:0;
+    border:0;
+    border-top:solid 1px #1A1A1A;
+}
+
+/* @title Rank */
+/* @help This is the ranking number */
+.rank {
+    background-color:transparent;
+    padding:5px;
+    font-size:12px;
+    font-weight:bold;
+    text-align:center;
+    color:#CCC;
+    text-transform:uppercase;
+}
+
+/* @title Normal */
+/* @help This is the regular body text */
+.normal {
+	font-size:10px;
+    color:#FFF;
+}
+.normal a {
+    color:#105CBF;
+    text-decoration:none;
+}
+.normal a:hover {
+    color:#FC0;
+    text-decoration:none;
+}
+/* @title Hilited */
+/* @help This is the hilite text */
+.hilite {
+	font-size:10px;
+	font-weight:bold;
+    color:#BA4B0D;
+}
+.hilite_2 {
+    font-size:10px;
+    font-weight:bold;
+    color:#BA4B0D;
+}
+.highlight-txt {color: #BA4B0D;}
+.highlight-txt-2 {color: #A66;font-size: 18px;font-weight: bold;}
+.highlight-txt-3 {color: #C43;}
+
+/* @title Media Title */
+/* @help This is the Media Title text. */
+.media_title {
+    font-size:12px;
+    text-transform:capitalize;
+    display:inline;
+    padding:0;
+    margin:0;
+    color:#DDD;
+    font-weight:bold;
+}
+/* @title Media Title Link */
+/* @help This is the Media Title link text */
+.media_title a {
+    text-decoration:none;
+    color:#105CBF;
+}
+/* @title Media Title Hover */
+/* @help This is the Media Title hover text */
+.media_title a:hover {
+    color:#FC0;
+    text-decoration:none;
+}
+/* @title Audio Detail Labels */
+/* @help This is the small labels that are shown in the Audio Details box */
+.jraudio_title {
+    width:110px;
+    display:inline-block;
+    text-align:right;
+}
+
+/* @title Sub Title */
+/* @help This is the Sub Title text. */
+.sub_title {
+    padding:0 0 0 5px;
+    vertical-align:middle;
+    font-size:10px;
+    font-weight:bold;
+    text-transform:capitalize;
+}
+/* @title Sub Title Link */
+/* @help This is the Sub Title link text */
+.sub_title a {
+    text-decoration:none;
+    color:#105CBF;
+}
+/* @title Media Title Hover */
+/* @help This is the Media Title hover text */
+.sub_title a:hover {
+    color:#FC0;
+    text-decoration:none;
+}
+.event_desc_txt {
+    background-color:#111;
+    margin-left:10px;
+    padding:10px;
+}
+
+/* Tag Cloud fonts */
+
+div.jqcloud {
+    font-family:Verdana,Helvetica,Arial,sans-serif;
+    font-size: 10px;
+    line-height: normal;
+}
+
+div.jqcloud a {
+    font-size: inherit;
+    text-decoration: none;
+}
+
+div.jqcloud span.w10 { font-size: 550%; }
+div.jqcloud span.w9 { font-size: 500%; }
+div.jqcloud span.w8 { font-size: 450%; }
+div.jqcloud span.w7 { font-size: 400%; }
+div.jqcloud span.w6 { font-size: 350%; }
+div.jqcloud span.w5 { font-size: 300%; }
+div.jqcloud span.w4 { font-size: 250%; }
+div.jqcloud span.w3 { font-size: 200%; }
+div.jqcloud span.w2 { font-size: 150%; }
+div.jqcloud span.w1 { font-size: 100%; }
+
+/* Tag Cloud colors */
+
+div.jqcloud { color: #fffec5; }
+div.jqcloud a { color: inherit; }
+div.jqcloud a:hover { color: #ffcc00; }
+div.jqcloud a:hover { color: #ffcc00; }
+div.jqcloud span.w10 { color: #FFFF66; }
+div.jqcloud span.w9 { color: #FFFF66; }
+div.jqcloud span.w8 { color: #FFFF66; }
+div.jqcloud span.w7 { color: #ff9900; }
+div.jqcloud span.w6 { color: #ffc42d; }
+div.jqcloud span.w5 { color: #ffeb00; }
+div.jqcloud span.w4 { color: #FFF803; }
+div.jqcloud span.w3 { color: #ffcc00; }
+div.jqcloud span.w2 { color: #FF9900; }
+div.jqcloud span.w1 { color: #FF9900; }
+
+.tag_name_box {
+    float:left;
+    background-color:#222;
+    border-width:0;
+    border-color:#999999;
+    border-style:solid;
+    border-radius:0;
+    padding:3px 9px;
+    margin:6px 6px 0 0;
+    font-size:12px;
+    text-transform:uppercase;
+}
+.tag_name_box a {
+    color:#FFF;
+    text-decoration:none;
+}
+.tag_name_box a:hover {
+    color:#FFF;
+    text-decoration:none;
+}
+.tag_name_box:hover {
+    background-color:#9B1C26;
+}
+#tag_cloud {
+    background-color: #333;
+    border-radius:0;
+}
+#tag_cloud:hover {
+    background-color: #1A1A1A;
+    color:#CCC;
+}

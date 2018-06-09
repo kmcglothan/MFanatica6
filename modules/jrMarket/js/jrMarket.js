@@ -20,14 +20,14 @@ function jrMarket_update_all_items(token)
             },
             error: function(r, t, e) {
                 clearInterval(s);
-                alert('An error was encountered communicating with the server: ' + t + ': ' + e);
+                jrCore_alert('An error was encountered communicating with the server: ' + t + ': ' + e);
             }
         })
     }, 1000);
     $.getJSON(core_system_url + '/' + jrMarket_url + '/update_all_items/__ajax=1', function(r, a, x) {
         clearTimeout(s);
         if (r !== null && typeof r.error !== "undefined") {
-            alert(r.error);
+            jrCore_alert(r.error);
         }
     });
 }
@@ -60,7 +60,7 @@ function jrMarket_quick_purchase(type, price, market_id, item)
                 // Check for error
                 if (typeof msg.error !== "undefined") {
                     $(iid).hide(300, function() {
-                        alert(msg.error);
+                        jrCore_alert(msg.error);
                     });
                 }
                 else {
@@ -70,7 +70,7 @@ function jrMarket_quick_purchase(type, price, market_id, item)
                         // Check for error
                         if (typeof res.error !== "undefined") {
                             $(iid).hide(300, function() {
-                                alert(res.error);
+                                jrCore_alert(res.error);
                             });
                         }
                         else {
@@ -87,7 +87,7 @@ function jrMarket_quick_purchase(type, price, market_id, item)
             },
             error: function(x, t, e) {
                 $(iid).hide(300, function() {
-                    alert('unable to communicate with server - please try again');
+                    jrCore_alert('unable to communicate with server - please try again');
                 });
             }
         });
@@ -110,7 +110,7 @@ function jrMarket_install_item(type, market_id, item) {
             // Check for error
             if (typeof msg.error !== "undefined") {
                 $(iid).hide(300, function() {
-                    alert(msg.error);
+                    jrCore_alert(msg.error);
                 });
             }
             else if (typeof msg.license !== "undefined" && msg.license.length > 0) {
@@ -120,7 +120,7 @@ function jrMarket_install_item(type, market_id, item) {
                     // Check for error
                     if (typeof res.error !== "undefined") {
                         $(iid).hide(300, function() {
-                            alert(res.error);
+                            jrCore_alert(res.error);
                         });
                     }
                     else {
@@ -135,7 +135,7 @@ function jrMarket_install_item(type, market_id, item) {
                 });
             }
             else {
-                alert('Unable to retrieve a license for the item - please try again');
+                jrCore_alert('Unable to retrieve a license for the item - please try again');
             }
         });
     });

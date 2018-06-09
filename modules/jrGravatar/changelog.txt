@@ -1,5 +1,13 @@
 Gravatar User Image changelog
 
+Version 1.2.1:
+ - Bug Fix: Gravatar Profile image may use an incorrect image width in ACP tables
+
+Version 1.2.0:
+ - New: "default" image will now show a Gravatar image for users and profiles missing an image
+ - Change: Updates to support cache structure in Image Support 2.0.0
+ - Bug Fix: Typo in the help text
+
 Version 1.1.1:
  - Bug Fix: Invalid image being cached when Gravatar service is not responding or down
 

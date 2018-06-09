@@ -1,5 +1,37 @@
 OneAll Social module change log
 
+Version 1.6.5:
+ - Bug Fix: Users who were blocked from the User Browser could log in using an existing Social Connection
+
+Version 1.6.4:
+ - Bug Fix: Fixed issue where some items were not sharing to the System Feed timeline
+
+Version 1.6.3:
+ - Bug Fix: Sharing on timeline not arriving at twitter when oneall module used
+
+Version 1.6.2:
+ - Change: Auto login cookie is now set on signup/login if auto login is enabled in User Accounts module
+ - Bug Fix: Possible SQL error for duplicate entry for existing link coming in as new login
+
+Version 1.6.1:
+ - Change: Updated database schema for linked accounts with some additional indexes
+
+Version 1.6.0:
+ - New: Ability for users with existing accounts to "auto link" with new social connections
+ - New: API connection logging tool added
+ - Bug Fix: System Feed posts wrong URL when an admin adds an item to a members profile
+ - Bug Fix: JSON error in Activity Log when user does not autheticate via OneAll correctly
+
+Version 1.5.2:
+ - Bug Fix: Items shared to System Feed may use incorrect URL to item
+
+Version 1.5.1:
+ - New: If site is SSL and the Meta Tag Manager is installed, item 'card' will be shared to linked networks
+ - Change: Event listener updates to work with Timeline module version 2.0.11
+ - Bug Fix: Some module create/update actions were not being shared to linked networks
+ - Bug Fix: "Share with networks" checkbox could appear on some module create/update forms that had not registered
+ - Bug Fix: User account links not being removed when Developer Tools "Reset System" tool is run
+
 Version 1.5.0:
  - New: "Social Options Only" Global Config setting to force users to login/signup with only Social options
  - New: "Social Options Message" Global Config setting to set a custom message on login/signup forms

@@ -1,5 +1,14 @@
 Profile Blog module changelog
 
+Version 1.1.18:
+ - Change: Pagination added to blog categories
+
+Version 1.1.17:
+ - New: item_index_meta.tpl added to add social media meta tags for list page
+
+Version 1.1.16:
+ - Bug Fix: Blog Profile count and User off by 1 for blog post created at install time for admin user
+
 Version 1.1.15:
  - New: Updated to work with new version of RSS Feed reader module
 
@@ -7,7 +16,7 @@ Version 1.1.14:
  - New: Added item_detail_meta.tpl for the Meta Tag Manager module to support custom meta tags
 
 Version 1.1.13:
- - Change: On create and update, if blog publish date is more than one hour ahead, activities will not be added to timeline
+ - Change: On create and update, if blog publish date is more than one hour ahead, activity is not added to timeline
 
 Version 1.1.12:
  - New: Added "Pagination" Global Config setting to disable pagination on profile pages

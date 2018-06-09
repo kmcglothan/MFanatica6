@@ -14,6 +14,13 @@
     height: 600px;
 }
 
+/* Mobile */
+@media handheld, only screen and (max-width: 767px) {
+    #bbcode_help {
+        width: auto;
+    }
+}
+
 .bbcode_help_section {
     width: 75%;
     background: #FFFFFF;

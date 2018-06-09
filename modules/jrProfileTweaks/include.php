@@ -2,7 +2,7 @@
 /**
  * Jamroom Profile Tweaks module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -47,12 +47,12 @@ function jrProfileTweaks_meta()
     $_tmp = array(
         'name'        => 'Profile Tweaks',
         'url'         => 'profiletweaks',
-        'version'     => '1.3.14',
+        'version'     => '1.3.16',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Allow Profile owners to customize elements of their profile page',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2910/profile-tweaks',
         'category'    => 'profiles',
-        'requires'    => 'jrCore:6.0.7',
+        'requires'    => 'jrCore:6.0.7,jrImage:2.0.5',
         'license'     => 'jcl',
         'priority'    => 251 // LOW load priority (we want other listeners to run first)
     );
@@ -84,6 +84,7 @@ function jrProfileTweaks_init()
 
     // Listen for custom logo replacement
     jrCore_register_event_listener('jrImage', 'skin_image', 'jrProfileTweaks_skin_image_listener');
+    jrCore_register_event_listener('jrImage', 'get_allowed_image_widths', 'jrProfileTweaks_get_allowed_image_widths_listener');
 
     // Custom Skin
     jrCore_register_event_listener('jrCore', 'profile_template', 'jrProfileTweaks_profile_template_listener');
@@ -101,6 +102,31 @@ function jrProfileTweaks_init()
 //---------------------------------------------------------
 
 /**
+ * Make sure we allow "original" in our image widths for background and logo
+ * @param $_data array Array of information from trigger
+ * @param $_user array Current user
+ * @param $_conf array Global Config
+ * @param $_args array additional parameters passed in by trigger caller
+ * @param $event string Triggered Event name
+ * @return array
+ */
+function jrProfileTweaks_get_allowed_image_widths_listener($_data, $_user, $_conf, $_args, $event)
+{
+    global $_post;
+    if (isset($_post['module']) && $_post['module'] == 'jrProfile') {
+        if (isset($_post['_1'])) {
+            switch ($_post['_1']) {
+                case 'profile_bg_image':
+                case 'profile_logo_image':
+                    $_data['original'] = 'original';
+                    break;
+            }
+        }
+    }
+    return $_data;
+}
+
+/**
  * Check for custom skin
  * @param $_data array Array of information from trigger
  * @param $_user array Current user
@@ -111,7 +137,6 @@ function jrProfileTweaks_init()
  */
 function jrProfileTweaks_profile_template_listener($_data, $_user, $_conf, $_args, $event)
 {
-    global $_conf;
     if (isset($_data['module_url']) && strlen($_data['module_url']) > 0) {
         $_rt = jrCore_db_get_item_by_key('jrProfile', 'profile_url', $_data['module_url']);
         // Custom Profile Skin ( chosen by the profile owner )
@@ -179,12 +204,12 @@ function jrProfileTweaks_template_file_listener($_data, $_user, $_conf, $_args, 
 
 /**
  * Add in custom site logo
- * @param $_data array Array of information from trigger
+ * @param $_data string information from trigger
  * @param $_user array Current user
  * @param $_conf array Global Config
  * @param $_args array additional parameters passed in by trigger caller
  * @param $event string Triggered Event name
- * @return array
+ * @return string
  */
 function jrProfileTweaks_skin_image_listener($_data, $_user, $_conf, $_args, $event)
 {
@@ -196,16 +221,9 @@ function jrProfileTweaks_skin_image_listener($_data, $_user, $_conf, $_args, $ev
             $qta = $_args['smarty']->tpl_vars['quota_jrProfileTweaks_allowed']->value;
             if ($all && $all == 'on' && $qta && $qta == 'on') {
                 $pid  = (int) $_args['smarty']->tpl_vars['_profile_id']->value;
-                $ext  = $_args['smarty']->tpl_vars['profile_logo_image_extension']->value;
-                $time = $_args['smarty']->tpl_vars['profile_logo_image_time']->value;
-                // we have a Custom Profile Logo - get URL
-                if (jrCore_get_active_media_system() == 'jrCore_local') {
-                    $pturl = jrCore_get_module_url('jrProfileTweaks');
-                    $_data = "{$_conf['jrCore_base_url']}/{$pturl}/logo/{$pid}/{$ext}?_v={$time}";
-                }
-                else {
-                    $_data = jrCore_get_media_url($pid) . "/jrProfile_{$pid}_profile_logo_image.{$ext}?_v={$time}";
-                }
+                $time = (int) $_args['smarty']->tpl_vars['profile_logo_image_time']->value;
+                $url = jrCore_get_module_url('jrProfile');
+                return "{$_conf['jrCore_base_url']}/{$url}/image/profile_logo_image/{$pid}/original?_v={$time}";
             }
         }
     }
@@ -225,13 +243,8 @@ function jrProfileTweaks_profile_view_listener($_data, $_user, $_conf, $_args, $
 {
     if (isset($_data['_profile_id']) && isset($_data['quota_jrProfileTweaks_allowed']) && $_data['quota_jrProfileTweaks_allowed'] == 'on' && isset($_data['quota_jrProfileTweaks_allow_background_image']) && $_data['quota_jrProfileTweaks_allow_background_image'] == 'on' && isset($_data['profile_bg_image_size']) && jrCore_checktype($_data['profile_bg_image_size'], 'number_nz')) {
         // we have a Custom Profile Background Image - get URL
-        if (jrCore_get_active_media_system() == 'jrCore_local') {
-            $url = jrCore_get_module_url('jrProfileTweaks');
-            $url = "{$_conf['jrCore_base_url']}/{$url}/background/{$_data['_profile_id']}/{$_data['profile_bg_image_time']}";
-        }
-        else {
-            $url = jrCore_get_media_url($_data['_profile_id']) . "/jrProfile_{$_data['_profile_id']}_profile_bg_image.jpg?_v={$_data['profile_bg_image_time']}";
-        }
+        $url = jrCore_get_module_url('jrProfile');
+        $url = "{$_conf['jrCore_base_url']}/{$url}/image/profile_bg_image/{$_data['_profile_id']}/original?_v={$_data['profile_bg_image_time']}";
         $add = ' background-size:100% 100%; -webkit-background-size:100%; background-repeat:no-repeat;background-position:top center; background-attachment:fixed;';
         if (isset($_data['profile_bg_tile']) && $_data['profile_bg_tile'] == 'on') {
             $add = ' background-position:0 0; background-repeat:repeat;';
@@ -288,7 +301,7 @@ function jrProfileTweaks_profile_index_listener($_data, $_user, $_conf, $_args, 
         elseif (isset($_data['quota_jrProfileTweaks_default_index']) && $_data['quota_jrProfileTweaks_default_index'] != '0') {
             // Make sure quota is allowed
             $mod = $_data['quota_jrProfileTweaks_default_index'];
-            if (jrCore_module_is_active($mod) && $mod != 'jrAction' && isset($_data["quota_{$mod}_allowed"]) && $_data["quota_{$mod}_allowed"] == 'on') {
+            if (jrCore_module_is_active($mod) && isset($_data["quota_{$mod}_allowed"]) && $_data["quota_{$mod}_allowed"] == 'on') {
                 $url = jrCore_get_module_url($_data['quota_jrProfileTweaks_default_index']);
                 $crl = $_conf['jrCore_base_url'];
                 if (jrUser_is_logged_in() && isset($_conf['jrUser_force_ssl']) && $_conf['jrUser_force_ssl'] == 'on' && strpos($crl, 'https') !== 0) {

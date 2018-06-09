@@ -1,9 +1,8 @@
 <?php
 /**
- * Jamroom 5 Disqus Comments module
+ * Jamroom Disqus Comments module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2017 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -44,7 +43,7 @@
 defined('APP_DIR') or exit();
 
 /**
- * jrDisqus_config
+ * config
  */
 function jrDisqus_config()
 {
@@ -55,8 +54,23 @@ function jrDisqus_config()
         'default'  => '',
         'validate' => 'printable',
         'label'    => 'disqus shortname',
-        'help'     => 'This is the short name that can be found in Disqus in your site identity section. It was created when when you signed up for Disqus'
+        'help'     => 'This is the short name that can be found in Disqus in your site identity section. It was created when when you signed up for Disqus',
+        'order'    => 1
     );
     jrCore_register_setting('jrDisqus', $_tmp);
+
+    // use unique identifier
+    $_tmp = array(
+        'name'     => 'identifier',
+        'type'     => 'checkbox',
+        'default'  => 'on',
+        'upgrade'  => 'off',
+        'validate' => 'onoff',
+        'label'    => 'use unique identifier',
+        'help'     => 'If this option is checked, a unique identifier will be used when embedding comments. If you are upgrading from Disqus module version 1.0.5 or older, it is recommended to leave this option off or comments may not appear in the correct location.',
+        'order'    => 2
+    );
+    jrCore_register_setting('jrDisqus', $_tmp);
+
     return true;
 }

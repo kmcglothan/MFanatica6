@@ -32,7 +32,7 @@
                 {/literal}
             {/capture}
 
-            {jrCore_list module="jrFAQ" profile_id=$_profile_id order_by="faq_display_order numerical_asc" search1="faq_category = `$item.faq_category`" limit="50" template=$faq_list_row}
+            {jrCore_list module="jrFAQ" profile_id=$item._profile_id order_by="faq_display_order numerical_asc" search1="faq_category = `$item.faq_category`" limit="50" template=$faq_list_row}
         </div>
 
     {/foreach}

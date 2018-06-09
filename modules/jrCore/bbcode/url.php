@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -77,7 +77,7 @@ function jrCore_bbcode_url($text)
                                     if (jrCore_checktype($url, 'url')) {
                                         $_nam                = explode(']', $part);
                                         $name                = substr($_nam[1], 0, strpos($_nam[1], '['));
-                                        $_rep["%%{$uniq}%%"] = '<a href="' . $url . '" target="_blank"><span class="bbcode_url">' . $name . '</span></a>';
+                                        $_rep["%%{$uniq}%%"] = '<a href="' . $url . '" target="_blank" rel="noopener noreferrer"><span class="bbcode_url">' . $name . '</span></a>';
                                         $temp .= "%%{$uniq}%%" . substr($part, stripos($part, '/url]') + 5);
                                     }
                                 }
@@ -87,7 +87,7 @@ function jrCore_bbcode_url($text)
                                     $part = substr($part, 1);
                                     $url  = trim(str_replace('"', '', substr($part, 0, strpos($part, '['))));
                                     if (jrCore_checktype($url, 'url')) {
-                                        $_rep["%%{$uniq}%%"] = '<a href="' . $url . '" target="_blank"><span class="bbcode_url">' . $url . '</span></a>';
+                                        $_rep["%%{$uniq}%%"] = '<a href="' . $url . '" target="_blank" rel="noopener noreferrer"><span class="bbcode_url">' . $url . '</span></a>';
                                         $temp .= "%%{$uniq}%%" . substr($part, stripos($part, '/url]') + 5);
                                     }
                                 }

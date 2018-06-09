@@ -2,7 +2,7 @@
 /**
  * Jamroom Video module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -39,17 +39,35 @@
 // make sure we are not being called directly
 defined('APP_DIR') or exit();
 
+/**
+ * Decode an input file
+ * @param string $input_file
+ * @param array $_options
+ * @param string $error_file
+ * @return mixed
+ */
 function jrVideo_flv_decode($input_file, $_options, $error_file)
 {
     return $input_file;
 }
 
+/**
+ * Encode a new video file
+ * @param string $input_file
+ * @param array $_options
+ * @param string $error_file
+ * @return string
+ */
 function jrVideo_flv_encode($input_file, $_options, $error_file)
 {
     $ffmpeg = jrVideo_get_ffmpeg_command();
 
+    // FLV Copy for legacy browsers
     ob_start();
-    system("{$ffmpeg} -y -i \"{$input_file}\" -threads " . jrVideo_get_ffmpeg_thread() . " -f flv -acodec libmp3lame -ar 44100 -ab 128k -vcodec libx264 -preset veryfast \"{$input_file}.flv\" >/dev/null 2>{$error_file}", $ret);
+    $ext = jrCore_file_extension($input_file);
+    $m4v = str_replace(".{$ext}", '.m4v', $input_file);
+    system("{$ffmpeg} -i \"{$m4v}\" -vcodec copy -acodec libmp3lame -ar 44100 -ab 128k \"{$input_file}.flv\" >/dev/null 2>{$error_file}", $ret);
     ob_end_clean();
+
     return "{$input_file}.flv";
 }

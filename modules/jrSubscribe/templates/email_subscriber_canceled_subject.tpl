@@ -1,0 +1,1 @@
+@{$profile_name} has canceled their subscription

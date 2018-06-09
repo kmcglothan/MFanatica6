@@ -46,13 +46,13 @@ function jrProfileStreamPay_meta()
     $_tmp = array(
         'name'        => 'Stream Pay',
         'url'         => 'profilestreampay',
-        'version'     => '1.0.7',
+        'version'     => '1.0.9',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Pay Profiles for audio and video items streamed by users',
         'license'     => 'jcl',
         'category'    => 'profiles',
         'priority'    => 255,
-        'requires'    => 'jrFoxyCart,jrCore:6.0.4'
+        'requires'    => 'jrCore:6.0.4'
     );
     return $_tmp;
 }
@@ -72,6 +72,9 @@ function jrProfileStreamPay_init()
     // Add custom field for payout amount
     jrCore_register_event_listener('jrCore', 'form_display', 'jrProfileStreamPay_form_display_listener');
 
+    // System reset listener
+    jrCore_register_event_listener('jrDeveloper', 'reset_system', 'jrProfileStreamPay_reset_system_listener');
+
     // Our credit browser
     jrCore_register_module_feature('jrCore', 'tool_view', 'jrProfileStreamPay', 'credit_log', array('Credit Log', 'Browse the Stream Pay Credit Log'));
 
@@ -86,6 +89,23 @@ function jrProfileStreamPay_init()
 //----------------------------
 // EVENT LISTENERS
 //----------------------------
+
+/**
+ * System Reset listener
+ * @param $_data array incoming data array
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return array
+ */
+function jrProfileStreamPay_reset_system_listener($_data, $_user, $_conf, $_args, $event)
+{
+    $tbl = jrCore_db_table_name('jrProfileStreamPay', 'log');
+    jrCore_db_query("TRUNCATE TABLE {$tbl}");
+    jrCore_db_query("OPTIMIZE TABLE {$tbl}");
+    return $_data;
+}
 
 /**
  * Credit a profile for an audio/video stream
@@ -150,37 +170,34 @@ function jrProfileStreamPay_form_display_listener($_data, $_user, $_conf, $_args
         // Not active for this quota
         return $_data;
     }
-    // If the FoxyCart module is not active
-    if (!jrCore_module_is_active('jrFoxyCart')) {
-        return $_data;
-    }
-    switch ($_post['module']) {
+    if (jrUser_is_admin()) {
+        switch ($_post['module']) {
 
-        case 'jrAudio':
-        case 'jrVideo':
-            list(, $view) = explode('/', $_data['form_view']);
-            if ($view == 'create' || $view == 'update') {
-                $pfx = jrCore_db_get_prefix($_data['form_params']['module']);
-                if (isset($pfx) && strlen($pfx) > 0) {
-                    $amnt = $_user["quota_jrProfileStreamPay_{$pfx}_amount"];
-                    $_tmp = array(
-                        'name'          => "{$pfx}_stream_amount",
-                        'type'          => 'text',
-                        'default'       => '',
-                        'validate'      => 'price',
-                        'min'           => '0.01',
-                        'label'         => 'Stream Pay Amount',
-                        'sublabel'      => "(default is: {$amnt} per stream)",
-                        'help'          => "Enter a value here and it will override the default Quota {$pfx} stream amount (which is currently set to: {$amnt})",
-                        'required'      => false,
-                        'group'         => 'admin',
-                        'form_designer' => false // no form designer or we can't turn it off
-                    );
-                    jrCore_form_field_create($_tmp);
+            case 'jrAudio':
+            case 'jrVideo':
+                list(, $view) = explode('/', $_data['form_view']);
+                if ($view == 'create' || $view == 'update') {
+                    $pfx = jrCore_db_get_prefix($_data['form_params']['module']);
+                    if (isset($pfx) && strlen($pfx) > 0) {
+                        $amnt = $_user["quota_jrProfileStreamPay_{$pfx}_amount"];
+                        $_tmp = array(
+                            'name'          => "{$pfx}_stream_amount",
+                            'type'          => 'text',
+                            'default'       => '',
+                            'validate'      => 'price',
+                            'min'           => '0.01',
+                            'label'         => 'Stream Pay Amount',
+                            'sublabel'      => "(default is: {$amnt} per stream)",
+                            'help'          => "Enter a value here and it will override the default Quota {$pfx} stream amount (which is currently set to: {$amnt})",
+                            'required'      => false,
+                            'form_designer' => false // no form designer or we can't turn it off
+                        );
+                        jrCore_form_field_create($_tmp);
+                    }
                 }
-            }
-            break;
+                break;
 
+        }
     }
     return $_data;
 }

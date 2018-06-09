@@ -2,7 +2,7 @@
 /**
  * Jamroom Users module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -173,7 +173,7 @@ function view_jrUser_online_status($_post, $_user, $_conf)
                 $tbl = jrCore_db_table_name('jrProfile', 'profile_link');
                 $req = "SELECT user_id FROM {$tbl} WHERE profile_id = '" . intval($_post['_2']) . "'";
                 $_us = jrCore_db_query($req, 'user_id');
-                if (isset($_us) && is_array($_us)) {
+                if ($_us && is_array($_us)) {
                     $_sr = array(
                         'search'                       => array(
                             "_user_id in " . implode(',', array_keys($_us))
@@ -371,7 +371,7 @@ function view_jrUser_reset_language($_post, $_user, $_conf)
 }
 
 //------------------------------
-// delete_language_save
+// reset_language_save
 //------------------------------
 function view_jrUser_reset_language_save($_post, $_user, $_conf)
 {
@@ -655,7 +655,7 @@ function view_jrUser_create_save($_post, $_user, $_conf)
 
     // Make sure they don't already exist
     $_rt = jrCore_db_get_item_by_key('jrUser', 'user_name', $_post['user_name']);
-    if (isset($_rt) && is_array($_rt)) {
+    if ($_rt && is_array($_rt)) {
         jrCore_set_form_notice('error', 33);
         jrCore_form_field_hilight('user_name');
         jrCore_form_result();
@@ -663,17 +663,9 @@ function view_jrUser_create_save($_post, $_user, $_conf)
 
     // Make sure they don't already exist
     $_rt = jrCore_db_get_item_by_key('jrUser', 'user_email', $_post['user_email']);
-    if (isset($_rt) && is_array($_rt)) {
+    if ($_rt && is_array($_rt)) {
         jrCore_set_form_notice('error', 34);
         jrCore_form_field_hilight('user_email');
-        jrCore_form_result();
-    }
-
-    // Make sure the user_name is not being used by a profile
-    $_rt = jrCore_db_get_item_by_key('jrProfile', 'profile_url', $_post['user_name']);
-    if (isset($_rt) && is_array($_rt)) {
-        jrCore_set_form_notice('error', 33);
-        jrCore_form_field_hilight('user_name');
         jrCore_form_result();
     }
 
@@ -682,6 +674,24 @@ function view_jrUser_create_save($_post, $_user, $_conf)
         jrCore_set_form_notice('error', 55);
         jrCore_form_field_hilight('user_name');
         jrCore_form_result();
+    }
+
+    // Make sure the user_name is not being used by a profile
+    if ($_post['create_profile'] == 'on') {
+
+        $_rt = jrCore_db_get_item_by_key('jrProfile', 'profile_url', $_post['user_name']);
+        if ($_rt && is_array($_rt)) {
+            jrCore_set_form_notice('error', 33);
+            jrCore_form_field_hilight('user_name');
+            jrCore_form_result();
+        }
+        $_rt = jrCore_db_get_item_by_key('jrProfile', 'profile_name', $_post['user_name']);
+        if ($_rt && is_array($_rt)) {
+            jrCore_set_form_notice('error', 33);
+            jrCore_form_field_hilight('user_name');
+            jrCore_form_result();
+        }
+
     }
 
     // Check for an active skin template with that name...
@@ -719,10 +729,7 @@ function view_jrUser_create_save($_post, $_user, $_conf)
     $password = $_post['user_passwd1'];
 
     // Setup our default user values
-    require APP_DIR . '/modules/jrUser/contrib/phpass/PasswordHash.php';
-    $iter = jrCore_get_advanced_setting('jrUser', 'password_iterations', 12);
-    $hash = new PasswordHash($iter, false);
-    $pass = $hash->HashPassword($_post['user_passwd1']);
+    $pass = jrUser_get_password_hash($_post['user_passwd1']);
     $code = md5(microtime());
     unset($_post['user_passwd1'], $_post['user_passwd2']);
 
@@ -853,6 +860,16 @@ function view_jrUser_signup($_post, $_user, $_conf)
         );
         $tok  = jrCore_form_create($_tmp);
     }
+    elseif ($_post['_1'] == 'widget') {
+
+        // Form init
+        $_tmp = array(
+            'submit_value'     => 45,
+            'cancel'           => 'referrer',
+            'form_ajax_submit' => false
+        );
+        $tok  = jrCore_form_create($_tmp);
+    }
     else {
         // Form init
         $_tmp = array(
@@ -965,6 +982,35 @@ function view_jrUser_signup_save($_post, $_user, $_conf)
 
     $_post['user_name']  = ltrim(trim($_post['user_name'], '@'));
     $_post['user_email'] = trim($_post['user_email']);
+
+    // Make sure we get a good user_name
+    if (strpos(' ' . $_post['user_name'], '>') || strpos(' ' . $_post['user_name'], '<') || stripos(' ' . $_post['user_name'], 'script')) {
+        jrCore_set_form_notice('error', 129);
+        jrCore_form_field_hilight('user_name');
+        jrCore_form_result();
+    }
+
+    // Check for "confusable" Unicode names
+    if (!isset($_conf['jrUser_enable_spoofcheck']) || $_conf['jrUser_enable_spoofcheck'] == 1) {
+        if (class_exists('Spoofchecker')) {
+            if (filter_var($_post['user_name'], FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH) != $_post['user_name']) {
+                $spoof = new Spoofchecker();
+                if ($spoof->isSuspicious($_post['user_name'])) {
+                    jrCore_set_form_notice('error', 129);
+                    jrCore_form_field_hilight('user_name');
+                    jrCore_form_result();
+                }
+            }
+        }
+    }
+
+    // Make sure it is not in our list of reserved names
+    if (jrUser_is_reserved_name($_post['user_name'])) {
+        jrCore_set_form_notice('error', 33);
+        jrCore_form_field_hilight('user_name');
+        jrCore_form_result();
+    }
+
     // Make sure they don't already exist (user_name)
     $_rt = jrCore_db_get_item_by_key('jrUser', 'user_name', $_post['user_name']);
     if (is_array($_rt)) {
@@ -1052,16 +1098,15 @@ function view_jrUser_signup_save($_post, $_user, $_conf)
     $_data = jrCore_form_get_save_data('jrUser', 'signup', $_post);
 
     // Setup our default user values
-    require APP_DIR . '/modules/jrUser/contrib/phpass/PasswordHash.php';
-    $iter = jrCore_get_advanced_setting('jrUser', 'password_iterations', 12);
-    $hash = new PasswordHash($iter, false);
-    $pass = $hash->HashPassword($_post['user_passwd1']);
+    $pass = jrUser_get_password_hash($_post['user_passwd1']);
     $code = md5(microtime());
 
     // Some fields we don't save
     unset($_data['user_passwd1'], $_data['user_passwd2']);
 
     // Create our user account
+    $_data['user_name']      = $_post['user_name'];
+    $_data['user_email']     = $_post['user_email'];
     $_data['user_password']  = $pass;
     $_data['user_language']  = (isset($_post['user_language']{0})) ? $_post['user_language'] : $_conf['jrUser_default_language'];
     $_data['user_active']    = 0;
@@ -1078,16 +1123,21 @@ function view_jrUser_signup_save($_post, $_user, $_conf)
     }
     // Update our _user_id value
     // If this is the FIRST USER on the system, they are master
+    $first = false;
     $_temp = array('user_group' => 'user');
     $_core = array('_user_id' => $uid);
-    if ($uid == '1') {
-        // For our first master user, we automatically activate their account
-        $_temp = array(
-            'user_group' => 'master'
-        );
-        // Let's also update the CORE with their email address
-        jrCore_set_setting_value('jrMailer', 'from_email', $_post['user_email']);
-        jrCore_delete_all_cache_entries('jrCore', 0);
+    if ($uid < 10) {
+        $cnt = jrCore_db_get_datastore_item_count('jrUser');
+        if ($cnt < 2) {
+            // For our first master user, we automatically activate their account
+            $_temp = array(
+                'user_group' => 'master'
+            );
+            // Let's also update the CORE with their email address
+            jrCore_set_setting_value('jrMailer', 'from_email', $_post['user_email']);
+            jrCore_delete_all_cache_entries('jrCore', 0);
+            $first = true;
+        }
     }
     jrCore_db_update_item('jrUser', $uid, $_temp, $_core);
 
@@ -1101,7 +1151,7 @@ function view_jrUser_signup_save($_post, $_user, $_conf)
     $_data['_user_id'] = $uid;
     $_post             = jrCore_trigger_event('jrUser', 'signup_created', $_post, $_data);
 
-    if ($uid == '1') {
+    if ($first) {
 
         // Our first account is our MASTER ADMIN account - validate instantly
         jrCore_form_result("{$_conf['jrCore_base_url']}/{$_post['module_url']}/activate/{$code}");
@@ -1238,21 +1288,12 @@ function view_jrUser_activate($_post, $_user, $_conf)
     }
 
     // Make sure account has been created
-    $_rt = array(
-        'search'                 => array(
-            "user_validate = {$_post['_1']}"
-        ),
-        'jrProfile_active_check' => false,
-        'ignore_pending'         => true,
-        'privacy_check'          => false,
-        'no_cache'               => true
-    );
-    $_rt = jrCore_db_search_items('jrUser', $_rt);
-    if (!$_rt || !is_array($_rt) || !isset($_rt['_items']) || !isset($_rt['_items'][0]) || !is_array($_rt['_items'][0])) {
+    $_rt = jrCore_db_get_item_by_key('jrUser', 'user_validate', $_post['_1'], true, true);
+    if (!$_rt || !is_array($_rt)) {
         jrCore_notice_page('error', 38, false, false, false);
     }
     // Make sure this account has not already been validated
-    if (isset($_rt['_items'][0]['user_validated']) && $_rt['_items'][0]['user_validated'] != '0') {
+    if ($_rt['user_validated'] != '0') {
         jrCore_set_form_notice('success', 56);
         jrCore_location("{$_conf['jrCore_base_url']}/{$_post['module_url']}/login");
     }
@@ -1263,31 +1304,29 @@ function view_jrUser_activate($_post, $_user, $_conf)
         'user_active'     => '1',
         'user_validated'  => '1'
     );
-    jrCore_db_update_item('jrUser', $_rt['_items'][0]['_user_id'], $_data);
+    jrCore_db_update_item('jrUser', $_rt['_user_id'], $_data);
 
-    // Send out trigger on successful account activation - only first time
-    $_rt['_items'][0]['user_last_login'] = $_data['user_last_login'];
-    $_rt['_items'][0]['user_active']     = '1';
-    $_rt['_items'][0]['user_validated']  = '1';
-    $_rt['_items'][0]                    = jrCore_trigger_event('jrUser', 'signup_activated', $_rt['_items'][0]);
-    jrCore_logger('INF', "{$_rt['_items'][0]['user_email']} has validated their account and logged in");
+    // Reload user data
+    $_rt = jrUser_get_user_session_data($_rt['_user_id']);
+    $_rt = jrCore_trigger_event('jrUser', 'signup_activated', $_rt);
+    jrCore_logger('INF', "{$_rt['user_email']} has validated their account and logged in");
 
     // Reset this user's cache
-    jrUser_reset_cache($_rt['_items'][0]['_user_id']);
+    jrUser_reset_cache($_rt['_user_id']);
 
     // Startup session with user info
-    $_SESSION = $_rt['_items'][0];
+    $_SESSION = $_rt;
     $_user    = $_SESSION;
     unset($_rt);
+    $_SESSION['is_logged_in'] = true;
 
     // Save home profile keys
     jrUser_save_profile_home_keys();
 
-    // Login Success Trigger - other modules can add
-    // to our User Info
+    // Login Success Trigger - other modules can add to our User Info
     $_user = jrCore_trigger_event('jrUser', 'login_success', $_user);
 
-    if (jrUser_is_admin() && isset($_user['_item_id']) && $_user['_item_id'] == 1) {
+    if (jrUser_is_master() && jrCore_db_get_datastore_item_count('jrUser') === 1) {
         // This will only happen on the FIRST account in the system
         jrCore_notice_page('success', 39, "{$_conf['jrCore_base_url']}/core/system_check", 'Continue to System Check', false);
     }
@@ -1345,7 +1384,8 @@ function view_jrUser_login($_post, $_user, $_conf)
             $url = jrUser_get_profile_home_key('profile_url');
             jrCore_location("{$_conf['jrCore_base_url']}/{$url}");
         }
-        if (isset($_conf['jrUser_force_ssl']) && $_conf['jrUser_force_ssl'] == 'on' && strpos(jrCore_get_current_url(), 'http:') === 0) {
+        if (isset($_conf['jrUser_force_ssl']) && $_conf['jrUser_force_ssl'] == 'on' && strpos(jrCore_get_current_url(), 'http:') === 0 && strpos($_conf['jrCore_base_url'], 'https:') === 0) {
+            // We are running on an HTTPS site - move to HTTPS
             $url = str_replace('http://', 'https://', jrCore_get_current_url());
             jrCore_location($url);
         }
@@ -1412,7 +1452,7 @@ function view_jrUser_login($_post, $_user, $_conf)
     $_tmp = array(
         'name'           => 'user_email_or_name',
         'label'          => 1,
-        'help'           => 19,
+        'help'           => 125,
         'type'           => 'text',
         'validate'       => 'not_empty',
         'autocapitalize' => 'off',
@@ -1461,23 +1501,24 @@ function view_jrUser_login_save($_post, $_user, $_conf)
     }
 
     // Make sure user is valid
-    $_rt = jrCore_db_get_item_by_key('jrUser', 'user_name', $_post['user_email_or_name'], false, true);
-    if (!$_rt) {
-        $_rt = jrCore_db_get_item_by_key('jrUser', 'user_email', $_post['user_email_or_name'], false, true);
-        if (!$_rt) {
+    $key1 = 'user_name';
+    $key2 = 'user_email';
+    if (strpos($_post['user_email_or_name'], '@')) {
+        $key1 = 'user_email';
+        $key2 = 'user_name';
+    }
+    $_rt = jrCore_db_get_item_by_key('jrUser', $key1, $_post['user_email_or_name'], false, true);
+    if (!$_rt || !is_array($_rt)) {
+        $_rt = jrCore_db_get_item_by_key('jrUser', $key2, $_post['user_email_or_name'], false, true);
+        if (!$_rt || !is_array($_rt)) {
             jrCore_set_form_notice('error', 26);
             jrCore_form_result();
         }
     }
 
     // Validate password
-    if (!class_exists('PasswordHash')) {
-        require APP_DIR . '/modules/jrUser/contrib/phpass/PasswordHash.php';
-    }
-    $iter = jrCore_get_advanced_setting('jrUser', 'password_iterations', 12);
-    $hash = new PasswordHash($iter, false);
-    if (!$hash->CheckPassword($_post['user_password'], $_rt['user_password'])) {
-        if ($_rt['user_group'] != 'user') {
+    if (!jrUser_verify_password_hash($_post['user_password'], $_rt['user_password'])) {
+        if (isset($_rt['user_group']) && $_rt['user_group'] != 'user') {
             jrCore_logger('MAJ', "invalid login attempt for {$_rt['user_group']} user account {$_rt['user_name']} - bad password");
         }
         jrCore_set_form_notice('error', 26);
@@ -1486,16 +1527,15 @@ function view_jrUser_login_save($_post, $_user, $_conf)
 
     // Make sure account is validated
     if (!isset($_rt['user_validated']) || $_rt['user_validated'] != '1') {
-
-        $_lang = jrUser_load_lang_strings();
+        $_ln = jrUser_load_lang_strings();
         if (isset($_rt['quota_jrUser_signup_method']) && $_rt['quota_jrUser_signup_method'] == 'email') {
             // Give the user the ability to resend the activation email
             $_SESSION['allow_activation_resend'] = 1;
-            $tmp                                 = jrCore_page_button('resend', $_lang['jrUser'][28], "jrCore_window_location('" . $_conf['jrCore_base_url'] . '/' . $_post['module_url'] . '/activation_resend/' . $_rt['_user_id'] . "')");
-            jrCore_set_form_notice('error', $_lang['jrUser'][27] . '<br><br>' . $tmp, false);
+            $tmp                                 = jrCore_page_button('resend', $_ln['jrUser'][28], "jrCore_window_location('" . $_conf['jrCore_base_url'] . '/' . $_post['module_url'] . '/activation_resend/' . $_rt['_user_id'] . "')");
+            jrCore_set_form_notice('error', $_ln['jrUser'][27] . '<br><br>' . $tmp, false);
         }
         else {
-            jrCore_set_form_notice('error', $_lang['jrUser'][27]);
+            jrCore_set_form_notice('error', $_ln['jrUser'][27]);
         }
         jrCore_form_result();
     }
@@ -1533,9 +1573,6 @@ function view_jrUser_login_save($_post, $_user, $_conf)
                     foreach ($_lp as $pid => $uid) {
                         $_pr = jrCore_db_get_item('jrProfile', $pid);
                         if ($_pr && is_array($_pr)) {
-                            $_rt                           = array_merge($_rt, $_pr);
-                            $_rt['user_active_profile_id'] = $pid;
-                            $_rt['_profile_id']            = $pid;
                             jrCore_db_update_item('jrUser', $_rt['_user_id'], array(), array('_profile_id' => $pid));
                             break;
                         }
@@ -1548,12 +1585,6 @@ function view_jrUser_login_save($_post, $_user, $_conf)
                 }
             }
         }
-        else {
-            // We really should never get here, but just in case
-            $_rt                           = array_merge($_rt, $_pr);
-            $_rt['user_active_profile_id'] = $_pr['_profile_id'];
-            $_rt['_profile_id']            = $_pr['_profile_id'];
-        }
     }
 
     // See if this user is logging in for the first time on a new device
@@ -1561,17 +1592,16 @@ function view_jrUser_login_save($_post, $_user, $_conf)
         jrUser_notify_if_new_device($_rt['_user_id']);
     }
 
-    // Reset this user's cache
-    jrUser_reset_cache($_rt['_user_id']);
-
-    // Get any saved location from login
-    $url = jrUser_get_saved_location();
-
     // Startup Session and login
-    $_SESSION             = $_rt;
-    $_user                = $_rt; // This is REQUIRED!
-    $_SESSION['_user_id'] = $_rt['_user_id'];
-    $_user['_user_id']    = $_rt['_user_id'];
+    if (!$_SESSION = jrUser_get_user_session_data($_rt['_user_id'], $_rt['_profile_id'])) {
+        jrCore_set_form_notice('error', 10);
+        jrCore_form_result();
+    }
+    if (!is_array($_SESSION)) {
+        // Could not start a session
+        jrCore_set_form_notice('error', 10);
+        jrCore_form_result();
+    }
 
     // Save home profile keys
     jrUser_save_profile_home_keys();
@@ -1582,6 +1612,9 @@ function view_jrUser_login_save($_post, $_user, $_conf)
         jrCore_form_result();
     }
 
+    // Remove any forgot password entries
+    jrUser_delete_forgot_password_entries($_SESSION['_user_id']);
+
     // User has logged in - reset any failed password attempts on this IP
     jrUser_reset_password_attempts($uip);
 
@@ -1591,6 +1624,7 @@ function view_jrUser_login_save($_post, $_user, $_conf)
     );
     jrCore_db_update_item('jrUser', $_SESSION['_user_id'], $_data);
     $_SESSION['user_last_login'] = time();
+    $_SESSION['is_logged_in']    = 'yes';
 
     // Bring in all profile and Quota info
     $_SESSION = jrUser_session_start();
@@ -1622,7 +1656,8 @@ function view_jrUser_login_save($_post, $_user, $_conf)
     }
 
     // Redirect to Profile or Saved Location
-    if (isset($url) && jrCore_checktype($url, 'url') && strpos($url, $_conf['jrCore_base_url']) === 0 && $url != $_conf['jrCore_base_url'] && $url != $_conf['jrCore_base_url'] . '/' && !strpos($url, '/signup')) {
+    $url = jrUser_get_saved_location();
+    if ($url && jrCore_checktype($url, 'url') && strpos($url, $_conf['jrCore_base_url']) === 0 && $url != $_conf['jrCore_base_url'] && $url != $_conf['jrCore_base_url'] . '/' && !strpos($url, '/signup')) {
         jrCore_form_result($url);
     }
     $url = "{$_conf['jrCore_base_url']}/{$_user['profile_url']}";
@@ -1635,25 +1670,7 @@ function view_jrUser_login_save($_post, $_user, $_conf)
 function view_jrUser_logout($_post, $_user, $_conf)
 {
     jrUser_session_require_login();
-
-    // Delete all form sessions...
-    $tbl = jrCore_db_table_name('jrCore', 'form_session');
-    $req = "DELETE FROM {$tbl} WHERE form_user_id = '" . jrCore_db_escape($_user['_user_id']) . "'";
-    jrCore_db_query($req);
-
-    // Delete cache entries..
-    jrUser_reset_cache($_user['_user_id']);
-
-    // Send logout trigger
-    jrCore_trigger_event('jrUser', 'logout', $_user);
-
-    // Destroy session
-    $sid = jrUser_session_destroy();
-
-    // Successful logout
-    jrCore_trigger_event('jrUser', 'logout_success', $_user, array('session_id' => $sid));
-
-    // Redirect to front page
+    jrUser_end_user_session($_user);
     jrCore_form_result($_conf['jrCore_base_url']);
 }
 
@@ -1773,7 +1790,7 @@ function view_jrUser_new_password($_post, $_user, $_conf)
     $tbl = jrCore_db_table_name('jrUser', 'forgot');
     $req = "SELECT * FROM {$tbl} WHERE forgot_key = '" . jrCore_db_escape($_post['_1']) . "' LIMIT 1";
     $_rt = jrCore_db_query($req, 'SINGLE');
-    if (!isset($_rt) || !is_array($_rt)) {
+    if (!$_rt || !is_array($_rt)) {
         jrCore_notice_page('error', 52);
     }
 
@@ -1870,10 +1887,7 @@ function view_jrUser_new_password_save($_post, $_user, $_conf)
         jrCore_form_result();
     }
     // Setup new password
-    require APP_DIR . '/modules/jrUser/contrib/phpass/PasswordHash.php';
-    $iter = jrCore_get_advanced_setting('jrUser', 'password_iterations', 12);
-    $hash = new PasswordHash($iter, false);
-    $pass = $hash->HashPassword($_post['user_passwd1']);
+    $pass = jrUser_get_password_hash($_post['user_passwd1']);
 
     // Update user with new password
     $_dt = array(
@@ -1884,26 +1898,28 @@ function view_jrUser_new_password_save($_post, $_user, $_conf)
         jrCore_set_form_notice('error', 36);
         jrCore_form_result();
     }
+    // has user been validated yet
+    if (!isset($_us['user_validated']) || $_us['user_validated'] != '1') {
+        jrCore_set_form_notice('error', 27);
+        jrCore_form_result();
+    }
 
-    // Cleanup forgot
-    $dif = (time() - 86400);
-    $req = "DELETE FROM {$tbl} WHERE (forgot_key = '{$tkn}' OR forgot_time < {$dif})";
-    jrCore_db_query($req);
+    // Remove all existing sessions
+    jrUser_session_remove($_us['_user_id']);
 
-    // Cleanup Session, Cookie and Cache
-    jrUser_session_remove($_rt['forgot_user_id']);
-
+    // Remove any "remember me" cookie
     $tbl = jrCore_db_table_name('jrUser', 'cookie');
-    $req = "DELETE FROM {$tbl} WHERE cookie_user_id = '{$_rt['forgot_user_id']}'";
+    $req = "DELETE FROM {$tbl} WHERE cookie_user_id = '{$_us['_user_id']}'";
     jrCore_db_query($req);
 
     // Reset user cache
-    jrUser_reset_cache($_rt['forgot_user_id']);
+    jrUser_reset_cache($_us['_user_id']);
 
-    if (!isset($_us['user_validated']) || $_us['user_validated'] != '1') {
-        // User has not been validated yet
-        jrCore_notice_page('error', 27);
-    }
+    // Cleanup forgot
+    jrUser_delete_forgot_password_entries($_us['_user_id']);
+
+    // User has logged in - reset any failed password attempts on this IP
+    jrUser_reset_password_attempts(jrCore_get_ip());
 
     // Log user in if we are NOT in maintenance mode
     if (isset($_conf['jrCore_maintenance_mode']) && $_conf['jrCore_maintenance_mode'] == 'on') {
@@ -1914,21 +1930,28 @@ function view_jrUser_new_password_save($_post, $_user, $_conf)
     }
 
     // Startup session with user info
-    $_SESSION = $_us;
+    $_SESSION = jrUser_get_user_session_data($_us['_user_id']);
     $_SESSION = jrCore_trigger_event('jrUser', 'login_success', $_SESSION);
-    unset($_rt);
+
+    // Set NEW remember me cookie if enabled
+    if (isset($_conf['jrUser_autologin']) && intval($_conf['jrUser_autologin']) > 1) {
+        jrUser_session_set_login_cookie($_us['_user_id']);
+    }
+
+    // See if this user is logging in for the first time on a new device
+    if (isset($_SESSION['quota_jrUser_device_notice']) && $_SESSION['quota_jrUser_device_notice'] == 'on') {
+        jrUser_notify_if_new_device($_us['_user_id']);
+    }
 
     // Show them success
-    jrCore_logger('INF', "{$_SESSION['user_email']} has reset their password and logged in");
+    jrCore_logger('INF', "@{$_SESSION['profile_url']} ({$_SESSION['user_email']}) has reset their password and logged in");
 
     // Redirect to Profile
-    $url = jrCore_db_get_item_key('jrProfile', $_us['_profile_id'], 'profile_url');
-    if ($url) {
-        jrCore_form_result("{$_conf['jrCore_base_url']}/{$url}");
+    if (!empty($_SESSION['profile_url'])) {
+        jrCore_form_result("{$_conf['jrCore_base_url']}/{$_SESSION['profile_url']}");
     }
-    else {
-        jrCore_form_result($_conf['jrCore_base_url']);
-    }
+    // Fall through - system index
+    jrCore_form_result($_conf['jrCore_base_url']);
 }
 
 //------------------------------
@@ -1964,10 +1987,11 @@ function view_jrUser_account($_post, $_user, $_conf)
 
         }
         elseif ($_post['user_id'] != $_user['_user_id']) {
-            $_us               = jrCore_db_get_item('jrUser', $_post['user_id'], false, true);
-            $_pr               = jrCore_db_get_item('jrProfile', $_us['_profile_id'], false, true);
-            $_qt               = jrProfile_get_quota($_pr['profile_quota_id']);
-            $_data             = array_merge($_us, $_pr, $_qt);
+            $_us = jrCore_db_get_item('jrUser', $_post['user_id'], false, true);
+            if ($_pr = jrCore_db_get_item('jrProfile', $_us['_profile_id'], false, true)) {
+                $_qt   = jrProfile_get_quota($_pr['profile_quota_id']);
+                $_data = array_merge($_us, $_pr, $_qt);
+            }
             $_data['_user_id'] = $_post['user_id'];
         }
         else {
@@ -2062,7 +2086,7 @@ function view_jrUser_account($_post, $_user, $_conf)
                 foreach ($_un as $v) {
                     if (strlen($v['user_name']) > 0) {
                         if ($v['_user_id'] == $_post['user_id']) {
-                            $html .= '<option value="' . $v['_user_id'] . '" selected="selected"> ' . $v['user_name'] . '</option>';
+                            $html .= '<option value="' . $v['_user_id'] . '" selected> ' . $v['user_name'] . '</option>';
                         }
                         else {
                             $html .= '<option value="' . $v['_user_id'] . '"> ' . $v['user_name'] . '</option>';
@@ -2078,7 +2102,7 @@ function view_jrUser_account($_post, $_user, $_conf)
         // Form init
         $_tmp = array(
             'submit_value'     => $_lang['jrCore'][72],
-            'cancel'           => 'referrer',
+            'cancel'           => 'reset_form_referrer',
             'values'           => $_data,
             'form_ajax_submit' => false
         );
@@ -2119,13 +2143,10 @@ function view_jrUser_account($_post, $_user, $_conf)
             'validate'       => 'printable',
             'autocapitalize' => 'off',
             'autocorrect'    => 'off',
-            'required'       => true
+            'required'       => true,
+            'readonly'       => 'readonly',
+            'onfocus'        => "this.removeAttribute('readonly');"
         );
-        // If this is an admin user modifying a DIFFERENT user, prevent browser auto fill
-        if (jrUser_is_admin()) {
-            $_tmp['readonly'] = 'readonly';
-            $_tmp['onfocus']  = "this.removeAttribute('readonly');";
-        }
         jrCore_form_field_create($_tmp);
 
         // User Email
@@ -2137,12 +2158,10 @@ function view_jrUser_account($_post, $_user, $_conf)
             'validate'       => 'email',
             'autocapitalize' => 'off',
             'autocorrect'    => 'off',
-            'required'       => true
+            'required'       => true,
+            'readonly'       => 'readonly',
+            'onfocus'        => "this.removeAttribute('readonly');"
         );
-        if (jrUser_is_admin()) {
-            $_tmp['readonly'] = 'readonly';
-            $_tmp['onfocus']  = "this.removeAttribute('readonly');";
-        }
         jrCore_form_field_create($_tmp);
 
         // Preferred Language
@@ -2167,15 +2186,12 @@ function view_jrUser_account($_post, $_user, $_conf)
             'type'      => 'password',
             'error_msg' => 9,
             'required'  => false,
-            'validate'  => 'not_empty'
+            'validate'  => 'not_empty',
+            'readonly'  => 'readonly',
+            'onfocus'   => "this.removeAttribute('readonly');"
         );
         if (isset($_user['user_temp_password'])) {
             $_tmp['required'] = true;
-        }
-        // If this is an admin user modifying a DIFFERENT user, prevent browser auto fill
-        if (jrUser_is_admin()) {
-            $_tmp['readonly'] = 'readonly';
-            $_tmp['onfocus']  = "this.removeAttribute('readonly');";
         }
         jrCore_form_field_create($_tmp);
 
@@ -2187,15 +2203,12 @@ function view_jrUser_account($_post, $_user, $_conf)
             'type'      => 'password',
             'error_msg' => 9,
             'required'  => false,
-            'validate'  => 'not_empty'
+            'validate'  => 'not_empty',
+            'readonly'  => 'readonly',
+            'onfocus'   => "this.removeAttribute('readonly');"
         );
         if (isset($_user['user_temp_password'])) {
             $_tmp['required'] = true;
-        }
-        // If this is an admin user modifying a DIFFERENT user, prevent browser auto fill
-        if (jrUser_is_admin()) {
-            $_tmp['readonly'] = 'readonly';
-            $_tmp['onfocus']  = "this.removeAttribute('readonly');";
         }
         jrCore_form_field_create($_tmp);
 
@@ -2224,6 +2237,7 @@ function view_jrUser_account($_post, $_user, $_conf)
 
         // Master Admin options
         if (jrUser_is_master()) {
+
             $_tmp = array(
                 'name'          => 'user_group',
                 'label'         => 'user group',
@@ -2237,6 +2251,10 @@ function view_jrUser_account($_post, $_user, $_conf)
                 'section'       => 'master admin options',
                 'order'         => 250
             );
+            // Don't let us change our own account
+            if ($_data['_user_id'] == $_user['_user_id']) {
+                $_tmp['disabled'] = true;
+            }
             jrCore_form_field_create($_tmp);
 
             // See if this user is linked to more than 1 profile
@@ -2246,12 +2264,11 @@ function view_jrUser_account($_post, $_user, $_conf)
                 // looks like this user is linked to more than 1 profile
                 $_sc = array(
                     'search'         => array(
-                        '_item_id in ' . implode(',', array_keys($_lp)),
-                        "_item_id != {$_data['_profile_id']}"
+                        '_item_id in ' . $_data['_profile_id'] . ',' . implode(',', array_keys($_lp))
                     ),
                     'return_keys'    => array('_profile_id', 'profile_name'),
-                    'order_by'       => array('profile_name' => 'asc'),
-                    'limit'          => count($_lp),
+                    'order_by'       => false,
+                    'limit'          => (count($_lp) + 1),
                     'skip_triggers'  => true,
                     'ignore_pending' => true,
                     'privacy_check'  => false
@@ -2260,12 +2277,18 @@ function view_jrUser_account($_post, $_user, $_conf)
                 if ($_tp && is_array($_tp) && isset($_tp['_items'])) {
                     $_pr = array();
                     foreach ($_tp['_items'] as $_v) {
-                        $_pr["{$_v['_profile_id']}"] = $_v['profile_name'];
+                        if ($_data['_profile_id'] == $_v['_profile_id']) {
+                            $_pr["{$_v['_profile_id']}"] = "{$_v['profile_name']} (Home Profile)";
+                        }
+                        else {
+                            $_pr["{$_v['_profile_id']}"] = $_v['profile_name'];
+                        }
                     }
+                    natcasesort($_pr);
                     $_tmp = array(
                         'name'          => 'user_linked_profiles',
-                        'label'         => 'additional profiles',
-                        'help'          => "This User Account is linked to additional User Profiles. Uncheck a profile to prevent this user from accessing it.",
+                        'label'         => 'linked profiles',
+                        'help'          => "This User Account is linked to the listed Profiles. Uncheck a profile to prevent this user from accessing it.",
                         'type'          => 'optionlist',
                         'options'       => $_pr,
                         'value'         => array_keys($_lp),
@@ -2296,6 +2319,31 @@ function view_jrUser_account_save($_post, $_user, $_conf)
         jrCore_form_result();
     }
 
+    // User name checks
+    if (!jrUser_is_admin() && !empty($_post['user_name'])) {
+
+        // Check for "confusable" Unicode names
+        if (!isset($_conf['jrUser_enable_spoofcheck']) || $_conf['jrUser_enable_spoofcheck'] == 1) {
+            if (class_exists('Spoofchecker')) {
+                if (filter_var($_post['user_name'], FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH) != $_post['user_name']) {
+                    $spoof = new Spoofchecker();
+                    if ($spoof->isSuspicious($_post['user_name'])) {
+                        jrCore_set_form_notice('error', 129);
+                        jrCore_form_field_hilight('user_name');
+                        jrCore_form_result();
+                    }
+                }
+            }
+        }
+
+        // Make sure it is not in our list of reserved names
+        if (!jrUser_is_admin() && !empty($_post['user_name']) && jrUser_is_reserved_name($_post['user_name'])) {
+            jrCore_set_form_notice('error', 129);
+            jrCore_form_field_hilight('user_name');
+            jrCore_form_result();
+        }
+    }
+
     // Get posted data
     $rauth = false;
     $_data = jrCore_form_get_save_data('jrUser', 'account', $_post);
@@ -2308,12 +2356,8 @@ function view_jrUser_account_save($_post, $_user, $_conf)
             jrCore_form_field_hilight('user_passwd2');
             jrCore_form_result();
         }
-        // Setup new password
-        require APP_DIR . '/modules/jrUser/contrib/phpass/PasswordHash.php';
-        $iter = jrCore_get_advanced_setting('jrUser', 'password_iterations', 12);
-        $hash = new PasswordHash($iter, false);
-        $pass = $hash->HashPassword($_post['user_passwd1']);
         // Add in new password hash
+        $pass                   = jrUser_get_password_hash($_post['user_passwd1']);
         $_data['user_password'] = $pass;
     }
 
@@ -2391,6 +2435,10 @@ function view_jrUser_account_save($_post, $_user, $_conf)
     else {
         $_us = $_user;
     }
+    // We don't save user_linked_profiles to the DS
+    if (isset($_data['user_linked_profiles'])) {
+        unset($_data['user_linked_profiles']);
+    }
 
     // Check for changing user_email
     $_sc = array(
@@ -2401,6 +2449,7 @@ function view_jrUser_account_save($_post, $_user, $_conf)
         'return_count'   => true,
         'skip_triggers'  => true,
         'privacy_check'  => false,
+        'ignore_missing' => true,
         'ignore_pending' => true
     );
     $cnt = jrCore_db_search_items('jrUser', $_sc);
@@ -2420,6 +2469,7 @@ function view_jrUser_account_save($_post, $_user, $_conf)
         'return_count'   => true,
         'skip_triggers'  => true,
         'privacy_check'  => false,
+        'ignore_missing' => true,
         'ignore_pending' => true
     );
     $cnt = jrCore_db_search_items('jrUser', $_sc);
@@ -2489,13 +2539,13 @@ function view_jrUser_account_save($_post, $_user, $_conf)
 
     // Re-sync session
     if (isset($uid) && $uid == $_user['_user_id']) {
-        jrUser_session_sync($uid);
         jrUser_reset_cache($uid);
+        jrUser_session_sync($uid);
     }
 
     // Reset caches
     $_ln = jrProfile_get_user_linked_profiles($_us['_user_id']);
-    if (isset($_ln) && is_array($_ln)) {
+    if ($_ln && is_array($_ln)) {
         foreach ($_ln as $pid => $uid) {
             jrProfile_reset_cache($pid);
         }
@@ -2506,6 +2556,7 @@ function view_jrUser_account_save($_post, $_user, $_conf)
 
         // Send out account updated trigger
         jrCore_trigger_event('jrUser', 'user_updated', $_us, $_data);
+        jrUser_set_session_sync_for_user_id($_post['user_id'], 'on');
 
         jrCore_set_form_notice('success', 'The user account has been successfully updated');
         // If this is an admin from the browser...
@@ -2516,6 +2567,7 @@ function view_jrUser_account_save($_post, $_user, $_conf)
         jrCore_form_result();
     }
 
+    // Fall through - we are modifying our own account
     if ($rauth) {
         jrCore_form_delete_session();
         jrCore_form_result("{$_conf['jrCore_base_url']}/{$_post['module_url']}/authenticate");
@@ -2523,6 +2575,19 @@ function view_jrUser_account_save($_post, $_user, $_conf)
 
     // Send out account updated trigger
     jrCore_trigger_event('jrUser', 'user_updated', $_us, $_data);
+
+    // If we changed passwords, log out other sessions
+    if (isset($pass)) {
+        jrUser_session_remove_all_other_sessions($_user['_user_id'], session_id());
+        $cid = jrUser_session_get_login_cookie_name();
+        if (isset($_COOKIE[$cid])) {
+            // This user had a remember me cookie - set new one
+            jrUser_session_set_login_cookie($_user['_user_id']);
+        }
+    }
+
+    // Remove any forgot password entries
+    jrUser_delete_forgot_password_entries($_user['_user_id']);
 
     jrCore_set_form_notice('success', 43);
     jrCore_form_delete_session();
@@ -2572,12 +2637,7 @@ function view_jrUser_authenticate_save($_post, $_user, $_conf)
     }
 
     // Make sure our OLD password is correct
-    if (!class_exists('PasswordHash')) {
-        require APP_DIR . '/modules/jrUser/contrib/phpass/PasswordHash.php';
-    }
-    $iter = jrCore_get_advanced_setting('jrUser', 'password_iterations', 12);
-    $hash = new PasswordHash($iter, false);
-    if (!$hash->CheckPassword($_post['old_password'], $_us['user_password'])) {
+    if (!jrUser_verify_password_hash($_post['old_password'], $_us['user_password'])) {
         jrCore_set_form_notice('error', 26);
         jrCore_location('referrer');
     }
@@ -2628,6 +2688,20 @@ function view_jrUser_authenticate_save($_post, $_user, $_conf)
         jrCore_db_delete_multiple_item_keys('jrUser', $_user['_user_id'], $_dl);
 
         // Success
+        jrUser_reset_cache($_user['_user_id']);
+        jrUser_session_sync($_user['_user_id']);
+
+        // Log out other sessions and auto login cookies
+        jrUser_session_remove_all_other_sessions($_user['_user_id'], session_id());
+        $cid = jrUser_session_get_login_cookie_name();
+        if (isset($_COOKIE[$cid])) {
+            // This user had a remember me cookie - set new one
+            jrUser_session_set_login_cookie($_user['_user_id']);
+        }
+
+        // Remove forgot entries
+        jrUser_delete_forgot_password_entries($_user['_user_id']);
+
         jrCore_set_form_notice('success', 43);
         jrCore_form_result("{$_conf['jrCore_base_url']}/{$_post['module_url']}/account");
     }
@@ -2701,7 +2775,6 @@ function view_jrUser_notifications($_post, $_user, $_conf)
         $pid    = $_user['_profile_id'];
         $_data  = $_user;
     }
-
 
     // See if all notifications have been disabled
     $disabled = false;
@@ -2843,7 +2916,7 @@ function view_jrUser_notifications($_post, $_user, $_conf)
                         'email' => $_lang['jrUser'][66],
                         'note'  => $_lang['jrUser'][67]
                     );
-                    if (!jrCore_module_is_active('jrPrivateNote') || (isset($_data["quota_jrPrivateNote_allowed"]) && $_data["quota_jrPrivateNote_allowed"] != 'on') || $name == 'note_received' || (isset($label['email_only']) && $label['email_only'] === true)) {
+                    if (!jrCore_module_is_active('jrPrivateNote') || (isset($_data["quota_jrPrivateNote_allowed"]) && $_data["quota_jrPrivateNote_allowed"] != 'on') || $name == 'note_received' || (is_array($label) && isset($label['email_only']) && $label['email_only'] === true)) {
                         unset($_opts['note']);
                     }
 
@@ -2868,18 +2941,15 @@ function view_jrUser_notifications($_post, $_user, $_conf)
                     else {
                         $_tmp['email_checked'] = 'checked="checked"';
                     }
-                    if (!empty($label['help'])) {
-                        $_tmp['help'] = ((isset($_lang[$module]["{$label['help']}"])) ? $_lang[$module]["{$label['help']}"] : $label['help']);
-                    }
-                    if (!is_array($label)) {
-                        $label         = trim($label);
-                        $_tmp['label'] = ((isset($_lang[$module][$label])) ? $_lang[$module][$label] : $label);
-                    }
-                    else {
+
+                    if (is_array($label)) {
                         $_tmp['label'] = ((isset($_lang[$module]["{$label['label']}"])) ? $_lang[$module]["{$label['label']}"] : $label['label']);
                         if (!empty($label['help'])) {
                             $_tmp['help'] = ((isset($_lang[$module]["{$label['help']}"])) ? $_lang[$module]["{$label['help']}"] : $label['help']);
                         }
+                    }
+                    else {
+                        $_tmp['label'] = ((isset($_lang[$module][$label])) ? $_lang[$module][$label] : $label);
                     }
 
                     if (!isset($_sel[$nid])) {
@@ -2897,13 +2967,13 @@ function view_jrUser_notifications($_post, $_user, $_conf)
             $select = '<select id="user-notification-select" class="form_select" onchange="jrUser_notification_option($(this).val()); return false">';
             foreach ($_sel as $nid => $title) {
                 if (!$active) {
-                    $select .= '<option value="' . $nid . '" selected="selected"> ' . $title . "</option>\n";
+                    $select .= '<option value="' . $nid . '" selected> ' . $title . "</option>\n";
                     $active = true;
-                    $html .= str_replace('style="display:none"', 'class="no-act"', $_htm[$nid]);
+                    $html   .= str_replace('style="display:none"', 'class="no-act"', $_htm[$nid]);
                 }
                 else {
                     $select .= '<option value="' . $nid . '"> ' . $title . "</option>\n";
-                    $html .= $_htm[$nid];
+                    $html   .= $_htm[$nid];
                 }
             }
             $select .= '</select>';
@@ -2973,12 +3043,15 @@ function view_jrUser_online($_post, $_user, $_conf)
     jrCore_page_admin_tabs('jrUser');
 
     // our page banner
-    $url = jrCore_strip_url_params(jrCore_get_current_url(), array('show_bots'));
-    if (isset($_post['show_bots'])) {
-        $btn = jrCore_page_button('sb', 'Hide Bots', "jrCore_window_location('{$url}')");
-    }
-    else {
-        $btn = jrCore_page_button('sb', 'Show Bots', "jrCore_window_location('{$url}/show_bots=1')");
+    $btn = null;
+    if (!isset($_conf['jrUser_bot_sessions']) || $_conf['jrUser_bot_sessions'] == 'on') {
+        $url = jrCore_strip_url_params(jrCore_get_current_url(), array('show_bots'));
+        if (isset($_post['show_bots'])) {
+            $btn = jrCore_page_button('sb', 'Hide Bots', "jrCore_window_location('{$url}')");
+        }
+        else {
+            $btn = jrCore_page_button('sb', 'Show Bots', "jrCore_window_location('{$url}/show_bots=1')");
+        }
     }
 
     jrCore_page_banner('Users Online', $btn);
@@ -3006,6 +3079,17 @@ function view_jrUser_session_remove_save($_post, $_user, $_conf)
         jrCore_form_result('referrer');
     }
     jrUser_session_remove($_post['_1']);
+
+    // Remove remember me cookie
+    $uid = (int) $_post['_1'];
+    $tbl = jrCore_db_table_name('jrUser', 'cookie');
+    $req = "SELECT cookie_id FROM {$tbl} WHERE cookie_user_id = {$uid}";
+    $_rt = jrCore_db_query($req, 'cookie_id');
+    if ($_rt && is_array($_rt)) {
+        $req = "DELETE FROM {$tbl} WHERE cookie_id IN(" . implode(',', array_keys($_rt)) . ')';
+        jrCore_db_query($req);
+    }
+
     jrCore_form_result('referrer');
 }
 
@@ -3185,12 +3269,13 @@ function view_jrUser_resubscribe($_post, $_user, $_conf)
         jrCore_notice_page('error', 'Invalid unique subscriber ID!<br><br>Please make sure you are entering the full URL from the unsubscribe link (1)', $_conf['jrCore_base_url'], $_ln['jrUser'][113], false);
     }
     $_rt = jrCore_db_get_item_by_key('jrUser', 'user_validate', $_post['_1'], true);
-    if (!isset($_rt) || !is_array($_rt)) {
+    if (!$_rt || !is_array($_rt)) {
         jrCore_notice_page('error', 'Invalid unique subscriber ID!<br><br>Please make sure you are entering the full URL from the unsubscribe link (2)', $_conf['jrCore_base_url'], $_ln['jrUser'][113], false);
     }
     // delete special "user_notifications_disabled" flag
     jrCore_db_delete_item_key('jrUser', $_rt['_item_id'], 'user_notifications_disabled');
     jrUser_delete_session_key('user_notifications_disabled');
+    jrCore_logger('MIN', "{$_rt['user_name']} ({$_rt['user_email']}) has re-subscribed to notifications", null, false);
 
     // Delete our cache
     jrCore_delete_all_cache_entries('jrUser', $_rt['_item_id']);
@@ -3375,18 +3460,20 @@ function view_jrUser_whois($_post, $_user, $_conf)
         }
     }
 
-    $dat             = array();
-    $dat[1]['title'] = 'Whois Key';
-    $dat[1]['width'] = '20%';
-    $dat[2]['title'] = 'Whois Value';
-    $dat[2]['width'] = '80%';
-    jrCore_page_table_header($dat, null, true);
-
-    foreach ($_rt as $k => $v) {
+    if (count($_rt) > 0) {
         $dat             = array();
-        $dat[1]['title'] = $k;
-        $dat[2]['title'] = $v;
-        jrCore_page_table_row($dat);
+        $dat[1]['title'] = 'Whois Key';
+        $dat[1]['width'] = '20%';
+        $dat[2]['title'] = 'Whois Value';
+        $dat[2]['width'] = '80%';
+        jrCore_page_table_header($dat, null, true);
+
+        foreach ($_rt as $k => $v) {
+            $dat             = array();
+            $dat[1]['title'] = $k;
+            $dat[2]['title'] = $v;
+            jrCore_page_table_row($dat);
+        }
     }
 
     jrCore_page_table_footer();

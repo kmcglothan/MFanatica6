@@ -1,5 +1,9 @@
 Meta Tag Manager module changelog
 
+Version 1.1.1:
+ - New: Added support for "All Pages" to add meta tag to all site pages
+ - New: Added default support for "referrer" meta tag
+
 Version 1.1.0:
  - New: Support added for custom detail, list, and index module meta tags via "meta" templates
  - New: Twitter card tags added to available meta tags list

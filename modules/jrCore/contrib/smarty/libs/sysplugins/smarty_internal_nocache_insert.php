@@ -41,10 +41,10 @@ class Smarty_Internal_Nocache_Insert
                         ",\$_smarty_tpl), true);?>";
         } else {
             // Modified by brian@jamroom.net to check if function exists
-            $_output .= "if (function_exists('{$_function}')) { echo {$_function}(" . var_export($_attr, true) . ",\$_smarty_tpl); } ?>";
+            $_output .= "echo (function_exists('{$_function}')) ? {$_function}(" . var_export($_attr, true) . ",\$_smarty_tpl) : '';?>";
         }
         $_tpl = $_template;
-        while (isset($_tpl->parent) && $_tpl->parent->_objType == 2) {
+        while ($_tpl->_isSubTpl()) {
             $_tpl = $_tpl->parent;
         }
 

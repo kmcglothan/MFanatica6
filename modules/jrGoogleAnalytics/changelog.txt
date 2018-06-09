@@ -1,5 +1,8 @@
 Google Analytics module changelog
 
+Version 1.2.3:
+ - Bug Fix: Possible SQL error during integrity check on MySQL 5.5
+
 Version 1.2.2:
  - Bug Fix: A/B experiment code may not be inserted into site index in some instances
 

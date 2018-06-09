@@ -60,6 +60,7 @@
             <tr class="page_table_row_alt">
                 <td colspan="4">
 
+                    {jrGallery_get_gallery_image_title item=$item assign="gtitle"}
                     {if !$aspect || $aspect == 'cropped'}
 
                         {* square images *}
@@ -69,7 +70,7 @@
                                 <a onclick="jrGallery_insert_image('/{$murl}/image/gallery_image/{$item._item_id}', '{$item.gallery_image_name|addslashes}')" title="{$item.gallery_image_name}">
                                     {jrCore_module_function function="jrImage_display" module="jrGallery" type="gallery_image" item_id=$item._item_id size="medium" class="jrgallery_update_image" crop="auto" alt=$item.gallery_image_name width=148 height=148 title=$item.gallery_image_name}
                                 </a><br>
-                                {if isset($item.gallery_image_title) && strlen($item.gallery_image_title) > 0}{$item.gallery_image_title|truncate:20:"...":false}{else}{$item.gallery_image_name|truncate:20:"...":true}{/if}<br>
+                                {$gtitle|truncate:20}<br>
                                 <a onclick="jrEmbed_load_module('jrGallery', 1, 'profile_url:{$item.profile_url}');">@{$item.profile_name}</a><br>
                                 <small>{$item.gallery_image_width} x {$item.gallery_image_height}px</small>
                             </div>
@@ -84,7 +85,7 @@
                                 <a onclick="jrGallery_insert_image('/{$murl}/image/gallery_image/{$item._item_id}', '{$item.gallery_image_name|addslashes}')" title="{$item.gallery_image_name}">
                                     {jrCore_module_function function="jrImage_display" module="jrGallery" type="gallery_image" item_id=$item._item_id size="medium" class="jrgallery_update_image img_scale" alt=$item.gallery_image_name title=$item.gallery_image_name}
                                 </a><br>
-                                {if isset($item.gallery_image_title) && strlen($item.gallery_image_title) > 0}{$item.gallery_image_title|truncate:20:"...":false}{else}{$item.gallery_image_name|truncate:20:"...":true}{/if}<br>
+                                {$gtitle|truncate:20}<br>
                                 <a onclick="jrEmbed_load_module('jrGallery', 1, 'profile_url:{$item.profile_url}');">@{$item.profile_name}</a><br>
                                 <small>{$item.gallery_image_width} x {$item.gallery_image_height}px</small>
                             </div>

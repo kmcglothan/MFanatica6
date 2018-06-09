@@ -51,6 +51,6 @@ function jrMeta_db_schema()
         "meta_json LONGTEXT NOT NULL",
         "UNIQUE meta_id (meta_id)"
     );
-    jrCore_db_verify_table('jrMeta', 'meta', $_tmp);
+    jrCore_db_verify_table('jrMeta', 'meta', $_tmp, 'InnoDB');
     return true;
 }

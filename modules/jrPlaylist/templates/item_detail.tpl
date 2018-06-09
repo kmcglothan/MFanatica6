@@ -32,7 +32,7 @@
                 <ul class="sortable list" style="list-style:none outside none;padding-left:0;">
                     {foreach $item.playlist_items as $playlist_item}
                         <li data-id="{$playlist_item.playlist_module}-{$playlist_item._item_id}">
-                            {include file=$item.playlist_templates[$playlist_item.playlist_module] playlist_id=$item._item_id}
+                            {jrCore_include template=$item.playlist_templates[$playlist_item.playlist_module] module=$playlist_item.playlist_module playlist_id=$item._item_id}
                         </li>
                     {/foreach}
                 </ul>

@@ -1,0 +1,51 @@
+/*
+ * Elastic 2 CSS
+ * Copyright 2003-2017 by Talldude Networks, LLC.
+ */
+
+/* @title Rank */
+/* @help This is the ranking number */
+.rank {
+    font-weight: 500;
+    font-size: 12px;
+    padding: 3px;
+    color: #000000;
+}
+
+/* @title Normal */
+/* @help This is the regular body text */
+.normal {
+    color: #444444;
+    font-size: 14px;
+}
+
+/* @title Hilited */
+/* @help This is the hilite text */
+.hilite {
+    font-size: 12px;
+    font-weight: 500;
+    color: #FFCC00;
+}
+
+/* @title Media Title */
+/* @help This is the Media Title text. */
+.media_title {
+    text-transform: capitalize;
+    font-size: 16px;
+    font-weight: 400;
+    color: #000000;
+}
+
+/* @title Media Title Link */
+/* @help This is the Media Title link text */
+.media_title a {
+    color: #336699;
+    text-decoration: none;
+}
+
+/* @title Media Title Hover */
+/* @help This is the Media Title hover text */
+.media_title a:hover {
+    color: #333333;
+    text-decoration: underline;
+}

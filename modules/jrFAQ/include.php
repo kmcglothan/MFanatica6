@@ -49,12 +49,13 @@ function jrFAQ_meta()
     $_tmp = array(
         'name'        => 'FAQ',
         'url'         => 'faq',
-        'version'     => '1.0.5',
+        'version'     => '1.0.6',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Add a FAQ (Frequently Asked Questions) section to a profile',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2951/profile-faq',
         'license'     => 'mpl',
-        'category'    => 'profiles'
+        'category'    => 'profiles',
+        'requires'    => 'jrUser:2.2.0b2'
     );
     return $_tmp;
 }
@@ -88,6 +89,9 @@ function jrFAQ_init()
     jrCore_register_module_feature('jrCore', 'item_order_support', 'jrFAQ', 'on');
 
     jrCore_register_module_feature('jrCore', 'css', 'jrFAQ', 'jrFAQ.css');
+
+    jrCore_register_module_feature('jrCore', 'javascript', 'jrFAQ', 'jquery-ui-1.10.4.custom.min.js');
+    jrCore_register_module_feature('jrCore', 'javascript', 'jrFAQ', 'jquery.mjs.nestedSortable.js');
 
     return true;
 }

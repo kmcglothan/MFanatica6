@@ -9,4 +9,5 @@ ga('create','{$_conf.jrGoogleAnalytics_account}', { 'clientId': '{$unique_cid}' 
 {else}
 ga('create','{$_conf.jrGoogleAnalytics_account}');
 {/if}
+ga('set', 'transport', 'beacon');
 ga('send','pageview');

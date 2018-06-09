@@ -2,7 +2,7 @@
 /**
  * Jamroom Banned Items module
  *
- * copyright 2016 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -39,9 +39,12 @@
  * @author Brian Johnson <brian [at] jamroom [dot] net>
  */
 
-//------------------------------
-// browse
-//------------------------------
+/**
+ * Browse
+ * @param $_post
+ * @param $_user
+ * @param $_conf
+ */
 function view_jrBanned_browse($_post, $_user, $_conf)
 {
     jrUser_master_only();
@@ -79,11 +82,13 @@ function view_jrBanned_browse($_post, $_user, $_conf)
     $dat[1]['title'] = 'type';
     $dat[1]['width'] = '30%;';
     $dat[2]['title'] = 'value';
-    $dat[2]['width'] = '60%;';
-    $dat[3]['title'] = 'updated';
-    $dat[3]['width'] = '5%;';
-    $dat[4]['title'] = 'delete';
-    $dat[4]['width'] = '5%;';
+    $dat[2]['width'] = '50%;';
+    $dat[3]['title'] = 'note';
+    $dat[3]['width'] = '5%';
+    $dat[4]['title'] = 'updated';
+    $dat[4]['width'] = '10%;';
+    $dat[5]['title'] = 'delete';
+    $dat[5]['width'] = '5%;';
     jrCore_page_table_header($dat);
     unset($dat);
 
@@ -106,10 +111,12 @@ function view_jrBanned_browse($_post, $_user, $_conf)
             }
             $dat[1]['class'] = 'center';
             $dat[2]['title'] = $_ban['ban_value'];
-            $dat[3]['title'] = jrCore_format_time($_ban['ban_updated']);
+            $dat[3]['title'] = (isset($_ban['ban_note']{0})) ? '<img src="' . $_conf['jrCore_base_url'] . '/modules/jrProfile/img/note.png" width="24" height="24" alt="' . jrCore_entity_string($_ban['ban_note']) . '" title="' . jrCore_entity_string($_ban['ban_note']) . '" onclick="jrCore_alert(\'' . jrCore_entity_string($_ban['ban_note']) . '\')" >' : '&nbsp;';
             $dat[3]['class'] = 'center';
-            $dat[4]['title'] = jrCore_page_button("d{$_ban['ban_id']}", 'delete', "if (confirm('Are you sure you want to delete this entry?')) { jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/ban_item_delete_save/id={$_ban['ban_id']}/p={$_post['p']}{$add}') }");
-            $dat[3]['class'] = 'center';
+            $dat[4]['title'] = jrCore_format_time($_ban['ban_updated']);
+            $dat[4]['class'] = 'center';
+            $dat[5]['title'] = jrCore_page_button("d{$_ban['ban_id']}", 'delete', "if (confirm('Are you sure you want to delete this entry?')) { jrCore_window_location('{$_conf['jrCore_base_url']}/{$_post['module_url']}/ban_item_delete_save/id={$_ban['ban_id']}/p={$_post['p']}{$add}') }");
+            $dat[5]['class'] = 'center';
             jrCore_page_table_row($dat);
         }
         jrCore_page_table_pager($_rt, $_ex);
@@ -158,6 +165,18 @@ function view_jrBanned_browse($_post, $_user, $_conf)
         'validate'  => 'not_empty'
     );
     jrCore_form_field_create($_tmp);
+
+    // Admin Note
+    $_tmp = array(
+        'name'     => 'ban_note',
+        'type'     => 'textarea',
+        'validate' => 'printable',
+        'label'    => 'admin note',
+        'help'     => 'You can save a note about this ban',
+        'default'  => ''
+    );
+    jrCore_form_field_create($_tmp);
+
     jrCore_page_display();
 }
 
@@ -209,12 +228,18 @@ function view_jrBanned_browse_save($_post, $_user, $_conf)
         jrCore_form_result();
     }
     $tbl = jrCore_db_table_name('jrBanned', 'banned');
-    $req = "INSERT INTO {$tbl} (ban_updated,ban_type,ban_value)
-            VALUES (UNIX_TIMESTAMP(),'" . jrCore_db_escape($_post['ban_type']) . "','" . jrCore_db_escape($_post['ban_value']) . "')
+    $req = "INSERT INTO {$tbl} (ban_updated,ban_type,ban_value,ban_note)
+            VALUES (UNIX_TIMESTAMP(),'" . jrCore_db_escape($_post['ban_type']) . "','" . jrCore_db_escape($_post['ban_value']) . "','" . jrCore_db_escape($_post['ban_note']) . "')
             ON DUPLICATE KEY UPDATE ban_updated = UNIX_TIMESTAMP()";
     jrCore_db_query($req);
-    jrCore_set_form_notice('success', 'The Banned Item has been successfully created');
+
+    // Reset caches
+    $key = "jrbanned_config_{$_post['ban_type']}";
+    jrCore_delete_local_cache_key($key);
+    jrCore_delete_cache('jrBanned', $key, false, false);
     jrCore_form_delete_session();
+
+    jrCore_set_form_notice('success', 'The Banned Item has been successfully created');
     jrCore_form_result('referrer');
     return true;
 }
@@ -263,6 +288,12 @@ function view_jrBanned_item_save($_post, $_user, $_conf)
             VALUES (UNIX_TIMESTAMP(),'" . jrCore_db_escape($_post['ban_type']) . "','" . jrCore_db_escape($_post['ban_value']) . "')
             ON DUPLICATE KEY UPDATE ban_updated = UNIX_TIMESTAMP()";
     jrCore_db_query($req);
+
+    // Reset caches
+    $key = "jrbanned_config_{$_post['ban_type']}";
+    jrCore_delete_local_cache_key($key);
+    jrCore_delete_cache('jrBanned', $key, false, false);
+
     jrCore_set_form_notice('success', 'The Banned Item has been successfully created');
     jrCore_location('referrer');
     return true;
@@ -280,10 +311,23 @@ function view_jrBanned_ban_item_delete_save($_post, $_user, $_conf)
         jrCore_set_form_notice('error', 'Invalid ban item id');
         jrCore_form_result('referrer');
     }
+    $bid = (int) $_post['id'];
     $tbl = jrCore_db_table_name('jrBanned', 'banned');
-    $req = "DELETE FROM {$tbl} WHERE ban_id = '" . intval($_post['id']) . "' LIMIT 1";
+    $req = "SELECT ban_type FROM {$tbl} WHERE ban_id = {$bid}";
+    $_rt = jrCore_db_query($req, 'SINGLE');
+    if (!$_rt || !is_array($_rt)) {
+        jrCore_set_form_notice('error', 'Invalid ban item id - not found');
+        jrCore_form_result('referrer');
+    }
+    $req = "DELETE FROM {$tbl} WHERE ban_id = {$bid} LIMIT 1";
     $cnt = jrCore_db_query($req, 'COUNT');
-    if (isset($cnt) && $cnt === 1) {
+    if ($cnt && $cnt === 1) {
+
+        // Reset caches
+        $key = "jrbanned_config_{$_rt['ban_type']}";
+        jrCore_delete_local_cache_key($key);
+        jrCore_delete_cache('jrBanned', $key, false, false);
+
         jrCore_set_form_notice('success', 'The banned item was successfully deleted');
         jrCore_form_result('referrer');
     }
@@ -337,9 +381,17 @@ function view_jrBanned_test_save($_post, $_user, $_conf)
         jrCore_set_form_notice('error', 'You have entered an invalid item value - please enter ' . $err);
         jrCore_location('referrer');
     }
+
+
     $_todo = jrBanned_get_banned_types();
     $_temp = array();
     foreach ($_todo as $type => $desc) {
+
+        // Reset caches - ensure we have the latest
+        $key = "jrbanned_config_{$type}";
+        jrCore_delete_local_cache_key($key);
+        jrCore_delete_cache('jrBanned', $key, false, false);
+
         if (jrBanned_is_banned($type, $_post['ban_value'])) {
             $_temp[] = '<div class="error p5">' . $_post['ban_value'] . " IS a Banned <strong>{$desc}</strong></div>";
         }

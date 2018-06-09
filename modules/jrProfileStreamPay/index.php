@@ -85,9 +85,9 @@ function view_jrProfileStreamPay_credit_log($_post, $_user, $_conf)
     $dat[4]['title'] = 'IP';
     $dat[4]['width'] = '10%;';
     $dat[5]['title'] = 'streamed media';
-    $dat[5]['width'] = '50%;';
+    $dat[5]['width'] = '52%;';
     $dat[6]['title'] = 'amount';
-    $dat[6]['width'] = '10%;';
+    $dat[6]['width'] = '8%;';
     jrCore_page_table_header($dat);
     unset($dat);
 

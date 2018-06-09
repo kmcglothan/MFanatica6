@@ -19,7 +19,7 @@ function jrBirthday_submit()
                     a.hide(300, function()
                     {
                         $('#birthday_submit').removeAttr('disabled').removeClass('form_button_disabled');
-                        alert(r.error);
+                        jrCore_alert(r.error);
                     });
                 }
                 else {

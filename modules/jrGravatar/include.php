@@ -2,7 +2,7 @@
 /**
  * Jamroom Gravatar Images module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -49,13 +49,13 @@ function jrGravatar_meta()
     $_tmp = array(
         'name'        => 'Gravatar Images',
         'url'         => 'gravatar',
-        'version'     => '1.1.1',
+        'version'     => '1.2.1',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Add support for Gravatar images - used if a user has not uploaded a User or Profile Image.',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2947/gravatar-images',
         'category'    => 'site',
         'license'     => 'mpl',
-        'requires'    => 'jrImage:1.0.2'
+        'requires'    => 'jrCore:6.1.0b1,jrImage:2.0.0b1'
     );
     return $_tmp;
 }
@@ -66,6 +66,7 @@ function jrGravatar_meta()
 function jrGravatar_init()
 {
     jrCore_register_event_listener('jrImage', 'img_src', 'jrGravatar_img_src_listener');
+    jrCore_register_event_listener('jrImage', 'default_image', 'jrGravatar_default_image_listener');
     jrCore_register_module_feature('jrUser', 'skip_session', 'jrGravatar', 'gimg');
     return true;
 }
@@ -115,13 +116,15 @@ function jrGravatar_img_src_listener($_data, $_user, $_conf, $_args, $event)
                         $gru = jrCore_get_module_url('jrGravatar');
                         $url = jrGravatar_get_image_url($_args['_item']['user_email'], $siz, false);
                         if ($url) {
-                            if ($key = jrGravatar_get_cached_gravatar_image($url, $_args['_item']['_profile_id'], $_args['_item']['_user_id'])) {
-                                $url = "{$_conf['jrCore_base_url']}/{$gru}/gimg/{$key}.png";
-                                if (isset($_args['url_only']) && $_args['url_only'] === true) {
-                                    $src = $url;
-                                }
-                                else {
-                                    $src = jrGravatar_get_image_html($url, $_args, $_args['_item']['_updated']);
+                            if (isset($_args['_item']['_profile_id'])) {
+                                if ($key = jrGravatar_get_cached_gravatar_image($url, $_args['_item']['_profile_id'], $_args['_item']['_user_id'])) {
+                                    $url = "{$_conf['jrCore_base_url']}/{$gru}/gimg/{$key}.png";
+                                    if (isset($_args['url_only']) && $_args['url_only'] === true) {
+                                        $src = $url;
+                                    }
+                                    else {
+                                        $src = jrGravatar_get_image_html($url, $_args, $_args['_item']['_updated']);
+                                    }
                                 }
                             }
                         }
@@ -132,6 +135,9 @@ function jrGravatar_img_src_listener($_data, $_user, $_conf, $_args, $event)
                             $src = $url;
                         }
                         else {
+                            if (!isset($_args['width'])) {
+                                $_args['width'] = $siz;
+                            }
                             $src = jrGravatar_get_image_html($url, $_args, $_args['_item']['_updated']);
                         }
                     }
@@ -174,8 +180,10 @@ function jrGravatar_img_src_listener($_data, $_user, $_conf, $_args, $event)
                                 $src = $url;
                             }
                             else {
-                                $_args['width'] = $siz;
-                                $src            = jrGravatar_get_image_html($url, $_args, $_us['_updated']);
+                                if (!isset($_args['width'])) {
+                                    $_args['width'] = $siz;
+                                }
+                                $src = jrGravatar_get_image_html($url, $_args, $_us['_updated']);
                             }
                         }
                     }
@@ -186,6 +194,34 @@ function jrGravatar_img_src_listener($_data, $_user, $_conf, $_args, $event)
     }
     if ($src) {
         $_data['src'] = $src;
+    }
+    return $_data;
+}
+
+/**
+ * Use a Gravatar Image if a user has not uploaded a User Image
+ * @param $_data array incoming data array
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return array
+ */
+function jrGravatar_default_image_listener($_data, $_user, $_conf, $_args, $event)
+{
+    global $_post;
+    if (isset($_post['module'])) {
+        switch ($_post['module']) {
+            case 'jrUser':
+            case 'jrProfile':
+                // We are supported
+                if (isset($_data['_item']) && is_array($_data['_item']) && isset($_data['_item']['user_email']) && strpos($_data['_item']['user_email'], '@')) {
+                    $_tmp         = jrImage_get_allowed_image_widths();
+                    $size         = (isset($_tmp["{$_post['_3']}"])) ? $_tmp["{$_post['_3']}"] : 'icon';
+                    $_data['img'] = jrGravatar_get_image_url($_data['_item']['user_email'], $size);
+                }
+                break;
+        }
     }
     return $_data;
 }
@@ -274,7 +310,7 @@ function jrGravatar_get_cached_gravatar_image($url, $profile_id, $user_id = 0)
 {
     global $_conf;
     $dir = jrCore_get_module_cache_dir('jrImage');
-    $dir = "{$dir}/{$_conf['jrImage_active_cache_dir']}";
+    $dir = "{$dir}/{$_conf['jrImage_active_cache_dir']}/jrGravatar";
     $key = jrGravatar_get_image_cache_key($url, $profile_id, $user_id);
     $dir = "{$dir}/" . substr($key, 0, 2);
     if (!is_dir($dir)) {

@@ -1,0 +1,90 @@
+/* Tab Bar */
+/* @title Tab Bar Holder */
+/* @help This is the holder for the tab bar */
+.page_tab_bar_holder {
+    width:100%;
+    background-color:#000;
+    border-bottom-width:0;
+    border-bottom-style:solid;
+    border-bottom-color:#920B0C;
+}
+
+.page_tab_bar_spacer {
+    height:10px;
+    background-color:#000;
+}
+.page_tab_bar {
+    padding-left:16px;
+}
+/* @title Page Tab */
+/* @help This is the tab for the tab bar */
+.page_tab {
+    background-color:#920B0C;
+    float:left;
+    list-style:none;
+    margin-left:9px; /* @ignore */
+    color:#FFF;
+    text-decoration:none;
+    text-transform:capitalize;
+    font:14px Verdana,sans-serif;
+    text-align:center;
+    cursor:pointer;
+    border-radius:5px; /* @ignore */
+}
+/* @title Page Tab Hover */
+/* @help This is the tab hover for the tab bar */
+.page_tab:hover {
+    background-color:#606060;
+    color:#FFF;
+    text-decoration:none;
+}
+/* @title Page Tab Hover Link */
+/* @help This is the tab link hover for the tab bar */
+.page_tab:hover a {
+    color:#DDD;
+    text-decoration:none;
+}
+/* @title Page Tab Link */
+/* @help This is the tab URL link for the tab bar */
+.page_tab a {
+    padding:6px 10px; /* @ignore */
+    display:block;
+    color:#FFF;
+    text-decoration:none;
+}
+.page_tab_first {
+    margin-left:0;
+}
+.page_tab_last {
+}
+/* @title Page Tab Active */
+/* @help This is the active tab */
+.page_tab_active {
+    background:#606060;
+    color:#CCC;
+    border:1px solid #252525;
+    margin-bottom:-2px;
+}
+/* @title Tab Active Hover */
+/* @help This is the active tab hover effect */
+.page_tab_active:hover {
+    background:#920B0C;
+    color:#FFF;
+    border-bottom:0;
+    text-decoration:none;
+}
+.page_tab_active:hover a {
+    color:#DDD;
+    text-decoration:none;
+}
+/* @title Tab Active Link */
+/* @help This is the active tab URL link */
+.page_tab_active a {
+    color:#CCC;
+}
+
+/* @title Tab Active Hover Link */
+/* @help This is the active tab URL link hover effect */
+.page_tab_active a:hover {
+    color:#FFF;
+}

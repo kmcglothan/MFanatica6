@@ -10,7 +10,7 @@
         {foreach $item.attachments as $att}
 
             {assign var="id" value="attachment_`$upload_module`_`$item._item_id`_`$att.idx`"}
-            <div class="p5 image_update_display file_attachment" onmouseover="$('#{$id}').show()" onmouseout="$('#{$id}').hide()">
+            <div id="{$upload_module}_{$item._item_id}_{$att.idx}" class="p5 image_update_display file_attachment" onmouseover="$('#{$id}').show()" onmouseout="$('#{$id}').hide()">
 
                 {* If this is an image, we can show it inline *}
                 <div class="file_attachment_image">
@@ -32,7 +32,7 @@
 
                 {if jrUser_is_admin() || jrProfile_is_profile_owner($_profile_id) || $item._user_id == $_user._user_id}
                     <div id="{$id}" class="image_delete">
-                        <a onclick="if(confirm('{$prompt|jrCore_entity_string}')) { jrCore_delete_attachment('{$item._item_id}','{$att.field}','{$upload_module}','{$att.idx}')}">{jrCore_icon icon="close" size="16"}</a>
+                        <a onclick="jrCore_confirm('{$prompt|jrCore_entity_string}', '', function() { jrCore_delete_attachment('{$item._item_id}','{$att.field}','{$upload_module}','{$att.idx}') } )">{jrCore_icon icon="close" size=16}</a>
                     </div>
                 {/if}
 

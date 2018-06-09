@@ -49,7 +49,7 @@ function jrPage_meta()
     $_tmp = array(
         'name'        => 'Page Creator',
         'url'         => 'page',
-        'version'     => '1.1.12',
+        'version'     => '1.1.13',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Create new pages for your site',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2866/page-creator',
@@ -95,12 +95,13 @@ function jrPage_init()
     // display_order listener
     jrCore_register_event_listener('jrCore', 'display_order', 'jrPage_display_order_listener');
 
+    // When an action is shared via jrOneAll, we can provide the text of the shared item
+    jrCore_register_event_listener('jrOneAll', 'network_share_text', 'jrPage_network_share_text_listener');
+
     // We have fields that can be searched
     jrCore_register_module_feature('jrSearch', 'search_fields', 'jrPage', 'page_title,page_body', 19);
 
-
     jrCore_register_module_feature('jrTips', 'tip', 'jrPage', 'tip');
-
     return true;
 }
 
@@ -128,4 +129,46 @@ function jrPage_display_order_listener($_data, $_user, $_conf, $_args, $event)
         }
     }
     return $_data;
+}
+
+/**
+ * Add share data to a jrOneAll network share
+ * @param $_data array incoming data array
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return mixed
+ */
+function jrPage_network_share_text_listener($_data, $_user, $_conf, $_args, $event)
+{
+    $_data = json_decode($_data['action_data'], true);
+    if (!isset($_data) || !is_array($_data)) {
+        return false;
+    }
+    $_ln = jrUser_load_lang_strings($_data['user_language']);
+
+    // We return an array:
+    // 'text' => text to post (i.e. "tweet")
+    // 'url'  => URL to media item,
+    // 'name' => name if media item
+    $url = jrCore_get_module_url('jrPage');
+    $txt = $_ln['jrPage'][18];
+    if ($_data['action_mode'] == 'update') {
+        $txt = $_ln['jrPage'][21];
+    }
+    $_out = array(
+        'text' => "{$_conf['jrCore_base_url']}/{$_data['profile_url']} {$_data['profile_name']} {$txt}: \"{$_data['page_title']}\" {$_conf['jrCore_base_url']}/{$_data['profile_url']}/{$url}/{$_data['_item_id']}/{$_data['page_title_url']}",
+        'link' => array(
+            'url'  => "{$_conf['jrCore_base_url']}/{$_data['profile_url']}/{$url}/{$_data['_item_id']}/{$_data['page_title_url']}",
+            'name' => $_data['page_title']
+        )
+    );
+    // See if they included a picture with the song
+    if (isset($_data['page_image_size']) && jrCore_checktype($_data['page_image_size'], 'number_nz')) {
+        $_out['picture'] = array(
+            'url' => "{$_conf['jrCore_base_url']}/{$url}/image/page_image/{$_data['_item_id']}/large"
+        );
+    }
+    return $_out;
 }

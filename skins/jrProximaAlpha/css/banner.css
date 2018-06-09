@@ -1,0 +1,41 @@
+/* @title Banner Background */
+/* @help The Banner Background is the background color in the small section at the top of pages where the module icon appears */
+.page_banner_box {
+    background-color: #18446E;
+    border-bottom: 12px solid #FFFFFF;
+}
+
+/* @title Page Banner border */
+/* @help The Page Banner border is the border around the section at the top of pages where the module icon appears */
+.page_banner {
+    background-color: #18446E;
+    color: #FFFFFF;
+    border-radius: 2px;
+    margin-top: 6px;
+    margin-bottom: 6px; /* @ignore */
+}
+
+/* @title Page Banner Icon */
+/* @help The Page Banner Icon section is the small section at the top of pages where the module icon appears */
+.page_banner_icon {
+    width: 1%;
+    padding: 0;
+}
+
+/* @title Page Banner Title */
+/* @help The Title section in the page banner */
+.page_banner_left {
+    height: 40px;
+    text-align: left;
+    padding: 0 9px 0 12px;
+    font-size: 20px;
+    text-transform: capitalize;
+    white-space: nowrap;
+}
+
+/* @title Page Banner Description */
+/* @help The Description section on the right side of the page banner */
+.page_banner_right {
+    padding: 0 9px 0 9px; /* @ignore */
+    text-align: right;
+}

@@ -1,0 +1,18 @@
+Item Bundles module changelog
+
+Version 1.0.0:
+ - New: Added access, item order and pending Quota support to Quota Config
+ - Bug Fix: item_detail.tpl updated to allow ACP override of module item_bundle.tpl files
+
+Version 1.0.0b4:
+ - Change: modified item_list.tpl to make bundled item images a bit larger
+
+Version 1.0.0b3:
+ - Change: item_index_meta.tpl added to add social media tags for list page
+ - Bug Fix: "This item belongs to multiple bundles" notice when updating an Image Gallery was incorrect
+
+Version 1.0.0b2:
+ - Bug Fix: deleted bundle items tracker not being reset during a Developer Tools -> System Reset
+
+Version 1.0.0b1:
+ - Initial Release

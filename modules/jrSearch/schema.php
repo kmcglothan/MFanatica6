@@ -2,7 +2,7 @@
 /**
  * Jamroom Search module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -73,7 +73,11 @@ function jrSearch_db_schema()
     }
     $engine = 'MyISAM';
     if (version_compare($ver, '5.6.4', '>=')) {
-        $engine = 'InnoDB';
+        // We should be able to use InnoDB here - double check
+        $_ft = jrCore_db_query("SHOW VARIABLES LIKE '%nnodb_optimize_fulltext%'", 'SINGLE');
+        if ($_ft && is_array($_ft)) {
+            $engine = 'InnoDB';
+        }
     }
     jrCore_db_verify_table('jrSearch', 'fulltext', $_tmp, $engine);
     return true;

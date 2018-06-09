@@ -1,9 +1,8 @@
 <?php
 /**
- * Jamroom 5 Chained Select module
+ * Jamroom Chained Select module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -52,7 +51,7 @@ function jrChainedSelect_meta()
     $_tmp = array(
         'name'        => 'Chained Select',
         'url'         => 'chained_select',
-        'version'     => '1.1.4',
+        'version'     => '1.1.5',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Manage chained_select field options and choices',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/1753/chained-select',
@@ -156,7 +155,7 @@ function jrChainedSelect_form_field_chained_select_display($_field, $_att = null
             'value'   => $val
         );
         if (isset($_field['order']) && jrCore_checktype($_field['order'], 'number_nn')) {
-            $_tm['order'] = $_field['order'];
+            $_tm['order'] = "{$_field['order']}.{$level}";
         }
         if ($level < 2) {
             $_tm['onchange'] = "jrChainedSelect_get('{$fname}','{$opt}','" . ($level + 1) . "',this.value);";
@@ -190,7 +189,7 @@ function jrChainedSelect_form_field_chained_select_display($_field, $_att = null
 
 /**
  * Defines Form Designer field options
- * @return string
+ * @return array
  */
 function jrChainedSelect_form_field_chained_select_form_designer_options()
 {
@@ -210,7 +209,6 @@ function jrChainedSelect_form_field_chained_select_form_designer_options()
 function jrChainedSelect_form_field_chained_select_params($_field, $_post)
 {
     $_field['validate'] = 'not_empty';
-    $_field['required'] = true;
     return $_field;
 }
 
@@ -227,16 +225,32 @@ function jrChainedSelect_form_field_chained_select_validate($_field, $_post, $e_
     // Find our options...
     foreach ($_post as $k => $v) {
         if (strpos($k, "{$_field['name']}_") === 0) {
-            if (!jrCore_checktype($k, $_field['validate'])) {
+
+            $idx = (int) str_replace("{$_field['name']}_", '', $k);
+            if ($idx === 0) {
+                if ($v == '-') {
+                    // We have an empty first select
+                    if ($_field['required']) {
+                        $_ln = jrUser_load_lang_strings();
+                        jrCore_form_field_hilight($k);
+                        jrCore_set_form_notice('error', $_ln['jrChainedSelect'][1]);
+                        return false;
+                    }
+                }
+            }
+
+            if (!jrCore_checktype($v, $_field['validate'])) {
                 jrCore_set_form_notice('error', $e_msg);
                 jrCore_form_field_hilight($k);
                 return false;
             }
+
             if (!@jrCore_is_valid_min_max_value($_field['validate'], $v, $_field['min'], $_field['max'], $e_msg)) {
                 // NOTE: jrCore_set_form_notice() called in jrCore_is_valid_min_max_value()
                 jrCore_form_field_hilight($k);
                 return false;
             }
+
         }
     }
     return $_post;

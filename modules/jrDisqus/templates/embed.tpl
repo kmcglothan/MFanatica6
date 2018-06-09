@@ -4,7 +4,7 @@
     <script type="text/javascript">
         var disqus_shortname = '{$_conf.jrDisqus_site_name|addslashes}';
         var disqus_developer = 1;
-        {if strlen($disqus_identifier) > 0}
+        {if $_conf.jrDisqus_identifier == 'on' && strlen($disqus_identifier) > 0}
         var disqus_identifier = '{$disqus_identifier}';
         {/if}
         (function() {

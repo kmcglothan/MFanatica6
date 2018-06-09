@@ -111,3 +111,75 @@ function jrGallery_toggle_aspect(a)
     }
     jrEmbed_load_module('jrGallery', p, '');
 }
+
+
+/**
+ * ajax delete an image from the update screen of the gallery
+ * @param item_id string
+ */
+function jrGallery_update_delete(item_id)
+{
+
+    var url = core_system_url + '/' + jrGallery_url + '/delete_image_ajax/id=' + item_id + '/__ajax=1';
+    jrCore_set_csrf_cookie(url);
+    $('#del_spin_' + item_id).show(300, function()
+    {
+        $('#del_btn_' + item_id).fadeOut('fast');
+        $.ajax({
+            type: 'POST',
+            url: url,
+            cache: false,
+            dataType: 'json',
+            success: function(data)
+            {
+                if (data.OK) {
+                    // remove the image
+                    $('#gi_' + item_id).fadeOut('slow').remove();
+                }
+                else {
+                    jrCore_alert(data.error);
+                }
+                return true;
+            }
+        });
+    });
+}
+
+
+/**
+ * Save a title to a single image from the gallery update form
+ */
+function jrGallery_save_title(id)
+{
+    var i = $('#gallery_update_id').val();
+    var l = $('#gallery_update_title').val();
+    var s = $('#gallery_title_save');
+    s.attr('disabled', 'disabled').addClass('form_button_disabled');
+    setTimeout(function()
+    {
+        var u = core_system_url + '/' + jrGallery_url + '/image_title_save/__ajax=1';
+        jrCore_set_csrf_cookie(u);
+        $.ajax({
+            url: u,
+            type: 'POST',
+            cache: false,
+            data: {'id': Number(i), 'gallery_image_title': l},
+            dataType: 'json',
+            success: function(data)
+            {
+                if (data.OK == 1) {
+                    $.modal.close();
+                    $('#gallery_image_title_' + i).text(data.gallery_image_title);
+                }
+                else {
+                    $.modal.close();
+                    jrCore_alert(data.error);
+                }
+            },
+            error: function()
+            {
+                jrCore_alert('error communicating with server - please try again');
+            }
+        });
+    }, 500);
+}

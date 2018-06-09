@@ -1,0 +1,98 @@
+/* @title Form Button */
+/* @help Format for Form Buttons */
+.form_button {
+    font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #FFFFFF linear-gradient(#FFFFFF, #EEEEEE) repeat scroll 0 0;
+    border: 1px solid #CCCCCC;
+    border-radius: 2px;
+    box-shadow: none;
+    color: #555555;
+    height: auto;
+    margin: 0;
+    padding: 5px 8px 4px 8px;
+    text-transform: capitalize;
+    vertical-align: middle;
+    font-weight: normal;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.page_banner_right .form_button {
+    margin-left: 3px;
+    vertical-align: middle;
+}
+
+.search_area_right .form_button {
+    margin-left: 3px;
+    vertical-align: middle;
+}
+
+/* @title Follow Button*/
+/* @help Override for border-radius on follow button */
+.follow_button {
+    border-radius: 3px;
+}
+
+.upload_button {
+    margin-top: 3px !important;
+    padding: 6px;
+    min-height: initial;
+}
+
+#pm_chat_file .upload_button {
+    margin-top: 2px !important;
+    padding: 7px;
+}
+
+#pm_forum_file .upload_button {
+    padding: 8px;
+}
+
+#bbcode_help_button input {
+    padding: 5px 4px 5px 5px;
+    margin: 3px 0 0 3px;
+}
+
+/* @title Form Button Hover */
+/* @help Format for Form Buttons when the mouse is hovered over the button */
+.form_button:hover {
+    background-color: #EEEEEE;
+    color: #000000;
+}
+
+.form_button_disabled {
+    color: #CCCCCC;
+    border: solid 1px #CCCCCC;
+}
+
+.form_button_disabled:hover {
+    background-color: #FFFFFF;
+    color: #CCCCCC;
+    cursor: default;
+}
+
+.form_button a, .form_button_anchor a, .form_button_anchor:hover a {
+    text-decoration: none;
+}
+
+.sprite_icon {
+    background: rgba(0, 0, 0, 0) linear-gradient(#FFFFFF, #EEEEEE) repeat scroll 0 0;
+    border: 1px solid #CCCCCC;
+    border-radius: 2px;
+    color: #EEEEEE;
+    cursor: pointer;
+    display: inline-block;
+    margin: 0;
+    padding: 2px;
+    vertical-align: middle;
+}
+
+.sprite_icon:hover {
+    background: #FFCC00 linear-gradient(#FFD940, #FFCC00) repeat scroll 0 0;
+    border: 1px solid #999999;
+}
+
+.sprite_icon_hilighted {
+    background: #FFCC00 linear-gradient(#FFD940, #FFCC00) repeat scroll 0 0;
+    border: 1px solid #999999;
+}

@@ -2,7 +2,7 @@
 /**
  * Jamroom Image Support module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -102,7 +102,7 @@ function view_jrImage_img($_post, $_user, $_conf)
 
     // Custom headers added by modules
     $_tmp = jrCore_get_flag('jrcore_set_custom_header');
-    if (isset($_tmp) && is_array($_tmp)) {
+    if ($_tmp && is_array($_tmp)) {
         foreach ($_tmp as $header) {
             header($header);
         }
@@ -111,16 +111,8 @@ function view_jrImage_img($_post, $_user, $_conf)
     // Let other modules change our images if needed
     $img = jrCore_trigger_event('jrImage', "{$_post['_1']}_image", $img, $_im);
     $tim = @filemtime($img);
-    $ifs = (function_exists('getenv')) ? getenv('HTTP_IF_MODIFIED_SINCE') : false;
-    if (!$ifs && isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
-        $ifs = $_SERVER['HTTP_IF_MODIFIED_SINCE'];
-    }
-    if ($ifs && strtotime($ifs) == $tim) {
-        header("Last-Modified: " . gmdate('r', $tim));
-        header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + 8640000));
-        header("HTTP/1.1 304 Not Modified");
-        exit;
-    }
+    jrImage_send_not_modified($tim, $img);
+
     switch (jrCore_file_extension($_post['_3'])) {
         case 'jpg':
         case 'jpe':
@@ -144,11 +136,41 @@ function view_jrImage_img($_post, $_user, $_conf)
             jrCore_notice('Error', 'invalid image');
             break;
     }
+
+    if (isset($_SESSION)) {
+        session_write_close();
+    }
+
+    // Required for the process_exit (shutdown function) to detach properly from the client
+    if (function_exists('apache_setenv')) {
+        apache_setenv('no-gzip', 1);
+    }
+    ini_set('zlib.output_compression', 0);
+    ini_set('implicit_flush', 1);
+
+    // Send output
+    // THE ORDER OF THE FOLLOWING STATEMENTS is critical for it
+    // to work properly on mod_php, CGI/FastCGI, and FPM - DO NOT CHANGE!
+    @ob_end_clean();
+    $img = @file_get_contents($img);
+    $len = strlen($img);
     header("Last-Modified: " . gmdate('r', $tim));
     header('Content-Disposition: inline; filename="' . $_post['_3'] . '"');
+    header('Content-Length: ' . $len);
     header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + 8640000));
-    echo @file_get_contents($img);
-    session_write_close();
+    header('Connection: close');
+    ignore_user_abort();
+    ob_start();
+    echo $img;
+    ob_end_flush();
+    @flush();
+
+    // PHP-FPM only
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    }
+    $_tmp = array('img_length' => $len);
+    jrCore_trigger_event('jrCore', 'process_done', $_tmp);
     exit;
 }
 
@@ -188,7 +210,7 @@ function view_jrImage_cache_reset($_post, $_user, $_conf)
 //------------------------------
 // cache_reset_save
 //------------------------------
-function view_jrImage_cache_reset_save($_post, &$_user, &$_conf)
+function view_jrImage_cache_reset_save($_post, $_user, $_conf)
 {
     jrUser_master_only();
     jrCore_form_validate($_post);
@@ -208,7 +230,10 @@ function view_jrImage_cache_reset_save($_post, &$_user, &$_conf)
             jrCore_delete_config_cache();
 
             // Delete old directory via a Queue Worker
-            $_queue = array('cache_dir' => $old);
+            $_queue = array(
+                'new_cache_dir' => $dir,
+                'old_cache_dir' => $old
+            );
             jrCore_queue_create('jrImage', 'clear_cache', $_queue, 10);
 
             jrCore_set_form_notice('success', 'The image cache was successfully reset');
@@ -286,8 +311,12 @@ function view_jrImage_limit_image_size($_post, $_user, $_conf)
     jrCore_page_admin_tabs('jrImage');
     jrCore_page_banner('Resize Item Images', 'Limit item images to a maximum height or width');
     $text = '';
-    if (is_dir(APP_DIR . '/modules/jrFoxyCart') || is_dir(APP_DIR . '/modules/jrPayPal')) {
-        $text = '<br><b>Note:</b> items that are for sale will not have their image resized.';
+    $_tmp = array('jrPayment', 'jrFoxyCart', 'jrPayPal');
+    foreach ($_tmp as $m) {
+        if (jrCore_module_is_active($m)) {
+            $text = '<br><b>Note:</b> items that are for sale will not have their image resized.';
+            break;
+        }
     }
     $note = "The Resize Item Images tool searches for item images with a width or height <b>greater</b> than the selected value<br>and if found, reduces them (in proportion) to the new value which can help save server disk space.{$text}<br><br><b>Important!</b> Once images have been resized the original size cannot be recovered!";
     jrCore_page_note($note, false);
@@ -300,23 +329,32 @@ function view_jrImage_limit_image_size($_post, $_user, $_conf)
         'submit_modal'  => 'update',
         'modal_width'   => 800,
         'modal_height'  => 400,
-        'modal_note'    => 'Please be patient while images are being processed'
+        'modal_note'    => 'Please be patient while the images are processed'
     );
     jrCore_form_create($_tmp);
 
-    $_opts  = array('jrAudio', 'jrBlog', 'jrEvent', 'jrFile', 'jrGallery', 'jrGroup', 'jrProfile', 'jrStore', 'jrUser', 'jrGroupDiscuss', 'jrGroupPage');
-    $_opts2 = array();
-    foreach ($_opts as $mod) {
-        if (jrCore_module_is_active($mod) && jrCore_db_get_datastore_item_count($mod) > 0) {
-            $_opts2[$mod] = $_mods[$mod]['module_name'];
+    $_opt = array();
+    foreach ($_mods as $m => $i) {
+        switch ($m) {
+            case 'jrCore':
+            case 'jrImage':
+            case 'jrInject':
+            case 'jrListParams':
+            case 'jrSearch':
+                break;
+            default:
+                if (jrCore_is_datastore_module($m)) {
+                    $_opt[$m] = $i['module_name'];
+                }
+                break;
         }
     }
-    natcasesort($_opts2);
+    natcasesort($_opt);
     $_tmp = array(
         'name'     => 'image_module',
         'label'    => 'Module',
         'help'     => 'Select the module you want to limit the item image size for',
-        'options'  => $_opts2,
+        'options'  => $_opt,
         'type'     => 'select',
         'validate' => 'printable',
         'required' => true
@@ -324,7 +362,7 @@ function view_jrImage_limit_image_size($_post, $_user, $_conf)
     jrCore_form_field_create($_tmp);
 
     $_sz = array();
-    foreach (range(256, 2048, 64) as $sz) {
+    foreach (range(256, 2560, 64) as $sz) {
         $_sz[$sz] = "{$sz} pixels";
     }
     $_tmp = array(
@@ -355,119 +393,197 @@ function view_jrImage_limit_image_size($_post, $_user, $_conf)
 //------------------------------
 // limit_image_size_save
 //------------------------------
-function view_jrImage_limit_image_size_save($_post, &$_user, &$_conf)
+function view_jrImage_limit_image_size_save($_post, $_user, $_conf)
 {
     global $_mods;
     jrUser_master_only();
     jrCore_form_validate($_post);
 
-    @ini_set('max_execution_time', 86400); // 24 hours max
+    @ini_set('max_execution_time', 82800); // 23 hours max
     @ini_set('memory_limit', '1024M');
 
-    // Get all module images that need limiting
-    $pfx = jrCore_db_get_prefix($_post['image_module']);
-    $_s  = array(
-        "search"      => array(
-            "{$pfx}_image_width > {$_post['max_item_size']} || {$pfx}_image_height > {$_post['max_item_size']}",
-            "{$pfx}_image_extension != gif"
-        ),
-        "order_by"    => array("_created" => "asc"),
-        "return_keys" => array(
-            "{$pfx}_title",
-            "{$pfx}_name",
-            "{$pfx}_image_size",
-            "{$pfx}_image_width",
-            "{$pfx}_image_height",
-            "{$pfx}_image_extension",
-            "{$pfx}_file_item_price",
-            "_item_id",
-            "_profile_id",
-            "_user_id"
-        ),
-        "limit"       => jrCore_db_get_datastore_item_count($_post['image_module'])
-    );
-    $_rt = jrCore_db_search_items($_post['image_module'], $_s);
-    if ($_rt && isset($_rt['_items']) && is_array($_rt['_items']) && count($_rt['_items']) > 0) {
+    $pfx       = jrCore_db_get_prefix($_post['image_module']);
+    $lid       = 0;
+    $ctr       = 1;
+    $checked   = 0;
+    $old_tsize = 0;
+    $new_tsize = 0;
+    $mod_name  = $_mods["{$_post['image_module']}"]['module_name'];
+    $cache_dir = jrCore_get_module_cache_dir('jrImage');
 
-        $mod_name  = $_mods["{$_post['image_module']}"]['module_name'];
-        $cache_dir = jrCore_get_module_cache_dir('jrImage');
+    $total = jrCore_db_get_datastore_item_count($_post['image_module']);
+    if ($total > 0) {
+        jrCore_form_modal_notice('update', 'Checking ' . jrCore_number_format($total) . ' ' . $mod_name . ' items for images...');
 
-        jrCore_form_modal_notice('update', count($_rt['_items']) . ' total images found for the ' . $mod_name . ' module - analyzing');
-        $ctr        = 0;
-        $orig_tsize = 0;
-        $new_tsize  = 0;
-        foreach ($_rt['_items'] as $rt) {
-            // If this item is FOR SALE, skip it
-            if (isset($rt["{$pfx}_file_item_price"]) && $rt["{$pfx}_file_item_price"] > 0) {
-                continue;
-            }
-            $ctr++;
-            // Adjust for profile or user images
-            if ($_post['image_module'] == 'jrProfile') {
-                $rt['_item_id'] = $rt['_profile_id'];
-            }
-            elseif ($_post['image_module'] == 'jrUser') {
-                $rt['_item_id'] = $rt['_user_id'];
-            }
-            // Accumulate original file size
-            $orig_tsize += $rt["{$pfx}_image_size"];
-            // Calculate new width and length
-            if ($rt["{$pfx}_image_width"] >= $rt["{$pfx}_image_height"]) {
-                $w = $_post['max_item_size'];
-                $h = floor($_post['max_item_size'] * $rt["{$pfx}_image_height"] / $rt["{$pfx}_image_width"]);
-            }
-            else {
-                $h = $_post['max_item_size'];
-                $w = floor($_post['max_item_size'] * $rt["{$pfx}_image_width"] / $rt["{$pfx}_image_height"]);
-            }
-            // Source file
-            $file = jrCore_get_media_directory($rt['_profile_id']) . "/{$_post['image_module']}_{$rt['_item_id']}_{$pfx}_image.{$rt["{$pfx}_image_extension"]}";
-            if ($_post['dry_run'] == 'on') {
+        // Get all module item images that need to be resized
+        while (true) {
+            $_rt = array(
+                "search"         => array(
+                    "_item_id > {$lid}"
+                ),
+                'return_keys'    => array(
+                    "_item_id",
+                    "{$pfx}_title",
+                    "{$pfx}_image_size",
+                    "{$pfx}_image_width",
+                    "{$pfx}_image_height",
+                    "{$pfx}_image_extension",
+                    "{$pfx}_file_name",
+                    "{$pfx}_file_size",
+                    "{$pfx}_file_width",
+                    "{$pfx}_file_height",
+                    "{$pfx}_file_extension",
+                    "{$pfx}_file_item_price"
+                ),
+                'skip_triggers'  => true,
+                'ignore_pending' => true,
+                'limit'          => 1000
+            );
+            $_rt = jrCore_db_search_items($_post['image_module'], $_rt);
+            if ($_rt && isset($_rt['_items']) && is_array($_rt['_items']) && count($_rt['_items']) > 0) {
 
-                // Its a dry run - just get the new file size
-                $target = "{$cache_dir}/resized.{$rt["{$pfx}_image_extension"]}";
-                jrImage_resize_image($file, $target, $w);
-                $s = filesize($target);
-                unlink($target);
-                if (($ctr % 50) === 0) {
-                    $saved = $orig_tsize - $new_tsize;
-                    jrCore_form_modal_notice('update', "{$ctr} images found to resize for a savings of " . jrCore_format_size($saved) . " of disk space");
+                $checked += count($_rt['_items']);
+                jrCore_form_modal_notice('update', 'Found ' . jrCore_number_format($checked) . ' ' . $mod_name . ' items - scanning for images to resize');
+                foreach ($_rt['_items'] as $rt) {
+
+                    if (isset($rt["{$pfx}_title"])) {
+                        $name = $rt["{$pfx}_title"];
+                    }
+                    else {
+                        $name = $rt["{$pfx}_file_name"];
+                    }
+                    $lid = $rt['_item_id'];
+
+                    // If this item is FOR SALE, skip it
+                    if (isset($rt["{$pfx}_file_item_price"]) && $rt["{$pfx}_file_item_price"] > 0) {
+                        jrCore_form_modal_notice('update', "{$ctr}: ID {$lid} &quot;{$name}&quot; has an item price - skipping");
+                        continue;
+                    }
+
+                    $ext = false;
+                    $fld = false;
+                    if (isset($rt["{$pfx}_image_size"]) && $rt["{$pfx}_image_size"] > 0) {
+                        // Image File
+                        $ext = $rt["{$pfx}_image_extension"];
+                        $fld = "{$pfx}_image";
+                    }
+                    elseif (isset($rt["{$pfx}_file_size"]) && $rt["{$pfx}_file_size"] > 0) {
+                        // Attachment
+                        $ext = $rt["{$pfx}_file_extension"];
+                        $fld = "{$pfx}_file";
+                    }
+                    if ($ext) {
+
+                        // See if we have an image file
+                        switch ($rt["{$fld}_extension"]) {
+                            case 'png':
+                            case 'jpg':
+                            case 'jpe':
+                            case 'jpeg':
+                            case 'jfif':
+
+                                // Calculate new width and length
+                                if ($rt["{$fld}_width"] >= $rt["{$fld}_height"]) {
+                                    $w = $_post['max_item_size'];
+                                    // Make sure this image is LARGER than what we have requested
+                                    if ($w > $rt["{$fld}_width"]) {
+                                        // This image is already smaller
+                                        continue 2;
+                                    }
+                                    $h = floor($_post['max_item_size'] * $rt["{$fld}_height"] / $rt["{$fld}_width"]);
+                                }
+                                else {
+                                    $h = $_post['max_item_size'];
+                                    // Make sure this image is LARGER than what we have requested
+                                    if ($h > $rt["{$fld}_height"]) {
+                                        // This image is already smaller
+                                        continue 2;
+                                    }
+                                    $w = floor($_post['max_item_size'] * $rt["{$fld}_width"] / $rt["{$fld}_height"]);
+                                }
+
+                                // Source file
+                                $file = jrCore_confirm_media_file_is_local($rt['_profile_id'], "{$_post['image_module']}_{$rt['_item_id']}_{$fld}.{$rt["{$fld}_extension"]}");
+                                if ($file) {
+
+                                    $target = "{$cache_dir}/resized_" . jrCore_create_unique_string(10) . ".{$rt["{$fld}_extension"]}";
+                                    $result = jrImage_resize_image($file, $target, $w);
+                                    if ($result && strpos($result, 'ERROR') === 0) {
+                                        jrCore_form_modal_notice('update', "{$ctr}: ID {$lid}: {$result}");
+                                        continue;
+                                    }
+                                    $new_size = filesize($target);
+                                    $old_size = filesize($file);
+                                    if ($new_size < $old_size) {
+
+                                        $ctr++;
+                                        $saved = ($old_size - $new_size);
+                                        if ($_post['dry_run'] == 'on') {
+                                            // dry run - just report size savings
+                                            jrCore_form_modal_notice('update', "{$ctr}: ID {$lid} &quot;{$name}&quot; resized would save <b>" . jrCore_format_size($saved) . "</b> disk space");
+                                        }
+                                        else {
+                                            // For real
+                                            jrCore_copy_media_file($rt['_profile_id'], $target, "{$_post['image_module']}_{$rt['_item_id']}_{$fld}.{$rt["{$fld}_extension"]}");
+                                            $_tmp = array(
+                                                "{$fld}_size"   => $new_size,
+                                                "{$fld}_width"  => $w,
+                                                "{$fld}_height" => $h,
+                                            );
+                                            jrCore_db_update_item($_post['image_module'], $rt['_item_id'], $_tmp, null, false);
+                                            jrCore_form_modal_notice('update', "{$ctr}: ID {$lid} &quot;{$name}&quot; was successfully resized saving <b>" . jrCore_format_size($saved) . "</b> disk space");
+                                        }
+                                        $new_tsize += $new_size;
+                                        $old_tsize += $old_size;
+                                    }
+                                    else {
+                                        jrCore_form_modal_notice('update', "{$ctr}: ID {$lid} &quot;{$name}&quot; is smaller than the requested size");
+                                    }
+                                    if (is_file($target)) {
+                                        unlink($target);
+                                    }
+                                }
+                                else {
+                                    jrCore_form_modal_notice('update', "{$ctr}: ID {$lid} &quot;{$name}&quot; unable to locate media file");
+                                }
+                                break;
+                        }
+                    }
+                    else {
+                        jrCore_form_modal_notice('update', "{$ctr}: ID {$lid} &quot;{$name}&quot; does not have a valid image extension");
+                    }
+                }
+                if (count($_rt['_items']) < 1000) {
+                    // We're at the end
+                    break;
                 }
             }
             else {
-                // All good - Do the limiting
-                $x = jrImage_resize_image($file, $file, $w);
-                if ($x && substr($x, 0, 5) == 'ERROR') {
-                    jrCore_form_modal_notice('update', $x);
-                    continue;
-                }
-                $s    = filesize($file);
-                $_tmp = array(
-                    "{$pfx}_image_size"   => $s,
-                    "{$pfx}_image_width"  => $w,
-                    "{$pfx}_image_height" => $h,
-                );
-                jrCore_db_update_item($_post['image_module'], $rt['_item_id'], $_tmp);
-                jrCore_form_modal_notice('update', "{$ctr}: successfully resized image: &quot;{$rt["{$pfx}_title"]}&quot;");
+                break;
             }
-            // Accumulate new file size
-            $new_tsize += $s;
         }
+
         // All done - Show results
-        jrCore_form_modal_notice('update', "total size of {$ctr} matched {$mod_name} image files BEFORE resizing: " . jrCore_format_size($orig_tsize));
-        jrCore_form_modal_notice('update', "total size of {$ctr} matched {$mod_name} image files AFTER resizing: " . jrCore_format_size($new_tsize));
-        $saved = $orig_tsize - $new_tsize;
-        if ($_post['dry_run'] == 'on') {
-            jrCore_form_modal_notice('complete', "Test Run: A total of " . jrCore_format_size($saved) . " of disk space could be saved");
+        if ($new_tsize > 0) {
+            $ctr--;
+            jrCore_form_modal_notice('update', "Total size of {$ctr} matched {$mod_name} image files BEFORE resizing: " . jrCore_format_size($old_tsize));
+            jrCore_form_modal_notice('update', "Total size of {$ctr} matched {$mod_name} image files AFTER resizing: " . jrCore_format_size($new_tsize));
+            $saved = $old_tsize - $new_tsize;
+            if ($_post['dry_run'] == 'on') {
+                jrCore_form_modal_notice('complete', "Test Run: A total of " . jrCore_format_size($saved) . " of disk space could be saved");
+            }
+            else {
+                jrCore_form_modal_notice('complete', "Success: A total of " . jrCore_format_size($saved) . " of disk space has been saved");
+            }
         }
         else {
-            jrCore_form_modal_notice('complete', "Success: A total of " . jrCore_format_size($saved) . " of disk space has been saved");
+            jrCore_form_modal_notice('complete', "There were no image files found to resize for {$mod_name}");
         }
     }
     else {
-        jrCore_form_modal_notice('complete', "No images were found that needed to be resized");
+        jrCore_form_modal_notice('complete', "There were no image files found to resize for {$mod_name}");
     }
-    jrCore_form_result("referrer");
+    jrCore_form_result('referrer');
 }
 
 //------------------------------------------------------------------------
@@ -493,5 +609,101 @@ function view_jrImage_tinymce_imagetools($_post, $_user, $_conf)
         $murl = jrCore_get_module_url('jrImage');
         jrCore_json_response(array('location' => "{$_conf['jrCore_base_url']}/{$murl}/image/image_file/{$aid}/original"));
     }
-//    jrCore_logger('min', 'tinymce_imagetools failed to save the adjusted file');
+}
+
+/**
+ * Display an image for a recycle bin item
+ * @param $_post array Params from jrCore_parse_url();
+ * @param $_user array User information
+ * @param $_conf array Global config
+ * @example http://www.site.com/image/rb_image/[recycle_bin_id]/jrGallery/gallery_image
+ */
+function view_jrImage_rb_image($_post, $_user, $_conf)
+{
+    jrUser_is_admin();
+
+    $tbl = jrCore_db_table_name('jrCore', 'recycle');
+    $req = "SELECT r_module AS module, r_item_id AS iid, r_profile_id AS pid, r_data FROM {$tbl} WHERE r_id = '{$_post['_1']}'";
+    $_rt = jrCore_db_query($req, 'SINGLE');
+    if (!$_rt || !is_array($_rt)) {
+        $_post['_3'] = 'icon';
+        jrImage_display_default_image($_post, $_conf);
+    }
+    $_data = json_decode($_rt['r_data'], true);
+    if (!$_data || !is_array($_data)) {
+        $_post['_3'] = 'icon';
+        jrImage_display_default_image($_post, $_conf);
+    }
+
+    $_im = array('image_time' => $_data['_updated']);
+    foreach (array('name', 'size', 'type', 'extension', 'width', 'height') as $i) {
+        if (isset($_data["{$_post['_3']}_{$i}"])) {
+            $_im["image_{$i}"] = $_data["{$_post['_3']}_{$i}"];
+        }
+    }
+
+    // Ensure master image is local for resize
+    jrCore_db_close();
+    $dir = jrCore_get_media_directory($_data['_profile_id'], FORCE_LOCAL);
+    $nam = "rb_{$_post['_2']}_{$_data['_item_id']}_{$_post['_3']}.{$_data["{$_post['_3']}_extension"]}";
+    jrCore_confirm_media_file_is_local($_rt['pid'], $nam, "{$dir}/{$nam}");
+    if (!is_file("{$dir}/{$nam}")) {
+        $_post['_3'] = 'icon';
+        jrImage_display_default_image($_post, $_conf);
+    }
+    if (!jrImage_is_valid_image_file("{$dir}/{$nam}")) {
+        $_post['_3'] = 'icon';
+        jrImage_display_default_image($_post, $_conf);
+    }
+    // Have we already resized this image?
+
+    $ext = jrCore_file_extension($nam);
+    $img = "{$dir}/{$nam}";
+    if (is_file("{$dir}/{$nam}.{$ext}")) {
+        $img = "{$dir}/{$nam}.{$ext}";
+    }
+    else {
+        $_tm = getimagesize($img);
+        if ($_tm[0] > 512 || $_tm[1] > 512) {
+            if ($new = jrImage_resize_image("{$dir}/{$nam}", "{$dir}/{$nam}.{$ext}", 512, 80)) {
+                if (is_file($new)) {
+                    $img = $new;
+                }
+            }
+
+        }
+    }
+
+    // On PHP 7 systems session handling will set some default "no cache" headers that we
+    // we need to remove.  This _should_ be fixed by setting session_cache_limiter(''), but
+    // have found that makes sessions a bit on the flaky side, so we just unset the headers here
+    header_remove('Cache-Control');
+    header_remove('Expires');
+    header_remove('Pragma');
+
+    // Get right mime type - sometimes it can be wrong when PHP is wrong
+    switch ($_im['image_extension']) {
+        case 'jpg':
+        case 'jpe':
+        case 'jpeg':
+        case 'jfif':
+            $mime = "image/jpeg";
+            break;
+        case 'png':
+            $mime = "image/png";
+            break;
+        case 'gif':
+            $mime = "image/gif";
+            break;
+        default:
+            $mime = $_im['image_type'];
+            break;
+    }
+
+    jrCore_set_custom_header("Last-Modified: " . gmdate('D, d M Y H:i:s \G\M\T', $_im['image_time']));
+    jrCore_set_custom_header("Content-Type: {$mime}");
+    jrCore_set_custom_header('Content-Disposition: inline; filename="' . $_im['image_name'] . '"');
+    jrCore_set_custom_header('Expires: ' . gmdate('D, d M Y H:i:s \G\M\T', time() + 86400000));
+    jrCore_send_response_and_detach(file_get_contents($img), true);
+    exit;
 }

@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -363,6 +363,7 @@ function jrCore_checktype_printable($input, $desc_only = false, $type_only = fal
 
     // ignore sections in [code] blocks
     $input = jrCore_strip_bb_code($input);
+    $input = jrCore_strip_emoji($input);
 
     // Strip all non-utf8-printable chars
     $tmp = jrCore_strip_html(jrCore_strip_non_utf8($input));
@@ -433,6 +434,10 @@ function jrCore_checktype_email($input, $desc_only = false, $type_only = false)
     }
     if ($type_only) {
         return 'string';
+    }
+    // Prevent name@whatever..com
+    if (preg_match('/\.\.[A-Z]{2,8}$/i', $input)) {
+        return false;
     }
     if (filter_var($input, FILTER_VALIDATE_EMAIL)) {
         return true;
@@ -825,7 +830,7 @@ function jrCore_checktype_url($input, $desc_only = false, $type_only = false)
     if ($type_only) {
         return 'string';
     }
-    if (filter_var($input, FILTER_VALIDATE_URL)) {
+    if ((strpos($input, 'http://') === 0 || strpos($input, 'https://') === 0) && filter_var($input, FILTER_VALIDATE_URL)) {
         return true;
     }
     return false;

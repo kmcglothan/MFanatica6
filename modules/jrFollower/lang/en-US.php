@@ -2,7 +2,7 @@
 /**
  * Jamroom Followers module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -50,8 +50,8 @@ $lang['menu'] = 'followers';
 // Keys
 $lang[1]  = 'follow';
 $lang[2]  = 'following';
-$lang[3]  = 'approve followers';
-$lang[4]  = 'If &quot;Approve Followers&quot; is checked, anyone following your profile will need to be approved by you before becoming a follower of your profile.';
+$lang[3]  = 'Followers Require Approval';
+$lang[4]  = 'If &quot;Followers Require Approval&quot; is checked, anyone following your profile will need to be approved by you before becoming a follower of your profile.';
 $lang[5]  = 'pending';
 $lang[6]  = 'No longer follow this profile?';
 $lang[7]  = "Your follow request is currently pending - once the profile owner approves your follow request, you will be notified";
@@ -87,3 +87,5 @@ $lang[36] = 'You are not following any profiles';
 $lang[37] = 'Profiles You Follow';
 $lang[38] = 'Share Who you Follow';
 $lang[39] = 'If this option is checked, when you follow a new profile an entry will be added to your Timeline for others to view';
+$lang[40] = 'Followed by:';
+$lang[41] = 'Keep Followers Pending until my Approval';

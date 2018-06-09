@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -38,6 +38,11 @@
  * @copyright 2012 Talldude Networks, LLC.
  * @author Brian Johnson <brian [at] jamroom [dot] net>
  */
+
+// Set start time flag for process
+$now = explode(' ', microtime());
+$now = $now[1] + $now[0];
+$GLOBALS['__JR_FLAGS']['jrcore_process_start_time'] = $now;
 
 // Define our base dir - DO NOT USE __DIR__ here
 define('APP_DIR', dirname(dirname(dirname($_SERVER['SCRIPT_FILENAME']))));
@@ -103,10 +108,9 @@ if (jrCore_is_maintenance_mode($_conf, $_post)) {
 elseif (!isset($_post['module']{0}) && !isset($_post['option']{0}) && !isset($_post['module_url']{0})) {
 
     // Check cache
-    jrUser_load_lang_strings();
-    $key = "{$_conf['jrCore_active_skin']}-index-" . json_encode($_post);
     $out = jrCore_trigger_event('jrCore', 'index_template', $_post);
     if (!$out || is_array($out) || strlen($out) === 0) {
+        $key = "{$_conf['jrCore_active_skin']}-index-" . json_encode($_post);
         if (!$out = jrCore_is_cached('jrCore', $key)) {
             $out = jrCore_parse_template('index.tpl', $_post);
             jrCore_add_to_cache('jrCore', $key, $out);
@@ -150,101 +154,104 @@ else {
         }
 
         // Trigger our module view
-        jrCore_trigger_event('jrCore', 'module_view', $_post);
+        $out = jrCore_trigger_event('jrCore', 'module_view', $_post);
+        if (!$out || is_array($out) || strlen($out) === 0) {
+            $out = false;
 
-        // Our order of precedence is:
-        // - Template Override @ Skin/override_[module]_[option].tpl
-        // - EXACT MATCH on view_[module]_[option]
-        // - MAGIC VIEW on view_magic_[option]
-        // - Template @ Skin/[module]_[option].tpl
-        // - Default view view_[module]_default
-        // - Not Found (404.tpl)
+            // Our order of precedence is:
+            // - Template Override @ Skin/override_[module]_[option].tpl
+            // - EXACT MATCH on view_[module]_[option]
+            // - MAGIC VIEW on view_magic_[option]
+            // - Template @ Skin/[module]_[option].tpl
+            // - Default view view_[module]_default
+            // - Not Found (404.tpl)
 
-        // Check for module controlled View (exact match)
-        if (isset($_post['option']{0}) && is_file(APP_DIR . "/modules/{$_post['module']}/index.php")) {
+            // Check for module controlled View (exact match)
+            if (isset($_post['option']{0}) && is_file(APP_DIR . "/modules/{$_post['module']}/index.php")) {
 
-            $func = "view_{$_post['module']}_{$_post['option']}";
-            if (!function_exists($func)) {
-                ob_start();
-                require_once APP_DIR . "/modules/{$_post['module']}/index.php";
-                ob_end_clean();
-            }
-            // If it exists, run it - otherwise fall through for other handlers
-            if (function_exists($func)) {
-                $out = jrCore_run_module_view_function($func);
-            }
-        }
-
-        // Check for registered Magic View function
-        if (isset($_post['option']{0}) && !$out) {
-
-            $_vw = jrCore_get_registered_module_features('jrCore', 'magic_view');
-            if ($_vw && is_array($_vw)) {
-                foreach ($_vw as $m => $_e) {
-                    if (isset($_e["{$_post['option']}"])) {
-                        $func = $_e["{$_post['option']}"];
-                        // Bring in magic view module's view functions
-                        if (!function_exists($func)) {
-                            ob_start();
-                            require_once APP_DIR . "/modules/{$m}/index.php";
-                            ob_end_clean();
-                        }
-                        if (function_exists($func)) {
-                            jrCore_set_flag('jrcore_is_magic_view', 1);
-                            $out = jrCore_run_module_view_function($func);
-                        }
-                        else {
-                            // log error and show 404
-                            jrCore_logger('CRI', "magic view function: {$func} registered in module: {$m} does not exist!");
-                            jrCore_page_not_found();
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-
-        // Module must be active
-        if (jrCore_module_is_active($_post['module']) || (isset($_post['_1']) && $_post['_1'] == 'info')) {
-
-            // Skin Template
-            if (isset($_post['option']{0}) && !$out) {
-                // Check for Skin Template specific to this module/view
-                if (is_file(APP_DIR . "/skins/{$_conf['jrCore_active_skin']}/{$_post['module']}_{$_post['option']}.tpl")) {
-                    $out = jrCore_parse_template("{$_post['module']}_{$_post['option']}.tpl", $_post);
-                    unset($_SESSION['jruser_save_location']);
-                }
-            }
-
-            // Module Default View
-            if (!$out) {
-                $func = "view_{$_post['module']}_default";
+                $func = "view_{$_post['module']}_{$_post['option']}";
                 if (!function_exists($func)) {
                     ob_start();
                     require_once APP_DIR . "/modules/{$_post['module']}/index.php";
                     ob_end_clean();
                 }
-                jrCore_page_title($_post['module_url']);
+                // If it exists, run it - otherwise fall through for other handlers
                 if (function_exists($func)) {
-                    // default view function
                     $out = jrCore_run_module_view_function($func);
                 }
-                elseif (is_file(APP_DIR . "/skins/{$_conf['jrCore_active_skin']}/{$_post['module']}_index.tpl")) {
-                    // default module index (note skin override in parse_template)
-                    $out = jrCore_parse_template('index.tpl', $_post, $_post['module']);
-                }
-                elseif (is_file(APP_DIR . "/modules/{$_post['module']}/templates/index.tpl")) {
-                    // default module index (note skin override in parse_template)
-                    $out = jrCore_parse_template('index.tpl', $_post, $_post['module']);
-                }
-                else {
-                    // page/module/option not found
-                    jrCore_page_not_found();
+            }
+
+            // Check for registered Magic View function
+            if (isset($_post['option']{0}) && !$out) {
+
+                $_vw = jrCore_get_registered_module_features('jrCore', 'magic_view');
+                if ($_vw && is_array($_vw)) {
+                    foreach ($_vw as $m => $_e) {
+                        if (isset($_e["{$_post['option']}"])) {
+                            $func = $_e["{$_post['option']}"];
+                            // Bring in magic view module's view functions
+                            if (!function_exists($func)) {
+                                ob_start();
+                                require_once APP_DIR . "/modules/{$m}/index.php";
+                                ob_end_clean();
+                            }
+                            if (function_exists($func)) {
+                                jrCore_set_flag('jrcore_is_magic_view', 1);
+                                $out = jrCore_run_module_view_function($func);
+                            }
+                            else {
+                                // log error and show 404
+                                jrCore_logger('CRI', "magic view function: {$func} registered in module: {$m} does not exist!");
+                                jrCore_page_not_found();
+                            }
+                            break;
+                        }
+                    }
                 }
             }
-        }
-        else {
-            jrCore_page_not_found();
+
+            // Module must be active
+            if (jrCore_module_is_active($_post['module']) || (isset($_post['_1']) && $_post['_1'] == 'info')) {
+
+                // Skin Template
+                if (isset($_post['option']{0}) && !$out) {
+                    // Check for Skin Template specific to this module/view
+                    if (is_file(APP_DIR . "/skins/{$_conf['jrCore_active_skin']}/{$_post['module']}_{$_post['option']}.tpl")) {
+                        $out = jrCore_parse_template("{$_post['module']}_{$_post['option']}.tpl", $_post);
+                        unset($_SESSION['jruser_save_location']);
+                    }
+                }
+
+                // Module Default View
+                if (!$out) {
+                    $func = "view_{$_post['module']}_default";
+                    if (!function_exists($func)) {
+                        ob_start();
+                        require_once APP_DIR . "/modules/{$_post['module']}/index.php";
+                        ob_end_clean();
+                    }
+                    jrCore_page_title($_post['module_url']);
+                    if (function_exists($func)) {
+                        // default view function
+                        $out = jrCore_run_module_view_function($func);
+                    }
+                    elseif (is_file(APP_DIR . "/skins/{$_conf['jrCore_active_skin']}/{$_post['module']}_index.tpl")) {
+                        // default module index (note skin override in parse_template)
+                        $out = jrCore_parse_template('index.tpl', $_post, $_post['module']);
+                    }
+                    elseif (is_file(APP_DIR . "/modules/{$_post['module']}/templates/index.tpl")) {
+                        // default module index (note skin override in parse_template)
+                        $out = jrCore_parse_template('index.tpl', $_post, $_post['module']);
+                    }
+                    else {
+                        // page/module/option not found
+                        jrCore_page_not_found();
+                    }
+                }
+            }
+            else {
+                jrCore_page_not_found();
+            }
         }
     }
 
@@ -263,7 +270,6 @@ else {
             );
             $out = jrCore_trigger_event('jrCore', 'skin_template', $_post, $_st);
             if (!$out || is_array($out) || strlen($out) === 0) {
-                jrUser_load_lang_strings();
                 $key = "{$_conf['jrCore_active_skin']}-" . json_encode($_post);
                 if (!$out = jrCore_is_cached('jrCore', $key)) {
                     $out = jrCore_parse_template("{$_post['module_url']}.tpl", $_post);
@@ -286,10 +292,20 @@ else {
 // Send view_results trigger
 $out = jrCore_trigger_event('jrCore', 'view_results', $out);
 
+// Full page cache
+if (!jrUser_is_logged_in() && isset($_conf['jrCore_full_page']) && $_conf['jrCore_full_page'] == 'on') {
+    if (!isset($_post['module']) || !isset($_mods["{$_post['module']}"])) {
+        jrCore_add_to_cache('jrCore', jrCore_get_full_page_cache_key(), $out, 0, 0, false, true);
+    }
+}
+
 // Send output
 jrCore_send_response_and_detach($out);
 
 // NOTE: We have detached from client at this point
 // Process Exit trigger
 jrCore_trigger_event('jrCore', 'process_exit', $_post);
+
+// NOTE: internal use only - do not attach "regular" event listeners to this event!
+jrCore_trigger_event('jrCore', 'process_done', $_post);
 ?>

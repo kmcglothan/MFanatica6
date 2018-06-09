@@ -2,7 +2,7 @@
 /**
  * Jamroom Terms of Service module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -59,12 +59,13 @@ function view_jrTOS_view_tos($_post, $_user, $_conf)
     $_ln = jrUser_load_lang_strings();
 
     // Prevent clicks outside the TOS area
-    $_js = array("$('html').click(function() { alert('" . addslashes($_ln['jrTOS'][4]) . "'); return false; }); $('.page_content').click(function(event){ event.stopPropagation(); });");
+    $_js = array("$('a').removeAttr('onclick'); $('html').click(function() { jrCore_alert('" . addslashes($_ln['jrTOS'][4]) . "'); return false; }); $('.page_content').click(function(event){ event.stopPropagation(); });");
     jrCore_create_page_element('javascript_ready_function', $_js);
 
     jrCore_page_title($_pg['item']['page_title']);
     jrCore_set_form_notice('success', 1);
     jrCore_get_form_notice();
+    $_SESSION['user_jrTOS_agreed'] = (int) $_post['_1'];
 
     // Form init
     $murl = jrCore_get_module_url('jrUser');
@@ -72,7 +73,7 @@ function view_jrTOS_view_tos($_post, $_user, $_conf)
         'submit_value' => 2,
         'cancel_value' => 3,
         'cancel'       => "{$_conf['jrCore_base_url']}/{$murl}/logout",
-        'onclick'      => "if (!$('#tos_agree').prop('checked')) { alert('" . addslashes($_ln['jrTOS'][4]) . "'); return false; }"
+        'onclick'      => "if (!$('#tos_agree').prop('checked')) { jrCore_alert('" . addslashes($_ln['jrTOS'][4]) . "'); event.stopPropagation(); return false; }"
     );
     jrCore_form_create($_tmp);
 
@@ -104,7 +105,7 @@ function view_jrTOS_view_tos($_post, $_user, $_conf)
 //------------------------------
 // display Terms
 //------------------------------
-function view_jrTOS_view_tos_save($_post, &$_user, &$_conf)
+function view_jrTOS_view_tos_save($_post, $_user, $_conf)
 {
     jrUser_session_require_login();
     jrCore_form_validate($_post);
@@ -123,6 +124,9 @@ function view_jrTOS_view_tos_save($_post, &$_user, &$_conf)
     );
     if (jrCore_db_update_item('jrUser', $_user['_user_id'], $_data)) {
 
+        unset($_SESSION['user_jrTOS_agreed']);
+        jrUser_session_sync($_user['_user_id']);
+
         // event
         jrCore_trigger_event('jrTOS', 'tos_agreed', array());
 
@@ -132,6 +136,18 @@ function view_jrTOS_view_tos_save($_post, &$_user, &$_conf)
         if (isset($url) && jrCore_checktype($url, 'url') && strpos($url, $_conf['jrCore_base_url']) === 0 && $url != $_conf['jrCore_base_url'] && $url != $_conf['jrCore_base_url'] . '/' && !strpos($url, '/signup')) {
             jrCore_form_result($url);
         }
+
+        // If login_page set in quota, redirect as appropriate
+        if (isset($_user['quota_jrUser_login_page'])) {
+            $login_page = strtolower(trim($_user['quota_jrUser_login_page']));
+            if ($login_page == 'index') {
+                jrCore_form_result($_conf['jrCore_base_url']);
+            }
+            elseif (jrCore_checktype($login_page, 'url')) {
+                jrCore_form_result($login_page);
+            }
+        }
+
         jrCore_form_result("{$_conf['jrCore_base_url']}/{$_user['profile_url']}");
 
     }

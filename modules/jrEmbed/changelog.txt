@@ -1,5 +1,11 @@
 Editor Embedded Media module changelog
 
+Version 1.3.12:
+ - Bug Fix: Embed with "search" parameter used in Editor may return 0 results for valid match
+
+Version 1.3.11:
+ - Bug Fix: Smarty Syntax error possible on some embedded video players
+
 Version 1.3.10:
  - Bug Fix: Embedded media Window could be behind chat window on smaller screens
 

@@ -1,0 +1,51 @@
+#wrapper {
+    margin: 0 auto;
+    padding-top: 62px;
+    min-height: calc(100vh - 127px);
+}
+
+.wrapper-bg {
+    background-image: url('{$jrProximaAlpha_img_url}/wrapper-bg.jpg');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+/* @title Site Content */
+/* @help This is the main Site Content holder */
+#content {
+    background: #FFFFFF;
+    margin: 0 auto;
+    margin-top: 12px;
+    max-width: 1140px;
+    height: 100%; /* @ignore */
+    font-size: 1em;
+    padding: 12px;
+}
+
+/* @title block */
+/* @help This is the main style for the individual blocks of the page */
+.block {
+    background-color: transparent;
+    padding: 12px;
+    margin: 0 auto;
+}
+
+.search_box {
+    background-color: #EDEDED;
+    padding: 25px;
+    margin: 12px;
+    font-size: 16px;
+    color: #000000;
+    border-radius: 2px;
+}
+
+.search_box a {
+    color: #336699;
+    text-decoration: none;
+}
+
+.search_box a:hover {
+    color: #333333;
+    text-decoration: underline;
+}

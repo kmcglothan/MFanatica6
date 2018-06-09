@@ -2,7 +2,7 @@
 /**
  * Jamroom Simple Chat module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -92,3 +92,4 @@ $lang[48] = 'no chat room selected';
 $lang[49] = 'open chat in separate window';
 $lang[50] = 'new message sound';
 $lang[51] = 'When a new message is received and chat is not focused do you want the new message sound to play?';
+$lang[52] = 'msg';

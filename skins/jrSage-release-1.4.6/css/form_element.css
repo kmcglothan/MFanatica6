@@ -1,0 +1,56 @@
+.form_radio {
+}
+/* @title Radio Option */
+/* @help Format for Radio form field options */
+.form_radio_option {
+    display:inline;
+    padding-right:32px;
+}
+/* @title Textarea */
+/* @help Format for Textarea form input fields */
+.form_textarea {
+    color:#000;
+    font-size:14px;
+    width:75%;
+    height:100px;
+    padding:5px; /* @ignore */
+    margin:0 2px; /* @ignore */
+    background: #ffffff;
+    border:1px solid #575655;
+    border-radius:4px;
+}
+/* @title Textarea Focus */
+/* @help Class applied to a textarea field when the field is selected for input. */
+textarea:focus {
+    border:1px solid #575655;
+    border-radius:4px;
+    background: #FFF;
+    color:#000;
+    box-shadow:0 0 1px 1px #99A185 inset;
+}
+
+/* @title Checkbox */
+/* @help Class applied to a checkbox form field */
+.form_checkbox {
+    font-size:16px;
+    margin:8px 3px 3px 3px;
+}
+#guestbook_text {
+    text-decoration:none;
+    font:14px inherit;
+    padding:5px;
+    margin:0 2px;
+    height:76px;
+    width:98%;
+    color:#000;
+    background: #ffffff;
+    border:1px solid #575655;
+    border-radius:4px;
+}
+#guestbook_text:focus {
+    border:1px solid #575655;
+    border-radius:4px;
+    background: #FFF;
+    color:#000;
+    box-shadow:inset 0 0 1px 1px #99A185;
+}

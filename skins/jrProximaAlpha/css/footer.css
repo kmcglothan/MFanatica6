@@ -1,0 +1,34 @@
+#footer {
+    width: 100%;
+    background-color: #18446E;
+    margin: 0 auto;
+    border-top: 1px solid #000000;
+}
+
+/* @title Footer Links */
+/* @help Footer text URL */
+#footer a {
+    text-transform: capitalize;
+    text-decoration: none;
+    color: #FFFFFF;
+}
+
+/* @title Footer Link Hover */
+/* @help Footer text URL hover */
+#footer a:hover {
+    text-decoration: underline;
+}
+
+#footer_logo {
+    padding: 12px;
+    vertical-align: middle;
+}
+
+/* @title Footer Text */
+/* @help Footer text */
+#footer_text {
+    text-align: right;
+    color: #CCCCCC;
+    font-size: 14px;
+    padding: 12px;
+}

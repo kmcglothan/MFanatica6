@@ -1,5 +1,14 @@
 Profile Events module changelog
 
+Version 1.3.9:
+ - Bug Fix: Attending timeline posts could be attributed to the wrong user
+
+Version 1.3.8:
+ - Change: Order by in item_index.tpl changed to "event_date desc"
+
+Version 1.3.7:
+ - Change: item_index_meta.tpl added to add social media tags for list page
+
 Version 1.3.6:
  - New: Global Config option to select calendar start day of week
  - New: Updated to work with version 1.2.1 of the RSS Feed Reader module

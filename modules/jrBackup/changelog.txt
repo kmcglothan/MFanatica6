@@ -1,5 +1,21 @@
 DB and System Backup module
 
+Version 2.0.4:
+ - Bug Fix: "delete profile backup" worker queue being created even if S3 is not configured
+
+Version 2.0.3:
+ - Bug Fix: Some profile media files that had not changed could still be copied to S3
+
+Version 2.0.2:
+ - Change: Maximum of one daily and hourly backup queue entries will now be created at once
+ - Change: Cache table data is no longer backed up - just the database table structure
+
+Version 2.0.1:
+ - New: Better support for cleaning up deleted profile data stored on S3 as part of a backup
+
+Version 2.0.0:
+ - Change: Updated to work with new Amazon Web Services SDK module for better S3 support
+
 Version 1.4.6:
  - New: Added a default character set to fix chinese characters not restoring from backup
 

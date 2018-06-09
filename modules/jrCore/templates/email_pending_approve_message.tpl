@@ -1,5 +1,4 @@
-The following items have been approved and are now visible
-on your profile:
+The following items have been approved and are now visible on your profile:
 
 {foreach $_items as $i}
 {$i.item_module_name}: {$i.item_title}

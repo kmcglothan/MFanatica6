@@ -57,7 +57,7 @@
                     <div class="jp-duration"></div>
                     <div class="jp-controls-holder">
                         <ul class="jp-controls">
-                            <li><a href="javascript:" class="jp-previous" tabindex="1" title="{jrCore_lang module="jrAudio" id="44" default="previous"}"></a></li>
+                            <li><a href="javascript:" class="jp-previous" tabindex="{jrCore_next_tabindex}" title="{jrCore_lang module="jrAudio" id="44" default="previous"}"></a></li>
                             <li><a href="javascript:" class="jp-play" tabindex="2" title="{jrCore_lang module="jrAudio" id="1" default="play"}"></a></li>
                             <li><a href="javascript:" class="jp-pause" tabindex="3" title="{jrCore_lang module="jrAudio" id="2" default="pause"}"></a></li>
                             <li><a href="javascript:" class="jp-next" tabindex="4" title="{jrCore_lang module="jrAudio" id="45" default="next"}"></a></li>

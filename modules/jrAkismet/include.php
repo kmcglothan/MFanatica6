@@ -2,7 +2,7 @@
 /**
  * Jamroom Spam Blocker module
  *
- * copyright 2016 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -50,7 +50,7 @@ function jrAkismet_meta()
     $_tmp = array(
         'name'        => 'Spam Blocker',
         'url'         => 'akismet',
-        'version'     => '1.1.4',
+        'version'     => '1.2.1',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Tools and Settings to help prevent spammers from being active on your site',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2958/spam-blocker',
@@ -105,104 +105,187 @@ function jrAkismet_init()
  */
 function jrAkismet_db_item_listener($_data, $_user, $_conf, $_args, $event)
 {
-    if (!jrUser_is_admin() && is_array($_data) && isset($_args['module']) && is_file(APP_DIR . "/modules/{$_args['module']}/templates/item_detail.tpl")) {
+    global $_mods;
+    if (!jrUser_is_admin() && is_array($_data) && !empty($_args['module'])) {
 
-        if (jrUser_is_logged_in() && isset($_data['_user_id']) && $_data['_user_id'] == $_user['_user_id'] && isset($_conf['jrAkismet_probation']) && $_conf['jrAkismet_probation'] > 0) {
+        // See if this module is
+        $mod = $_args['module'];
+        $_rm = jrCore_get_registered_module_features('jrAkismet', 'spam_check');
+        if (isset($_rm[$mod]) || is_file(APP_DIR . "/modules/{$mod}/templates/item_detail.tpl")) {
 
-            // Is this user in probation
-            $old = (time() - (86400 * $_conf['jrAkismet_probation']));
-            if (jrCore_db_get_item_key('jrUser', $_user['_user_id'], '_created') > $old) {
+            //-------------------------
+            // User Probation
+            //-------------------------
+            if (jrUser_is_logged_in() && isset($_data['_user_id']) && $_data['_user_id'] == $_user['_user_id'] && isset($_conf['jrAkismet_probation']) && $_conf['jrAkismet_probation'] > 0) {
 
-                // check if the item is going into pending, if it is, do nothing.
-                $pfx = jrCore_db_get_prefix($_args['module']);
-                if (isset($_data[$pfx . '_pending']) && $_data[$pfx . '_pending'] >= 1) {
-                    return $_data;
+                // Is this user in probation
+                $old = (time() - (86400 * $_conf['jrAkismet_probation']));
+                if ($_user['_created'] > $old) {
+
+                    // check if the item is going into pending, if it is, do nothing.
+                    $pfx = jrCore_db_get_prefix($mod);
+                    if (isset($_data[$pfx . '_pending']) && $_data[$pfx . '_pending'] >= 1) {
+                        return $_data;
+                    }
+
+                    $string = jrAkismet_get_text_from_entry($mod, $_data);
+
+                    // Check for off site URLs
+                    $stripped = false;
+                    if (isset($_conf['jrAkismet_report_urls']) && $_conf['jrAkismet_report_urls'] !== 'ignore') {
+                        $_urls = array();
+                        if (strpos(' ' . $string, 'http')) {
+                            preg_match_all('#\bhttps?://[^\s()<>]+(?:\([\w\d]+\)|([^[:punct:]\s]|/))#', preg_replace('#<[^>]+>#', ' ', strip_tags(str_replace(array('<br', '<p>', '[', ']'), array(' ', ' ', ' [', '] '), $string))), $_urls);
+                            $_urls = array_unique($_urls[0]);
+                            if ($_urls && is_array($_urls) && count($_urls) > 0) {
+                                $base_url = str_replace(array('www.', 'https://', 'http://'), '', $_conf['jrCore_base_url']);
+                                foreach ($_urls as $url) {
+                                    // Is this one off site?
+                                    if (!strpos($url, $base_url)) {
+                                        // This URL is OFF SITE
+                                        switch ($_conf['jrAkismet_report_urls']) {
+
+                                            case 'report':
+                                                // Send email to admins
+                                                $_user['offsite_url'] = $url;
+                                                $_user['content_url'] = jrCore_is_profile_referrer();
+                                                list($sub, $msg) = jrCore_parse_email_templates('jrAkismet', 'url_detected', $_user);
+                                                $_us = jrUser_get_admin_user_ids();
+                                                if ($_us && is_array($_us)) {
+                                                    foreach ($_us as $uid) {
+                                                        jrUser_notify($uid, 0, 'jrAkismet', 'url_detected', $sub, $msg);
+                                                    }
+                                                }
+                                                $_data    = jrAkismet_strip_html_from_item($mod, $_data, $_urls);
+                                                $stripped = true;
+                                                break;
+
+                                            case 'active':
+                                                // We are going to set this user's account INACTIVE
+                                                $_up = array(
+                                                    'profile_active' => 0
+                                                );
+                                                $pid = jrUser_get_profile_home_key('_profile_id');
+                                                jrCore_db_update_item('jrProfile', $pid, $_up);
+                                                jrProfile_reset_cache($pid);
+
+                                                // Send email to admins
+                                                $_user['offsite_url'] = $url;
+                                                $_user['content_url'] = jrCore_is_profile_referrer();
+                                                list($sub, $msg) = jrCore_parse_email_templates('jrAkismet', 'url_detected', $_user);
+                                                $_us = jrUser_get_admin_user_ids();
+                                                if ($_us && is_array($_us)) {
+                                                    foreach ($_us as $uid) {
+                                                        jrUser_notify($uid, 0, 'jrAkismet', 'url_detected', $sub, $msg);
+                                                    }
+                                                }
+
+                                                $_data    = jrAkismet_strip_html_from_item($mod, $_data, $_urls);
+                                                $stripped = true;
+                                                break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // Strip all HTML
+                    if (!$stripped && isset($_conf['jrAkismet_block_html']) && $_conf['jrAkismet_block_html'] == 'on') {
+                        $_data = jrAkismet_strip_html_from_item($mod, $_data);
+                    }
                 }
+            }
 
-                $string = jrAkismet_get_text_from_entry($_args['module'], $_data);
+            //-------------------------
+            // Akismet Spam Check
+            //-------------------------
+            if (jrAkismet_spam_check_api_is_configured()) {
 
-                // Check for off site URLs
-                $stripped = false;
-                if (isset($_conf['jrAkismet_report_urls']) && $_conf['jrAkismet_report_urls'] !== 'ignore') {
-                    $_urls = array();
-                    if (strpos(' ' . $string, 'http')) {
-                        preg_match_all('#\bhttps?://[^\s()<>]+(?:\([\w\d]+\)|([^[:punct:]\s]|/))#', preg_replace('#<[^>]+>#', ' ', strip_tags(str_replace(array('<br', '<p>', '[', ']'), array(' ', ' ', ' [', '] '), $string))), $_urls);
-                        $_urls = array_unique($_urls[0]);
-                        if ($_urls && is_array($_urls) && count($_urls) > 0) {
-                            $base_url = str_replace(array('www.', 'https://', 'http://'), '', $_conf['jrCore_base_url']);
-                            foreach ($_urls as $url) {
-                                // Is this one off site?
-                                if (!strpos($url, $base_url)) {
-                                    // This URL is OFF SITE
-                                    switch ($_conf['jrAkismet_report_urls']) {
+                // A module either needs to have Pending support
+                // OR have registered explicitly for Spam Checking
+                if (jrUser_is_logged_in()) {
+                    if (isset($_user['quota_jrAkismet_allowed']) && $_user['quota_jrAkismet_allowed'] == 'on') {
 
-                                        case 'report':
-                                            // Send email to admins
-                                            $_user['offsite_url'] = $url;
-                                            $_user['content_url'] = jrCore_is_profile_referrer();
-                                            list($sub, $msg) = jrCore_parse_email_templates('jrAkismet', 'url_detected', $_user);
-                                            $_us = jrUser_get_admin_user_ids();
-                                            if ($_us && is_array($_us)) {
-                                                foreach ($_us as $uid) {
-                                                    jrUser_notify($uid, 0, 'jrAkismet', 'url_detected', $sub, $msg);
-                                                }
-                                            }
-                                            $_data    = jrAkismet_strip_html_from_item($_args['module'], $_data, $_user['profile_quota_id'], $_urls);
-                                            $stripped = true;
-                                            break;
+                        // This user is in a quota that is checking for Spam
+                        $_pn = jrCore_get_registered_module_features('jrCore', 'pending_support');
+                        if (($_pn && isset($_pn[$mod])) || isset($_rm[$mod])) {
 
-                                        case 'active':
-                                            // We are going to set this user's account INACTIVE
-                                            $_up = array(
-                                                'profile_active' => 0
-                                            );
-                                            $pid = jrUser_get_profile_home_key('_profile_id');
-                                            jrCore_db_update_item('jrProfile', $pid, $_up);
-                                            jrProfile_reset_cache($pid);
+                            // This module has pending support OR has registered for spam support - check
+                            if (jrAkismet_is_spam($mod, $_data)) {
 
-                                            // Send email to admins
-                                            $_user['offsite_url'] = $url;
-                                            $_user['content_url'] = jrCore_is_profile_referrer();
-                                            list($sub, $msg) = jrCore_parse_email_templates('jrAkismet', 'url_detected', $_user);
-                                            $_us = jrUser_get_admin_user_ids();
-                                            if ($_us && is_array($_us)) {
-                                                foreach ($_us as $uid) {
-                                                    jrUser_notify($uid, 0, 'jrAkismet', 'url_detected', $sub, $msg);
-                                                }
-                                            }
-
-                                            $_data    = jrAkismet_strip_html_from_item($_args['module'], $_data, $_user['profile_quota_id'], $_urls);
-                                            $stripped = true;
-                                            break;
+                                // We've got a spam entry
+                                if (isset($_pn[$mod])) {
+                                    // This module support PENDING - set pending flag
+                                    $pfx                            = jrCore_db_get_prefix($mod);
+                                    $_data["{$pfx}_pending"]        = '1';
+                                    $_data["{$pfx}_pending_reason"] = 'Spam Blocker reports this entry is Spam';
+                                }
+                                else {
+                                    // How are we handling this?
+                                    foreach ($_rm[$mod] as $type => $action) {
+                                        // The module can tell us what to do - $action can be one of:
+                                        // - "reject" - outright reject the entry for spam
+                                        // - "strip" - strip all HTML from the entry
+                                        switch (strtolower($action)) {
+                                            case 'reject':
+                                                jrCore_logger('MIN', "Spam Blocker: rejected {$_mods[$mod]['module_name']} entry due to reported spam", $_data);
+                                                $_ln = jrUser_load_lang_strings();
+                                                jrCore_set_form_notice('error', $_ln['jrAkismet'][2]);
+                                                jrCore_form_result();
+                                                break;
+                                            default:
+                                                // By default strip HTML
+                                                $_data = jrAkismet_strip_html_from_item($mod, $_data);
+                                                jrCore_logger('MIN', "Spam Blocker: stripped all HTML from {$_mods[$mod]['module_name']} entry due to reported spam", $_data);
+                                                break;
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-                // Strip all HTML
-                if (!$stripped && isset($_conf['jrAkismet_block_html']) && $_conf['jrAkismet_block_html'] == 'on') {
-                    $_data = jrAkismet_strip_html_from_item($_args['module'], $_data, $_user['profile_quota_id']);
-                }
-            }
-        }
+                else {
+                    // This user is NOT logged in - see if this module has registered for Spam Checking
+                    if (isset($_rm[$mod])) {
+                        foreach ($_rm[$mod] as $type => $action) {
+                            // This module wants to be spam checked - See what TYPE of checking is being done:
+                            // comment: A blog comment.
+                            // forum-post: A top-level forum post.
+                            // reply: A reply to a top-level forum post.
+                            // blog-post: A blog post.
+                            // contact-form: A contact form or feedback form submission.
+                            // signup: A new user account.
+                            // message: A message sent between just a few users.
+                            if (jrAkismet_is_spam($mod, $_data, $type)) {
 
-        // See if Akismet API is turned on for this quota
-        if (isset($_conf['jrAkismet_enabled']) && $_conf['jrAkismet_enabled'] == 'on' && isset($_user['quota_jrAkismet_allowed']) && $_user['quota_jrAkismet_allowed'] == 'on' && isset($_conf['jrAkismet_api_key']) && strlen($_conf['jrAkismet_api_key']) > 0) {
-            // Module needs to have pending support...
-            $_pn = jrCore_get_registered_module_features('jrCore', 'pending_support');
-            if ($_pn && isset($_pn["{$_args['module']}"])) {
-                if (jrAkismet_is_spam($_args['module'], $_data)) {
-                    // We've got a potential spam entry - mark this item as pending
-                    $pfx                            = jrCore_db_get_prefix($_args['module']);
-                    $_data["{$pfx}_pending"]        = '1';
-                    $_data["{$pfx}_pending_reason"] = 'Akismet reports this entry is Spam';
-                }
-            }
-            else {
-                // This module does NOT support pending - let's strip all HTML if we get spam
-                if (jrAkismet_is_spam($_args['module'], $_data)) {
-                    $_data = jrAkismet_strip_html_from_item($_args['module'], $_data, $_user['profile_quota_id']);
+                                // The module can tell us what to do - $action can be one of:
+                                // - "reject" - outright reject the entry for spam
+                                // - "strip" - strip all HTML from the entry
+                                switch (strtolower($action)) {
+                                    case 'reject':
+                                        jrCore_logger('MIN', "Spam Blocker: rejected {$_mods[$mod]['module_name']} entry due to reported spam", $_data);
+                                        $_ln = jrUser_load_lang_strings();
+                                        jrCore_set_form_notice('error', $_ln['jrAkismet'][2]);
+                                        jrCore_form_result();
+                                        break;
+                                    default:
+                                        // By default strip HTML
+                                        $_data = jrAkismet_strip_html_from_item($mod, $_data);
+                                        jrCore_logger('MIN', "Spam Blocker: stripped all HTML from {$_mods[$mod]['module_name']} entry due to reported spam", $_data);
+                                        break;
+                                }
+
+                            }
+                        }
+                    }
+                    else {
+                        // Logged out - check for spam
+                        if (jrAkismet_is_spam($mod, $_data)) {
+                            $_data = jrAkismet_strip_html_from_item($mod, $_data);
+                            jrCore_logger('MIN', "Spam Blocker: stripped all HTML from {$_mods[$mod]['module_name']} entry due to reported spam", $_data);
+                        }
+                    }
                 }
             }
         }
@@ -211,17 +294,29 @@ function jrAkismet_db_item_listener($_data, $_user, $_conf, $_args, $event)
 }
 
 /**
+ * Return TRUE if Akismet API key is configured
+ * @return bool
+ */
+function jrAkismet_spam_check_api_is_configured()
+{
+    global $_conf;
+    if (isset($_conf['jrAkismet_enabled']) && $_conf['jrAkismet_enabled'] == 'on' && !empty($_conf['jrAkismet_api_key'])) {
+        return true;
+    }
+    return false;
+}
+
+/**
  * Strip all HTML from an item
  * @param $module string Module
  * @param $_data array Item
- * @param $quota_id int Quota ID
  * @param $_urls array URLs to strip
  * @return mixed
  */
-function jrAkismet_strip_html_from_item($module, $_data, $quota_id, $_urls = null)
+function jrAkismet_strip_html_from_item($module, $_data, $_urls = null)
 {
     global $_mods;
-    $_tm = jrCore_trigger_event('jrAkismet', 'strip_html', $_data, array('module' => $module, 'quota_id' => $quota_id));
+    $_tm = jrCore_trigger_event('jrAkismet', 'strip_html', $_data, array('module' => $module));
     // Did any listener tell us NOT to work?
     if ($_tm && is_array($_tm)) {
         $_ln = jrUser_load_lang_strings();
@@ -245,7 +340,7 @@ function jrAkismet_strip_html_from_item($module, $_data, $quota_id, $_urls = nul
             }
         }
         if ($fix) {
-            jrCore_logger('MIN', "stripped all HTML from suspected " . $_mods[$module]['module_name'] . " entry", array('_data' => $_data, '_orig' => $_fx, '_urls' => $_urls));
+            jrCore_logger('MIN', "Spam Blocker: stripped all HTML from suspected " . $_mods[$module]['module_name'] . " entry", array('_data' => $_data, '_orig' => $_fx, '_urls' => $_urls));
         }
     }
     return $_data;
@@ -272,14 +367,25 @@ function jrAkismet_get_text_from_entry($module, $_data)
 
 /**
  * Check a DataStore Item for spam entries
+ * @see https://akismet.com/development/api/#comment-check
  * @param $module string Module
  * @param mixed $_data array DS Item array
  * @param string $ip_address IP Address item was added from
+ * @param string $type one of the Akismet types for checking
  * @return bool False if item is NOT spam, TRUE if spam is detected
  */
-function jrAkismet_is_spam($module, $_data, $ip_address = null)
+function jrAkismet_is_spam($module, $_data, $ip_address = null, $type = 'comment')
 {
     global $_conf;
+
+    // comment: A blog comment.
+    // forum-post: A top-level forum post.
+    // reply: A reply to a top-level forum post.
+    // blog-post: A blog post.
+    // contact-form: A contact form or feedback form submission.
+    // signup: A new user account.
+    // message: A message sent between just a few users.
+
     $pfx = jrCore_db_get_prefix($module);
     if (!$pfx) {
         return false;
@@ -304,7 +410,7 @@ function jrAkismet_is_spam($module, $_data, $ip_address = null)
                 'user_ip'         => $ip_address,
                 'user_agent'      => $_SERVER['HTTP_USER_AGENT'],
                 'referrer'        => $_SERVER['HTTP_REFERER'],
-                'comment_type'    => 'comment',
+                'comment_type'    => $type,
                 'comment_content' => $text
             );
             // Additional info if we have it
@@ -320,7 +426,7 @@ function jrAkismet_is_spam($module, $_data, $ip_address = null)
             }
         }
         else {
-            jrCore_logger('CRI', "jrAkismet_is_spam(): Invalid API Key - double check the Akismet config!");
+            jrCore_logger('CRI', "Spam Blocker: Invalid Akismet API Key - double check Akismet config");
         }
     }
     return false;

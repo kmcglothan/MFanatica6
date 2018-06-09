@@ -46,5 +46,9 @@ function jrGallery_db_schema()
     // This module uses a Data Store - create it.  The Data store holds
     // all information (key value pairs) about the audio files.
     jrCore_db_create_datastore('jrGallery', 'gallery');
+
+    // Cleanup bad keys
+    jrCore_db_delete_key_from_all_items('jrGallery', 'gallery_existing_title');
+
     return true;
 }

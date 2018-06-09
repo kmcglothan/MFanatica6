@@ -2,7 +2,7 @@
 /**
  * Jamroom Playlists module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -46,7 +46,7 @@ function jrPlaylist_meta()
     $_tmp = array(
         'name'        => 'Playlists',
         'url'         => 'playlist',
-        'version'     => '1.1.4',
+        'version'     => '1.1.8',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Users can create playlists from Audio, Video and SoundCloud media (with modules installed)',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/285/playlists',

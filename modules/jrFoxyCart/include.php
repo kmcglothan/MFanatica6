@@ -2,8 +2,7 @@
 /**
  * Jamroom FoxyCart eCommerce module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2017 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -49,7 +48,7 @@ function jrFoxyCart_meta()
     $_tmp = array(
         'name'        => 'FoxyCart eCommerce',
         'url'         => 'foxycart',
-        'version'     => '1.5.3',
+        'version'     => '1.5.4',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Add item sales and subscriptions to your system',
         'category'    => 'ecommerce',
@@ -656,6 +655,7 @@ function jrFoxyCart_system_check_listener($_data, $_user, $_conf, $_args, $event
     }
     $dat[3]['class'] = 'center';
     jrCore_page_table_row($dat);
+    return $_data;
 }
 
 //--------------------------------------------------
@@ -1000,7 +1000,7 @@ function jrFoxyCart_create_user_from_txn($_txn)
  * @param $_item array Subscription info
  * @param $uid int User ID that purchased subscription
  * @param $_txn array FoxyCart transaction
- * @return bool
+ * @return mixed
  */
 function jrFoxyCart_process_item_sale($_item, $uid, $_txn)
 {
@@ -1161,7 +1161,8 @@ function jrFoxyCart_start_subscription($_item, $uid, $_txn)
 
         // See if this is the user updating... if so re-sync session
         if (isset($_user['_user_id']) && $_user['_user_id'] == $uid) {
-            jrUser_session_sync($uid);
+            jrUser_reset_cache($uid);
+            jrProfile_reset_cache($_profile['_profile_id']);
         }
         jrCore_form_delete_session();
         jrProfile_reset_cache($_profile['_profile_id']);
@@ -1343,10 +1344,10 @@ function jrFoxyCart_my_items_row_listener($_data, $_user, $_conf, $_args, $event
 /**
  * queries FoxyCart and returns all xml
  * @param $_rs array containing api calls
- * @return object
- * http://docs.foxycart.com/v/1.0/products/subscriptions?s[]=subscription&s[]=list
- * http://docs.foxycart.com/v/1.0/cheat_sheet
- * http://docs.foxycart.com/v/1.0/api
+ * @return mixed
+ * @see http://docs.foxycart.com/v/1.0/products/subscriptions?s[]=subscription&s[]=list
+ * @see http://docs.foxycart.com/v/1.0/cheat_sheet
+ * @see http://docs.foxycart.com/v/1.0/api
  */
 function jrFoxyCart_api($_rs)
 {
@@ -1363,10 +1364,10 @@ function jrFoxyCart_api($_rs)
 /**
  * queries FoxyCart and returns an array
  * @param $_rs array containing api calls
- * @return object
- * http://docs.foxycart.com/v/1.0/products/subscriptions?s[]=subscription&s[]=list
- * http://docs.foxycart.com/v/1.0/cheat_sheet
- * http://docs.foxycart.com/v/1.0/api
+ * @return mixed
+ * @see http://docs.foxycart.com/v/1.0/products/subscriptions?s[]=subscription&s[]=list
+ * @see http://docs.foxycart.com/v/1.0/cheat_sheet
+ * @see http://docs.foxycart.com/v/1.0/api
  */
 function jrFoxyCart_cart($_rs)
 {
@@ -1978,6 +1979,7 @@ function jrFoxyCart_decode_xml_transaction($txn)
 
     $_txn = array();
     $i    = 0;
+    /** @noinspection PhpUndefinedFieldInspection */
     foreach ($xml->transactions->transaction as $transaction) {
 
         // Base TXN info

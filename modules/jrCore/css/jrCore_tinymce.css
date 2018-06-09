@@ -7,6 +7,7 @@
 /* @title TinyMCE Editor */
 /* @help Controls the font in the TinyMCE editor */
 .mce-content-body {
+    min-height: 150px;
     font-family: 'Open Sans', Tahoma, sans-serif;
     font-size: 14px;
     color: #000000;
@@ -14,4 +15,9 @@
 
 .mce-fullscreen {
     z-index: 10000 !important;
+}
+
+#mce-modal-block.mce-in {
+    background: #000000;
+    opacity: 0.8 !important;
 }

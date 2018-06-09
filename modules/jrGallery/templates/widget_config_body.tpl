@@ -19,13 +19,8 @@
             <div class="col3{if ($item@iteration % 4) === 0} last{/if}">
                 <div class="p5 center">
                     <a href="{$jamroom_url}/{$murl}/image/gallery_image/{$item._item_id}/xxxlarge/v={$item._updated}" data-lightbox="images">{jrCore_module_function function="jrImage_display" module="jrGallery" type="gallery_image" item_id=$item._item_id size="large" crop="3:2" class="img_scale" alt=$item.gallery_image_name title=$item.gallery_alt_text}</a><br>
-                    <a href="{jrGallery_get_gallery_image_url item=$item}" title="{$item.gallery_alt_text}" target="_blank">
-                    {if isset($item.gallery_image_title)}
-                        {$item.gallery_image_title|truncate:25:"...":false}
-                    {else}
-                        {$item.gallery_image_name|truncate:25:"...":true}
-                    {/if}
-                    </a><br><a onclick="jrGallery_widget_load_images(1,'_profile_id:{$item._profile_id}');">@{$item.profile_url}</a><br>
+                    <a href="{jrGallery_get_gallery_image_url item=$item}" title="{$item.gallery_alt_text}" target="_blank">{jrGallery_get_gallery_image_title item=$item}</a>
+                    <br><a onclick="jrGallery_widget_load_images(1,'_profile_id:{$item._profile_id}');">@{$item.profile_url}</a><br>
                     <label><input type="checkbox" id="gallery_id_{$item._item_id}" class="form_checkbox" value="" title="Add to Image List" onclick="jrGallery_include('{$item._item_id}')"> include</label>
                 </div>
             </div>

@@ -1,5 +1,8 @@
 File Downloads module changelog
 
+Version 1.0.14:
+ - Change: item_index_meta.tpl added to add social media tags for list page
+
 Version 1.0.13:
  - New: Added item_detail_meta.tpl for the Meta Tag Manager module to support custom meta tags
 

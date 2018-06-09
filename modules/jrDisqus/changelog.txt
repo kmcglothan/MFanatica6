@@ -1,7 +1,11 @@
 Disqus module changelog
 
+Version 1.1.0:
+ - New: "Use Unique Identifier" Global Config option to enable using a unique identifer to embedded comments
+ - Bug Fix: Comment Identifier was incorrect which could lead to the wrong comments showing on a page
+
 Version 1.0.5:
- - Change: Previously {jrDisqus_comments} would not display unless on a profile template. Can now be used with Site Builder
+ - Change: {jrDisqus_comments} would not display unless on a profile template - can now be used with Site Builder
 
 Version 1.0.4:
  - New: "Show on Detail Pages" quota config option for enabling/disabling comments showing per quota

@@ -62,9 +62,12 @@
 
     {else}
         <div class="container">
-            <table class="page_table">
-                <tr class="page_table_row">
-                    <td class="page_table_cell center" colspan="8">{jrCore_lang module="jrUpimg" id="13" default="No uploaded images found."}</td>
+            <table class="page_table" id="upimg_results">
+                <tr class="{cycle values="page_table_row,page_table_row_alt"}">
+                    <td class="page_table_cell center" style="width:6%">&nbsp;</td>
+                    <td class="page_table_cell" style="width:69%">&nbsp;</td>
+                    <td class="page_table_cell center" style="width:20%">&nbsp;</td>
+                    <td class="page_table_cell center" style="width:5%">&nbsp;</td>
                 </tr>
             </table>
         </div>

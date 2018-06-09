@@ -1,5 +1,9 @@
 Page Creator Module changelog
 
+Version 1.1.13:
+ - Change: Pages created at "site" level no longer create a Timeline action entry
+ - Bug Fix: Create Page entries were not being shared if OneAll was enabled
+
 Version 1.1.12:
  - Bug Fix: OG and custom Meta tags were not being shown on pages created at the "site" level
 

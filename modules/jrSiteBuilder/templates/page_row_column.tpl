@@ -1,13 +1,13 @@
 {$i = 0}
-{foreach $_rows as $_row}
-    <div class="row">
+{foreach $_rows as $row_num => $_row}
+    <div class="row sb-row{$row_num}">
 
         {foreach $_row._cols as $col_num => $_col}
             {if $_col.width == 0}
                 {continue}
             {/if}
             {$t = ''}
-            <div class="col{$_col.width}">
+            <div class="col{$_col.width} sb-col{$col_num} sb-row{$row_num}-col{$col_num}">
 
                 <div id="sb-widget-col-{$i}" class="sb-widget-col" data-location="{$i}">
 
@@ -18,11 +18,11 @@
                         <ul id="c{$i}" class="page_tab_bar">
                         {foreach $layout[$i] as $_widget}
                             {if $_widget@first}
-                                <li id="t{$_widget.widget_id}" class="page_tab page_tab_first page_tab_active sb-tab"><a onclick="jrSiteBuilder_load_tab('{$_page.page_id}', '{$i}', '{$_widget.widget_id}')">{$_widget.widget_title|default:$_widget.widget_name}</a></li>
+                                <li id="t{$_widget.widget_id}" class="page_tab page_tab_first page_tab_active sb-tab" data-widget_hash="{$_widget.widget_title|default:$_widget.widget_name|jrCore_url_string}" data-widget_value="{$_page.page_id}|{$i}|{$_widget.widget_id}"><a onclick="jrSiteBuilder_load_tab('{$_page.page_id}', '{$i}', '{$_widget.widget_id}')">{$_widget.widget_title|default:$_widget.widget_name}</a></li>
                             {elseif $_widget@last}
-                                <li id="t{$_widget.widget_id}" class="page_tab page_tab_last sb-tab"><a onclick="jrSiteBuilder_load_tab('{$_page.page_id}', '{$i}', '{$_widget.widget_id}')">{$_widget.widget_title|default:$_widget.widget_name}</a></li>
+                                <li id="t{$_widget.widget_id}" class="page_tab page_tab_last sb-tab" data-widget_hash="{$_widget.widget_title|default:$_widget.widget_name|jrCore_url_string}"  data-widget_value="{$_page.page_id}|{$i}|{$_widget.widget_id}"><a onclick="jrSiteBuilder_load_tab('{$_page.page_id}', '{$i}', '{$_widget.widget_id}')">{$_widget.widget_title|default:$_widget.widget_name}</a></li>
                             {else}
-                                <li id="t{$_widget.widget_id}" class="page_tab sb-tab"><a onclick="jrSiteBuilder_load_tab('{$_page.page_id}', '{$i}', '{$_widget.widget_id}')">{$_widget.widget_title|default:$_widget.widget_name}</a></li>
+                                <li id="t{$_widget.widget_id}" class="page_tab sb-tab" data-widget_hash="{$_widget.widget_title|default:$_widget.widget_name|jrCore_url_string}" data-widget_value="{$_page.page_id}|{$i}|{$_widget.widget_id}"><a onclick="jrSiteBuilder_load_tab('{$_page.page_id}', '{$i}', '{$_widget.widget_id}')">{$_widget.widget_title|default:$_widget.widget_name}</a></li>
                             {/if}
                         {/foreach}
                         </ul></td></tr></table>

@@ -2,7 +2,7 @@
 /**
  * Jamroom Email Support module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -64,7 +64,9 @@ function view_jrMailer_i($_post, $_user, $_conf)
                 $uip = jrCore_get_ip();     // IP Address
                 $agn = isset($_SERVER['HTTP_USER_AGENT']) ? jrCore_db_escape($_SERVER['HTTP_USER_AGENT']) : '';
                 $tbl = jrCore_db_table_name('jrMailer', 'track');
-                $req = "INSERT INTO {$tbl} (t_cid,t_uid,t_time,t_ip,t_agent) VALUES ('{$cid}','{$uid}',UNIX_TIMESTAMP(),'{$uip}','{$agn}') ON DUPLICATE KEY UPDATE t_ip = '{$uip}', t_agent = VALUES(t_agent), t_infou = 0";
+                $req = "INSERT INTO {$tbl} (t_cid, t_uid, t_time, t_ip, t_agent)
+                        VALUES ({$cid}, {$uid}, UNIX_TIMESTAMP(), '{$uip}', '{$agn}')
+                        ON DUPLICATE KEY UPDATE t_lat = '', t_ip = '{$uip}', t_agent = VALUES(t_agent)";
                 jrCore_db_query($req);
             }
         }
@@ -241,7 +243,13 @@ function view_jrMailer_campaign_result($_post, $_user, $_conf)
 
     $button .= jrCore_page_button('refresh', 'refresh', 'location.reload()');
 
-    jrCore_page_banner("{$_mods[$mod]['module_name']}: {$_cp['campaign']['c_title']}", $button);
+    if ($mod == 'jrNewsLetter') {
+        $url = jrCore_get_module_url('jrNewsLetter');
+        jrCore_page_banner("<a href=\"{$_conf['jrCore_base_url']}/{$url}/browse\"><u>{$_mods[$mod]['module_name']}</u></a> - {$_cp['campaign']['c_title']}", $button);
+    }
+    else {
+        jrCore_page_banner("{$_mods[$mod]['module_name']}: {$_cp['campaign']['c_title']}", $button);
+    }
     jrCore_get_form_notice();
 
     $dat             = array();
@@ -314,6 +322,15 @@ function view_jrMailer_campaign_result($_post, $_user, $_conf)
 
     switch ($_post['_2']) {
         case 'map':
+            if (isset($_cp['countries']) && is_array($_cp['countries'])) {
+                $_new = array();
+                foreach ($_cp['countries'] as $country => $count) {
+                    $new_country = jrMailer_get_country_name_for_map($country);
+                    $_new[$new_country] = $count;
+                }
+                $_cp['countries'] = $_new;
+                unset($_new);
+            }
             $html = jrCore_parse_template('campaign_user_map.tpl', $_cp, 'jrMailer');
             break;
         case 'unsub':

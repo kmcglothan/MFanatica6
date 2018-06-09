@@ -54,6 +54,6 @@ function jrProfileStreamPay_db_schema()
         "log_item_name VARCHAR(128) NOT NULL DEFAULT ''",
         "log_amount VARCHAR(16) NOT NULL DEFAULT ''"
     );
-    jrCore_db_verify_table('jrProfileStreamPay', 'log', $_tmp, 'MyISAM');
+    jrCore_db_verify_table('jrProfileStreamPay', 'log', $_tmp, 'InnoDB');
     return true;
 }

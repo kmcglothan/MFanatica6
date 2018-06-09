@@ -133,7 +133,14 @@
                         <a onclick="jrSmiley_drawer()">{jrCore_icon icon="smile"}</a>
                     </div>
                     {/if}
-                    <div id="jrchat-upload-images">{jrCore_upload_button module="jrChat" field="chat_file" allowed="{$file_types}" maxsize="{$max_size}" multiple="true" upload_text="&#8679;" oncomplete="jrChat_complete_file_uploads()"}</div>
+                    <div id="jrchat-upload-images" onmouseover="$('#pm_chat_file .upload_button').addClass('sprite_icon_hilighted')" onmouseout="$('#pm_chat_file .upload_button').removeClass('sprite_icon_hilighted')">
+                        {jrCore_upload_button module="jrChat" field="chat_file" allowed="{$file_types}" maxsize="{$max_size}" multiple="true" upload_text="&#8679;" oncomplete="jrChat_complete_file_uploads()"}
+                    </div>
+
+                {else}
+                    <div id="jrchat-mobile-send">
+                        <a onclick="if ($('#jrchat-new-message-input').val().trim().length > 0) { event.preventDefault(); jrChat_save_message(); return false }">{jrCore_icon icon="chat-send"}</a>
+                    </div>
 
                 {/if}
                 <span id="chi" class="ellipsis_animated-inner" style="display:none"><span>.</span><span>.</span><span>.</span></span>

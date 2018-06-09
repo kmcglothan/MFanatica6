@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -48,21 +48,27 @@ defined('APP_DIR') or exit();
  * UI is even working.  Will show a plain text error message
  * @param string $type Error level (CRI, MAJ, etc.)
  * @param string $message Error Message
+ * @param bool $template set to FALSE for no template
  */
-function jrCore_notice($type, $message)
+function jrCore_notice($type, $message, $template = true)
 {
     jrCore_db_close();
     if (jrCore_is_ajax_request()) {
-        $_out = array('notices' => array());
+        $_out              = array('notices' => array());
         $_out['notices'][] = array('type' => strtolower($type), 'text' => $message);
         echo json_encode($_out);
         exit;
     }
-    $_rp = array(
-        'type'    => $type,
-        'message' => $message
-    );
-    echo jrCore_parse_template('error_notice.tpl', $_rp, 'jrCore');
+    if ($template) {
+        $_rp = array(
+            'type'    => $type,
+            'message' => $message
+        );
+        echo jrCore_parse_template('error_notice.tpl', $_rp, 'jrCore');
+    }
+    else {
+        echo "{$type}: {$message}";
+    }
     exit;
 }
 
@@ -86,10 +92,14 @@ function jrCore_notice_page($notice_type, $notice_text, $cancel_url = null, $can
         }
     }
 
+    if (php_sapi_name() === 'cli') {
+        echo "{$notice_type} Error: {$notice_text}\n";
+        exit(1);
+    }
+
     if (jrCore_is_ajax_request()) {
         $_er = array($notice_type => $notice_text);
         jrCore_json_response($_er);
-        jrCore_db_close();
         exit;
     }
 
@@ -108,6 +118,7 @@ function jrCore_notice_page($notice_type, $notice_text, $cancel_url = null, $can
     jrCore_process_exit_delete_profile_cache();
     jrCore_send_response_and_detach($out);
     jrCore_trigger_event('jrCore', 'process_exit', $_REQUEST);
+    jrCore_trigger_event('jrCore', 'process_done', $_REQUEST);
     jrCore_db_close();
     exit;
 }
@@ -256,15 +267,16 @@ function jrCore_hilight_string($string, $search)
  */
 function jrCore_page_title($title, $overwrite = true)
 {
-    $title = html_entity_decode(jrCore_strip_html($title), ENT_QUOTES);
-    if (!$overwrite) {
-        if (!jrCore_get_flag('jrcore_html_page_title_ow')) {
-            jrCore_set_flag('jrcore_html_page_title_ow', 1);
+    if (!jrCore_get_flag('jrcore_page_title_set_in_template')) {
+        $title = html_entity_decode(jrCore_strip_html($title), ENT_QUOTES);
+        if ($overwrite) {
             jrCore_set_flag('jrcore_html_page_title', $title);
         }
-    }
-    elseif (!jrCore_get_flag('jrcore_html_page_title_ow')) {
-        jrCore_set_flag('jrcore_html_page_title', $title);
+        else {
+            if (!jrCore_get_flag('jrcore_html_page_title')) {
+                jrCore_set_flag('jrcore_html_page_title', $title);
+            }
+        }
     }
     return true;
 }
@@ -284,7 +296,7 @@ function jrCore_page_banner_item_jumper($module, $field, $search, $create, $upda
     if (!isset($search) || !is_array($search)) {
         return false;
     }
-    $_sc = array(
+    $_sc   = array(
         'search'         => $search,
         'order_by'       => array(
             $field => 'asc'
@@ -296,10 +308,10 @@ function jrCore_page_banner_item_jumper($module, $field, $search, $create, $upda
     );
     $c_url = "{$_conf['jrCore_base_url']}/{$_post['module_url']}/{$create}";
     $u_url = "{$_conf['jrCore_base_url']}/{$_post['module_url']}/{$update}/id=";
-    $htm = '<select name="item_id" class="form_select form_select_item_jumper" onchange="var iid=this.options[this.selectedIndex].value;if(iid == \'create\'){self.location=\'' . $c_url . '\'} else {self.location=\'' . $u_url . '\'+ iid}">' . "\n";
+    $htm   = '<select name="item_id" class="form_select form_select_item_jumper" onchange="var iid=this.options[this.selectedIndex].value;if(iid == \'create\'){self.location=\'' . $c_url . '\'} else {self.location=\'' . $u_url . '\'+ iid}">' . "\n";
     if (isset($create) && strlen($create) > 0) {
         $_lang = jrUser_load_lang_strings();
-        $htm .= '<option value="create"> ' . $_lang['jrCore'][50] . '</option>' . "\n";
+        $htm   .= '<option value="create"> ' . $_lang['jrCore'][50] . '</option>' . "\n";
     }
     $_rt = jrCore_db_search_items($module, $_sc);
     if (isset($_rt) && isset($_rt['_items']) && is_array($_rt['_items']) && count($_rt['_items']) > 0) {
@@ -312,7 +324,7 @@ function jrCore_page_banner_item_jumper($module, $field, $search, $create, $upda
         }
         foreach ($_opts as $item_id => $display) {
             if (isset($_post['id']) && $item_id == $_post['id']) {
-                $htm .= '<option value="' . $item_id . '" selected="selected"> ' . $display . '</option>' . "\n";
+                $htm .= '<option value="' . $item_id . '" selected> ' . $display . '</option>' . "\n";
             }
             else {
                 $htm .= '<option value="' . $item_id . '"> ' . $display . '</option>' . "\n";
@@ -598,11 +610,11 @@ function jrCore_page_tab_bar($_tabs)
     if (isset($_tabs) && is_array($_tabs) && count($_tabs) > 0) {
         $tab_n = count($_tabs);
         $width = round(100 / $tab_n);
-        $i = 1;
+        $i     = 1;
         foreach ($_tabs as $k => $_cell) {
-            $_tabs[$k]['id'] = 't' . jrCore_url_string($k);
+            $_tabs[$k]['id']    = 't' . jrCore_url_string($k);
             $_tabs[$k]['width'] = $width;
-            $add = '';
+            $add                = '';
             if (isset($_cell['class'])) {
                 $add = " {$_cell['class']}";
             }
@@ -733,7 +745,7 @@ function jrCore_page_table_row($_cells, $class = null)
     ksort($_cells, SORT_NUMERIC);
     if ($colspan > $col_cnt) {
         // Adjust our last row in our cells to span the entire width
-        $_tmp = array_pop($_cells);
+        $_tmp            = array_pop($_cells);
         $_tmp['colspan'] = ' colspan="' . $colspan . '"';
         if ($col_cnt == 1) {
             $_cells = array($_tmp);
@@ -780,7 +792,7 @@ function jrCore_page_table_pager($_page, $_xtra = null)
     // We have to strip the page number (p) as well as any
     // other _xtra args we get so we don't duplicate them
     if (!is_null($_xtra) && is_array($_xtra)) {
-        $_strip = $_xtra;
+        $_strip      = $_xtra;
         $_strip['p'] = 1;
     }
     else {
@@ -820,7 +832,7 @@ function jrCore_page_table_pager($_page, $_xtra = null)
             $mdh = ($_page['info']['this_page'] + 50);
             while ($i <= $_page['info']['total_pages']) {
                 if ($i == $_page['info']['this_page']) {
-                    $page_jumper .= '<option value="' . $i . '" selected="selected"> ' . $i . '</option>' . "\n";
+                    $page_jumper .= '<option value="' . $i . '" selected> ' . $i . '</option>' . "\n";
                 }
                 elseif ($i < 100 || $i > $end || ($i > $mdl && $i < $mdh)) {
                     $page_jumper .= '<option value="' . $i . '"> ' . $i . '</option>' . "\n";
@@ -842,7 +854,7 @@ function jrCore_page_table_pager($_page, $_xtra = null)
             $page_select = '<select name="r" class="form_select page-table-jumper page-table-jumper-perpage" onchange="var r=this.options[this.selectedIndex].value; jrCore_set_pager_rows(r, function() { jrCore_window_location(\'' . $this_page_url . '\'); });">' . "\n";
             foreach (array(5, 10, 12, 15, 20, 25, 30, 40, 50, 75, 100) as $per_page) {
                 if ($per_page == $pagebreak) {
-                    $page_select .= '<option value="' . $per_page . '" selected="selected"> ' . $per_page . '</option>' . "\n";
+                    $page_select .= '<option value="' . $per_page . '" selected> ' . $per_page . '</option>' . "\n";
                 }
                 else {
                     $page_select .= '<option value="' . $per_page . '"> ' . $per_page . '</option>' . "\n";
@@ -895,7 +907,7 @@ function jrCore_page_table_footer($_cells = null, $class = null)
         'template' => 'page_table_footer.tpl'
     );
     $uniq = jrCore_get_flag('jr_html_page_table_footer_colspan');
-    if (!$uniq) {
+    if (!$uniq && is_array($_cells)) {
         $uniq = count($_cells);
         jrCore_set_flag('jr_html_page_table_footer_colspan', $uniq);
     }
@@ -924,7 +936,7 @@ function jrCore_page_cancel_button($cancel_url, $cancel_text = null)
             break;
     }
     if (is_null($cancel_text) || $cancel_text === false) {
-        $_lang = jrUser_load_lang_strings();
+        $_lang       = jrUser_load_lang_strings();
         $cancel_text = (isset($_lang['jrCore'][2])) ? $_lang['jrCore'][2] : 'cancel';
     }
     elseif (isset($cancel_text) && jrCore_checktype($cancel_text, 'number_nz')) {
@@ -1052,7 +1064,7 @@ function jrCore_verify_pending_items()
             if (!isset($_md["{$_p['plmod']}"])) {
                 $_md["{$_p['plmod']}"] = array();
             }
-            $iid = (int) $_p['plid'];
+            $iid                         = (int) $_p['plid'];
             $_md["{$_p['plmod']}"][$iid] = $_p['pid'];
         }
         if (count($_md) > 0) {
@@ -1097,7 +1109,7 @@ function jrCore_verify_pending_items()
                             $req = "DELETE FROM {$tbl} WHERE pending_id IN(" . implode(',', $_dl) . ')';
                             $cnt = jrCore_db_query($req, 'COUNT');
                             if ($cnt > 0) {
-                                $num += $cnt;
+                                $num       += $cnt;
                                 $_db[$mod] = $_dl;
                             }
                         }
@@ -1158,28 +1170,28 @@ function jrCore_page_dashboard_tabs($active = 'online')
             'url'   => "{$_conf['jrCore_base_url']}/{$curl}/admin/global"
         );
     }
-    $_tabs['bigview'] = array(
+    $_tabs['bigview']      = array(
         'label' => 'dashboard',
         'url'   => "{$_conf['jrCore_base_url']}/{$curl}/dashboard/bigview"
     );
-    $_tabs['online'] = array(
+    $_tabs['online']       = array(
         'label' => 'users online',
         'url'   => "{$_conf['jrCore_base_url']}/{$curl}/dashboard/online"
     );
-    $_tabs['pending'] = array(
+    $_tabs['pending']      = array(
         'label' => 'pending',
         'url'   => "{$_conf['jrCore_base_url']}/{$curl}/dashboard/pending/m=" . jrCore_get_dashboard_default_pending_tab()
     );
-    $_tabs['activity'] = array(
+    $_tabs['activity']     = array(
         'label' => 'activity log',
         'url'   => "{$_conf['jrCore_base_url']}/{$curl}/dashboard/activity"
     );
-    $purl = jrCore_get_module_url('jrUser');
-    $_tabs['browser'] = array(
+    $purl                  = jrCore_get_module_url('jrUser');
+    $_tabs['browser']      = array(
         'label' => 'data browser',
         'url'   => "{$_conf['jrCore_base_url']}/{$purl}/dashboard/browser"
     );
-    $_tabs['recycle_bin'] = array(
+    $_tabs['recycle_bin']  = array(
         'label' => 'recycle bin',
         'url'   => "{$_conf['jrCore_base_url']}/{$curl}/dashboard/recycle_bin"
     );
@@ -1351,7 +1363,7 @@ function jrCore_dashboard_pending_tabs($active = 'jrUser')
     $_tabs = array();
     foreach ($_rt as $v) {
         if (jrCore_module_is_active($v['pending_module'])) {
-            $mod = $v['pending_module'];
+            $mod         = $v['pending_module'];
             $_tabs[$mod] = array(
                 'label' => $_mods["{$v['pending_module']}"]['module_name'],
                 'url'   => "{$_conf['jrCore_base_url']}/{$_post['module_url']}/dashboard/pending/m={$mod}"
@@ -1384,7 +1396,7 @@ function jrCore_page_skin_tabs($skin, $active = 'info')
             'url'   => "{$_conf['jrCore_base_url']}/{$url}/skin_admin/global/skin={$skin}"
         );
     }
-    $_tabs['style'] = array(
+    $_tabs['style']  = array(
         'label' => 'style',
         'url'   => "{$_conf['jrCore_base_url']}/{$url}/skin_admin/style/skin={$skin}"
     );
@@ -1392,7 +1404,7 @@ function jrCore_page_skin_tabs($skin, $active = 'info')
         'label' => 'images',
         'url'   => "{$_conf['jrCore_base_url']}/{$url}/skin_admin/images/skin={$skin}"
     );
-    if (is_dir(APP_DIR ."/skins/{$skin}/lang")) {
+    if (is_dir(APP_DIR . "/skins/{$skin}/lang")) {
         $_tabs['language'] = array(
             'label' => 'language',
             'url'   => "{$_conf['jrCore_base_url']}/{$url}/skin_admin/language/skin={$skin}"
@@ -1402,7 +1414,7 @@ function jrCore_page_skin_tabs($skin, $active = 'info')
         'label' => 'templates',
         'url'   => "{$_conf['jrCore_base_url']}/{$url}/skin_admin/templates/skin={$skin}"
     );
-    $_tabs['info'] = array(
+    $_tabs['info']      = array(
         'label' => 'info',
         'url'   => "{$_conf['jrCore_base_url']}/{$url}/skin_admin/info/skin={$skin}"
     );
@@ -1429,7 +1441,7 @@ function jrCore_admin_menu_accordion_js($category)
     $cat = strtolower($category);
     // We want to hide ALL categories except the category we are currently working in.
     $hide = "\n" . 'var allPanels = $(\'.accordion > dd\').hide();$(\'.accordion > dd[id="c' . $cat . '"]\').show();' . "\n";
-    $_js = array('(function($) { ' . $hide . '
+    $_js  = array('(function($) { ' . $hide . '
     $(\'.accordion > a > dt\').click(function() {
     var p = $(this).parent().next();
     if (p.is(\':hidden\')) { allPanels.slideUp(); p.slideDown(); }
@@ -1454,13 +1466,13 @@ function jrCore_page_display($return_html = false)
     if ($admn) {
         if (isset($_post['skin'])) {
 
-            $_adm = array(
+            $_adm                     = array(
                 'active_tab' => 'skins',
                 '_skins'     => jrCore_get_acp_skins()
             );
-            $_mta = jrCore_skin_meta_data($_post['skin']);
+            $_mta                     = jrCore_skin_meta_data($_post['skin']);
             $_adm['default_category'] = 'general';
-                if (isset($_mta['category']) && strlen($_mta['category']) > 0) {
+            if (isset($_mta['category']) && strlen($_mta['category']) > 0) {
                 $_adm['default_category'] = trim(strtolower($_mta['category']));
             }
         }
@@ -1518,7 +1530,7 @@ function jrCore_page_display($return_html = false)
 
     // Make sure we have not already displayed this form (i.e. the form is embedded into another page)
     $tmp = jrCore_get_flag("jrcore_page_display_form_{$_form['form_token']}");
-    if (!$tmp && isset($_form) && is_array($_form) && isset($_form['form_params'])) {
+    if (!$tmp && is_array($_form) && isset($_form['form_params'])) {
 
         $_form['form_fields'] = jrCore_get_flag('jrcore_form_session_fields');
 
@@ -1611,7 +1623,7 @@ function jrCore_page_display($return_html = false)
             }
         }
         $cancel_text = false;
-        $cancel_url = false;
+        $cancel_url  = false;
         if (isset($_form['form_params']['cancel']{0})) {
 
             // Cancel text
@@ -1656,12 +1668,9 @@ function jrCore_page_display($return_html = false)
 
         // Lastly - save all fields that rolled out on this form to the form session
         if (isset($_form['form_fields']) && is_array($_form['form_fields'])) {
-            $tbl = jrCore_db_table_name('jrCore', 'form_session');
-            $tkn = jrCore_db_escape($_form['form_token']);
-            $sav = jrCore_db_escape(json_encode($_form['form_fields']));
-            $req = "UPDATE {$tbl} SET form_updated = UNIX_TIMESTAMP(), form_rand = '" . mt_rand() . "', form_fields = '{$sav}' WHERE form_token = '{$tkn}'";
-            jrCore_db_query($req);
+            jrCore_form_update_session_fields($_form['form_token'], $_form['form_fields']);
         }
+
         // We only ever show a form once per page display
         jrCore_set_flag("jrcore_page_display_form_{$_form['form_token']}", 1);
     }
@@ -1674,24 +1683,6 @@ function jrCore_page_display($return_html = false)
     // $_tmp['page'] contains all the page elements we are going to be showing on
     // this view - if we are a designer form, we need to adjust our field order here
     if ($design && isset($_tmp['page']) && is_array($_tmp['page'])) {
-
-        // We have to do a quick pre-scan here and put any Chained Select fields into the proper order (0,1,2)
-        $_cs = false;
-        foreach ($_tmp['page'] as $k => $_field) {
-            if (isset($_field['name']) && $_field['type'] == 'select' && isset($_field['onchange']) && strpos(' ' . $_field['onchange'], 'jrChainedSelect')) {
-                $idx = (int) jrCore_string_field($_field['name'], 'NF', '_');
-                $val = (isset($_field['order'])) ? (int) $_field['order'] : $k;
-                if ($idx == 0) {
-                    // This is our "initial" select field - 1 and 2 must come after
-                    $nam = str_replace('_0', '', $_field['name']);
-                    if (!$_cs) {
-                        $_cs = array();
-                    }
-                    $_cs[$nam] = $val;
-                    break;
-                }
-            }
-        }
 
         $_or = array();
         $_nw = array();
@@ -1715,11 +1706,6 @@ function jrCore_page_display($return_html = false)
                 }
             }
 
-            // If this is a mobile device, and we are asking for an editor, we use a text area instead
-            if ($_field['type'] == 'editor' && jrCore_is_mobile_device()) {
-                $_field['type'] = 'textarea';
-            }
-
             // We need to check here for form fields.  ALL form fields must
             // come after the opening form element - so we first must scan for our
             // opening form element and make sure it comes before the form fields.
@@ -1734,36 +1720,16 @@ function jrCore_page_display($return_html = false)
                     }
                 }
                 else {
-                    // If this is a CHAINED SELECT field, we need to make
-                    // sure all of the options flow in the right order
-                    if ($_field['type'] == 'select' && is_array($_cs)) {
-                        // Find out number of select we are (0,1,2)
-                        $idx = (int) jrCore_string_field($_field['name'], 'NF', '_');
-                        $nam = str_replace("_{$idx}", '', $_field['name']);
-                        if (isset($_cs[$nam])) {
-                            if ($idx == 0) {
-                                $val = $_cs[$nam];
-                            }
-                            else {
-                                $val = floatval("{$_cs[$nam]}.{$idx}");
-                            }
-                        }
-                        else {
-                            $val = (isset($_field['order'])) ? (int) $_field['order'] : $k;
-                        }
+                    if (isset($_sfd) && isset($_sfd["{$_field['name']}"]['order'])) {
+                        // Form Designer value (in $_sfd) is FIRST
+                        $val = (int) $_sfd["{$_field['name']}"]['order'];
+                    }
+                    elseif (isset($_field['order'])) {
+                        // Defined in controller is SECOND
+                        $val = (int) $_field['order'];
                     }
                     else {
-                        if (isset($_sfd["{$_field['name']}"]['order'])) {
-                            // Form Designer value (in $_sfd) is FIRST
-                            $val = (int) $_sfd["{$_field['name']}"]['order'];
-                        }
-                        elseif (isset($_field['order'])) {
-                            // Defined in controller is SECOND
-                            $val = (int) $_field['order'];
-                        }
-                        else {
-                            $val = $k;
-                        }
+                        $val = $k;
                     }
                     $val = ($val * 100);
                 }
@@ -1771,7 +1737,7 @@ function jrCore_page_display($return_html = false)
                     $val += 25;
                 }
                 $_or[$num] = $val;
-                $elm += 100;
+                $elm       += 100;
             }
             else {
                 switch ($_field['type']) {
@@ -1791,6 +1757,9 @@ function jrCore_page_display($return_html = false)
                         break;
                     default:
                         $elm += 100;
+                        if (in_array($elm, $_or)) {
+                            $elm += 25;
+                        }
                         $_or[$num] = $elm;
                         break;
                 }
@@ -1799,7 +1768,7 @@ function jrCore_page_display($return_html = false)
             $num++;
         }
         $_fn = array();
-        if (isset($_nw) && is_array($_nw) && count($_nw) > 0) {
+        if (count($_nw) > 0) {
             asort($_or, SORT_NUMERIC);
             $ti = 1;
             foreach ($_or as $k => $num) {
@@ -1934,7 +1903,7 @@ function jrCore_page_display($return_html = false)
 
         // Setup our default value properly for display
         $_element['default_value'] = '';
-        $_element['saved_value'] = '';
+        $_element['saved_value']   = '';
         if (isset($_element['default']) && is_string($_element['default'])) {
             $_element['default_value'] = str_replace(array("\r\n", "\r", "\n"), '\n', addslashes($_element['default']));
         }
@@ -1944,7 +1913,7 @@ function jrCore_page_display($return_html = false)
 
         // Check for section
         if (isset($_element['section']) && strlen($_element['section']) > 0 && !isset($_sec["{$_element['section']}"])) {
-            $page .= jrCore_parse_template('page_section_header.tpl', array('title' => $_element['section']), 'jrCore');
+            $page                           .= jrCore_parse_template('page_section_header.tpl', array('title' => $_element['section']), 'jrCore');
             $_sec["{$_element['section']}"] = 1;
         }
 
@@ -1994,8 +1963,7 @@ function jrCore_page_display($return_html = false)
     $dash = jrCore_get_flag('jrcore_dashboard_active');
     if ($admn && isset($_adm)) {
         $_adm['admin_page_content'] = $page;
-        jrCore_install_new_modules();
-        $html .= jrCore_parse_template('admin.tpl', $_adm, 'jrCore');
+        $html                       .= jrCore_parse_template('admin.tpl', $_adm, 'jrCore');
     }
     elseif ($dash) {
         $_rep = array(
@@ -2068,13 +2036,13 @@ function jrCore_page_button($name, $value, $onclick, $_att = null)
         unset($_att['class']);
     }
     $value = jrCore_entity_string(html_entity_decode($value, ENT_QUOTES));
-    if (isset($onclick) && $onclick == 'disabled') {
+    if ($onclick == 'disabled') {
         $html = '<input type="button" id="' . $name . '" class="' . $cls . ' form_button_disabled" name="' . $name . '" value="' . $value . '" disabled="disabled"';
     }
     else {
         $html = '<input type="button" id="' . $name . '" class="' . $cls . '" name="' . $name . '" value="' . $value . '" onclick="' . $onclick . '"';
     }
-    if (isset($_att) && is_array($_att)) {
+    if (is_array($_att)) {
         foreach ($_att as $key => $attr) {
             $html .= ' ' . $key . '="' . $attr . '"';
         }
@@ -2144,15 +2112,15 @@ function jrCore_show_pending_notice($module, $_item, $return_output = false)
         $url = jrCore_get_module_url('jrCore');
         if ($module == 'jrUser') {
             $srl = jrCore_get_module_url('jrUser');
-            $out .= jrCore_page_button("approve", 'approve', "if (confirm('Activate this User Account and send them an email?')) { jrCore_window_location('{$_conf['jrCore_base_url']}/{$srl}/user_activate/user_id={$_item['_user_id']}') }") . '&nbsp;';
-            $out .= jrCore_page_button("delete", 'delete', "if(confirm('Are you sure you want to delete this User Account? This will also deleted the User Profile associated with this account.')) { jrCore_window_location('{$_conf['jrCore_base_url']}/{$srl}/delete_save/id={$_item['_user_id']}') }");
+            $out .= jrCore_page_button("approve", 'approve', "jrCore_confirm('Activate User Account?', 'This will activate the User Account and send them an email', function(){ jrCore_window_location('{$_conf['jrCore_base_url']}/{$srl}/user_activate/user_id={$_item['_user_id']}') })") . '&nbsp;';
+            $out .= jrCore_page_button("delete", 'delete', "jrCore_confirm('Delete User Account?', 'This will also delete the User Profile associated with the account', function(){ jrCore_window_location('{$_conf['jrCore_base_url']}/{$srl}/delete_save/id={$_item['_user_id']}') })");
         }
         else {
             $out .= jrCore_page_button('approve', 'approve', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$url}/pending_item_approve/{$module}/id={$_item['_item_id']}')") . '&nbsp';
             if ($shw) {
                 $out .= jrCore_page_button('reject', 'reject', "jrCore_window_location('{$_conf['jrCore_base_url']}/{$url}/pending_item_reject/{$module}/id={$_item['_item_id']}')") . '&nbsp';
             }
-            $out .= jrCore_page_button('delete', 'delete', "if(confirm('Are you sure you want to delete this {$tag}? No notice will be sent.')){ jrCore_window_location('{$_conf['jrCore_base_url']}/{$url}/pending_item_delete/{$module}/id={$_item['_item_id']}')}");
+            $out .= jrCore_page_button('delete', 'delete', "jrCore_confirm('Delete this {$tag}?', 'No notifications will be sent', function(){ jrCore_window_location('{$_conf['jrCore_base_url']}/{$url}/pending_item_delete/{$module}/id={$_item['_item_id']}')})");
         }
         if ($return_output) {
             return $out;

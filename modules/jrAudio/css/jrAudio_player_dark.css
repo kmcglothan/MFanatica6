@@ -512,7 +512,6 @@ div.jp-playlist a:hover {
 }
 
 .jr_audio_player_dark div.jp-video-play:hover a.jp-video-play-icon {
-    background: url("{$jrAudio_img_url}/jplayer.blue.monday.video.play.png") 0 -100px no-repeat;
 }
 
 .jr_audio_player_dark div.jp-jplayer audio,

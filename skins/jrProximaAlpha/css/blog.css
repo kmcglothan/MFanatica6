@@ -1,0 +1,26 @@
+/* @title Blog Title */
+/* @help The main blog title font size on the blogs page */
+.blog-title {
+    font-size: 28px;
+}
+
+/* @title Blog By-Line */
+/* @help The blog by-line section on the blogs page */
+.blog-byline {
+    font-size: 16px;
+}
+
+/* @title Blog Text */
+/* @help The main blog text on the Blog page */
+.blog-text {
+    padding: 20px;
+    font-size: 16px;
+}
+
+/* @title Blog Archive Title */
+/* @help The blog title as shown in the Archive sidebar */
+.blog-archive-title {
+    display: inline-block;
+    font-size: 14px;
+    margin: 2px 0;
+}

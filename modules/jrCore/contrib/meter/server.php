@@ -10,26 +10,14 @@ class qqUploadedFileXhr
 {
     /**
      * Save the file to the specified path
+     * @param string $path
+     * @param int $size size of file in bytes
      * @return boolean TRUE on success
      */
-
-    function save($path)
+    function save($path, $size)
     {
-        $input    = fopen("php://input", "r");
-        $temp     = tmpfile();
-        $realSize = stream_copy_to_stream($input, $temp);
-        fclose($input);
-
-        if ($realSize != $this->getSize()) {
-            return false;
-        }
-
-        $target = fopen($path, "w");
-        fseek($temp, 0, SEEK_SET);
-        stream_copy_to_stream($temp, $target);
-        fclose($target);
-
-        return true;
+        @ini_set('max_execution_time', 600);  // 10 minutes max
+        return jrCore_chunked_copy('php://input', $path);
     }
 
     function getName()
@@ -55,6 +43,7 @@ class qqUploadedFileForm
 {
     /**
      * Save the file to the specified path
+     * @param string $path
      * @return boolean TRUE on success
      */
     function save($path)
@@ -112,6 +101,7 @@ class qqFileUploader
     public function getName()
     {
         if ($this->file) {
+            /** @noinspection PhpUndefinedMethodInspection */
             return $this->file->getName();
         }
         return false;
@@ -125,18 +115,37 @@ class qqFileUploader
      */
     function handleUpload($uploadDirectory, $replaceOldFile = true)
     {
+        global $_user, $_post;
         if (!is_writable($uploadDirectory)) {
             return array('error' => "Server error. Upload directory isn't writable.");
         }
         if (!$this->file) {
             return array('error' => 'No files were uploaded.');
         }
+        /** @noinspection PhpUndefinedMethodInspection */
         $size = $this->file->getSize();
-        if (isset($size) && $size == 0) {
+        if ($size == 0) {
             return array('error' => 'File is empty');
         }
-        elseif (isset($size) && $size > $this->sizeLimit) {
-            return array('error' => 'File is too large. size(' . $size . ') size_limit(' . $this->sizeLimit . ')');
+        if (!jrUser_is_admin()) {
+
+            // Get form profile ID and make sure we're using the correct upload limit
+            if (isset($_post['token'])) {
+                $_sess = jrCore_form_get_session($_post['token']);
+                if ($_sess && isset($_sess['form_profile_id']) && $_sess['form_profile_id'] > 0 && $_user['user_active_profile_id'] != $_sess['form_profile_id']) {
+                    if ($qid = jrCore_db_get_item_key('jrProfile', $_sess['form_profile_id'], 'profile_quota_id')) {
+                        if ($_qt = jrProfile_get_quota($qid)) {
+                            if (isset($_qt['quota_jrCore_max_upload_size'])) {
+                                $this->sizeLimit = (int) $_qt['quota_jrCore_max_upload_size'];
+                            }
+                        }
+                    }
+                }
+                if ($size && $size > $this->sizeLimit) {
+                    $_ln = jrUser_load_lang_strings();
+                    return array('error' => $_ln['jrCore'][134] . ' ' . jrCore_format_size($this->sizeLimit));
+                }
+            }
         }
 
         $nam      = $_REQUEST['field_name'];
@@ -146,31 +155,59 @@ class qqFileUploader
 
         // Check for valid extension
         if ($this->allowedExtensions && !in_array($ext, $this->allowedExtensions)) {
-            return array('error' => 'File has an invalid extension (' . $ext . ') - it should be one of ' . $these . '.');
+            $_ln = jrUser_load_lang_strings();
+            return array('error' => $_ln['jrCore'][135] . ' ' . $these);
+        }
+
+        // Trigger upload_prepare event
+        $_rs = array(
+            'upload_directory'         => $uploadDirectory,
+            'upload_name'              => $_REQUEST['upload_name'],
+            'upload_order'             => $_REQUEST['orderid'],
+            'field_name'               => $nam,
+            'field_allowed_extensions' => $these,
+            'file_name'                => $filename,
+            'file_size'                => $size,
+            'file_extension'           => $ext
+        );
+
+        $_rs = jrCore_trigger_event('jrCore', 'upload_prepare', $_rs);
+        if (isset($_rs['error'])) {
+            // We had an error in our upload from a listener
+            return array('error' => $_rs['error']);
         }
 
         // Copy the file to our temp directory
         // See if are doing multiple uploads for the same "field" - if we are, we need
         // to increment the field number each time
         $fname = $uploadDirectory . $_REQUEST['orderid'] . '_' . $_REQUEST['upload_name'];
-        if ($this->file->save($fname)) {
+
+        /** @noinspection PhpUndefinedMethodInspection */
+        if ($this->file->save($fname, $size)) {
+
             jrCore_write_to_file($fname . '.tmp', $filename);
-            // Make sure this is a valid file type for the extension
-            switch (strtolower($ext)) {
-                case 'jpg':
-                case 'jpeg':
-                case 'jfif':
-                case 'jfi':
-                case 'png':
-                case 'gif':
-                    if (!getimagesize($fname)) {
-                        unlink($fname);
-                        unlink($fname . '.tmp');
-                        return array('error' => 'Invalid image file - it should be one of ' . $these . '.');
-                    }
-                    break;
+
+            // Trigger upload_saved event
+            $_rs = array(
+                'success'                  => true,
+                'upload_directory'         => $uploadDirectory,
+                'upload_name'              => $_REQUEST['upload_name'],
+                'upload_order'             => $_REQUEST['orderid'],
+                'field_name'               => $nam,
+                'field_allowed_extensions' => $these,
+                'temp_name'                => $fname,
+                'file_name'                => $filename,
+                'file_size'                => $size,
+                'file_extension'           => $ext,
+            );
+            $_rs = jrCore_trigger_event('jrCore', 'upload_saved', $_rs);
+            if (is_array($_rs) && isset($_rs['error'])) {
+                // We had an error from a listener - cleanup
+                unlink($fname);
+                unlink($fname . '.tmp');
             }
-            return array('success' => true);
+            return $_rs;
+
         }
         return array('error' => 'Could not save uploaded file - upload was cancelled or server error encountered');
     }

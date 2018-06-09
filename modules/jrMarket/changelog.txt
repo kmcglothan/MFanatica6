@@ -1,13 +1,24 @@
-Marketplace module changelog
+Marketplace module change log
 
-Version 1.4.4:
- - Change: CSS rules added for the Changelog background color so it can be changed in the Styles tab
+Version 1.5.2:
+ - New: "updated_module_info" event is triggered with module update info before files are updated
+ - Change: Updated "update" process to make it more stable with some module configurations
+
+Version 1.5.1:
+ - Change: Updated to show if a module has any unmet requirements before installing from Marketplace
+
+Version 1.5.0:
+ - Change: BBCode is now stripped from the module descriptions when browsing the Marketplace
+ - Bug Fix: Module verification may not run after updating a module from the Marketplace
+
+Version 1.4.5:
+ - Change: CSS rules added for the Change log background color so it can be changed in the Styles tab
 
 Version 1.4.4:
  - New: Updating and Reloading modules and skins from the marketplace is now an "atomic" process
+ - Change: Added background color to the jrCore_page_custom in the view_jrMarket_changelog function
  - Bug Fix: "Update All" when only System Core update was available may just show spinner and not update
  - Bug Fix: Upgrading Image Support module was resetting image caches
- - Change: Added background color to the jrCore_page_custom in the view_jrMarket_changelog function
 
 Version 1.4.3:
  - Bug Fix: Reload Modules or Skins could fail to reload the selected module or skin
@@ -25,7 +36,7 @@ Version 1.4.0:
  - New: Updated with new module icon for Jamroom Core 6.0.0
  - New: Updated to work with new module icons in Jamroom Core 6.0.0
  - Bug Fix: Installing item from Private Channel may install older version from stable/beta channel
- - Bug Fix: Changelog for BETA items may show changelog for STABLE item in it's place
+ - Bug Fix: Change log for BETA items may show change log for STABLE item in it's place
 
 Version 1.3.1:
  - Change: Marketplace Versions default changed to "Keep All Versions"
@@ -52,7 +63,7 @@ Version 1.2.15:
  - Bug Fix: Small "screenshot" icons may not show properly in some marketplace listings
 
 Version 1.2.14:
- - Update: Resets core module cache to reflect updated module and skin version number
+ - Change: Resets core module cache to reflect updated module and skin version number
 
 Version 1.2.13:
  - Bug Fix: "Update All" may get incorrect version number for some modules
@@ -177,10 +188,10 @@ Version 1.0.4:
 Version 1.0.3:
  - Bug Fix: "Update All" modal window will now properly report any errors encountered updating an item
  - Bug Fix: Javascript error when closing Update All modal window
- - If an Item does not have an associated license with it, "No License" is shown instead of Update button (as the update will fail)
+ - Change: If an Item does not have an associated license with it, "No License" is shown instead of Update button (as the update will fail)
 
 Version 1.0.2:
- - System Update now properly validates new module meta data on upgrade - this fixes a bug where the module may show as having not updated even though it actually did.
+ - Bug Fix: System Update may show a module as not updated even though it is updated
 
 Version 1.0.0:
  - Initial release

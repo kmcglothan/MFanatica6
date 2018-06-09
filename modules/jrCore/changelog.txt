@@ -1,5 +1,147 @@
 Jamroom System Core change log
 
+Version 6.1.7:
+ - New: "is_local_url" Event triggered when checking if a URL is a local URL
+ - Change: Added gzip support to HTML responses for browsers that support it
+ - Change: Cache functions updated to use a bit more memory for improved performance
+ - Change: Additional queue info is recorded to the Activity Log when a queue worker is reset
+ - Change: "printable" checktype function now allows emoji to pass through
+ - Change: Improved checking of in-progress queue workers to ensure the process is still running
+ - Bug Fix: Pager URLs when Jamroom is installed in a sub directory may not be created correctly
+ - Bug Fix: Broken link in the View button of the Tools section of the ACP search results page
+ - Bug Fix: Restoring a deleted item from the recycle bin may not restore correctly
+ - Bug Fix: Modified template could be saved with a syntax error in the Template Editor
+ - Bug Fix: New Form Designer field was not requiring the underscore after the module prefix
+
+Version 6.1.6:
+ - New: Improved ability to repair and recover from template files corrupted by the file system
+ - New: "module_activated" event trigger fired when a module is activated from the info tab
+ - New: "module_deactivated" event trigger fired when a module is deactivated from the info tab
+ - New: Ability to set "queue_sleep" option for jrCore_send_email to delay email delivery
+ - New: 'placeholder' values get replaced by language value keys if one exists
+ - Change: Upgraded bundled TinyMCE Editor to version 4.7.6 which includes mobile phone support
+ - Change: Updated bundled PEAR and Tar libraries with code for compatibility with PHP 7.2+
+ - Bug Fix: Multiple _profile_id not_in search conditions for jrCore_db_search_items not working correctly
+ - Bug Fix: SQL Query could hang if error received from MySQL server during connection
+ - Bug Fix: Expired queue entries not being reset if posix functions not enabled in PHP install
+ - Bug Fix: Search condition in Item List Widget may only show first word of multi word match
+ - Bug Fix: {jrCore_item_list_buttons} size, class and color parameters not working on admin config button
+ - Bug Fix: "Purge Activity Logs" set to "never" could still delete some activity logs
+ - Bug Fix: Emptying Recycle Bin may not update Profile Disk Usage for all profiles affected
+ - Bug Fix: Some profile_id specific jrCore_list calls could return empty for logged out users
+ - Bug Fix: Form Designer editor fields set to "required" could be saved with empty content
+ - Bug Fix: Modifying CSS in Style tab for module could override all CSS elements in module CSS file
+ - Bug Fix: emoji in url could cause a blank white screen in some circumstances
+
+Version 6.1.5:
+ - New: Added support for "IN" where clause in jrCore_db_run_key_function()
+ - New: Added $cache_reset boolean parameter to update/delete multiple item functions
+ - New: db_search_params listeners can set full_result_set key to be used as results
+ - New: "db_search_results" event triggered with results from jrCore_db_search_items()
+ - Change: "Set Item Order" button no longer shows if there are no items created
+ - Change: Update to counter IP address checking to improve performance on large systems
+ - Change: Update to jrCore_tinymce.css so text editor text area is not one line.
+ - Change: Downloaded file name will now use title_url.extension if item has one
+ - Bug Fix: Users unable to delete comment attachments if not on home profile
+ - Bug Fix: db_search_count_query event did not include actual count of result set
+
+Version 6.1.4:
+ - New: "Purge Activity Logs" global config setting to purge activity logs older than X days
+ - New: "db_create_item_data" event listener to get data keys before item_id is created
+ - New: Support added for "between" and "not_between" search operators for jrCore_list
+ - Change: User and URL included in DB query logging to help identify location
+ - Change: Hourly Maintenance only logs to Activity Log if it takes longer than 5 seconds to run
+ - Bug Fix: Queue Latency could show highlighted even if queue was already being worked
+ - Bug Fix: Using a language other than English could result in malformed characters being saved
+ - Bug Fix: Minute maintenance queue may not run if queue data gets corrupted
+ - Bug Fix: Possible "invalid button type" error when re-ordering bundle detail item action buttons
+ - Bug Fix: Email delivery throttling may not work correctly for send_email_low_priority queue
+ - Bug Fix: Progress bar and seeking were not working correctly in Chrome when streaming audio
+ - Bug Fix: Date and DateTime calendar form field was not showing selected date when updating
+ - Bug Fix: Item display order may not be set correctly when deleting profile items
+
+Version 6.1.3:
+ - Change: Item List widgets now include ignore_missing parameter by default
+ - Bug Fix: Calendar Date Picker may show invalid date error if not using English
+ - Bug Fix: Quota Limit for items error may show to some users incorrectly
+ - Bug Fix: jrCore_stats template function could return invalid counts for some modules
+ - Bug Fix: jrCore_list order_by RAND with limit 1 would not return all item_id's equally
+ - Bug Fix: System Check may show error for Language Support if not using English as system default
+
+Version 6.1.2:
+ - New: Queue data is now optimized and validated by the hourly maintenance worker
+ - Change: Added missing "per page" text in table pager to language file
+ - Change: Admin JavaScript added to separate file to decrease main JS file size
+ - Bug Fix: Save Changes not working from modify template interface
+ - Bug Fix: Smarty functions provided by disabled modules could still be executed
+ - Bug Fix: Audio/Video may not stream on some versions of IE/Edge due to bad headers from browser
+
+Version 6.1.1:
+ - New: Advanced Config Keys tool for creating/updating options in the data/config/config.php file
+ - Bug Fix: Tools and Config buttons would return a 404 page in ACP search if module is disabled
+ - Bug Fix: Invalid permissions on data/cache directory could cause a parse template error loop
+ - Bug Fix: MySQL version 5.1.x was showing as supported in the System Check when it is not supported
+ - Bug Fix: "Reset" Button when viewing a modified module or skin template was not working
+ - Bug Fix: Possible order_by error in activity log if ordering by _profile_id in jrCore_list
+
+Version 6.1.0:
+ - Change: Updated bundled TinyMCE WYSIWYG Editor to version 4.6.5
+ - Change: upload_button.tpl added ability to limit uploads via the Profile Daily Limits module
+ - Change: Updated way site is tested for SSL to make it more reliable
+ - Bug Fix: Ordered and unordered lists could have unwanted line breaks before and/or after list
+ - Bug Fix: Cached Javascript not being reset for alternate skins used in Profile Tweaks
+ - Bug Fix: Pending Items delete confirmation was not working correctly
+
+Version 6.1.0b6:
+ - Change: Quota Max Upload limit is no longer applied to admin users working on a profile
+ - Change: Datastore query optimizations for jrCore_list calls with mixed quota settings
+ - Bug Fix: Item List Site Builder widget search conditions may show incorrect modifier on edit
+ - Bug Fix: "fdebug" jrCore_db_search_items parameter not working when added to a jrCore_list call
+
+Version 6.1.0b5:
+ - Change: Updated bundled TinyMCE WYSIWYG Editor to version 4.6.4
+ - Change: Updated add to activity log SQL query to make it more efficient
+ - Bug Fix: Custom video player templates using "video_file_mobile" field would not stream
+ - Bug Fix: Full Page cache key updated to differentiate between mobile, tablet and desktop
+
+Version 6.1.0b4:
+ - New: Text strings in date picker have been added to the System Core "language" tab
+ - Bug Fix: Upgrading from Jamroom Core 5.2.x or older could hang when running an integrity check
+ - Bug Fix: Some URLs with unicode characters may not show the entire URL as "clickable"
+ - Bug Fix: Using "ignore_missing" jrCore_list parameter could include incorrect items in list
+
+Version 6.1.0b3:
+ - Change: Form Designer fields must now be lowercase only
+ - Bug Fix: Full Page caching was not working correctly for some logged out browsers
+ - Bug Fix: Dates with month or day names may not render correctly in some languages
+ - Bug Fix: New modal alert dialog box was causing long pages to scroll to the top
+ - Bug Fix: Profile item counts could be incorrect after deleting audio and video albums
+
+Version 6.1.0b2:
+ - New: Images for items with attached images are now shown in the Recycle Bin
+ - New: Detect corrupted templates and automatically rebuild them at display time if needed
+ - New: Admin users can create profile items even if profile has reached the quota limit
+ - New: Updated support for template buttons to include "bundled" items such as albums, galleries, etc.
+ - Change: jrCore_strip_html now strips embed tags when used as a variable modifier
+ - Bug Fix: Bullet and Unordered list buttons may not show in WYSIWYG editor even if allowed in HTML tags
+ - Bug Fix: "Search" in Language tab would revert to en-US if different language selected before search
+ - Bug Fix: Some non-admin Javascript could be excluded from the main site Javascript file
+
+Version 6.1.0b1:
+ - New: Template Compare updated to make it easier to spot differences between custom and default templates
+ - New: "Compare" button not clickable if no differences found between the compared templates (in new clones)
+ - New: Admin specific JavaScript is now loaded only for admins from a separate "admin" Javascript file
+ - New: Custom confirm prompt has replaced the default Javascript confirm prompt
+ - New: "Full Page Caching" support added for logged out users (enable in Global Config)
+ - New: "upload_prepare" and "upload_saved" event triggers for custom file upload checks
+ - New: "X-Frame-Options" header is now sent on requests to enhance site security
+ - Change: Icon Sprites are now served from the active skin cache directory instead of media directory "0"
+ - Change: Updated bundled TinyMCE WYSIWYG Editor to version 4.5.6
+ - Change: Updated bundled Mobile Detect library to version 2.8.25
+ - Change: Updated bundled Lightbox2 JavaScript library to version 2.9.0
+ - Change: Updated bundled Smarty template library to version 3.1.31
+ - Bug Fix: "required" message showing instead of "recommended" for some modules in the Info tab
+
 Version 6.0.7:
  - New: Support for "hidden" form field type in Form Designer
  - Change: footer removed from Installer as it could cover up form fields on small screens

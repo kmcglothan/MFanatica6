@@ -46,7 +46,7 @@ function jrSoundCloud_meta()
     $_tmp = array(
         'name'        => 'SoundCloud',
         'url'         => 'soundcloud',
-        'version'     => '1.2.4',
+        'version'     => '1.2.6',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Import SoundCloud tracks into a Profile',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/290/soundcloud',

@@ -2,7 +2,7 @@
 /**
  * Jamroom Simple Custom Forms module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -46,7 +46,7 @@ function jrCustomForm_meta()
     $_tmp = array(
         'name'        => 'Simple Custom Forms',
         'url'         => 'form',
-        'version'     => '1.2.4',
+        'version'     => '1.2.6',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Create simple forms that store responses and optionally email admin users',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/2885/simple-custom-forms',
@@ -90,6 +90,9 @@ function jrCustomForm_init()
 
     // Site Builder widget
     jrCore_register_module_feature('jrSiteBuilder', 'widget', 'jrCustomForm', 'widget_form', 'Embedded Form');
+
+    // Akismet Anti Spam support
+    jrCore_register_module_feature('jrAkismet', 'spam_check', 'jrCustomForm', 'contact-form', 'reject');
 
     return true;
 }

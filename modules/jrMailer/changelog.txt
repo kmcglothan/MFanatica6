@@ -1,5 +1,18 @@
 Email Support module changelog
 
+Version 2.3.4:
+ - Change: Changed number of Geo tasks for background worker from 100 to 1000 per minute
+
+Version 2.3.3:
+ - Change: Updated background geo worker to be much faster on very large email sends
+
+Version 2.3.2:
+ - Bug Fix: Possible UTF8 SQL error in messages if cutting and pasting non-UTF8 characters
+ - Bug Fix: Some countries were not being highlighted properly on the Campaign Map
+
+Version 2.3.1:
+ - Bug Fix: Possible SQL error during integrity check on MySQL 5.5
+
 Version 2.3.0:
  - New: Newsletter filter plugins provided for new NewsLetter filter feature
  - New: Platform and Browser information available in Campaign View detailed user info

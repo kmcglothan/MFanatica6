@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -44,7 +44,7 @@
 defined('APP_DIR') or exit();
 
 /**
- * Get total number of Rows in a MyISAM Table - estimate only for InnoDB
+ * Get total number of Rows in a Table
  * @param string $module Module to return count of
  * @param string $table Table to return count of
  * @return int Returns the number of rows in the table
@@ -52,10 +52,10 @@ defined('APP_DIR') or exit();
 function jrCore_db_number_rows($module, $table)
 {
     $tbl = jrCore_db_table_name($module, $table);
-    $req = "SHOW TABLE STATUS LIKE '{$tbl}'";
-    $_rt = jrCore_db_query($req, 'SINGLE');
-    if ($_rt && isset($_rt['Rows']) && is_numeric($_rt['Rows'])) {
-        return intval($_rt['Rows']);
+    $req = "SELECT COUNT(*) AS r_cnt FROM {$tbl}";
+    $_rt = jrCore_db_query($req, 'SINGLE', false, null, false, null, false);
+    if ($_rt && isset($_rt['r_cnt']) && is_numeric($_rt['r_cnt'])) {
+        return intval($_rt['r_cnt']);
     }
     return 0;
 }
@@ -127,7 +127,7 @@ function jrCore_db_table_columns($module, $table)
 function jrCore_db_table_name($module, $table)
 {
     global $_conf;
-    if (!isset($_conf['jrCore_db_prefix'])) {
+    if (empty($_conf['jrCore_db_prefix'])) {
         $_conf['jrCore_db_prefix'] = 'jr_';
     }
     return strtolower("{$_conf['jrCore_db_prefix']}{$module}_{$table}");
@@ -176,40 +176,46 @@ function jrCore_db_connect($force = false, $found_rows = true)
     }
     $myi = mysqli_init();
     if (!$myi || !is_object($myi)) {
-        jrCore_notice('Error', "unable to initialize database connection - check Error Log");
+        jrCore_notice('Error', "unable to initialize MySQLi resource", false);
     }
     // See if we are using persistent connections
     $pfx = '';
     if (isset($_conf['jrCore_db_persistent']) && $_conf['jrCore_db_persistent'] == 'on') {
         $pfx = 'p:';
     }
+
+    $_con = array(
+        'host' => "{$pfx}{$_conf['jrCore_db_host']}",
+        'port' => $_conf['jrCore_db_port'],
+        'base' => $_conf['jrCore_db_name'],
+        'user' => $_conf['jrCore_db_user'],
+        'pass' => $_conf['jrCore_db_pass']
+    );
+    $_con = jrCore_trigger_event('jrCore', 'db_connect', $_con, array('myi' => $myi));
+
     $flag = null;
     if ($found_rows) {
         $flag = MYSQLI_CLIENT_FOUND_ROWS;
     }
-    // Multiple MySQL Masters?
-    if (isset($_conf['jrCore_db_servers']) && is_array($_conf['jrCore_db_servers'])) {
-        $idx = array_rand($_conf['jrCore_db_servers']);
-        $host = $_conf['jrCore_db_servers'][$idx]['jrCore_db_host'];
-        $user = $_conf['jrCore_db_servers'][$idx]['jrCore_db_user'];
-        $pass = $_conf['jrCore_db_servers'][$idx]['jrCore_db_pass'];
-        $name = $_conf['jrCore_db_servers'][$idx]['jrCore_db_name'];
-        $port = $_conf['jrCore_db_servers'][$idx]['jrCore_db_port'];
+    $timeout = 2;
+    if (isset($_conf['jrCore_db_connect_timeout']) && $_conf['jrCore_db_connect_timeout'] > 0) {
+        $timeout = (int) $_conf['jrCore_db_connect_timeout'];
     }
-    else {
-        $host = $_conf['jrCore_db_host'];
-        $user = $_conf['jrCore_db_user'];
-        $pass = $_conf['jrCore_db_pass'];
-        $name = $_conf['jrCore_db_name'];
-        $port = $_conf['jrCore_db_port'];
-    }
-    $tmp = @mysqli_real_connect($myi, "{$pfx}{$host}", $user, $pass, $name, $port, null, $flag);
+    mysqli_options($myi, MYSQLI_OPT_CONNECT_TIMEOUT, $timeout);
+    $tmp = @mysqli_real_connect($myi, $_con['host'], $_con['user'], $_con['pass'], $_con['base'], $_con['port'], null, $flag);
     if (!$tmp) {
-        // sleep for a bit and try again
-        sleep(250000);
-        $tmp = @mysqli_real_connect($myi, "{$pfx}{$host}", $user, $pass, $name, $port, null, $flag);
-        if (!isset($tmp) || !$tmp) {
-            jrCore_notice('Error', "error connecting to database server: " . mysqli_connect_error() . ' (#' . mysqli_connect_errno() . ') - contact hosting provider for assistance.');
+        $err = mysqli_connect_error();
+        $ern = mysqli_connect_errno();
+        $_tm = jrCore_trigger_event('jrCore', 'db_connect_error', array('myi' => $myi, 'persist' => $pfx, 'flag' => $flag, '_con' => $_con, 'error' => "{$ern}:{$err}"));
+        if (!isset($_tm['connected'])) {
+            // sleep for a bit and try again
+            usleep(100000);
+            $tmp = @mysqli_real_connect($myi, $_con['host'], $_con['user'], $_con['pass'], $_con['base'], $_con['port'], null, $flag);
+            if (!$tmp) {
+                $err = mysqli_connect_error();
+                $ern = mysqli_connect_errno();
+                jrCore_notice('Error', "error connecting to database server: {$err} (#{$ern}) - contact hosting provider for assistance.", false);
+            }
         }
     }
     mysqli_set_charset($myi, 'utf8');
@@ -218,11 +224,14 @@ function jrCore_db_connect($force = false, $found_rows = true)
     // Allow sites to set their own SQL mode (or turn it off)
     if (isset($_conf['jrCore_sql_mode'])) {
         if (strlen($_conf['jrCore_sql_mode']) > 1) {
-            jrCore_db_query("SET SESSION sql_mode = '{$_conf['jrCore_sql_mode']}'");
+            jrCore_db_query("SET @rnd := RAND(), SESSION sql_mode = '{$_conf['jrCore_sql_mode']}'");
+        }
+        else {
+            jrCore_db_query("SET @rnd := RAND()");
         }
     }
     else {
-        jrCore_db_query("SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES'");
+        jrCore_db_query("SET @rnd := RAND(), SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES'");
     }
     return $myi;
 }
@@ -238,8 +247,7 @@ function jrCore_db_connect($force = false, $found_rows = true)
  */
 function jrCore_db_close()
 {
-    $tmp = jrCore_get_flag('jrcore_dbconnect_mysqli_object');
-    if ($tmp) {
+    if ($tmp = jrCore_get_flag('jrcore_dbconnect_mysqli_object')) {
         if (mysqli_close($tmp)) {
             jrCore_delete_flag('jrcore_dbconnect_mysqli_object');
             return true;
@@ -256,7 +264,7 @@ function jrCore_db_close()
  *
  * Valid <b>$return</b> values are:
  *<br>
- * * (null)     - if empty or null, the Database connection resource is returned for raw processing<br>
+ * * (null)            - if empty or null, the Database connection resource is returned for raw processing<br>
  * * <b>NUMERIC</b>    - returns a multi-dimensional array, numerically indexed beginning at 0<br>
  * * <b>SINGLE</b>     - a single-dimension array is returned<br>
  * * <b>COUNT</b>      - the number of rows affected by an INSERT, DELETE or UPDATE query<br>
@@ -276,63 +284,102 @@ function jrCore_db_close()
  */
 function jrCore_db_query($query, $return = null, $multi = false, $only_val = null, $exit_on_error = true, $con = null, $log_error = true, $skip_triggers = false)
 {
-    global $_post;
+    global $_post, $_conf;
     // make sure we get a query
     if (!isset($query{1})) {
         return false;
     }
-    if (!$con || is_null($con)) {
+    if (is_null($con) || !$con) {
         $con = jrCore_db_connect();
     }
+    $_args = func_get_args();
 
     // Trigger Init Event
     if (!$skip_triggers) {
-        $query = jrCore_trigger_event('jrCore', 'db_query_init', $query, func_get_args());
+        $query = jrCore_trigger_event('jrCore', 'db_query_init', $query, $_args);
     }
 
     // Some help to find this query if it ends up in a log
-    $usr = '[visitor]';
+    $usr = 'visitor';
     if (jrCore_get_flag('jrcore_logger_system_user_active')) {
-        $usr = '[system]';
+        $usr = 'system';
     }
     else {
         if (isset($_SESSION) && isset($_SESSION['user_name'])) {
-            $usr = "[{$_SESSION['user_name']}]";
+            $usr = jrCore_db_escape(str_replace('*', '', $_SESSION['user_name']));
         }
     }
+    $usr   .= ':' . jrCore_get_ip();
     $uri   = (isset($_REQUEST['_uri'])) ? $_REQUEST['_uri'] : '/';
-    $query = "/* {$usr}:{$uri} */ {$query}";
+    $uri   = jrCore_db_escape(jrCore_strip_emoji(str_replace('*', '', $uri), false));
+    $query = "/* {$_conf['jrCore_db_name']}:" . time() . ":{$usr}:{$uri} */ {$query}";
 
     // If our $multi flag is true we use our multi_query function so multiple SQL
     // queries can be run in one shot - InnoDB tables only!
+    $err = false;
     if ($multi) {
+        if ($return == 'COUNT') {
+            $query = str_replace('COMMIT;', 'SELECT ROW_COUNT() AS afrc; COMMIT;', $query);
+        }
         $res = mysqli_multi_query($con, $query) or $err = 'Query Error: ' . mysqli_error($con);
     }
     else {
         $res = mysqli_query($con, $query) or $err = 'Query Error: ' . mysqli_error($con);
     }
-    if (isset($err{0})) {
+    if ($err) {
 
         $exit = 1;
         if (!jrCore_get_flag('jrCore_db_query_recursive') && strpos($query, 'DESCRIBE') !== 0) {
             jrCore_set_flag('jrCore_db_query_recursive', 1);
+
+            $retry = false;
             // See if this is a "MySQL Server has gone away error" - if it is, we try
             // to force a reconnect here and see if we can continue
-            if (stripos($err, 'server has gone away') || stripos($err, 'deadlock found')) {
-                unset($err);
-                $con = jrCore_db_connect(true);
+            if (stripos($err, 'server has gone away')) {
+                fdebug("jrCore_db_query: {$query}", $con);  // OK
+                usleep(50000);
+                $con   = jrCore_db_connect(true);
+                $retry = true;
+            }
+            elseif (stripos($err, 'deadlock')) {
+                // With an InnoDB deadlock we can retry
+                fdebug("{$err}:\n{$query}"); // OK
+                $retry = true;
+            }
+            else {
+                if ($log_error || (jrCore_is_developer_mode() && !strpos(' ' . $query, 'SELECT 1 FROM') && !strpos(' ' . $query, 'DESCRIBE'))) {
+                    $_er = array(
+                        'error' => $err,
+                        '_post' => $_post,
+                        'query' => substr($query, 0, 900000)
+                    );
+                    if (strpos($err, 'Query Error:') === 0) {
+                        // Do not retry on a query error - we'll just fail the second time
+                        jrCore_logger('CRI', $err, $_er);
+                        $retry = false;
+                    }
+                    else {
+                        jrCore_logger('CRI', $err . " (will retry)", $_er);
+                    }
+                    fdebug($_er); // OK
+                }
+            }
+            // Are we retrying this query?
+            if ($retry) {
+                $err = false;
                 if ($multi) {
                     $res = mysqli_multi_query($con, $query) or $err = 'Query Error: ' . mysqli_error($con);
                 }
                 else {
                     $res = mysqli_query($con, $query) or $err = 'Query Error: ' . mysqli_error($con);
                 }
-                if (isset($err{0})) {
+                if ($err) {
                     jrCore_db_close();
-                    if ($log_error) {
+                    if ($log_error || (jrCore_is_developer_mode() && !strpos(' ' . $query, 'SELECT 1 FROM') && !strpos(' ' . $query, 'DESCRIBE'))) {
                         $_er = array(
-                            '_post' => $_post,
-                            'query' => substr($query, 0, 900000)
+                            'error' => $err,
+                            'query' => substr($query, 0, 900000),
+                            '_post' => $_post
                         );
                         jrCore_logger('CRI', $err, $_er);
                         fdebug($_er); // OK
@@ -342,25 +389,15 @@ function jrCore_db_query($query, $return = null, $multi = false, $only_val = nul
                     $exit = 0;
                 }
             }
-            else {
-                if ($log_error) {
-                    $_er = array(
-                        'error' => $err,
-                        '_post' => $_post,
-                        'query' => substr($query, 0, 900000)
-                    );
-                    jrCore_logger('CRI', $err, $_er);
-                    fdebug($_er); // OK
-                }
-            }
         }
         if ($exit == 1) {
             if ($exit_on_error) {
-                jrCore_notice('Error', $err);
+                fdebug("{$err}:\n{$query}");  // OK
+                jrCore_notice('Error', $err, false);
             }
             // Trigger Exit Event
             if (!$skip_triggers) {
-                jrCore_trigger_event('jrCore', 'db_query_exit', array('error' => $err), func_get_args());
+                jrCore_trigger_event('jrCore', 'db_query_exit', array('error' => $err), $_args);
             }
             return false;
         }
@@ -371,7 +408,7 @@ function jrCore_db_query($query, $return = null, $multi = false, $only_val = nul
             jrCore_db_close();
         }
         if (!$skip_triggers) {
-            jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => $res), func_get_args());
+            jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => $res), $_args);
         }
         return $res;
     }
@@ -383,18 +420,41 @@ function jrCore_db_query($query, $return = null, $multi = false, $only_val = nul
                 jrCore_db_close();
             }
             if (!$skip_triggers) {
-                jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => $_tmp), func_get_args());
+                jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => $_tmp), $_args);
             }
             return $_tmp;
             break;
 
         case 'COUNT':
-            $num = (int) mysqli_affected_rows($con);
             if ($multi) {
+                $num = 0;
+                while (true) {
+                    if (mysqli_more_results($con)) {
+                        if (mysqli_next_result($con)) {
+                            if ($result = mysqli_store_result($con)) {
+                                while ($row = mysqli_fetch_assoc($result)) {
+                                    if (isset($row['afrc'])) {
+                                        $num = (int) $row['afrc'];
+                                        break 2;
+                                    }
+                                }
+                            }
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                    else {
+                        break;
+                    }
+                }
                 jrCore_db_close();
             }
+            else {
+                $num = (int) mysqli_affected_rows($con);
+            }
             if (!$skip_triggers) {
-                jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => $num), func_get_args());
+                jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => $num), $_args);
             }
             return $num;
             break;
@@ -405,7 +465,7 @@ function jrCore_db_query($query, $return = null, $multi = false, $only_val = nul
                 jrCore_db_close();
             }
             if (!$skip_triggers) {
-                jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => $num), func_get_args());
+                jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => $num), $_args);
             }
             return $num;
             break;
@@ -416,7 +476,7 @@ function jrCore_db_query($query, $return = null, $multi = false, $only_val = nul
                 jrCore_db_close();
             }
             if (!$skip_triggers) {
-                jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => $num), func_get_args());
+                jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => $num), $_args);
             }
             return $num;
             break;
@@ -427,7 +487,7 @@ function jrCore_db_query($query, $return = null, $multi = false, $only_val = nul
             }
             else {
                 if (!$skip_triggers) {
-                    jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => null), func_get_args());
+                    jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => null), $_args);
                 }
                 return false;
             }
@@ -435,7 +495,7 @@ function jrCore_db_query($query, $return = null, $multi = false, $only_val = nul
             // either numeric based (base 0) or associative based if $akey given
             if ($num >= 1) {
                 $_rt = array();
-                $i = 0;
+                $i   = 0;
                 while ($row = mysqli_fetch_assoc($res)) {
                     if ($return == 'NUMERIC') {
                         $_rt[$i] = $row;
@@ -454,12 +514,12 @@ function jrCore_db_query($query, $return = null, $multi = false, $only_val = nul
                 }
                 if (isset($_rt) && is_array($_rt) && count($_rt) > 0) {
                     if (!$skip_triggers) {
-                        jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => $_rt), func_get_args());
+                        jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => $_rt), $_args);
                     }
                     return $_rt;
                 }
                 if (!$skip_triggers) {
-                    jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => null), func_get_args());
+                    jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => null), $_args);
                 }
                 return false;
             }
@@ -469,48 +529,108 @@ function jrCore_db_query($query, $return = null, $multi = false, $only_val = nul
             }
     }
     if (!$skip_triggers) {
-        jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => null), func_get_args());
+        jrCore_trigger_event('jrCore', 'db_query_exit', array('result' => null), $_args);
     }
     return false;
 }
 
 /**
- * Send multiple SELECT statements to the DB at once
- *
- * The jrCore_db_multi_select function is used to send multiple SELECT
- * statements to the MySQL server in one shot - each result set will
- * be returned as a key in the result array.  Uses TRANSACTIONS.
- *
- * @param $_queries array Array of SQL Queries
- * @return mixed Returns true on success
+ * Send multiple SQL statements to the DB at once
+ * each result set will be returned as a key in the result array.
+ * Uses TRANSACTIONS
+ * @param array $_queries Array of SQL Queries
+ * @param bool $exit_on_error
+ * @param bool $log_error
+ * @param resource $con
+ * @return mixed bool|array
  */
-function jrCore_db_multi_select($_queries)
+function jrCore_db_multi_select($_queries, $exit_on_error = true, $log_error = true, $con = null)
 {
-    if (!isset($_queries) || !is_array($_queries)) {
+    global $_post, $_conf;
+    if (!$_queries || !is_array($_queries)) {
         return false;
     }
     $cnt = count($_queries);
-    if (!isset($cnt) || $cnt === 0) {
+    if (!$cnt || $cnt === 0) {
         return false;
     }
-    $req = "SET AUTOCOMMIT=0; START TRANSACTION;\n". implode(';',$_queries) .";\nCOMMIT; SET AUTOCOMMIT=1;";
-    $con = jrCore_db_connect();
-    $res = mysqli_multi_query($con,$req) or jrCore_notice('Error','query error: '. mysqli_error($con));
-    if (isset($err)) {
+    if (is_null($con) || !$con) {
+        $con = jrCore_db_connect();
+    }
+
+    // Some help to find this query if it ends up in a log
+    $usr = 'visitor';
+    if (jrCore_get_flag('jrcore_logger_system_user_active')) {
+        $usr = 'system';
+    }
+    else {
+        if (isset($_SESSION) && isset($_SESSION['user_name'])) {
+            $usr = jrCore_db_escape(str_replace('*', '', $_SESSION['user_name']));
+        }
+    }
+    $usr .= ':' . jrCore_get_ip();
+    $uri = (isset($_REQUEST['_uri'])) ? $_REQUEST['_uri'] : '/';
+    $uri = jrCore_db_escape(jrCore_strip_emoji(str_replace('*', '', $uri), false));
+
+    $err = false;
+    $req = "/* {$_conf['jrCore_db_name']}:" . time() . ":{$usr}:{$uri} */ SET AUTOCOMMIT=0; START TRANSACTION;\n" . implode(";\n", $_queries) . ";\nCOMMIT; SET AUTOCOMMIT=1;";
+    $res = mysqli_multi_query($con, $req) or $err = 'Query Error: ' . mysqli_error($con);
+    if ($err) {
+        $retry = false;
+        if (stripos($err, 'server has gone away')) {
+            fdebug("jrCore_db_multi_select:\n{$req}", $con);  // OK
+            usleep(50000);
+            $con   = jrCore_db_connect(true);
+            $retry = true;
+        }
+        elseif (stripos($err, 'deadlock')) {
+            // With an InnoDB deadlock we can retry
+            fdebug($err); // OK
+            $retry = true;
+        }
+        else {
+            if ($log_error || jrCore_is_developer_mode()) {
+                $_er = array(
+                    '_post'    => $_post,
+                    '_queries' => $_queries
+                );
+                jrCore_logger('CRI', $err, $_er);
+                fdebug($_er); // OK
+            }
+        }
+        // Are we retrying this query?
+        if ($retry) {
+            $err = false;
+            $res = mysqli_multi_query($con, $req) or $err = 'Query Error: ' . mysqli_error($con);
+            if ($err) {
+                jrCore_db_close();
+                if ($log_error || jrCore_is_developer_mode()) {
+                    $_er = array(
+                        '_post'    => $_post,
+                        '_queries' => $_queries
+                    );
+                    jrCore_logger('CRI', $err, $_er);
+                    fdebug($_er); // OK
+                }
+            }
+        }
+        if ($exit_on_error) {
+            jrCore_notice('Error', $err, false);
+        }
         jrCore_db_close();
         return false;
     }
     if ($res) {
         $_out = array();
-        $i = -1;
-        while (mysqli_next_result($con)) {
+        $i    = -1;
+        do {
             if ($result = mysqli_store_result($con)) {
                 $i++;
                 while ($row = mysqli_fetch_assoc($result)) {
                     $_out[$i][] = $row;
                 }
             }
-        }
+        } while (mysqli_more_results($con) && mysqli_next_result($con));
         return $_out;
     }
     return false;
@@ -534,9 +654,10 @@ function jrCore_db_multi_select($_queries)
  *        can seriously speed up the results.  Note that an int can be provided
  *        as well, and that will be used for the total.
  * @param string $only_val Only return this value from result set
+ * @param bool $cookie_rows set to FALSE to always use $rows_per_page value
  * @return array returns array of data
  */
-function jrCore_db_paged_query($query, $page_num, $rows_per_page, $_ret = 'NUMERIC', $c_query = null, $only_val = null)
+function jrCore_db_paged_query($query, $page_num, $rows_per_page, $_ret = 'NUMERIC', $c_query = null, $only_val = null, $cookie_rows = true)
 {
     // LIMIT should not be included in query
     if (isset($query) && strstr($query, 'LIMIT')) {
@@ -546,7 +667,7 @@ function jrCore_db_paged_query($query, $page_num, $rows_per_page, $_ret = 'NUMER
         $c_query = $query;
     }
     // Get total number of rows
-    if (isset($c_query) && jrCore_checktype($c_query, 'number_nn')) {
+    if (isset($c_query) && jrCore_checktype($c_query, 'number_nz')) {
         $total = intval($c_query);
     }
     else {
@@ -557,7 +678,7 @@ function jrCore_db_paged_query($query, $page_num, $rows_per_page, $_ret = 'NUMER
     }
 
     $pagebreak = (int) $rows_per_page;
-    if (isset($_COOKIE['jrcore_pager_rows']) && jrCore_checktype($_COOKIE['jrcore_pager_rows'], 'number_nz')) {
+    if ($cookie_rows && isset($_COOKIE['jrcore_pager_rows']) && jrCore_checktype($_COOKIE['jrcore_pager_rows'], 'number_nz')) {
         $pagebreak = (int) $_COOKIE['jrcore_pager_rows'];
     }
 
@@ -640,7 +761,7 @@ function jrCore_db_get_table_indexes($module, $table, $con = null)
  * @param mysqli $con MySQL DB Connection to use
  * @return bool Returns true/false on success/fail
  */
-function jrCore_db_verify_table($module, $table, $_schema, $engine = 'MyISAM', $con = null)
+function jrCore_db_verify_table($module, $table, $_schema, $engine = 'InnoDB', $con = null)
 {
     global $_post;
     if (!$table || strlen($table) === 0) {
@@ -655,7 +776,18 @@ function jrCore_db_verify_table($module, $table, $_schema, $engine = 'MyISAM', $
     }
 
     // Schema event
-    $_schema = jrCore_trigger_event('jrCore', 'db_verify_table', $_schema, null, false, false);
+    $_args   = array(
+        'module'  => $module,
+        'table'   => $table,
+        '_schema' => $_schema,
+        'engine'  => $engine,
+        'con'     => $con
+    );
+    $_schema = jrCore_trigger_event('jrCore', 'db_verify_table', $_schema, $_args, false, false);
+    if (!$_schema || !is_array($_schema) || count($_schema) === 0) {
+        // Handled by a listener
+        return true;
+    }
 
     // get our info about this table (if it exists)
     $tbl = jrCore_db_table_name($module, $table);
@@ -663,7 +795,8 @@ function jrCore_db_verify_table($module, $table, $_schema, $engine = 'MyISAM', $
     $_rt = jrCore_db_query($req, 'Field', false, null, false, $con, false);
     if (!$_rt || !is_array($_rt)) {
         // Create
-        jrCore_db_query("CREATE TABLE {$tbl} (" . implode(', ', $_schema) . ') ENGINE=' . $engine . ' DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci', null, false, null, false, $con);
+        $crq = "CREATE TABLE IF NOT EXISTS {$tbl} (" . implode(', ', $_schema) . ') ENGINE=' . $engine . ' DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci';
+        jrCore_db_query($crq, null, false, null, false, $con);
         // Did it created?
         if (jrCore_db_table_exists($module, $table)) {
             if ($table != 'log') {
@@ -671,14 +804,8 @@ function jrCore_db_verify_table($module, $table, $_schema, $engine = 'MyISAM', $
             }
             return true;
         }
+        jrCore_logger('CRI', "jrCore_db_verify_table() error creating missing table: {$tbl}", array('query' => $crq));
         return false;
-    }
-    else {
-        // Are we changing Engine types?
-        if (isset($_post['repair_modules']) && $_post['repair_modules'] == 'on') {
-            // We are in an integrity check with REPAIR MODULES checked
-            jrCore_db_change_table_engine($module, $table, $engine);
-        }
     }
 
     // It appears the table already exists.  Now we want to scan the incoming creation
@@ -689,7 +816,31 @@ function jrCore_db_verify_table($module, $table, $_schema, $engine = 'MyISAM', $
 
         // TABLE start/end and PRIMARY KEY entries - skip
         if (strstr($line, 'PRIMARY KEY') || strlen($line) === 0) {
+
+            // Are we adding a NEW primary key to an existing table?
+            // module_id MEDIUMINT(7) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
+            if (strlen($line) > 0 && !isset($_in['PRIMARY'])) {
+                // We do not have a primary key in this table - get existing
+                // columns to ensure we don't add a new key that exists
+                if ($_xcols = jrCore_db_table_columns($module, $table)) {
+                    if (stripos($line, 'PRIMARY') !== 0) {
+                        $pk_name = jrCore_string_field($line, 1);
+                        if (!isset($_xcols[$pk_name])) {
+                            $req = "ALTER TABLE {$tbl} ADD {$line} FIRST";
+                            jrCore_db_query($req, false, false, null, false, $con);
+                            $_nw = jrCore_db_get_table_indexes($module, $table, $con);
+                            if (isset($_nw['PRIMARY'])) {
+                                jrCore_logger('INF', "jrCore_db_verify_table() created missing primary key in table: {$tbl}");
+                            }
+                            else {
+                                jrCore_logger('CRI', "jrCore_db_verify_table() unable to create missing primary key in table: {$tbl}");
+                            }
+                        }
+                    }
+                }
+            }
             continue;
+
         }
 
         // INDEX
@@ -702,7 +853,7 @@ function jrCore_db_verify_table($module, $table, $_schema, $engine = 'MyISAM', $
             // Make sure it is built
             if (!isset($_in[$idx_name])) {
                 $idx_args = trim(str_ireplace('INDEX ' . $idx_ikey, '', $line));
-                $req = "ALTER TABLE {$tbl} ADD INDEX `{$idx_name}` {$idx_args}";
+                $req      = "ALTER TABLE {$tbl} ADD INDEX `{$idx_name}` {$idx_args}";
                 jrCore_db_query($req, null, false, null, false, $con);
                 // now let's see if we were successful in adding our INDEX or NOT
                 $req = "SHOW INDEX FROM {$tbl}";
@@ -724,16 +875,16 @@ function jrCore_db_verify_table($module, $table, $_schema, $engine = 'MyISAM', $
         elseif (stripos($line, 'UNIQUE') === 0) {
             $idx_ikey = jrCore_string_field($line, 2);
             $idx_name = trim(str_replace('`', '', $idx_ikey));
-            $idx_flds = str_replace(array(' ',')','('),'',substr($line, strpos($line, '(')));
+            $idx_flds = str_replace(array(' ', ')', '('), '', substr($line, strpos($line, '(')));
             if (!isset($_in[$idx_name])) {
                 // We are creating a NEW index that did not exist before
                 $idx_args = trim(str_ireplace('UNIQUE ' . $idx_ikey, '', $line));
-                $req = "ALTER TABLE {$tbl} ADD UNIQUE INDEX `{$idx_name}` {$idx_args}";
+                $req      = "ALTER TABLE {$tbl} ADD UNIQUE INDEX `{$idx_name}` {$idx_args}";
                 jrCore_db_query($req, null, false, null, false, $con);
                 // now let's see if we were successful in adding our INDEX or NOT
                 $req = "SHOW INDEX FROM {$tbl}";
                 $_tp = jrCore_db_query($req, 'Key_name', false, null, false, $con);
-                if (is_array($_tp[$idx_name])) {
+                if ($_tp && is_array($_tp) && isset($_tp[$idx_name]) && is_array($_tp[$idx_name])) {
                     jrCore_logger('INF', "jrCore_db_verify_table() created missing table unique index: {$idx_name} in table: {$tbl}");
                 }
                 else {
@@ -770,49 +921,44 @@ function jrCore_db_verify_table($module, $table, $_schema, $engine = 'MyISAM', $
         // FULLTEXT template_unique (template_module, template_name)
         // FULLTEXT band_name (band_name(15))
         elseif (stripos($line, 'FULLTEXT') === 0) {
-            if ($engine != 'MyISAM') {
-                jrCore_logger('CRI', "jrCore_db_verify_table() fulltext index on {$tbl} requires MyISAM table type!");
-            }
-            else {
-                $idx_ikey = jrCore_string_field($line, 2);
-                $idx_name = trim(str_replace('`', '', $idx_ikey));
-                $idx_flds = str_replace(array(' ', ')', '('), '', substr($line, strpos($line, '(')));
-                if (!isset($_in[$idx_name])) {
-                    // We are creating a NEW index that did not exist before
-                    $idx_args = trim(str_ireplace('FULLTEXT ' . $idx_ikey, '', $line));
-                    $req      = "ALTER TABLE {$tbl} ADD FULLTEXT INDEX `{$idx_name}` {$idx_args}";
-                    jrCore_db_query($req, null, false, null, false, $con);
-                    // now let's see if we were successful in adding our INDEX or NOT
-                    $req = "SHOW INDEX FROM {$tbl}";
-                    $_tp = jrCore_db_query($req, 'Key_name', false, null, false, $con);
-                    if (is_array($_tp[$idx_name])) {
-                        jrCore_logger('INF', "jrCore_db_verify_table() created missing table fulltext index: {$idx_name} in table: {$tbl}");
-                    }
-                    else {
-                        jrCore_logger('CRI', "jrCore_db_verify_table() unable to create missing table fulltext index: {$idx_name} in table: {$tbl}");
-                    }
+            $idx_ikey = jrCore_string_field($line, 2);
+            $idx_name = trim(str_replace('`', '', $idx_ikey));
+            $idx_flds = str_replace(array(' ', ')', '('), '', substr($line, strpos($line, '(')));
+            if (!isset($_in[$idx_name])) {
+                // We are creating a NEW index that did not exist before
+                $idx_args = trim(str_ireplace('FULLTEXT ' . $idx_ikey, '', $line));
+                $req      = "ALTER TABLE {$tbl} ADD FULLTEXT INDEX `{$idx_name}` {$idx_args}";
+                jrCore_db_query($req, null, false, null, false, $con);
+                // now let's see if we were successful in adding our INDEX or NOT
+                $req = "SHOW INDEX FROM {$tbl}";
+                $_tp = jrCore_db_query($req, 'Key_name', false, null, false, $con);
+                if (is_array($_tp[$idx_name])) {
+                    jrCore_logger('INF', "jrCore_db_verify_table() created missing table fulltext index: {$idx_name} in table: {$tbl}");
                 }
-                elseif ($_in[$idx_name] != $idx_flds && '`' . str_replace(',', '`,`', $_in[$idx_name]) . '`' != $idx_flds && strpos($idx_flds, ',')) {
-                    // Our index fields in a compound UNIQUE index have changed
-                    $idx_args = trim(str_ireplace('FULLTEXT ' . $idx_ikey, '', $line));
+                else {
+                    jrCore_logger('CRI', "jrCore_db_verify_table() unable to create missing table fulltext index: {$idx_name} in table: {$tbl}");
+                }
+            }
+            elseif ($_in[$idx_name] != $idx_flds && '`' . str_replace(',', '`,`', $_in[$idx_name]) . '`' != $idx_flds && strpos($idx_flds, ',')) {
+                // Our index fields in a compound UNIQUE index have changed
+                $idx_args = trim(str_ireplace('FULLTEXT ' . $idx_ikey, '', $line));
 
-                    // Drop old index (< MySQL 5.7 there is no ALTER TABLE RENAME|MODIFY INDEX)
-                    $req = "ALTER TABLE {$tbl} DROP INDEX `{$idx_name}`";
-                    jrCore_db_query($req, null, false, null, false, $con);
+                // Drop old index (< MySQL 5.7 there is no ALTER TABLE RENAME|MODIFY INDEX)
+                $req = "ALTER TABLE {$tbl} DROP INDEX `{$idx_name}`";
+                jrCore_db_query($req, null, false, null, false, $con);
 
-                    // Create new UNIQUE Index
-                    $req = "ALTER TABLE {$tbl} ADD FULLTEXT INDEX `{$idx_name}` {$idx_args}";
-                    jrCore_db_query($req, null, false, null, false, $con);
+                // Create new UNIQUE Index
+                $req = "ALTER TABLE {$tbl} ADD FULLTEXT INDEX `{$idx_name}` {$idx_args}";
+                jrCore_db_query($req, null, false, null, false, $con);
 
-                    // now let's see if we were successful in adding our INDEX or NOT
-                    $req = "SHOW INDEX FROM {$tbl}";
-                    $_tp = jrCore_db_query($req, 'Key_name', false, null, false, $con);
-                    if (is_array($_tp[$idx_name])) {
-                        jrCore_logger('INF', "jrCore_db_verify_table() updated table fulltext index: {$idx_name} in table: {$tbl}");
-                    }
-                    else {
-                        jrCore_logger('CRI', "jrCore_db_verify_table() unable to update table fulltext index: {$idx_name} in table: {$tbl}");
-                    }
+                // now let's see if we were successful in adding our INDEX or NOT
+                $req = "SHOW INDEX FROM {$tbl}";
+                $_tp = jrCore_db_query($req, 'Key_name', false, null, false, $con);
+                if (is_array($_tp[$idx_name])) {
+                    jrCore_logger('INF', "jrCore_db_verify_table() updated table fulltext index: {$idx_name} in table: {$tbl}");
+                }
+                else {
+                    jrCore_logger('CRI', "jrCore_db_verify_table() unable to update table fulltext index: {$idx_name} in table: {$tbl}");
                 }
             }
         }
@@ -828,6 +974,11 @@ function jrCore_db_verify_table($module, $table, $_schema, $engine = 'MyISAM', $
             $col_ikey = jrCore_string_field($line, 1);
             $col_name = trim(str_replace('`', '', $col_ikey));
             $col_args = trim(str_replace($col_name . ' ', '', str_replace('`', '', $line)));
+
+            // Are we a varchar that is going to be too long for a UTF8 InnoDB index?
+            if (stristr($col_args, 'varchar') && strpos($col_args, '256')) {
+                $col_args = str_replace('256', '255', $col_args);
+            }
 
             // Make sure it is built
             if (!isset($_rt[$col_name])) {
@@ -856,13 +1007,20 @@ function jrCore_db_verify_table($module, $table, $_schema, $engine = 'MyISAM', $
             }
         }
     }
+
+    // Are we changing Engine types?
+    if (isset($_post['repair_modules']) && $_post['repair_modules'] == 'on') {
+        // We are in an integrity check with REPAIR MODULES checked
+        jrCore_db_change_table_engine($module, $table, $engine);
+    }
+
     return true;
 }
 
 /**
  * Change the MySQL Engine for a Table
  * @param string $module Module Name
- * @param string $table  Table Name
+ * @param string $table Table Name
  * @param string $engine Engine = MyISAM|InnoDB
  * @param bool $truncate set to TRUE to truncate the table first (faster) but be careful!
  * @return bool
@@ -870,6 +1028,7 @@ function jrCore_db_verify_table($module, $table, $_schema, $engine = 'MyISAM', $
 function jrCore_db_change_table_engine($module, $table, $engine, $truncate = false)
 {
     switch ($engine) {
+        case 'Aria':
         case 'MyISAM':
         case 'InnoDB':
             break;
@@ -891,8 +1050,28 @@ function jrCore_db_change_table_engine($module, $table, $engine, $truncate = fal
         // Alter
         $req = "ALTER TABLE {$tbl} ENGINE = {$engine}";
         jrCore_db_query($req);
-        jrCore_logger('INF', "changed MySQL engine type to {$engine} for table: {$tbl}");
+        jrCore_logger('INF', "changed engine type to {$engine} for table: {$tbl}");
 
     }
     return true;
+}
+
+/**
+ * Delete a column from a MySQL table
+ * @param string $module Module Name
+ * @param string $table Table Name
+ * @param string $column Column Name
+ * @return bool
+ */
+function jrCore_db_delete_table_column($module, $table, $column)
+{
+    if ($_ex = jrCore_db_table_columns($module, $table)) {
+        if (isset($_ex[$column])) {
+            $tbl = jrCore_db_table_name($module, $table);
+            $req = "ALTER TABLE {$tbl} DROP COLUMN `{$column}`";
+            return jrCore_db_query($req);
+        }
+        return true;
+    }
+    return false;
 }

@@ -1,5 +1,8 @@
 User Play Control module changelog
 
+Version 1.0.3:
+ - Bug Fix: Play Control data not being removed when Developer Tools "Reset System" tool is run
+
 Version 1.0.2:
  - Change: Name in ACP now reads "User Play Control" to match marketplace
 

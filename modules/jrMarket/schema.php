@@ -2,7 +2,7 @@
 /**
  * Jamroom Marketplace module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -58,7 +58,7 @@ function jrMarket_db_schema()
         "system_default CHAR(3) NOT NULL DEFAULT 'off'",
         "INDEX system_default (system_default)"
     );
-    jrCore_db_verify_table('jrMarket', 'system', $_tmp);
+    jrCore_db_verify_table('jrMarket', 'system', $_tmp, 'InnoDB');
 
     // Update Channels
     $_tmp = array(
@@ -70,7 +70,7 @@ function jrMarket_db_schema()
         "channel_code VARCHAR(16) NOT NULL DEFAULT ''",
         "INDEX channel_code (channel_code)"
     );
-    jrCore_db_verify_table('jrMarket', 'channel', $_tmp);
+    jrCore_db_verify_table('jrMarket', 'channel', $_tmp, 'InnoDB');
 
     // Install Results
     $_tmp = array(
@@ -78,7 +78,7 @@ function jrMarket_db_schema()
         "install_time INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "install_data TEXT NOT NULL"
     );
-    jrCore_db_verify_table('jrMarket', 'install', $_tmp);
+    jrCore_db_verify_table('jrMarket', 'install', $_tmp, 'InnoDB');
 
     // Convert global marketplace config to new release system
     if (isset($_conf['jrMarket_system_id']{0})) {

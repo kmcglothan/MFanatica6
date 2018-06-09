@@ -1,0 +1,93 @@
+/* @title Select */
+/* @help Format for the Select form field. */
+.form_select {
+    font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: #000000;
+    font-size: 15px;
+    width: 76.5%;
+    padding: 4px 3px 4px 3px;
+    margin: 2px 4px;
+    background-color: #FFFFFF;
+    border: 1px solid #CCCCCC;
+    border-radius: 2px;
+    vertical-align: middle;
+}
+
+/* @title Select Multiple */
+/* @help Format for the Select form field when multiple items can be selected. */
+.form_select_multiple {
+}
+
+.form_select_and_text_select {
+    font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    width: 33%;
+    margin-right: 12px;
+}
+
+.form_select_and_text_tag {
+    font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    text-transform: capitalize;
+    margin: 7px;
+}
+
+.form_select_and_text_text {
+    min-height: 18px;
+    width: 31.6%;
+}
+
+/* @title Select Jumper */
+/* @help Format for the Select Jumper field used in Page Headers */
+.form_select_item_jumper {
+    width: 300px;
+}
+
+/* @title Style Editor select */
+/* @help Used in the Style Editor for select fields */
+.style-select {
+    font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: #000000;
+    font-size: 12px;
+    padding: 2px 1px 1px 1px;
+    margin: 0;
+    background-color: #FFFFFF;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #7F7F7F;
+    border-radius: 3px;
+}
+
+.form_admin_search {
+    margin: 3px;
+    padding: 5px;
+    font-style: italic;
+    color: #AAAAAA;
+}
+
+.form_admin_search_hl {
+    font-style: normal;
+    color: #000000;
+}
+
+/* @title Select Focus */
+/* @help Class applied to a select field when the field is selected. */
+select:focus {
+    border-width: 1px;
+    border-style: solid;
+    border-color: #000000;
+    background-color: #EEEEEE;
+}
+
+/* @title Time Input */
+/* @help Class applied to the Time Select Field */
+.form_time {
+    margin-left: 12px;
+    width: 15.3%;
+    min-width: 95px;
+    vertical-align: middle;
+}
+
+optgroup {
+    font-style: normal;
+    text-transform: capitalize;
+    padding-left: 3px;
+}

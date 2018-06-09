@@ -27,13 +27,13 @@ function smarty_modifier_debug_print_var($var, $max = 10, $length = 40, $depth =
     $_replace = array("\n" => '\n', "\r" => '\r', "\t" => '\t');
     switch (gettype($var)) {
         case 'array' :
-            $results = '<span class="array">Array (' . count($var) . ')</span>';
+            $results = '<b>Array (' . count($var) . ')</b>';
             if ($depth == $max) {
                 break;
             }
             foreach ($var as $curr_key => $curr_val) {
-                $results .= '<br>' . str_repeat('&nbsp;', $depth * 2) . '<span class="key">' . strtr($curr_key, $_replace) .
-                            '</span> =&gt; ' .
+                $results .= '<br>' . str_repeat('&nbsp;', $depth * 2) . '<b>' . strtr($curr_key, $_replace) .
+                            '</b> =&gt; ' .
                             smarty_modifier_debug_print_var($curr_val, $max, $length, ++ $depth, $objects);
                 $depth --;
             }
@@ -41,7 +41,7 @@ function smarty_modifier_debug_print_var($var, $max = 10, $length = 40, $depth =
 
         case 'object' :
             $object_vars = get_object_vars($var);
-            $results = '<span class="object">' . get_class($var) . ' Object (' . count($object_vars) . ')</span>';
+            $results = '<b>' . get_class($var) . ' Object (' . count($object_vars) . ')</b>';
             if (in_array($var, $objects)) {
                 $results .= ' called recursive';
                 break;
@@ -51,8 +51,8 @@ function smarty_modifier_debug_print_var($var, $max = 10, $length = 40, $depth =
             }
             $objects[] = $var;
             foreach ($object_vars as $curr_key => $curr_val) {
-                $results .= '<br>' . str_repeat('&nbsp;', $depth * 2) . '<span class="key"> -&gt;' . strtr($curr_key, $_replace) .
-                            '</span> = ' . smarty_modifier_debug_print_var($curr_val, $max, $length, ++ $depth, $objects);
+                $results .= '<br>' . str_repeat('&nbsp;', $depth * 2) . '<b> -&gt;' . strtr($curr_key, $_replace) .
+                            '</b> = ' . smarty_modifier_debug_print_var($curr_val, $max, $length, ++ $depth, $objects);
                 $depth --;
             }
             break;
@@ -89,7 +89,7 @@ function smarty_modifier_debug_print_var($var, $max = 10, $length = 40, $depth =
                 }
             }
 
-            $results = '"<span class="value">'.htmlspecialchars($results, ENT_QUOTES, Smarty::$_CHARSET).'</span>"';
+            $results = htmlspecialchars('"' . $results . '"', ENT_QUOTES, Smarty::$_CHARSET);
             break;
 
         case 'unknown type' :

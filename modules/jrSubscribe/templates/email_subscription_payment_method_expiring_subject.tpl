@@ -1,0 +1,1 @@
+Your {$_conf.jrCore_system_name} payment source is going to expire

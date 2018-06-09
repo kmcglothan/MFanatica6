@@ -2,7 +2,7 @@
 /**
  * Jamroom System Core module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -103,19 +103,86 @@ function jrCore_delete_old_upload_directories($old_hours = 4)
 }
 
 /**
- * Get a previously saved Play Key
- * @param $key string
- * @return bool|mixed
+ * Cleanup old Minute Maintenance lock files
+ * @return bool
  */
-function jrCore_media_get_play_key($key)
+function jrCore_delete_old_maintenance_lock_files()
 {
-    $tbl = jrCore_db_table_name('jrCore', 'play_key');
-    $req = "SELECT key_time FROM {$tbl} WHERE key_code = '" . jrCore_db_escape($key) . "'";
-    $_rt = jrCore_db_query($req, 'SINGLE');
-    if ($_rt && is_array($_rt)) {
-        return $_rt;
+    $dir = jrCore_get_module_cache_dir('jrCore');
+    if ($_lk = glob("{$dir}/minute_maintenance*.lock", GLOB_NOSORT)) {
+        $old = (time() - 180);  // 3 minutes or older
+        foreach ($_lk as $file) {
+            if (filemtime($file) < $old) {
+                unlink($file);  // OK
+            }
+        }
     }
-    return false;
+    if ($_lk = glob("{$dir}/hourly_maintenance*.lock", GLOB_NOSORT)) {
+        $old = (time() - 10800); // 3 hours or older
+        foreach ($_lk as $file) {
+            if (filemtime($file) < $old) {
+                unlink($file);  // OK
+            }
+        }
+    }
+    if ($_lk = glob("{$dir}/daily_maintenance*.lock", GLOB_NOSORT)) {
+        $old = (time() - (3 * 86400));  // 3 days or older
+        foreach ($_lk as $file) {
+            if (filemtime($file) < $old) {
+                unlink($file);  // OK
+            }
+        }
+    }
+    return true;
+}
+
+/**
+ * Delete debug and error logs not written to in 3 days
+ */
+function jrCore_delete_old_error_and_debug_logs()
+{
+    $old = (time() - 259200);
+    foreach (array('error_log', 'debug_log') as $log) {
+        $log_file = APP_DIR . "/data/logs/{$log}";
+        if (is_file($log_file) && filemtime($log_file) < $old) {
+            unlink($log_file);  // OK
+        }
+    }
+    return true;
+}
+
+/**
+ * Delete debug and error logs not written to in 3 days
+ */
+function jrCore_delete_old_test_templates()
+{
+    $dir = jrCore_get_module_cache_dir('jrCore');
+    if ($_tpl = glob("{$dir}/test_template_*.tpl", GLOB_NOSORT)) {
+        $old = (time() - 30);  // 30 seconds
+        foreach ($_tpl as $file) {
+            if (filemtime($file) < $old) {
+                unlink($file);  // OK
+            }
+        }
+    }
+    return true;
+}
+
+/**
+ * Delete old datastore export CSV files
+ */
+function jrCore_delete_old_datastore_csv_files()
+{
+    $dir = jrCore_get_module_cache_dir('jrCore');
+    $_ex = glob("{$dir}/*_datastore_*.csv", GLOB_NOSORT);
+    if ($_ex && is_array($_ex)) {
+        $old = (time() - 7200);  // 2 hours
+        foreach ($_ex as $file) {
+            if (filemtime($file) < $old) {
+                unlink($old); // OK
+            }
+        }
+    }
 }
 
 /**
@@ -142,7 +209,52 @@ function jrCore_media_is_allowed_referrer_domain()
             }
         }
     }
+    // Let other modules check for allowed
+    $_data = array(
+        'referrer' => (isset($_SERVER['HTTP_REFERER'])) ? $_SERVER['HTTP_REFERER'] : false
+    );
+    $_data = jrCore_trigger_event('jrCore', 'media_allowed_referrer', $_data);
+    if (isset($_data['allowed_domain']) && $_data['allowed_domain'] === true) {
+        return true;
+    }
     return false;
+}
+
+//---------------------------
+// PLAY KEYS
+//---------------------------
+
+/**
+ * Get the active form session plugin
+ * @note: form_sessions follow the active user session plugin
+ * @return string
+ */
+function jrCore_get_active_play_key_system()
+{
+    global $_conf;
+    if (isset($_conf['jrUser_active_session_system']{1})) {
+        // Make sure it is valid...
+        $func = "_{$_conf['jrUser_active_session_system']}_media_set_play_key";
+        if (function_exists($func)) {
+            return $_conf['jrUser_active_session_system'];
+        }
+    }
+    return 'jrCore_mysql';
+}
+
+/**
+ * Get a previously saved Play Key
+ * @param $key string
+ * @return bool|mixed
+ */
+function jrCore_media_get_play_key($key)
+{
+    $temp = jrCore_get_active_play_key_system();
+    $func = "_{$temp}_media_get_play_key";
+    if (function_exists($func)) {
+        return $func($key);
+    }
+    return _jrCore_mysql_media_get_play_key($key);
 }
 
 /**
@@ -152,34 +264,112 @@ function jrCore_media_is_allowed_referrer_domain()
  */
 function jrCore_media_set_play_key($page)
 {
-    global $_post, $_conf;
+    global $_conf, $_post;
     if (strpos($page, '[jrCore_media_play_key]')) {
-
-        // See if we are being excluded on this view
-        $_tmp = jrCore_get_registered_module_features('jrCore', 'skip_play_keys');
-        if ($_tmp && is_array($_tmp)) {
-            foreach ($_tmp as $mod => $_opts) {
-                if (isset($_post['option']) && isset($_opts["{$_post['option']}"]) && ($mod == $_post['module'] || $_opts["{$_post['option']}"] == 'magic_view')) {
-                    // We are excluded...
-                    return $page;
-                }
-            }
-        }
         if (strpos(' ' . $_conf['jrCore_allowed_domains'], 'ALLOW_ALL_DOMAINS')) {
             // We are allowing ALL DOMAINS - no need to enforce play keys
             $page = str_replace('[jrCore_media_play_key]', '1', $page);
         }
         else {
-            $tbl = jrCore_db_table_name('jrCore', 'play_key');
-            $key = jrCore_db_escape(jrCore_create_unique_string(12));
-            $req = "INSERT INTO {$tbl} (key_time, key_code) VALUES (UNIX_TIMESTAMP(), '{$key}') ON DUPLICATE KEY UPDATE key_time = UNIX_TIMESTAMP()";
-            if (jrCore_db_query($req, 'INSERT_ID') > 0) {
-                $page = str_replace('[jrCore_media_play_key]', $key, $page);
+            // See if we are being excluded on this view
+            $_tmp = jrCore_get_registered_module_features('jrCore', 'skip_play_keys');
+            if ($_tmp && is_array($_tmp)) {
+                foreach ($_tmp as $mod => $_opts) {
+                    if (isset($_post['option']) && isset($_opts["{$_post['option']}"]) && ($mod == $_post['module'] || $_opts["{$_post['option']}"] == 'magic_view')) {
+                        // We are excluded...
+                        return $page;
+                    }
+                }
             }
+            $pkey = jrCore_create_unique_string(8);
+            $temp = jrCore_get_active_play_key_system();
+            $func = "_{$temp}_media_set_play_key";
+            if (function_exists($func)) {
+                $kexp = 8;
+                if (isset($_conf['jrCore_play_key_expire_hours']) && jrCore_checktype($_conf['jrCore_play_key_expire_hours'], 'number_nz')) {
+                    $kexp = (int) $_conf['jrCore_play_key_expire_hours'];
+                }
+                $func($pkey, $kexp);
+            }
+            else {
+                _jrCore_mysql_media_set_play_key($pkey);
+            }
+            $page = str_replace('[jrCore_media_play_key]', $pkey, $page);
         }
     }
     return $page;
 }
+
+/**
+ * Run play key maintenance
+ * @return bool|mixed
+ */
+function jrCore_media_play_key_maintenance()
+{
+    global $_conf;
+    $kexp = 8;
+    if (isset($_conf['jrCore_play_key_expire_hours']) && jrCore_checktype($_conf['jrCore_play_key_expire_hours'], 'number_nz')) {
+        $kexp = (int) $_conf['jrCore_play_key_expire_hours'];
+    }
+    $temp = jrCore_get_active_play_key_system();
+    $func = "_{$temp}_media_play_key_maintenance";
+    if (function_exists($func)) {
+        return $func($kexp);
+    }
+    return _jrCore_mysql_media_play_key_maintenance($kexp);
+}
+
+/**
+ * Get a previously saved Play Key
+ * @param string $key
+ * @return bool|mixed
+ */
+function _jrCore_mysql_media_get_play_key($key)
+{
+    $tbl = jrCore_db_table_name('jrCore', 'play_key');
+    $req = "SELECT key_time FROM {$tbl} WHERE key_code = '" . jrCore_db_escape($key) . "'";
+    $_rt = jrCore_db_query($req, 'SINGLE');
+    if ($_rt && is_array($_rt)) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Add a session based media key
+ * @param string $key
+ * @return bool
+ */
+function _jrCore_mysql_media_set_play_key($key)
+{
+    $tbl = jrCore_db_table_name('jrCore', 'play_key');
+    $req = "INSERT INTO {$tbl} (key_time, key_code) VALUES (UNIX_TIMESTAMP(), '{$key}') ON DUPLICATE KEY UPDATE key_time = UNIX_TIMESTAMP()";
+    if (jrCore_db_query($req, 'INSERT_ID') > 0) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Cleanup play keys
+ * @param int $hours
+ * @return bool
+ */
+function _jrCore_mysql_media_play_key_maintenance($hours)
+{
+    // Delete old play keys
+    $hrs = (int) $hours;
+    $tbl = jrCore_db_table_name('jrCore', 'play_key');
+    $req = "SELECT key_id FROM {$tbl} WHERE key_time < (UNIX_TIMESTAMP() - ({$hrs} * 3600))";
+    $_rt = jrCore_db_query($req, 'key_id', false, 'key_id');
+    if ($_rt && is_array($_rt)) {
+        $req = "DELETE FROM {$tbl} WHERE key_id IN(" . implode(',', $_rt) . ')';
+        jrCore_db_query($req);
+    }
+    return true;
+}
+
+//---------------------------
 
 /**
  * Get list of registered Media players by type
@@ -189,7 +379,7 @@ function jrCore_media_set_play_key($page)
 function jrCore_get_registered_media_players($type)
 {
     $_tmp = jrCore_get_registered_module_features('jrCore', 'media_player');
-    if (!isset($_tmp) || !is_array($_tmp)) {
+    if (!$_tmp || !is_array($_tmp)) {
         return false;
     }
     $_out = array();
@@ -207,30 +397,21 @@ function jrCore_get_registered_media_players($type)
 }
 
 /**
- * Checks to be sure sure the FFmpeg install is working
- * @param $notice bool Set to false to prevent form notice being set if error
- * @return bool
+ * Get media player options registered by modules
+ * @param string $type
+ * @return array|bool
  */
-function jrCore_check_ffmpeg_install($notice = true)
+function jrCore_get_media_player_options($type = 'all')
 {
-    global $_conf;
-    // Our audio module requires FFmpeg - make sure it is executable
-    $ffmpeg = APP_DIR . "/modules/jrCore/tools/ffmpeg";
-    if (isset($_conf['jrCore_ffmpeg_binary'])) {
-        $ffmpeg = $_conf['jrCore_ffmpeg_binary'];
-    }
-    if (is_file($ffmpeg) && !is_executable($ffmpeg)) {
-        // Try to set permissions if we can...
-        @chmod($ffmpeg, 0755);
-    }
-    if (jrUser_is_master() && (!is_file($ffmpeg) || !is_executable($ffmpeg))) {
-        if ($notice) {
-            $show = jrCore_entity_string(str_replace(APP_DIR . '/', '', $ffmpeg));
-            jrCore_set_form_notice('error', 'The ffmpeg binary: ' . $show . ' is not executable!  Set permissions on the file to 755 or 555.');
+    if ($_pl = jrCore_get_registered_media_players($type)) {
+        $_tm = array();
+        foreach ($_pl as $n => $p) {
+            $player       = trim(str_replace($p, '', $n), '_');
+            $_tm[$player] = ucwords(str_replace('_', ' ', $player));
         }
-        return false;
+        return $_tm;
     }
-    return $ffmpeg;
+    return false;
 }
 
 /**
@@ -241,7 +422,7 @@ function jrCore_check_ffmpeg_install($notice = true)
  */
 function jrCore_get_media_file_metadata($file, $field_prefix)
 {
-    $ffmpeg = jrCore_check_ffmpeg_install();
+    $ffmpeg = jrCore_get_tool_path('ffmpeg', 'jrCore');
     if (!is_file($ffmpeg)) {
         jrCore_logger('CRI', 'required ffmpeg binary not found in modules/jrCore/tools');
         return false;
@@ -311,9 +492,9 @@ function jrCore_get_media_file_metadata($file, $field_prefix)
 
     $_out = array();
     $meta = false;
-    if (isset($tmp) && is_file($tmp)) {
+    if ($tmp && is_file($tmp)) {
         $_tmp = file($tmp);
-        if (isset($_tmp) && is_array($_tmp)) {
+        if ($_tmp && is_array($_tmp)) {
             foreach ($_tmp as $line) {
                 $line = trim($line);
                 if (strpos($line, 'Duration:') === 0) {
@@ -343,7 +524,7 @@ function jrCore_get_media_file_metadata($file, $field_prefix)
                         }
                         $prv = $prt;
                     }
-                    if (isset($bitrate) && jrCore_checktype($bitrate, 'number_nz')) {
+                    if (jrCore_checktype($bitrate, 'number_nz')) {
                         $_out["{$field_prefix}_bitrate"] = (int) $bitrate;
                     }
                 }
@@ -363,7 +544,7 @@ function jrCore_get_media_file_metadata($file, $field_prefix)
                         }
                         $prv = $prt;
                     }
-                    if (isset($bitrate) && jrCore_checktype($bitrate, 'number_nz')) {
+                    if (jrCore_checktype($bitrate, 'number_nz')) {
                         $_out["{$field_prefix}_bitrate"] = (int) $bitrate;
                     }
                     // Get smprate
@@ -376,7 +557,7 @@ function jrCore_get_media_file_metadata($file, $field_prefix)
                         }
                         $prv = $prt;
                     }
-                    if (isset($smprate) && jrCore_checktype($smprate, 'number_nz')) {
+                    if (jrCore_checktype($smprate, 'number_nz')) {
                         $_out["{$field_prefix}_smprate"] = (int) $smprate;
                     }
                 }
@@ -439,26 +620,26 @@ function jrCore_get_media_file_metadata($file, $field_prefix)
             }
         }
     }
-    @unlink($tmp);
+    @unlink($tmp); // OK
     return $_out;
 }
 
 /**
  * Get full path to a media file
  * @param $module string Module Name to save file for
- * @param $file_name string Unique File Name field
+ * @param $field_name string Unique File Name field
  * @param $_item array Array of item information from jrCore_db_get_item()
  * @return string
  */
-function jrCore_get_media_file_path($module, $file_name, $_item)
+function jrCore_get_media_file_path($module, $field_name, $_item)
 {
     // We don't need a PLUGIN for this function - it works
     // because $dir will change depending on the media plugin!
-    if (!isset($_item["{$file_name}_size"])) {
+    if (!isset($_item["{$field_name}_size"])) {
         return false;
     }
     $dir = jrCore_get_media_directory($_item['_profile_id']);
-    return "{$dir}/{$module}_{$_item['_item_id']}_{$file_name}." . $_item["{$file_name}_extension"];
+    return "{$dir}/{$module}_{$_item['_item_id']}_{$field_name}." . $_item["{$field_name}_extension"];
 }
 
 /**
@@ -492,7 +673,7 @@ function jrCore_get_media_file_url($module, $file_name, $_item)
  */
 function jrCore_delete_item_media_file($module, $file_name, $profile_id, $unique_id, $item_check = true)
 {
-    if (!isset($unique_id) || !jrCore_checktype($unique_id, 'number_nz')) {
+    if (!jrCore_checktype($unique_id, 'number_nz')) {
         return false;
     }
     $type = jrCore_get_active_media_system();
@@ -622,7 +803,7 @@ function jrCore_is_uploaded_media_file($module, $file_name, $profile_id)
     if (isset($_post['upload_token']{0})) {
         $dir = jrCore_get_upload_temp_directory($_post['upload_token']);
         if (is_dir($dir)) {
-            $_tmp = glob("{$dir}/*_{$file_name}.tmp");
+            $_tmp = glob("{$dir}/*_{$file_name}.tmp", GLOB_NOSORT);
             if ($_tmp && is_array($_tmp) && count($_tmp) > 0) {
                 return true;
             }
@@ -752,7 +933,7 @@ function jrCore_save_media_file($module, $file_name, $profile_id, $unique_id, $f
     }
 
     // Not uploaded...
-    if (count($_up) === 0) {
+    if (!is_array($_up) || count($_up) === 0) {
         return false;
     }
 
@@ -780,7 +961,7 @@ function jrCore_save_media_file($module, $file_name, $profile_id, $unique_id, $f
         // entry with the info from the file
         $pdir      = jrCore_get_media_directory($profile_id);
         $save_name = $_file['name'];
-        if (!strpos($save_name, ".{$ext}")) {
+        if (!stripos($save_name, ".{$ext}")) {
             $save_name = "{$save_name}.{$ext}";
         }
         $_data = array(
@@ -798,7 +979,9 @@ function jrCore_save_media_file($module, $file_name, $profile_id, $unique_id, $f
             'file_name'  => $fname,
             'profile_id' => $profile_id,
             'unique_id'  => $unique_id,
-            'saved_file' => "{$pdir}/{$nam}"
+            'saved_file' => "{$pdir}/{$nam}",
+            '_file'      => $_file,
+            '_existing'  => $_existing
         );
 
         // Trigger our save media file event
@@ -820,7 +1003,7 @@ function jrCore_get_uploaded_meter_files($upload_token)
     $dir = jrCore_get_upload_temp_directory($upload_token);
     if (is_dir($dir)) {
         // We've got uploaded files via the progress meter
-        $_tmp = glob("{$dir}/*");
+        $_tmp = glob("{$dir}/*", GLOB_NOSORT);
         // [0] => data/cache/jrCore/12046f3177d5079e5528aa7a34175c73/1_audio_file       <- contains actual file
         // [1] => data/cache/jrCore/12046f3177d5079e5528aa7a34175c73/1_audio_file.tmp   <- contains file name
         if ($_tmp && is_array($_tmp)) {
@@ -883,6 +1066,27 @@ function jrCore_get_active_media_system()
 }
 
 /**
+ * Get the active media function
+ * @param string $type active media system prefix
+ * @param string $func function to get
+ * @param array $_args function arguments
+ * @return mixed
+ */
+function jrCore_get_active_media_function($type, $func, $_args = null)
+{
+    $temp = "_{$type}_{$func}";
+    if (!function_exists($temp)) {
+        $temp = "_jrCore_local_{$func}";
+    }
+    $_tmp = array('type' => $type, 'func' => $func, 'active_function' => $temp);
+    $_tmp = jrCore_trigger_event('jrCore', 'get_media_function', $_tmp, $_args);
+    if (isset($_tmp['active_function'])) {
+        return $_tmp['active_function'];
+    }
+    return $temp;
+}
+
+/**
  * Get the media directory for a Profile ID
  * @param $profile_id int Profile ID to get media directory for
  * @param $force_local bool set to TRUE to force local file system
@@ -890,8 +1094,11 @@ function jrCore_get_active_media_system()
  */
 function jrCore_get_media_directory($profile_id, $force_local = false)
 {
+    if ($profile_id !== 'system' && !jrCore_checktype($profile_id, 'number_nn')) {
+        return false;
+    }
     $type = ($force_local) ? 'jrCore_local' : jrCore_get_active_media_system();
-    $func = "_{$type}_media_get_directory";
+    $func = jrCore_get_active_media_function($type, 'media_get_directory', func_get_args());
     if (function_exists($func)) {
         return $func($profile_id);
     }
@@ -908,7 +1115,7 @@ function jrCore_get_media_directory($profile_id, $force_local = false)
 function jrCore_get_media_url($profile_id, $force_local = false)
 {
     $type = ($force_local) ? 'jrCore_local' : jrCore_get_active_media_system();
-    $func = "_{$type}_media_get_url";
+    $func = jrCore_get_active_media_function($type, 'media_get_url', func_get_args());
     if (function_exists($func)) {
         return $func($profile_id);
     }
@@ -925,7 +1132,7 @@ function jrCore_get_media_url($profile_id, $force_local = false)
 function jrCore_create_media_directory($profile_id, $force_local = false)
 {
     $type = ($force_local) ? 'jrCore_local' : jrCore_get_active_media_system();
-    $func = "_{$type}_media_create_directory";
+    $func = jrCore_get_active_media_function($type, 'media_create_directory', func_get_args());
     if (function_exists($func)) {
         return $func($profile_id);
     }
@@ -942,7 +1149,7 @@ function jrCore_create_media_directory($profile_id, $force_local = false)
 function jrCore_delete_media_directory($profile_id, $force_local = false)
 {
     $type = ($force_local) ? 'jrCore_local' : jrCore_get_active_media_system();
-    $func = "_{$type}_media_delete_directory";
+    $func = jrCore_get_active_media_function($type, 'media_delete_directory', func_get_args());
     if (function_exists($func)) {
         return $func($profile_id);
     }
@@ -962,7 +1169,7 @@ function jrCore_delete_media_directory($profile_id, $force_local = false)
 function jrCore_delete_old_media_items($profile_id, $module, $unique_id, $field, $_exclude = null)
 {
     $type = jrCore_get_active_media_system();
-    $func = "_{$type}_media_delete_old_items";
+    $func = jrCore_get_active_media_function($type, 'media_delete_old_items', func_get_args());
     if (function_exists($func)) {
         return $func($profile_id, $module, $unique_id, $field, $_exclude);
     }
@@ -978,7 +1185,7 @@ function jrCore_delete_old_media_items($profile_id, $module, $unique_id, $field,
 function jrCore_get_media_directory_size($profile_id)
 {
     $type = jrCore_get_active_media_system();
-    $func = "_{$type}_media_get_directory_size";
+    $func = jrCore_get_active_media_function($type, 'media_get_directory_size', func_get_args());
     if (function_exists($func)) {
         return $func($profile_id);
     }
@@ -995,7 +1202,7 @@ function jrCore_get_media_directory_size($profile_id)
 function jrCore_get_media_files($profile_id, $pattern = null)
 {
     $type = jrCore_get_active_media_system();
-    $func = "_{$type}_media_get_files";
+    $func = jrCore_get_active_media_function($type, 'media_get_files', func_get_args());
     if (function_exists($func)) {
         return $func($profile_id, $pattern);
     }
@@ -1003,9 +1210,8 @@ function jrCore_get_media_files($profile_id, $pattern = null)
     return false;
 }
 
-
 /**
- * The jrCore_read_media_file function is a wrapper function to read a file from the specified filesystem type
+ * Read a file from a profile directory
  * <code>
  * Php equivalent: file_get_contents()
  * </code>
@@ -1017,7 +1223,7 @@ function jrCore_get_media_files($profile_id, $pattern = null)
 function jrCore_read_media_file($profile_id, $file, $save_as = null)
 {
     $type = jrCore_get_active_media_system();
-    $func = "_{$type}_media_read";
+    $func = jrCore_get_active_media_function($type, 'media_read', func_get_args());
     if (function_exists($func)) {
         return $func($profile_id, $file, $save_as);
     }
@@ -1026,7 +1232,7 @@ function jrCore_read_media_file($profile_id, $file, $save_as = null)
 }
 
 /**
- * The jrCore_write_media_file function is a wrapper function to write a file to a profile dir
+ * Write a file to a profile directory
  * @param int $profile_id Profile ID
  * @param string $file File to write data to
  * @param string $data Data to write to file
@@ -1036,7 +1242,7 @@ function jrCore_read_media_file($profile_id, $file, $save_as = null)
 function jrCore_write_media_file($profile_id, $file, $data, $access = null)
 {
     $type = jrCore_get_active_media_system();
-    $func = "_{$type}_media_write";
+    $func = jrCore_get_active_media_function($type, 'media_write', func_get_args());
     if (function_exists($func)) {
         return $func($profile_id, $file, $data, $access);
     }
@@ -1045,7 +1251,7 @@ function jrCore_write_media_file($profile_id, $file, $data, $access = null)
 }
 
 /**
- * The jrCore_delete_media_file function is a wrapper function to delete a file of the specified file type.
+ * Delete a file from a profile directory
  * @param int $profile_id Profile ID
  * @param string $file File name to delete
  * @return bool
@@ -1053,7 +1259,7 @@ function jrCore_write_media_file($profile_id, $file, $data, $access = null)
 function jrCore_delete_media_file($profile_id, $file)
 {
     $type = jrCore_get_active_media_system();
-    $func = "_{$type}_media_delete";
+    $func = jrCore_get_active_media_function($type, 'media_delete', func_get_args());
     if (function_exists($func)) {
         return $func($profile_id, $file);
     }
@@ -1063,19 +1269,16 @@ function jrCore_delete_media_file($profile_id, $file)
 
 /**
  * wrapper function to check if a file of the specified file type exists.
- * <code>
- * PHP equivalent: is_file()
- * </code>
  * @param int $profile_id Profile ID
- * @param string $file File name to check
+ * @param string $file_name File name to check
  * @return bool
  */
-function jrCore_media_file_exists($profile_id, $file)
+function jrCore_media_file_exists($profile_id, $file_name)
 {
     $type = jrCore_get_active_media_system();
-    $func = "_{$type}_media_exists";
+    $func = jrCore_get_active_media_function($type, 'media_exists', func_get_args());
     if (function_exists($func)) {
-        return $func($profile_id, basename($file));
+        return $func($profile_id, basename($file_name));
     }
     jrCore_logger('CRI', "jrCore_media_file_exists: required function: {$func} does not exist!");
     return false;
@@ -1092,7 +1295,7 @@ function jrCore_media_file_exists($profile_id, $file)
 function jrCore_confirm_media_file_is_local($profile_id, $file, $local_save = null, $force = false)
 {
     $type = jrCore_get_active_media_system();
-    $func = "_{$type}_media_confirm_is_local";
+    $func = jrCore_get_active_media_function($type, 'media_confirm_is_local', func_get_args());
     if (function_exists($func)) {
         return $func($profile_id, $file, $local_save, $force);
     }
@@ -1110,7 +1313,7 @@ function jrCore_confirm_media_file_is_local($profile_id, $file, $local_save = nu
 function jrCore_media_file_stream($profile_id, $file, $send_name)
 {
     $type = jrCore_get_active_media_system();
-    $func = "_{$type}_media_stream";
+    $func = jrCore_get_active_media_function($type, 'media_stream', func_get_args());
     if (function_exists($func)) {
         jrCore_db_close();
         return $func($profile_id, $file, $send_name);
@@ -1129,7 +1332,7 @@ function jrCore_media_file_stream($profile_id, $file, $send_name)
 function jrCore_media_file_download($profile_id, $file, $send_name)
 {
     $type = jrCore_get_active_media_system();
-    $func = "_{$type}_media_download";
+    $func = jrCore_get_active_media_function($type, 'media_download', func_get_args());
     if (function_exists($func)) {
         jrCore_db_close();
         return $func($profile_id, $file, $send_name);
@@ -1139,19 +1342,18 @@ function jrCore_media_file_download($profile_id, $file, $send_name)
 }
 
 /**
- * The jrCore_copy_media_file function copies a media file
- *
- * @param string $profile_id Directory file is located in
- * @param string $source_file Source File
- * @param string $target_file Target File
+ * Copy an existing file to a media file in a profile directory
+ * @param int $target_profile_id target profile_id
+ * @param string $source_file_path Source File
+ * @param string $target_file_name Target File
  * @return bool
  */
-function jrCore_copy_media_file($profile_id, $source_file, $target_file)
+function jrCore_copy_media_file($target_profile_id, $source_file_path, $target_file_name)
 {
     $type = jrCore_get_active_media_system();
-    $func = "_{$type}_media_copy";
+    $func = jrCore_get_active_media_function($type, 'media_copy', func_get_args());
     if (function_exists($func)) {
-        return $func($profile_id, $source_file, $target_file);
+        return $func($target_profile_id, $source_file_path, $target_file_name);
     }
     jrCore_logger('CRI', "jrCore_copy_media_file: required function: {$func} does not exist!");
     return false;
@@ -1159,7 +1361,6 @@ function jrCore_copy_media_file($profile_id, $source_file, $target_file)
 
 /**
  * The jrCore_rename_media_file function is a media wrapper
- *
  * @param string $profile_id Directory file is located in
  * @param string $file File old (existing) name
  * @param string $new_name File new name
@@ -1169,29 +1370,11 @@ function jrCore_copy_media_file($profile_id, $source_file, $target_file)
 function jrCore_rename_media_file($profile_id, $file, $new_name)
 {
     $type = jrCore_get_active_media_system();
-    $func = "_{$type}_media_rename";
+    $func = jrCore_get_active_media_function($type, 'media_rename', func_get_args());
     if (function_exists($func)) {
         return $func($profile_id, $file, $new_name);
     }
     jrCore_logger('CRI', "jrCore_rename_media_file: required function: {$func} does not exist!");
-    return false;
-}
-
-/**
- * The jrMediaFileInfo function is a media wrapper
- *
- * @param string $profile_id Directory file is located in
- * @param string $file File to stat
- * @return bool
- */
-function jrCore_stat_media_file($profile_id, $file)
-{
-    $type = jrCore_get_active_media_system();
-    $func = "_{$type}_media_stat";
-    if (function_exists($func)) {
-        return $func($profile_id, $file);
-    }
-    jrCore_logger('CRI', "jrCore_stat_media_file: required function: {$func} does not exist!");
     return false;
 }
 
@@ -1202,15 +1385,17 @@ function jrCore_stat_media_file($profile_id, $file)
  * The _local_media_get_directory_group function will return the
  * directory "group" that a given profile_id belongs to.  This is
  * to overcome ext3 limitations on dirs in dirs.
- *
  * @param int $profile_id Profile ID
  * @return mixed Returns string on success, bool false on failure
  */
 function _jrCore_local_media_get_directory_group($profile_id)
 {
-    if (isset($profile_id) && jrCore_checktype($profile_id, 'number_nn')) {
+    if (jrCore_checktype($profile_id, 'number_nn')) {
         $sub = (int) ceil($profile_id / 1000);
         return $sub;
+    }
+    elseif ($profile_id === 'system') {
+        return '1';
     }
     return false;
 }
@@ -1222,11 +1407,16 @@ function _jrCore_local_media_get_directory_group($profile_id)
  */
 function _jrCore_local_media_get_directory($profile_id)
 {
-    global $_conf;
-    $group_dir = _jrCore_local_media_get_directory_group($profile_id);
+    if ($profile_id === 'system') {
+        $group_dir  = 1;
+        $profile_id = 0;
+    }
+    else {
+        $group_dir = _jrCore_local_media_get_directory_group($profile_id);
+    }
     $media_dir = APP_DIR . "/data/media/{$group_dir}/{$profile_id}";
     if (!is_dir($media_dir)) {
-        mkdir($media_dir, $_conf['jrCore_dir_perms'], true);
+        jrCore_create_directory($media_dir, true);
     }
     return $media_dir;
 }
@@ -1239,7 +1429,13 @@ function _jrCore_local_media_get_directory($profile_id)
 function _jrCore_local_media_get_url($profile_id)
 {
     global $_conf;
-    $group_dir = _jrCore_local_media_get_directory_group($profile_id);
+    if ($profile_id === 'system') {
+        $group_dir  = 1;
+        $profile_id = 0;
+    }
+    else {
+        $group_dir = _jrCore_local_media_get_directory_group($profile_id);
+    }
     return "{$_conf['jrCore_base_url']}/data/media/{$group_dir}/{$profile_id}";
 }
 
@@ -1255,7 +1451,7 @@ function _jrCore_local_media_create_directory($profile_id)
     $media_dir = _jrCore_local_media_get_directory($profile_id);
 
     if (!is_dir($media_dir)) {
-        if (!mkdir($media_dir, $_conf['jrCore_dir_perms'], true)) {
+        if (!jrCore_create_directory($media_dir, true)) {
             jrCore_logger('CRI', '_local_media_create_directory: unable to create profile media directory: ' . str_replace(APP_DIR . '/', '', $media_dir));
             return false;
         }
@@ -1300,17 +1496,17 @@ function _jrCore_local_media_delete_directory($profile_id)
 function _jrCore_local_media_delete_old_items($profile_id, $module, $unique_id, $field, $_exclude = null)
 {
     $pdir = jrCore_get_media_directory($profile_id);
-    $_old = glob("{$pdir}/{$module}_{$unique_id}_{$field}.*");
+    $_old = glob("{$pdir}/{$module}_{$unique_id}_{$field}.*", GLOB_NOSORT);
     if ($_old && is_array($_old)) {
         foreach ($_old as $old_file) {
             if (!is_null($_exclude) && is_array($_exclude)) {
                 $old_name = basename($old_file);
                 if (!in_array($old_name, $_exclude)) {
-                    unlink($old_file);
+                    unlink($old_file); // OK
                 }
             }
             else {
-                unlink($old_file);
+                unlink($old_file); // OK
             }
         }
     }
@@ -1332,7 +1528,7 @@ function _jrCore_local_media_delete_file($module, $file_name, $profile_id, $uniq
     if ($h = opendir(realpath($dir))) {
         while (false !== ($file = readdir($h))) {
             if (strpos($file, $nam) === 0) {
-                unlink("{$dir}/{$file}");
+                unlink("{$dir}/{$file}"); // OK
             }
         }
         closedir($h);
@@ -1373,61 +1569,34 @@ function _jrCore_local_media_get_directory_size($profile_id)
 function _jrCore_local_media_get_files($profile_id, $pattern = null)
 {
     $media_dir = _jrCore_local_media_get_directory($profile_id);
-    if (is_null($pattern)) {
-        $pattern = '*';
+    if (!is_null($pattern)) {
+        $_fl = glob("{$media_dir}/{$pattern}", GLOB_NOSORT);
+    }
+    else {
+        $_fl = array();
+        if ($h = opendir(realpath($media_dir))) {
+            while (false !== ($file = readdir($h))) {
+                if ($file == '.' || $file == '..') {
+                    continue;
+                }
+                $_fl[] = "{$media_dir}/{$file}";
+            }
+            closedir($h);
+        }
     }
     $_ot = array();
-    $_fl = glob("{$media_dir}/{$pattern}");
-    if ($_fl && is_array($_fl)) {
+    if (count($_fl) > 0) {
         foreach ($_fl as $file) {
-            $_ot[] = array(
-                'name' => $file,
-                'size' => filesize($file),
-                'time' => filemtime($file)
-            );
+            if (is_file($file)) {
+                $_ot[] = array(
+                    'name' => $file,
+                    'size' => filesize($file),
+                    'time' => filemtime($file)
+                );
+            }
         }
     }
     return (count($_ot) > 0) ? $_ot : false;
-}
-
-/**
- * Local FileSystem Get Media Url function
- * @param int $profile_id Profile ID
- * @param string $file File Name
- * @param int $expire_seconds Seconds URL is valid for
- * @return string
- */
-function _jrCore_local_media_get_media_url($profile_id, $file, $expire_seconds = 0)
-{
-    global $_conf;
-    // If we are doing a secure media URL, then it passes through
-    // our media stream wrapper
-    if (isset($expire_seconds) && jrCore_checktype($expire_seconds, 'number_nz')) {
-
-        $murl = jrCore_get_module_url('jrCore');
-        $file = rawurlencode($file);
-        $expr = (time() + $expire_seconds);
-        $path = hash_hmac('sha1', "{$expr}/{$file}", jrCore_get_ip());
-        $path = urlencode($path);
-
-        // Create our URL
-        $proto = jrCore_get_server_protocol();
-        $url   = "{$_conf['jrCore_base_url']}/{$murl}/get_file/pid={$profile_id}/key={$path}/expr={$expr}/file={$file}";
-        if (isset($proto) && $proto != 'http') {
-            $url = str_replace('http://', "{$proto}://", $url);
-        }
-    }
-    else {
-        // Direct URL to media item
-        $group_dir = _jrCore_local_media_get_directory_group($profile_id);
-        $proto     = jrCore_get_server_protocol();
-        $media_url = $_conf['jrCore_base_url'];
-        if (isset($proto) && $proto != 'http') {
-            $media_url = str_replace('http://', "{$proto}://", $media_url);
-        }
-        $url = "{$media_url}/data/media/{$group_dir}/{$profile_id}/{$file}";
-    }
-    return $url;
 }
 
 /**
@@ -1443,10 +1612,7 @@ function _jrCore_local_media_read($profile_id, $file, $save_as = null)
     $media_dir = _jrCore_local_media_get_directory($profile_id);
     if (is_file("{$media_dir}/{$file}")) {
         if (!is_null($save_as) && strpos($save_as, APP_DIR) === 0) {
-            if (copy("{$media_dir}/{$file}", $save_as)) {
-                return true;
-            }
-            return false;
+            return jrCore_chunked_copy("{$media_dir}/{$file}", $save_as);
         }
         else {
             return file_get_contents("{$media_dir}/{$file}");
@@ -1468,9 +1634,7 @@ function _jrCore_local_media_write($profile_id, $file, $data, $access)
 {
     $media_dir = _jrCore_local_media_get_directory($profile_id);
     if (@is_file($data)) {
-        if (copy($data, "{$media_dir}/{$file}")) {
-            return true;
-        }
+        return jrCore_chunked_copy($data, "{$media_dir}/{$file}");
     }
     else {
         if (jrCore_write_to_file("{$media_dir}/{$file}", $data, 'overwrite')) {
@@ -1492,21 +1656,21 @@ function _jrCore_local_media_delete($profile_id, $file)
     global $_conf;
     $media_dir = _jrCore_local_media_get_directory($profile_id);
     if (is_file("{$media_dir}/{$file}")) {
-        $tmp = @unlink("{$media_dir}/{$file}");
+        $tmp = @unlink("{$media_dir}/{$file}"); // OK
         if (!$tmp) {
             // try to change permissions and try again
             chmod("{$media_dir}/{$file}", $_conf['jrCore_file_perms']);
-            $tmp = @unlink("{$media_dir}/{$file}");
+            $tmp = @unlink("{$media_dir}/{$file}"); // OK
         }
         return $tmp;
     }
     elseif (is_file($file) && strpos($file, $media_dir) === 0) {
         // We've been given a full path file - handle it
-        $tmp = @unlink($file);
+        $tmp = @unlink($file); // OK
         if (!$tmp) {
             // try to change permissions and try again
             chmod($file, $_conf['jrCore_file_perms']);
-            $tmp = @unlink($file);
+            $tmp = @unlink($file); // OK
         }
         return $tmp;
     }
@@ -1547,7 +1711,7 @@ function _jrCore_local_media_confirm_is_local($profile_id, $file, $local_save = 
     $media_dir = _jrCore_local_media_get_directory($profile_id);
     if (is_file("{$media_dir}/{$file}")) {
         if (!is_null($local_save) && $local_save != "{$media_dir}/{$file}") {
-            if (copy("{$media_dir}/{$file}", $local_save)) {
+            if (jrCore_chunked_copy("{$media_dir}/{$file}", $local_save)) {
                 return $local_save;
             }
         }
@@ -1576,7 +1740,7 @@ function _jrCore_local_media_stream($profile_id, $file, $send_name)
     $size = filesize("{$media_dir}/{$file}");
     $type = jrCore_mime_type("{$media_dir}/{$file}");
 
-    if (isset($_SERVER['HTTP_RANGE'])) {
+    if (isset($_SERVER['HTTP_RANGE']) && $_SERVER['HTTP_RANGE'] != 'bytes=0-') {
         _jrCore_local_media_stream_with_range("{$media_dir}/{$file}");
         return true;
     }
@@ -1591,7 +1755,7 @@ function _jrCore_local_media_stream($profile_id, $file, $send_name)
             }
             if ($ifs && strtotime($ifs) == $tim) {
                 $_tmp = jrCore_get_flag('jrcore_set_custom_header');
-                if (isset($_tmp) && is_array($_tmp)) {
+                if ($_tmp && is_array($_tmp)) {
                     foreach ($_tmp as $header) {
                         header($header);
                     }
@@ -1604,6 +1768,7 @@ function _jrCore_local_media_stream($profile_id, $file, $send_name)
             }
         }
 
+        header('Accept-Ranges: bytes');
         header('Content-Length: ' . $size);
         header('Content-Type: ' . $type);
         header('Content-Disposition: inline; filename="' . $send_name . '"');
@@ -1618,7 +1783,7 @@ function _jrCore_local_media_stream($profile_id, $file, $send_name)
     while (true) {
         fseek($handle, $bytes_sent);
         // Read 1 megabyte at a time...
-        $buffer = fread($handle, 1048576);
+        $buffer     = fread($handle, 1048576);
         $bytes_sent += strlen($buffer);
         echo $buffer;
         flush();
@@ -1733,7 +1898,7 @@ function _jrCore_local_media_download($profile_id, $file, $send_name)
     while ($bytes_sent < $size) {
         fseek($handle, $bytes_sent);
         // Read 1 megabyte at a time...
-        $buffer = fread($handle, 1048576);
+        $buffer     = fread($handle, 1048576);
         $bytes_sent += strlen($buffer);
         echo $buffer;
         ob_flush();
@@ -1761,12 +1926,14 @@ function _jrCore_local_media_copy($profile_id, $source_file, $target_file)
 {
     $media_dir = _jrCore_local_media_get_directory($profile_id);
     if (is_file($source_file)) {
+        $max = @ini_get('max_execution_time');
+        if (!$max || $max < 600) {
+            @ini_set('max_execution_time', 600); // 10 minutes max
+        }
         if (strpos($target_file, APP_DIR) === 0) {
             $target_file = basename($target_file);
         }
-        if (copy($source_file, "{$media_dir}/{$target_file}")) {
-            return true;
-        }
+        return jrCore_chunked_copy($source_file, "{$media_dir}/{$target_file}");
     }
     return false;
 }
@@ -1782,12 +1949,15 @@ function _jrCore_local_media_copy($profile_id, $source_file, $target_file)
 function _jrCore_local_media_rename($profile_id, $file, $new_name)
 {
     $media_dir = _jrCore_local_media_get_directory($profile_id);
+    if (!is_file($file) && is_file("{$media_dir}/{$file}")) {
+        $file = "{$media_dir}/{$file}";
+    }
     if (is_file($file)) {
         if (rename($file, "{$media_dir}/{$new_name}")) {
             return true;
         }
-        if (copy($file, "{$media_dir}/{$new_name}")) {
-            unlink($file);
+        if (jrCore_chunked_copy($file, "{$media_dir}/{$new_name}")) {
+            unlink($file); // OK
             return true;
         }
     }

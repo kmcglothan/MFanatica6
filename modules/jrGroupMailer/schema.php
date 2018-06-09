@@ -2,8 +2,7 @@
 /**
  * Jamroom Group Mailer module
  *
- * copyright 2003 - 2016
- * by The Jamroom Network
+ * copyright 2017 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -50,13 +49,13 @@ function jrGroupMailer_db_schema()
     $_tmp = array(
         "t_id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
         "t_time INT(11) UNSIGNED NOT NULL DEFAULT '0'",
-        "t_title VARCHAR(256) NOT NULL DEFAULT ''",
+        "t_title VARCHAR(255) NOT NULL DEFAULT ''",
         "t_template MEDIUMTEXT NOT NULL",
         "t_user_id INT(11) UNSIGNED NOT NULL DEFAULT '0'",
         "UNIQUE t_title (t_title)",
         "INDEX t_time (t_time)"
     );
-    jrCore_db_verify_table('jrGroupMailer', 'template', $_tmp);
+    jrCore_db_verify_table('jrGroupMailer', 'template', $_tmp, 'InnoDB');
 
     return true;
 }

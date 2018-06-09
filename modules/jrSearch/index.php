@@ -2,7 +2,7 @@
 /**
  * Jamroom Search module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  Please see the included "license.html" file.
@@ -49,22 +49,22 @@ function view_jrSearch_rebuild($_post, $_user, $_conf)
     jrUser_master_only();
     jrCore_page_include_admin_menu();
     jrCore_page_admin_tabs('jrSearch');
-    jrCore_page_banner('Rebuild Search Index');
-    jrCore_page_notice('success', 'If you have made modifications to the Search Global Config you will<br>need to rebuild the Search Index for your changes to take effect.', false);
+    jrCore_page_banner('Rebuild Search Indexes');
+    jrCore_page_notice('success', 'If you have made modifications to the Search Global Config you will<br>need to rebuild the Search Indexes for your changes to take effect.', false);
 
     // Form init
     $_tmp = array(
-        'submit_value'  => 'rebuild search index',
+        'submit_value'  => 'rebuild search indexes',
         'cancel'        => 'referrer',
-        'submit_prompt' => 'Rebuild the Search Index?  On large systems this could take a few minutes to complete'
+        'submit_prompt' => 'Rebuild Search Indexes?  On large systems this could take a few minutes to complete'
     );
     jrCore_form_create($_tmp);
 
     // Rebuild
     $_tmp = array(
         'name'     => 'rebuild_index',
-        'label'    => 'rebuild search index',
-        'help'     => 'If this is checked, the search index will be rebuilt',
+        'label'    => 'rebuild search indexes',
+        'help'     => 'If this is checked, the configured search indexes will be rebuilt',
         'type'     => 'checkbox',
         'value'    => 'on',
         'validate' => 'onoff'
@@ -81,16 +81,35 @@ function view_jrSearch_rebuild_save($_post, $_user, $_conf)
     jrUser_master_only();
     jrCore_form_validate($_post);
 
-    // Cleanup
+    // Start clean
     $tbl = jrCore_db_table_name('jrSearch', 'fulltext');
     jrCore_db_query("TRUNCATE TABLE {$tbl}");
 
     $_md = jrCore_get_datastore_modules();
     if ($_md && is_array($_md)) {
         foreach ($_md as $mod => $pfx) {
-            if (!jrSearch_is_excluded_module($mod)) {
+            if (jrCore_module_is_active($mod) && !jrSearch_is_excluded_module($mod)) {
+
+                $action = 'create';
+                if (jrSearch_is_disabled_module($mod)) {
+
+                    // This module has purposefully been disabled - delete from indexes
+                    $action = 'delete';
+                }
+
+                elseif (jrSearch_module_has_dedicated_index($mod)) {
+
+                    // Make sure index table exists
+                    jrSearch_create_index_table_for_module($mod);
+
+                    // Make sure it is clean
+                    $tbl = jrCore_db_table_name('jrSearch', "fulltext_{$mod}");
+                    jrCore_db_query("TRUNCATE TABLE {$tbl}");
+                }
+
+                // Create worker queue entry
                 $_queue = array(
-                    'action' => 'create',
+                    'action' => $action,
                     'module' => $mod
                 );
                 jrCore_queue_create('jrSearch', 'search_index', $_queue);
@@ -115,7 +134,10 @@ function view_jrSearch_results($_post, $_user, $_conf)
             $_post['search_string'] = $_SESSION['jrsearch_last_search_string'];
         }
         else {
-            jrCore_page_not_found();
+            $_fn = array();
+            $out = jrCore_parse_template('header.tpl');
+            $out .= jrCore_parse_template('search_results.tpl', $_fn, 'jrSearch');
+            return $out;
         }
     }
 
@@ -304,8 +326,20 @@ function view_jrSearch_results($_post, $_user, $_conf)
                         }
                         break;
                 }
-                $req = "SELECT `s_module` AS m, `s_id` AS i, (MATCH(`s_text`) AGAINST('{$sst}' {$smd}) * `s_mod`) AS s FROM {$tbl}
-                     WHERE MATCH(`s_text`) AGAINST('{$sst}' {$smd}) AND `s_module` IN('" . implode("','", array_keys($_rm)) . "')";
+
+                // Do we have a dedicated index?
+                $req = false;
+                if (count($_rm) === 1) {
+                    $tmd = array_keys($_rm);
+                    $tmd = reset($tmd);
+                    if (jrSearch_module_has_dedicated_index($tmd)) {
+                        $tbt = jrCore_db_table_name('jrSearch', "fulltext_{$tmd}");
+                        $req = "SELECT '{$tmd}' AS m, `s_id` AS i, (MATCH(`s_text`) AGAINST('{$sst}' {$smd}) * `s_mod`) AS s FROM {$tbt} WHERE MATCH(`s_text`) AGAINST('{$sst}' {$smd})";
+                    }
+                }
+                if (!$req) {
+                    $req = "SELECT `s_module` AS m, `s_id` AS i, (MATCH(`s_text`) AGAINST('{$sst}' {$smd}) * `s_mod`) AS s FROM {$tbl} WHERE MATCH(`s_text`) AGAINST('{$sst}' {$smd}) AND `s_module` IN('" . implode("','", array_keys($_rm)) . "')";
+                }
 
                 $_rt = jrCore_db_query($req, 'NUMERIC');
                 if ($_rt && is_array($_rt)) {
@@ -426,10 +460,11 @@ function view_jrSearch_results($_post, $_user, $_conf)
                                 if ($pbrk > 0 && $rcnt > $pbrk && $rcnt > 200 && (!isset($_conf['jrSearch_optimize']) || $_conf['jrSearch_optimize'] == 'on')) {
                                     $_fm[$mod] = array_slice($_fm[$mod], 0, (($page * 3) * $pbrk), true);
                                 }
-                                $_sc['use_total_row_count'] = count($_fm[$mod]);
-                                $_sc['search']              = array("{$key} in " . implode(',', $_fm[$mod]));
-
-                                $_rt = jrCore_db_search_items($mod, $_sc);
+                                $_sc['ignore_missing']                      = true;
+                                $_sc['use_total_row_count']                 = count($_fm[$mod]);
+                                $_sc['search']                              = array("{$key} in " . implode(',', $_fm[$mod]));
+                                $_sc['jrcore_list_function_call_is_active'] = 1;
+                                $_rt                                        = jrCore_db_search_items($mod, $_sc);
                             }
 
                         }
@@ -465,8 +500,8 @@ function view_jrSearch_results($_post, $_user, $_conf)
                                 $_fn['results'][$mod] = jrCore_parse_template('item_list.tpl', $_rt, $mod);
                             }
                             $_fn['info'][$mod] = $_rt['info'];
-                            $ttl += count($_rt['_items']);
-                            $ltl = $_fn['titles'][$mod];
+                            $ttl               += count($_rt['_items']);
+                            $ltl               = $_fn['titles'][$mod];
                         }
                     }
                 }
@@ -489,6 +524,20 @@ function view_jrSearch_results($_post, $_user, $_conf)
             if ($_fn['module_count'] === 1) {
                 $_fn['titles']['all'] = $ltl;
             }
+
+            // display order
+            if (isset($_conf['jrSearch_display_order'])) {
+                $_order = explode(',', $_conf['jrSearch_display_order']);
+                if (!empty($_order)) {
+                    foreach ($_order as $k => $o) {
+                        if (!array_key_exists($o, $_fn['results'])) {
+                            unset($_order[$k]);
+                        }
+                    }
+                    $_fn['results'] = array_replace(array_flip($_order), $_fn['results']);
+                }
+            }
+
             $out .= jrCore_parse_template('search_results.tpl', $_fn, 'jrSearch');
 
             // Save search details
@@ -516,4 +565,82 @@ function view_jrSearch_results($_post, $_user, $_conf)
     $out .= jrCore_parse_template('footer.tpl');
     ini_set('session.cache_limiter', 'private');
     return $out;
+}
+
+/**
+ * Set display order for search items
+ * @param $_post array Global $_post
+ * @param $_user array Viewing user array
+ * @param $_conf array Global config
+ * @return bool
+ */
+function view_jrSearch_item_display_order($_post, $_user, $_conf)
+{
+    global $_mods;
+    jrUser_master_only();
+
+    // First - find modules we are going to be searching
+    $_rm = jrCore_get_registered_module_features('jrSearch', 'search_fields');
+
+    // Allow other modules to inject into search
+    $_rm = jrCore_trigger_event('jrSearch', 'search_fields', $_rm);
+
+    if (isset($_conf['jrSearch_display_order']) && strlen($_conf['jrSearch_display_order']) > 3) {
+        $_order     = explode(',', $_conf['jrSearch_display_order']);
+        $_new_order = array();
+        if (is_array($_order) && !empty($_order)) {
+            foreach ($_order as $mod) {
+                $_new_order[$mod] = $_mods[$mod]['module_name'];
+                unset($_rm[$mod]);
+            }
+        }
+        if (!empty($_rm)) {
+            $_new_order = array_merge($_new_order, $_rm);
+        }
+    }
+    else {
+        foreach ($_rm as $mod => $_inf) {
+            $_rm[$mod] = $_mods[$mod]['module_name'];
+        }
+        $_new_order = $_rm;
+    }
+
+    jrCore_page_banner('Set Search Result Order', 'set the order module results appear in');
+
+    $tmp = '<ul class="item_sortable list">';
+    foreach ($_new_order as $mod => $title) {
+        if (jrCore_is_datastore_module($mod) && is_file(APP_DIR . "/modules/{$mod}/templates/item_list.tpl")) {
+            $tmp .= "<li class='jrsearch_reorder_item' data-id=\"{$mod}\">{$title}</li>\n";
+        }
+    }
+    $tmp .= '</ul>';
+    jrCore_page_custom($tmp, 'Search Modules', 'drag and drop entries to set order');
+
+    $url = "{$_conf['jrCore_base_url']}/" . jrCore_get_module_url('jrSearch') . "/item_display_order_update/__ajax=1";
+
+    $tmp = array('$(function() {
+           $(\'.item_sortable\').sortable().bind(\'sortupdate\', function(event,ui) {
+               var o = $(\'ul.item_sortable li\').map(function(){ return $(this).data("id"); }).get();
+               $.post(\'' . $url . '\', { iid: o });
+           });
+       });');
+    jrCore_create_page_element('javascript_footer_function', $tmp);
+    jrCore_page_cancel_button("{$_conf['jrCore_base_url']}/{$_post['module_url']}/admin/global/section=display+options", 'save order');
+    return jrCore_page_display(true);
+}
+
+//--------------------------------
+// item_display_order_update
+//--------------------------------
+function view_jrSearch_item_display_order_update($_post, $_user, $_conf)
+{
+    jrUser_master_only();
+    $order  = implode(',', $_post['iid']);
+    $_field = array(
+        'name'  => 'display_order',
+        'value' => $order
+    );
+    jrCore_update_setting('jrSearch', $_field);
+    return jrCore_json_response(array('success' => 'The module search order was successfully updated'));
+
 }

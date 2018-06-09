@@ -2,7 +2,7 @@
 /**
  * Jamroom OneAll Social module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -46,12 +46,12 @@ function jrOneAll_meta()
     $_tmp = array(
         'name'        => 'OneAll Social',
         'url'         => 'oneall',
-        'version'     => '1.5.0',
+        'version'     => '1.6.5',
         'developer'   => 'The Jamroom Network, &copy;' . strftime('%Y'),
         'description' => 'Users can signup, login and share to configured Social Networks',
         'doc_url'     => 'https://www.jamroom.net/the-jamroom-network/documentation/modules/284/oneall-social',
         'category'    => 'users',
-        'requires'    => 'jrAction:2.0.8',
+        'requires'    => 'jrUser:2.2.10,jrAction:2.0.11',
         'license'     => 'jcl'
     );
     return $_tmp;
@@ -91,10 +91,10 @@ function jrOneAll_init()
 
     // We provide a tool for exploring social connections
     jrCore_register_module_feature('jrCore', 'tool_view', 'jrOneAll', 'connections', array('Social Connections', 'Browse Existing Social Connections created by your Users'));
-    jrCore_register_module_feature('jrCore', 'tool_view', 'jrOneAll', 'system_feed', array('System Feed', 'Setup the feed to send out all system actions to a base account'));
+    jrCore_register_module_feature('jrCore', 'tool_view', 'jrOneAll', 'log_browser', array('API Log Browser', 'Browse the API communication log'));
+    jrCore_register_module_feature('jrCore', 'tool_view', 'jrOneAll', 'system_feed', array('System Feed', 'Send all system actions to a linked social account'));
 
     // event listeners
-    jrCore_register_event_listener('jrCore', 'db_create_item', 'jrOneAll_db_create_item_listener');
     jrCore_register_event_listener('jrCore', 'verify_module', 'jrOneAll_verify_module_listener');
     jrCore_register_event_listener('jrCore', 'hourly_maintenance', 'jrOneAll_hourly_maintenance_listener');
     jrCore_register_event_listener('jrCore', 'daily_maintenance', 'jrOneAll_daily_maintenance_listener');
@@ -102,6 +102,9 @@ function jrOneAll_init()
     // Add / remove networks tab based on Quota options
     jrCore_register_event_listener('jrUser', 'account_tabs', 'jrOneAll_account_tabs_listener');
     jrCore_register_event_listener('jrUser', 'site_privacy_check', 'jrOneAll_site_privacy_check_listener');
+
+    // System reset listener
+    jrCore_register_event_listener('jrDeveloper', 'reset_system', 'jrOneAll_reset_system_listener');
 
     // Core support
     $_tmp = array(
@@ -119,6 +122,12 @@ function jrOneAll_init()
 //----------------------
 // QUEUE WORKER
 //----------------------
+
+/**
+ * Verify existing OneAll connections
+ * @param $_queue
+ * @return bool
+ */
 function jrOneAll_verify_connections_worker($_queue)
 {
     // Verify our user connections are still valid
@@ -175,6 +184,23 @@ function jrOneAll_verify_connections_worker($_queue)
 //----------------------
 // EVENT LISTENERS
 //----------------------
+
+/**
+ * System Reset listener
+ * @param $_data array incoming data array
+ * @param $_user array current user info
+ * @param $_conf array Global config
+ * @param $_args array additional info about the module
+ * @param $event string Event Trigger name
+ * @return array
+ */
+function jrOneAll_reset_system_listener($_data, $_user, $_conf, $_args, $event)
+{
+    $tbl = jrCore_db_table_name('jrOneAll', 'link');
+    jrCore_db_query("TRUNCATE TABLE {$tbl}");
+    jrCore_db_query("OPTIMIZE TABLE {$tbl}");
+    return $_data;
+}
 
 /**
  * Cleanup any bad linked user data
@@ -299,9 +325,14 @@ function jrOneAll_db_delete_item_listener($_data, $_user, $_conf, $_args, $event
 function jrOneAll_share_action_listener($_data, $_user, $_conf, $_args, $event)
 {
     global $_post;
+
+    jrOneAll_sitewide_feed($_data, $_user, $_conf, $_args, $event);
+
     // Make sure this user has access to OneAll
-    if (isset($_user["quota_jrOneAll_allowed"]) && $_user["quota_jrOneAll_allowed"] != 'on') {
-        return $_data;
+    if (isset($_data['action_data'])) {
+        if (!isset($_data['action_data']['quota_jrOneAll_allowed']) || $_data['action_data']['quota_jrOneAll_allowed'] != 'on') {
+            return $_data;
+        }
     }
     // See if they are purposefully disabling this post
     if (isset($_post['oneall_share_active']) && $_post['oneall_share_active'] == 'off') {
@@ -311,6 +342,8 @@ function jrOneAll_share_action_listener($_data, $_user, $_conf, $_args, $event)
     if (isset($_conf['jrOneAll_sharing_networks']) && strlen($_conf['jrOneAll_sharing_networks']) < 3) {
         return $_data;
     }
+
+    // the sitewide feed
 
     // See if this user has linked any social networks for sharing
     $_rt = jrOneAll_get_shared_networks($_args['_user_id']);
@@ -326,6 +359,17 @@ function jrOneAll_share_action_listener($_data, $_user, $_conf, $_args, $event)
                 unset($_rt[$provider]);
             }
         }
+
+        // If the Meta Tag Manager module is installed and we are on SSL, use the card
+        if (jrCore_module_is_active('jrMeta') && jrCore_get_server_protocol() === 'https') {
+            if ($pfx = jrCore_db_get_prefix($_data['action_module'])) {
+                if (isset($_data['action_data']["{$pfx}_title_url"])) {
+                    $module_url           = jrCore_get_module_url($_data['action_module']);
+                    $_post['action_text'] = "{$_conf['jrCore_base_url']}/{$_data['action_data']['profile_url']}/{$module_url}/{$_data['action_item_id']}/" . $_data['action_data']["{$pfx}_title_url"];
+                }
+            }
+        }
+
     }
 
     if (count($_rt) > 0) {
@@ -431,42 +475,45 @@ function jrOneAll_form_display_listener($_data, $_user, $_conf, $_args, $event)
                         $_pn = jrCore_get_registered_module_features('jrCore', 'action_support');
                         if ($_pn && isset($_pn[$mod][$view]) && jrCore_is_profile_referrer(false)) {
 
-                            // Looks like this view is setup for Actions.
-                            // By default we do NOT record an action unless the user is posting something on a profile they own.
-                            // However, some modules may want a say in this - they can set the allowed_off_profile flag
-                            $allowed = false;
-                            if (is_array($_pn[$mod][$view]) && isset($_pn[$mod][$view]['allowed_off_profile']) && $_pn[$mod][$view]['allowed_off_profile'] == true) {
-                                $allowed = true;
-                            }
-                            else {
-                                // Is this user creating an item on a profile they OWN?
-                                $_up = jrProfile_get_user_linked_profiles($_user['_user_id']);
-                                if ($_up && is_array($_up) && isset($_up["{$_user['user_active_profile_id']}"])) {
+                            // This module has asked for action support - now see if it handles One All
+                            $_om = jrCore_get_event_listeners('jrOneAll', 'network_share_text');
+                            if ($_om && strpos(' ' . implode(',', $_om), "{$mod}_")) {
+
+                                // We are setup for OneAll
+                                $allowed = false;
+                                if (is_array($_pn[$mod][$view]) && isset($_pn[$mod][$view]['allowed_off_profile']) && $_pn[$mod][$view]['allowed_off_profile'] == true) {
                                     $allowed = true;
                                 }
-                            }
-                            if ($allowed) {
-                                // See if this user has any shared networks
-                                $_rt = jrOneAll_get_shared_networks($_user['_user_id']);
-                                if ($_rt && is_array($_rt)) {
-                                    $_dt = array();
-                                    foreach ($_rt as $provider => $token) {
-                                        $_dt[$provider] = $provider;
+                                else {
+                                    // Is this user creating an item on a profile they OWN?
+                                    $_up = jrProfile_get_user_linked_profiles($_user['_user_id']);
+                                    if ($_up && is_array($_up) && isset($_up["{$_user['user_active_profile_id']}"])) {
+                                        $allowed = true;
                                     }
-                                    $_lng = jrUser_load_lang_strings();
-                                    $_tmp = array(
-                                        'name'          => "jroneall_share_to_networks",
-                                        'label'         => $_lng['jrOneAll'][14],
-                                        'help'          => $_lng['jrOneAll'][15],
-                                        'type'          => 'optionlist',
-                                        'options'       => $_dt,
-                                        'required'      => false,
-                                        'form_designer' => false
-                                    );
-                                    if (strpos(' ' . $view, 'create')) {
-                                        $_tmp['default'] = $_dt;
+                                }
+                                if ($allowed) {
+                                    // See if this user has any shared networks
+                                    $_rt = jrOneAll_get_shared_networks($_user['_user_id']);
+                                    if ($_rt && is_array($_rt)) {
+                                        $_dt = array();
+                                        foreach ($_rt as $provider => $token) {
+                                            $_dt[$provider] = $provider;
+                                        }
+                                        $_lng = jrUser_load_lang_strings();
+                                        $_tmp = array(
+                                            'name'          => "jroneall_share_to_networks",
+                                            'label'         => $_lng['jrOneAll'][14],
+                                            'help'          => $_lng['jrOneAll'][15],
+                                            'type'          => 'optionlist',
+                                            'options'       => $_dt,
+                                            'required'      => false,
+                                            'form_designer' => false
+                                        );
+                                        if (strpos(' ' . $view, 'create')) {
+                                            $_tmp['default'] = $_dt;
+                                        }
+                                        jrCore_form_field_create($_tmp);
                                     }
-                                    jrCore_form_field_create($_tmp);
                                 }
                             }
                         }
@@ -480,7 +527,7 @@ function jrOneAll_form_display_listener($_data, $_user, $_conf, $_args, $event)
 
 /**
  * Add Share buttons to Timeline
- * @param $_data array Array of information from trigger
+ * @param $_data mixed Array of information from trigger
  * @param $_user array Current user
  * @param $_conf array Global Config
  * @param $_args array additional parameters passed in by trigger caller
@@ -624,7 +671,7 @@ function jrOneAll_get_sharing_providers()
 function jrOneAll_get_shared_networks($user_id)
 {
     $tbl = jrCore_db_table_name('jrOneAll', 'link');
-    $req = "SELECT user_token, provider FROM {$tbl} WHERE user_id = '{$user_id}' AND shared = '1' AND LENGTH(user_token) > 0";
+    $req = "SELECT user_token, provider FROM {$tbl} WHERE user_id = '{$user_id}' AND shared = '1' AND user_token != ''";
     $_rt = jrCore_db_query($req, 'provider', false, 'user_token');
     if ($_rt && is_array($_rt)) {
         return $_rt;
@@ -645,8 +692,39 @@ function jrOneAll_api_call($url, $method = 'GET')
         $dom = rtrim(trim($_conf['jrOneAll_domain']), '/');
         $_rt = jrCore_load_url("{$dom}/{$url}", null, $method, 80, $_conf['jrOneAll_public_key'], $_conf['jrOneAll_private_key']);
         if ($_rt && strlen($_rt) > 0) {
-            return json_decode($_rt, true);
+            if ($_rs = json_decode($_rt, true)) {
+                jrOneAll_log_api_call($url, $_rs);
+                return $_rs;
+            }
+            else {
+                jrCore_logger('MAJ', "unknown response from OneAll API call", $_rt);
+            }
         }
+    }
+    return false;
+}
+
+/**
+ * Log an API call and response to the OneAll log table
+ * @param string $command
+ * @param string $response
+ * @return bool
+ */
+function jrOneAll_log_api_call($command, $response)
+{
+    $cmd = jrCore_db_escape($command);
+    if (!$_tm = jrCore_get_load_url_response_headers()) {
+        $_tm = 'unknown';
+    }
+    $_rs = array(
+        'headers' => $_tm,
+        'results' => $response
+    );
+    $tbl = jrCore_db_table_name('jrOneAll', 'api_log');
+    $req = "INSERT INTO {$tbl} (log_created, log_command, log_text) VALUES (UNIX_TIMESTAMP(), '{$cmd}', '" . jrCore_db_escape(json_encode($_rs)) . "')";
+    $lid = jrCore_db_query($req, 'INSERT_ID');
+    if ($lid && $lid > 0) {
+        return true;
     }
     return false;
 }
@@ -731,19 +809,21 @@ function smarty_function_jrOneAll_embed_code($params, &$smarty)
  * @param $event string Triggered Event name
  * @return array
  */
-function jrOneAll_db_create_item_listener($_data, $_user, $_conf, $_args, $event)
+function jrOneAll_sitewide_feed($_data, $_user, $_conf, $_args, $event)
 {
-    if (jrUser_is_logged_in()) {
+    if (jrUser_is_logged_in() && isset($_data['action_mode'])) {
 
         // Have we linked up the system to any networks?
         $_rt = jrOneAll_get_shared_networks(0);
         if ($_rt && is_array($_rt)) {
-            $_owner = jrCore_db_get_item('jrUser', $_data['_user_id']);
+            $_owner = jrCore_db_get_item('jrUser', $_data['action_data']['_user_id']);
             if (!$_owner || !is_array($_owner) || !is_array($_data)) {
                 return $_data;
             }
-            $_action_data             = $_owner + $_data;
-            $_action_data['_item_id'] = $_args['_item_id'];
+            $_action_data                = $_owner + $_data['action_data'];
+            $_action_data['action_mode'] = $_data['action_mode'];
+            $_action_data['profile_url'] = jrCore_db_get_item_key('jrProfile', $_data['action_data']['_profile_id'], 'profile_url');
+            $_action_data['_item_id']    = $_data['action_data']['_item_id'];
 
             // Create our new queue entry for this share
             // NOTE: will only get shared if the module contains a network_share_text_listener() function to provide the share text.
@@ -751,7 +831,7 @@ function jrOneAll_db_create_item_listener($_data, $_user, $_conf, $_args, $event
                 'providers'     => implode(',', array_keys($_rt)),
                 'user_token'    => reset($_rt),
                 'user_id'       => 0,
-                'action_module' => $_args['module'],
+                'action_module' => $_data['action_module'],
                 'action_data'   => json_encode($_action_data)
             );
 

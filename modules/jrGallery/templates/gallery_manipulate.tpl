@@ -2,19 +2,21 @@
     {jrCore_lang module="jrGallery" id=50 default="Press &quot;Save Changes&quot; to save your image modifications"}
 </div>
 
-<table width="100%">
-    <tr>
+<div class="p5">
+<div style="display:table">
+    <div style="display:table-row">
 
-        <td style="width:10%">
-            <a href="{$jamroom_url}/{$_post.module_url}/image/gallery_image/{$_item_id}/xxxlarge/v={$_updated}" data-lightbox="images">
-                {jrCore_module_function function="jrImage_display" module="jrGallery" type="gallery_image" item_id=$_item_id size="xlarge" alt=$gallery_image_name id="gallery-edit-image" _v=$_updated}
+        <div style="display:table-cell;width:10%">
+            {jrGallery_get_gallery_image_title item=$item assign="gtitle"}
+            <a href="{$jamroom_url}/{$_post.module_url}/image/gallery_image/{$_item_id}/1280/v={$_updated}" data-lightbox="images" title="{$gtitle|jrCore_entity_string}">
+                {jrCore_module_function function="jrImage_display" module="jrGallery" type="gallery_image" item_id=$_item_id size="xxlarge" alt=$gallery_image_name id="gallery-edit-image" _v=$_updated}
             </a>
-        </td>
+        </div>
 
-        <td class="p20" style="width:90%;vertical-align:middle">
+        <div class="p20" style="display:table-cell;width:90%;vertical-align:middle">
 
             {* only show this section if an aviary.com key has been entered for the site.*}
-            {if isset($_conf['jrGallery_aviary_key'])  && strlen($_conf['jrGallery_aviary_key']) > 2}
+            {if isset($_conf.jrGallery_api_key) && strlen($_conf.jrGallery_api_key) > 2 && isset($_conf.jrGallery_aviary_key) && strlen($_conf.jrGallery_aviary_key) > 2}
 
                 <input id="new_image" name="gallery_alt_img" type="hidden" value="">
 
@@ -27,7 +29,7 @@
                     {/if}
 
                     <script type="text/javascript">
-                        var featherEditor = new Aviary.Feather({ apiKey: '{$_conf['jrGallery_aviary_key']}', apiVersion: 3, theme: '{$_conf.jrGallery_theme}', tools: 'all', appendTo: '',
+                        var featherEditor = new Aviary.Feather({ apiKey: '{$_conf.jrGallery_aviary_key}', apiVersion: 3, theme: '{$_conf.jrGallery_theme}', tools: 'all', appendTo: '',
                             onSave: function(imageID, newURL) {
                                 $('#gallery-save-image').show();
                                 var img = document.getElementById(imageID);
@@ -103,7 +105,7 @@
 
                         {else}
 
-                            featherEditor = new Aviary.Feather({ apiKey: '{$_conf['jrGallery_aviary_key']}', theme: '{$_conf.jrGallery_theme}', tools: 'all', appendTo: '',
+                            featherEditor = new Aviary.Feather({ apiKey: '{$_conf.jrGallery_aviary_key}', theme: '{$_conf.jrGallery_theme}', tools: 'all', appendTo: '',
                                 onSave: function(imageID, newURL) {
                                     $('#gallery-save-image').show();
                                     var img = document.getElementById(imageID);
@@ -125,20 +127,21 @@
                 {if $_conf.jrGallery_original == 'on'}
 
                     {jrCore_lang module="jrGallery" id=49 default="Edit Image" assign="edit_tag"}
-                    <span class="sprite_icon p5" style="cursor:pointer" onclick="launchEditor('gallery-edit-image', '{$jamroom_url}/{$_post.module_url}/original_image/{$_item_id}/edit_key={$edit_key}');">
+                    <span class="form_button p10" style="cursor:pointer" onclick="launchEditor('gallery-edit-image', '{$jamroom_url}/{$_post.module_url}/original_image/{$_item_id}/edit_key={$edit_key}');">
                         {jrCore_image module="jrGallery" image="editor.png" width=32 alt="{$edit_tag|jrCore_entity_string}"}&nbsp;{$edit_tag}&nbsp;
                     </span>
 
                 {else}
 
                     {jrCore_lang module="jrGallery" id=49 default="Edit Image" assign="edit_tag"}
-                    <span class="sprite_icon p5" style="cursor:pointer" onclick="launchEditor('gallery-edit-image', '{$jamroom_url}/{$_post.module_url}/image/gallery_image/{$_item_id}/1280');">
+                    <span class="form_button p10" style="cursor:pointer" onclick="launchEditor('gallery-edit-image', '{$jamroom_url}/{$_post.module_url}/image/gallery_image/{$_item_id}/1280');">
                         {jrCore_image module="jrGallery" image="editor.png" width=32 alt="{$edit_tag|jrCore_entity_string}"}&nbsp;{$edit_tag}&nbsp;
                     </span>
 
                 {/if}
 
             {/if}
-        </td>
-    </tr>
-</table>
+        </div>
+    </div>
+</div>
+</div>

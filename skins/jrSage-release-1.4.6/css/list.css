@@ -1,0 +1,119 @@
+/* @title List Row */
+/* @help The List Row is the row section for ranking lists */
+.list_row, .list_col {
+    padding:6px;
+    background:#FFF;
+    color:#000;
+}
+
+/* @title List Image */
+/* @help The List Image is for the images in the ranking list */
+.list_image {
+    padding:6px;
+    background:#FFF;
+    color:#000;
+}
+/* @title List Highlight */
+/* @help The List Highlight is for the highlighted text in a ranking list */
+.list_hl {
+    background:#408140;
+    color:#FFF;
+}
+
+/* @title List Item */
+/* @help The List Item class is for the content in a  ranking list */
+.item {
+    background-color:#FFF;
+    padding:6px;
+    margin:6px;
+    color:#000;
+}
+/* @title List Item Link */
+/* @help The List Item Link is for the URL links in a  ranking list */
+.item a {
+    color:#408140;
+    text-decoration: none;
+}
+/* @title List Item Link Hover */
+/* @help The List Item Link Hover is for the URL links hover effect in a  ranking list */
+.item a:hover {
+    color:#000;
+    text-decoration: underline;
+}
+
+/* @title Blogpost Link Color */
+/* @help The color for links users include in their blog posts */
+.blogpost p a {
+    color:#408140;
+    text-decoration: underline;
+}
+.action_item_holder {
+    border-bottom:1px solid #408140;
+}
+.add_to_cart_section {
+    display:inline-block;
+    background:#CFDFCF;
+    border:1px solid #E2E9D6;
+    border-radius:4px;
+    box-shadow:inset 0 0 1px 1px #99A185;
+}
+.add_to_cart_price {
+    position:relative;
+    top:0;
+    left:2px;
+    padding:0 10px;
+    padding-top:4px;
+    color:#000;
+    font-size:10px;
+    line-height:14px;
+}
+.add_to_cart_icon {
+    margin:0;
+    padding:0;
+    cursor:pointer;
+}
+
+.cart-section {
+    display: inline-block;
+    background: #CFDFCF;
+    border-radius: 4px;
+    border:1px solid #E2E9D6;
+}
+
+.cart-price {
+    position: relative;
+    top: 1px;
+    left: 2px;
+    padding: 0 10px;
+    padding-top: 3px;
+    color: #000000;
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.strikethrough{
+    color: #000;
+    text-decoration: line-through;
+}
+.border-1{
+    border:1px solid black;
+}
+.p5{
+    padding:5px;
+}
+.body-1{
+    background-color: #000;
+}
+span.jp-artist {
+    color:#000 !important;
+}
+
+div.jp-playlist a {
+    color:#408140 !important;
+    font-size: 12px;
+}
+
+div.jp-playlist a:hover {
+    color:#000 !important;
+    text-decoration:none !important;
+}

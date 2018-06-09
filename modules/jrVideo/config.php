@@ -2,7 +2,7 @@
 /**
  * Jamroom Video module
  *
- * copyright 2017 The Jamroom Network
+ * copyright 2018 The Jamroom Network
  *
  * This Jamroom file is LICENSED SOFTWARE, and cannot be redistributed.
  *
@@ -43,18 +43,6 @@ defined('APP_DIR') or exit();
  */
 function jrVideo_config()
 {
-    // Block FLV/MP4 Downloads
-    $_tmp = array(
-        'name'     => 'block_download',
-        'default'  => 'on',
-        'type'     => 'checkbox',
-        'validate' => 'onoff',
-        'required' => 'on',
-        'label'    => 'block video downloads',
-        'help'     => 'By default FLV and MP4 video files are blocked from being downloaded via the &quot;download&quot; URL, and are only playable in the site video players. Uncheck this option to allow download of FLV and MP4 files',
-        'order'    => 1
-    );
-    jrCore_register_setting('jrVideo', $_tmp);
 
     $_cnt = array(
         1 => 1,
@@ -75,14 +63,17 @@ function jrVideo_config()
         'section'  => 'video conversion',
         'min'      => 1,
         'max'      => 5,
-        'order'    => 8
+        'order'    => 1
     );
     jrCore_register_setting('jrVideo', $_tmp);
 
     $_cnt = array(
         1  => 'Highest',
+        3  => 'Higher',
         6  => 'High',
+        9  => 'Normal',
         12 => 'Low',
+        15 => 'Lower',
         19 => 'Lowest'
     );
     $_tmp = array(
@@ -97,7 +88,7 @@ function jrVideo_config()
         'section'  => 'video conversion',
         'min'      => 1,
         'max'      => 19,
-        'order'    => 9
+        'order'    => 2
     );
     jrCore_register_setting('jrVideo', $_tmp);
 
@@ -116,11 +107,38 @@ function jrVideo_config()
         'options'  => $_cnt,
         'required' => 'on',
         'label'    => 'video sample length',
-        'help'     => 'If you have the eCommerce package installed and are selling video downloads, the Video Module will create an &quot;video sample&quot; of items that are for sale - how long should the video sample be?',
+        'help'     => 'If you are selling video downloads, the Video Module will create a &quot;video sample&quot; of videos that are for sale - how long should the video sample be?',
         'validate' => 'number_nn',
         'section'  => 'video conversion',
         'min'      => 0,
         'max'      => 120,
+        'order'    => 3
+    );
+    jrCore_register_setting('jrVideo', $_tmp);
+
+    // Support Flash
+    $_tmp = array(
+        'name'     => 'enable_flash',
+        'default'  => 'on',
+        'type'     => 'checkbox',
+        'validate' => 'onoff',
+        'required' => 'on',
+        'label'    => 'support flash video',
+        'help'     => 'If this option is enabled, a <a href="https://en.wikipedia.org/wiki/Flash_Video" target="_blank"><u>Flash Video</u></a> version of the video file will be created so it can be played in older browsers that do not support HTML 5.<br><br><b>NOTE:</b> This option requires extra disk space to store the FLV video file.',
+        'section'  => 'video conversion',
+        'order'    => 4
+    );
+    jrCore_register_setting('jrVideo', $_tmp);
+
+    // Block FLV/MP4 Downloads
+    $_tmp = array(
+        'name'     => 'block_download',
+        'default'  => 'on',
+        'type'     => 'checkbox',
+        'validate' => 'onoff',
+        'required' => 'on',
+        'label'    => 'block video downloads',
+        'help'     => 'By default FLV and MP4 video files are blocked from being downloaded via the &quot;download&quot; URL, and are only playable in the site video players. Uncheck this option to allow download of FLV and MP4 files',
         'order'    => 10
     );
     jrCore_register_setting('jrVideo', $_tmp);

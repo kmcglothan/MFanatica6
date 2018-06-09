@@ -1,0 +1,33 @@
+Proxima Core changelog
+
+Version 2.0.2:
+ - Bug Fix: "_id" value returned from some calls may be ID of user instead of data item
+
+Version 2.0.1:
+ - New: "Max Search Results" Global Config option for setting max number of search results
+ - New: Support for "simplepagebreak" GET search parameter
+
+Version 2.0.0:
+ - New: Updated to work with new Jamroom 5.3.0 features for improved performance
+ - Change: Active Cache System Global Config removed - no longer used
+
+Version 1.0.6:
+ - Change: "Enable User Profiles" Global Config option now defaults to checked (on)
+
+Version 1.0.5:
+ - Bug Fix: "page" parameter for search items may not work correctly
+
+Version 1.0.4:
+ - Bug Fix: HTML being stripped from keys that contain HTML in JSON response
+
+Version 1.0.3:
+ - Bug Fix: Incorrect session_id could be returned for existing session log in
+
+Version 1.0.2:
+ - Bug Fix: jrProximaCore_mysql_delete_user_session() not working properly to delete user session
+
+Version 1.0.1:
+ - Change: Updated buttons to use jrCore_window_location instead of wondow.location
+
+Version 1.0.0:
+ - Initial Release

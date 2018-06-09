@@ -502,7 +502,6 @@ div.jp-video div.jp-duration {
 }
 
 .blue_monday_player div.jp-video-play:hover a.jp-video-play-icon {
-    background: url("{$jrAudio_img_url}/jplayer.blue.monday.video.play.png") 0 -100px no-repeat;
 }
 
 .blue_monday_player div.jp-jplayer audio,
